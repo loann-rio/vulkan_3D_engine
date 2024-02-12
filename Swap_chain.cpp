@@ -7,10 +7,25 @@
 #include <iostream>
 #include <limits>
 #include <set>
+#include <iostream>
 #include <stdexcept>
+#include <cassert>
 
-Swap_chain::Swap_chain(Device& deviceRef, VkExtent2D extent)
-    : device{ deviceRef }, windowExtent{ extent } {
+Swap_chain::Swap_chain(Device& deviceRef, VkExtent2D windowExtent)
+    : device{ deviceRef }, windowExtent{ windowExtent } {
+    init();
+}
+
+Swap_chain::Swap_chain(Device& deviceRef, VkExtent2D windowExtent, std::shared_ptr<Swap_chain> previous) 
+    : device{ deviceRef }, windowExtent{ windowExtent }, oldSwapChain{ previous }
+{
+    init();
+
+    oldSwapChain = nullptr;
+}
+
+void Swap_chain::init()
+{
     createSwapChain();
     createImageViews();
     createRenderPass();
@@ -18,6 +33,7 @@ Swap_chain::Swap_chain(Device& deviceRef, VkExtent2D extent)
     createFramebuffers();
     createSyncObjects();
 }
+
 
 
 Swap_chain::~Swap_chain() {
@@ -118,6 +134,7 @@ VkResult Swap_chain::submitCommandBuffers(
     return result;
 }
 
+
 void Swap_chain::createSwapChain() {
     SwapChainSupportDetails swapChainSupport = device.getSwapChainSupport();
 
@@ -162,7 +179,7 @@ void Swap_chain::createSwapChain() {
     createInfo.presentMode = presentMode;
     createInfo.clipped = VK_TRUE;
 
-    createInfo.oldSwapchain = VK_NULL_HANDLE;
+    createInfo.oldSwapchain = oldSwapChain == nullptr ? VK_NULL_HANDLE : oldSwapChain->swapChain;
 
     if (vkCreateSwapchainKHR(device.device(), &createInfo, nullptr, &swapChain) != VK_SUCCESS) {
         throw std::runtime_error("failed to create swap chain!");
@@ -202,6 +219,8 @@ void Swap_chain::createImageViews() {
 }
 
 void Swap_chain::createRenderPass() {
+
+    std::cout << "render path creation \n";
     VkAttachmentDescription depthAttachment{};
     depthAttachment.format = findDepthFormat();
     depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -237,18 +256,22 @@ void Swap_chain::createRenderPass() {
     subpass.pDepthStencilAttachment = &depthAttachmentRef;
 
     VkSubpassDependency dependency = {};
+    dependency.dstSubpass = 0;
+    dependency.dstAccessMask =
+        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    dependency.dstStageMask =
+        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    
     dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
     dependency.srcAccessMask = 0;
     dependency.srcStageMask =
         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    dependency.dstSubpass = 0;
-    dependency.dstStageMask =
-        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    dependency.dstAccessMask =
-        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+   
 
     std::array<VkAttachmentDescription, 2> attachments = { colorAttachment, depthAttachment };
     VkRenderPassCreateInfo renderPassInfo = {};
+    
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
     renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
     renderPassInfo.pAttachments = attachments.data();
@@ -260,6 +283,7 @@ void Swap_chain::createRenderPass() {
     if (vkCreateRenderPass(device.device(), &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
         throw std::runtime_error("failed to create render pass!");
     }
+
 }
 
 void Swap_chain::createFramebuffers() {
@@ -289,6 +313,7 @@ void Swap_chain::createFramebuffers() {
 
 void Swap_chain::createDepthResources() {
     VkFormat depthFormat = findDepthFormat();
+    swapChainDepthFormat = depthFormat;
     VkExtent2D swapChainExtent = getSwapChainExtent();
 
     depthImages.resize(imageCount());
@@ -362,7 +387,7 @@ void Swap_chain::createSyncObjects() {
 VkSurfaceFormatKHR Swap_chain::chooseSwapSurfaceFormat(
     const std::vector<VkSurfaceFormatKHR>& availableFormats) {
     for (const auto& availableFormat : availableFormats) {
-        if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM &&
+        if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB &&
             availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
             return availableFormat;
         }
@@ -374,7 +399,7 @@ VkSurfaceFormatKHR Swap_chain::chooseSwapSurfaceFormat(
 VkPresentModeKHR Swap_chain::chooseSwapPresentMode(
     const std::vector<VkPresentModeKHR>& availablePresentModes) {
     for (const auto& availablePresentMode : availablePresentModes) {
-        if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+        if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) { // VK_PRESENT_MODE_MAILBOX_KHR    VK_PRESENT_MODE_IMMEDIATE_KHR
             std::cout << "Present mode: Mailbox" << std::endl;
             return availablePresentMode;
         }
