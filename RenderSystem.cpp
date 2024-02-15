@@ -10,9 +10,8 @@
 
 
 struct SimplePushConstantData {
-	glm::mat2 transform{ 1.0f };
-	glm::vec2 offset;
-	alignas(16) glm::vec3 color;
+	glm::mat4 transform{ 1.f };
+	glm::mat4 normalMatrix{ 1.f };
 };
 
 RenderSystem::RenderSystem(Device& device, VkRenderPass renderPass) : device{device}
@@ -56,7 +55,7 @@ void RenderSystem::createPipeline(VkRenderPass renderPass)
 
 	pipelineConfig.renderPass = renderPass;
 
-	pipelineConfig.pipelineLayout = pipelineLayout;
+	pipelineConfig.pipelineLayout = pipelineLayout; 
 
 	pipeline = std::make_unique<Pipeline>(
 		device,
@@ -66,33 +65,28 @@ void RenderSystem::createPipeline(VkRenderPass renderPass)
 	);
 }
 
-void RenderSystem::renderGameObjects(VkCommandBuffer commandBuffer, std::vector<GameObject> & gameObjects)
+void RenderSystem::renderGameObjects(Frame_info::FrameInfo& frameInfo, std::vector<GameObject>& gameObjects)
 {
-	int i = 0;
-	for (auto& obj : gameObjects) {
-		i++;
-		obj.transform2d.rotation = glm::mod(obj.transform2d.rotation + 0.0001f * i, 2 * pi<float>);
+	pipeline->bind(frameInfo.commandBuffer);
 
-	}
-	pipeline->bind(commandBuffer);
+	auto projectionView = frameInfo.camera.getProjection() * frameInfo.camera.getView();
 
 	for (auto& obj : gameObjects)
 	{
-
 		SimplePushConstantData push{};
-		push.offset = obj.transform2d.translation;
-		push.color = obj.color;
-		push.transform = obj.transform2d.mat2();
+		auto modelMatrix = obj.transform.mat4();
+		push.transform = projectionView * modelMatrix;
+		push.normalMatrix = obj.transform.normalMatrix();
 
 		vkCmdPushConstants(
-			commandBuffer,
+			frameInfo.commandBuffer,
 			pipelineLayout,
 			VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 			0,
 			sizeof(SimplePushConstantData),
 			&push
 		);
-		obj.model->bind(commandBuffer);
-		obj.model->draw(commandBuffer);
+		obj.model->bind(frameInfo.commandBuffer);
+		obj.model->draw(frameInfo.commandBuffer);
 	}
 }

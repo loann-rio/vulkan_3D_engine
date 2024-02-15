@@ -22,8 +22,6 @@ public:
 
 	void run();
 
-
-
 private:
 	void loadGameObjects();
 

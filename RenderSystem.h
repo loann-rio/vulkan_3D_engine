@@ -3,6 +3,8 @@
 #include "Pipeline.h"
 #include "device.h"
 #include "GameObject.h"
+#include "Camera.h"
+#include "Frame_info.h"
 
 #include <memory>
 #include <vector>
@@ -18,7 +20,7 @@ public:
 
 	RenderSystem(const RenderSystem&) = delete;
 	RenderSystem& operator=(const RenderSystem&) = delete;
-	void renderGameObjects(VkCommandBuffer commandBuffer, std::vector<GameObject> & gameObjects);
+	void renderGameObjects(Frame_info::FrameInfo& frameInfo, std::vector<GameObject> & gameObjects);
 
 
 private:

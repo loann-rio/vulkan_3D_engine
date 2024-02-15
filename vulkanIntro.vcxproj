@@ -104,7 +104,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\VulkanSDK\1.3.275.0\Include;C:\Users\riolo\OneDrive\Documents\Visual Studio 2022\Libraries\glfw-3.3.9.bin.WIN64\include;C:\Users\riolo\OneDrive\Documents\Visual Studio 2022\Libraries\glm-1.0.0;C:\Users\riolo\OneDrive\Documents\Visual Studio 2022\Libraries\glfw-3.3.9.bin.WIN64;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\riolo\OneDrive\Documents\Visual Studio 2022\Libraries\tinyobjectloader;C:\VulkanSDK\1.3.275.0\Include;C:\Users\riolo\OneDrive\Documents\Visual Studio 2022\Libraries\glfw-3.3.9.bin.WIN64\include;C:\Users\riolo\OneDrive\Documents\Visual Studio 2022\Libraries\glm-1.0.0;C:\Users\riolo\OneDrive\Documents\Visual Studio 2022\Libraries\glfw-3.3.9.bin.WIN64;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
@@ -122,7 +122,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\VulkanSDK\1.3.275.0\Include;C:\Users\riolo\OneDrive\Documents\Visual Studio 2022\Libraries\glfw-3.3.9.bin.WIN64\include;C:\Users\riolo\OneDrive\Documents\Visual Studio 2022\Libraries\glm-1.0.0;C:\Users\riolo\OneDrive\Documents\Visual Studio 2022\Libraries\glfw-3.3.9.bin.WIN64;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\riolo\OneDrive\Documents\Visual Studio 2022\Libraries\tinyobjectloader;C:\VulkanSDK\1.3.275.0\Include;C:\Users\riolo\OneDrive\Documents\Visual Studio 2022\Libraries\glfw-3.3.9.bin.WIN64\include;C:\Users\riolo\OneDrive\Documents\Visual Studio 2022\Libraries\glm-1.0.0;C:\Users\riolo\OneDrive\Documents\Visual Studio 2022\Libraries\glfw-3.3.9.bin.WIN64;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
@@ -136,25 +136,35 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="App.cpp" />
+    <ClCompile Include="Buffer.cpp" />
+    <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Device.cpp" />
+    <ClCompile Include="Frame_info.cpp" />
     <ClCompile Include="GameObject.cpp" />
+    <ClCompile Include="KeyboardMovementController.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Model.cpp" />
     <ClCompile Include="Pipeline.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="RenderSystem.cpp" />
     <ClCompile Include="Swap_chain.cpp" />
+    <ClCompile Include="Utils.cpp" />
     <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h" />
+    <ClInclude Include="Buffer.h" />
+    <ClInclude Include="Camera.h" />
     <ClInclude Include="Device.h" />
+    <ClInclude Include="Frame_info.h" />
     <ClInclude Include="GameObject.h" />
+    <ClInclude Include="KeyboardMovementController.h" />
     <ClInclude Include="Model.h" />
     <ClInclude Include="Pipeline.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="RenderSystem.h" />
     <ClInclude Include="Swap_chain.h" />
+    <ClInclude Include="Utils.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>
   <ItemGroup>

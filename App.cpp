@@ -1,15 +1,26 @@
 #include "App.h"
 
+#include "KeyboardMovementController.h"
 #include "RenderSystem.h"
+#include "Camera.h"
+#include "Buffer.h"
+#include "Frame_info.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
 
 #include <stdexcept>
 #include <array>
 #include <cassert>
+#include <iostream>
+#include <chrono>
 
+struct GlobalUbo {
+    glm::mat4 projectionView{};
+    glm::vec3 lightDir = glm::normalize(glm::vec3(1.f, -3.f, -1.f));
+};
 
 App::App() { loadGameObjects(); }
 
@@ -17,16 +28,65 @@ App::~App() { }
 
 void App::run()
 {
+    std::vector<std::unique_ptr<Buffer>> uboBuffers(Swap_chain::MAX_FRAMES_IN_FLIGHT);
+    for (int i = 0; i < uboBuffers.size(); i++)
+    {
+        uboBuffers[i] = std::make_unique<Buffer>(
+            device,
+            sizeof(GlobalUbo),
+            1,
+            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+            device.properties.limits.minUniformBufferOffsetAlignment
+        );
+
+        uboBuffers[i]->map();
+    }
+
 	RenderSystem renderSystem{ device, renderer.getSwapChainRenderPass() };
+    Camera camera{};
+    camera.setViewTarget(glm::vec3(-1.f, -2.f, 2.f), glm::vec3(0.f, 0.f, 2.5f));
+
+    auto viewerObject = GameObject::createGameObject();
+    KeyboardMovementController cameraController{};
+
+    auto currentTime = std::chrono::high_resolution_clock::now();
+
 	while (!window.shouldClose())
 	{
 		glfwPollEvents();
+
+        auto newTime = std::chrono::high_resolution_clock::now();
+        float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
+        currentTime = newTime;
+
+        cameraController.moveInPlaneXZ(window.getGLFWwindow(), frameTime, viewerObject);
+        camera.setViewYXZ(viewerObject.transform.translation, viewerObject.transform.rotation);
+
+        float aspec = renderer.getAspectRatio();
+        camera.setPerspectiveProjection(glm::radians(50.f), aspec, .1f, 10.0f);
+
 		if (auto commandBuffer = renderer.beginFrame()) {
+            int frameIndex = renderer.getFrameIndex();
+            Frame_info::FrameInfo frameInfo{
+                frameIndex,
+                frameTime,
+                commandBuffer,
+                camera
+            };
+            
+            // update
+            GlobalUbo ubo{};
+            ubo.projectionView = camera.getProjection() * camera.getView();
+            uboBuffers[frameIndex]->writeToBuffer(&ubo);
+            uboBuffers[frameIndex]->flush();
+
+            // render
+
 			renderer.beginSwapChainRenderPass(commandBuffer);
-			renderSystem.renderGameObjects(commandBuffer, gameObjects);
+            renderSystem.renderGameObjects(frameInfo, gameObjects);
 			renderer.endSwapChainRenderPass(commandBuffer);
 			renderer.endFrame();
-
 		}
 	}
 
@@ -34,23 +94,11 @@ void App::run()
 }
 
 void App::loadGameObjects() {
-	std::vector<Model::Vertex> vertices{
-		{{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-		{{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-		{{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}} 
-	};
-	
-	for (unsigned int i = 0; i < 1000; i++)
-	{
-		auto model = std::make_shared<Model>(device, vertices);
-		auto triangle = GameObject::createGameObject();
-		triangle.model = model;
-		triangle.color = { static_cast <float> (rand()) / static_cast <float> (RAND_MAX) ,static_cast <float> (rand()) / static_cast <float> (RAND_MAX), static_cast <float> (rand()) / static_cast <float> (RAND_MAX)};
-		//triangle.transform2d.translation.x = .8f;
-		triangle.transform2d.scale = { .5f, .5f };
-		triangle.transform2d.rotation = .25f * 2 * pi<float>;
+    std::shared_ptr<Model> model = Model::createModelFromFile(device, "models/smooth_vase.obj");
 
-		gameObjects.push_back(std::move(triangle));
-	}
-	
+    auto gameObject = GameObject::createGameObject();
+    gameObject.model = model;
+    gameObject.transform.translation = { .0f, .5f, 2.5f };
+    gameObject.transform.scale = { 3.f, 3.f , 3.f };
+    gameObjects.push_back(std::move(gameObject));
 }

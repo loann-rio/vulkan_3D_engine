@@ -2,22 +2,19 @@
 
 #include "model.h"
 
+#include <glm/gtc/matrix_transform.hpp>
+
 #include <memory>
 
-struct Transform2dComponent {
-	glm::vec2 translation{};
-	glm::vec2 scale{ 1.f, 1.f };
-	float rotation;
+struct TransformComponent {
+	glm::vec3 translation{};
+	glm::vec3 scale{ 1.f, 1.f , 1.f};
+	glm::vec3 rotation{};
 
-	glm::mat2 mat2() {
-		const float s = glm::sin(rotation);
-		const float c = glm::cos(rotation);
-		glm::mat2 rotMatrix{ {c, s}, {-s, c} };
-		glm::mat2 scaleMat{ {scale.x, .0f}, {.0f, scale.y} };
-
-		return rotMatrix * scaleMat;
-	}
+	glm::mat4 mat4();
+	glm::mat3 normalMatrix();
 };
+
 
 class GameObject
 {
@@ -40,11 +37,9 @@ public:
 
 	id_t getId() { return id; }
 
-	Transform2dComponent transform2d{};
+	TransformComponent transform{};
 
 private:
 	GameObject(id_t obId) : id{obId} {}
 	id_t id;
-
 };
-
