@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Camera.h"
+#include "GameObject.h"
 
 #include <vulkan/vulkan.h>
 
@@ -12,6 +13,8 @@ public:
 		float frameTime;
 		VkCommandBuffer commandBuffer;
 		Camera& camera;
+		VkDescriptorSet globalDescriptorSet;
+		GameObject::Map& gameObjects;
 	};
 };
 

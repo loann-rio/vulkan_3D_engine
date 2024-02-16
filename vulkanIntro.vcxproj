@@ -138,6 +138,7 @@
     <ClCompile Include="App.cpp" />
     <ClCompile Include="Buffer.cpp" />
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="descriptors.cpp" />
     <ClCompile Include="Device.cpp" />
     <ClCompile Include="Frame_info.cpp" />
     <ClCompile Include="GameObject.cpp" />
@@ -155,12 +156,14 @@
     <ClInclude Include="App.h" />
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="descriptors.h" />
     <ClInclude Include="Device.h" />
     <ClInclude Include="Frame_info.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="KeyboardMovementController.h" />
     <ClInclude Include="Model.h" />
     <ClInclude Include="Pipeline.h" />
+    <ClInclude Include="preBuild.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="RenderSystem.h" />
     <ClInclude Include="Swap_chain.h" />

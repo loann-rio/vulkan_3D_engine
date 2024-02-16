@@ -15,16 +15,16 @@ constexpr T pi = T(3.1415926535897932385L);
 class RenderSystem
 {
 public:
-	RenderSystem(Device& device, VkRenderPass renderPass);
+	RenderSystem(Device& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
 	~RenderSystem();
 
 	RenderSystem(const RenderSystem&) = delete;
 	RenderSystem& operator=(const RenderSystem&) = delete;
-	void renderGameObjects(Frame_info::FrameInfo& frameInfo, std::vector<GameObject> & gameObjects);
+	void renderGameObjects(Frame_info::FrameInfo& frameInfo);
 
 
 private:
-	void createPipelineLayout();
+	void createPipelineLayout(VkDescriptorSetLayout globalSetLayout);
 	void createPipeline(VkRenderPass renderPass);
 
 	Device &device;

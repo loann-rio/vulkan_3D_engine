@@ -57,6 +57,7 @@ Device::Device(Window& window) : window{ window } {
 }
 
 Device::~Device() {
+    std::cout << "device destructor called \n";
     vkDestroyCommandPool(device_, commandPool, nullptr);
     vkDestroyDevice(device_, nullptr);
 
