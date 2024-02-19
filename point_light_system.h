@@ -9,25 +9,24 @@
 #include <memory>
 #include <vector>
 
-template<class T>
-constexpr T pi = T(3.1415926535897932385L);
-
-class RenderSystem
+class PointLightSystem
 {
 public:
-	RenderSystem(Device& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
-	~RenderSystem();
+	PointLightSystem(Device& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
+	~PointLightSystem();
 
-	RenderSystem(const RenderSystem&) = delete;
-	RenderSystem& operator=(const RenderSystem&) = delete;
-	void renderGameObjects(FrameInfo& frameInfo);
+	PointLightSystem(const PointLightSystem&) = delete;
+	PointLightSystem& operator=(const PointLightSystem&) = delete;
+
+	void update(FrameInfo& frameInfo, GlobalUbo& ubo);
+	void render(FrameInfo& frameInfo);
 
 
 private:
 	void createPipelineLayout(VkDescriptorSetLayout globalSetLayout);
 	void createPipeline(VkRenderPass renderPass);
 
-	Device &device;
+	Device& device;
 
 	std::unique_ptr<Pipeline> pipeline;
 	VkPipelineLayout pipelineLayout;

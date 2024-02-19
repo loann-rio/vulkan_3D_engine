@@ -66,6 +66,12 @@
     <ClCompile Include="descriptors.cpp">
       <Filter>Fichiers sources</Filter>
     </ClCompile>
+    <ClCompile Include="point_light_system.cpp">
+      <Filter>Fichiers sources</Filter>
+    </ClCompile>
+    <ClCompile Include="TextOverlay.cpp">
+      <Filter>Fichiers sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Window.h">
@@ -116,12 +122,28 @@
     <ClInclude Include="descriptors.h">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
+    <ClInclude Include="point_light_system.h">
+      <Filter>Fichiers d%27en-tête</Filter>
+    </ClInclude>
+    <ClInclude Include="TextOverlay.h">
+      <Filter>Fichiers d%27en-tête</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="simple_shader.vert" />
-    <None Include="simple_shader.frag" />
     <None Include="compile.bat">
       <Filter>Fichiers d%27en-tête</Filter>
+    </None>
+    <None Include="simple_shader.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="simple_shader.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="point_light.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="point_light.frag">
+      <Filter>shaders</Filter>
     </None>
   </ItemGroup>
 </Project>

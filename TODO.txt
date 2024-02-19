@@ -1,0 +1,19 @@
+light bloom
+load of only one model for multiple gameObject
+update of elemnt on graphic card
+uv mapping
+light as game object
+obtimize maximum number of light
+add global light
+uv mapping of .obj
+multiSampling
+flush model ram memory + Vram when done using
+
+
+
+
+
+
+
+water simulation
+fire simulation

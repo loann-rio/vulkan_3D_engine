@@ -7,6 +7,7 @@
 #include "Buffer.h"
 #include "Frame_info.h"
 #include "preBuild.h"
+#include "point_light_system.h"
 
 
 // glm
@@ -22,16 +23,6 @@
 #include <cassert>
 #include <iostream>
 #include <chrono>
-
-
-struct GlobalUbo {
-    glm::mat4 projectionView{};
-    //alignas(16) glm::vec3 lightDir = glm::normalize(glm::vec3(1.f, -3.f, -1.f));
-    glm::vec4 ambientLightColor{ 1.f, 1.f,  1.f, .02f };
-    glm::vec3 lightPosition{ 5.f, -10.0f, 3.f };
-    alignas(16) glm::vec4 lightColor{ 1.f, 1.f, .5f, 50.f }; // with w to be the intencity
-
-};
 
 App::App() { 
     globalPool = DescriptorPool::Builder(device)
@@ -74,7 +65,10 @@ void App::run()
             .build(globalDescriptorSet[i]);
     }
 
+    PointLightSystem pointLightSystem{ device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
 	RenderSystem renderSystem{ device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
+
+    
 
     // camera setting
     Camera camera{};
@@ -105,7 +99,7 @@ void App::run()
 
 		if (auto commandBuffer = renderer.beginFrame()) {
             int frameIndex = renderer.getFrameIndex();
-            Frame_info::FrameInfo frameInfo{
+            FrameInfo frameInfo{
                 frameIndex,
                 frameTime,
                 commandBuffer,
@@ -116,21 +110,27 @@ void App::run()
             
             // update
             GlobalUbo ubo{};
-            ubo.projectionView = camera.getProjection() * camera.getView();
-            //ubo.lightDir = glm::normalize(glm::vec3(cos(glm::radians((float)frame/100.0f)), -3.f, sin(glm::radians((float)frame/100.f))));
+            ubo.projection = camera.getProjection();
+            ubo.view = camera.getView();
+            ubo.inverseView = camera.getInverseView();
 
+            pointLightSystem.update(frameInfo, ubo);
             uboBuffers[frameIndex]->writeToBuffer(&ubo);
             uboBuffers[frameIndex]->flush();
 
             // render
 			renderer.beginSwapChainRenderPass(commandBuffer);
+
             renderSystem.renderGameObjects(frameInfo);
+            pointLightSystem.render(frameInfo);
+
             renderer.endSwapChainRenderPass(commandBuffer);
             renderer.endFrame();
 		}
 
         frame = (frame + 1) % 36000;
 	}
+    globalSetLayout = nullptr;
 
 	vkDeviceWaitIdle(device.device());
 }
@@ -141,17 +141,17 @@ void App::loadGameObjects() {
 
     auto gameObject = GameObject::createGameObject();
     gameObject.model = model;
-    gameObject.transform.translation = { .0f, 0.0f, .0f };
-    gameObject.transform.scale = { 1.f, 1.f , 1.f };
+    gameObject.transform.translation = { .0f, .0f, .0f };
+    gameObject.transform.scale = { 1.01f, 1.01f , 1.01f };
+    //gameObject.transform.rotation.x = glm::radians(90.0f);
     gameObjects.emplace(gameObject.getId(), std::move(gameObject));
-
 
     Model::Builder modelBuilder{};
     modelBuilder.vertices = {
-            {{-0.5f, 0, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, -1.0f, 0.0f}},
-            {{-0.5f, 0,  0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, -1.0f, 0.0f}},
-            {{ 0.5f, 0, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, -1.0f, 0.0f}},
-            {{ 0.5f, 0,  0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, -1.0f, 0.0f}} };
+            {{-0.5f, 0, -0.5f}, {.5f, .5f, .5f}, {0.0f, -1.0f, 0.0f}},
+            {{-0.5f, 0,  0.5f}, {.5f, .5f, .5f}, {0.0f, -1.0f, 0.0f}},
+            {{ 0.5f, 0, -0.5f}, {.5f, .5f, .5f}, {0.0f, -1.0f, 0.0f}},
+            {{ 0.5f, 0,  0.5f}, {.5f, .5f, .5f}, {0.0f, -1.0f, 0.0f}} };
     modelBuilder.indices = { 0, 1, 3, 0, 2, 3 };
 
     auto plane = GameObject::createGameObject();
@@ -159,5 +159,23 @@ void App::loadGameObjects() {
     plane.transform.translation = { .0f, .0f, .0f };
     plane.transform.scale = { 20.f, 1.f , 20.f };
     gameObjects.emplace(plane.getId(), std::move(plane));
+
+    std::vector<glm::vec3> lightColors{
+      {1.f, .1f, .1f},
+      {.1f, .1f, 1.f},
+      {.1f, 1.f, .1f},
+      {1.f, 1.f, .1f},
+      {.1f, 1.f, 1.f},
+      {1.f, 1.f, 1.f}  
+    };
+
+    for (int i = 0; i < lightColors.size(); i++) {
+        auto pointLight = GameObject::makePointLight(0.5f, 0.05f, lightColors[i]);
+        auto rotateLight = glm::rotate(glm::mat4(1.f), (i * glm::two_pi<float>()) / lightColors.size(), {0.f, -1.0f, 0.f});
+        pointLight.transform.translation = glm::vec3(rotateLight * glm::vec4(-1.f, -1.f, -1.f, 1.f));
+        gameObjects.emplace(pointLight.getId(), std::move(pointLight));
+    }
+
+    
 
 }
