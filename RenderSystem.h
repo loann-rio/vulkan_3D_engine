@@ -15,7 +15,7 @@ constexpr T pi = T(3.1415926535897932385L);
 class RenderSystem
 {
 public:
-	RenderSystem(std::shared_ptr<Device> device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
+	RenderSystem(Device& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
 	~RenderSystem();
 
 	RenderSystem(const RenderSystem&) = delete;
@@ -27,7 +27,7 @@ private:
 	void createPipelineLayout(VkDescriptorSetLayout globalSetLayout);
 	void createPipeline(VkRenderPass renderPass);
 
-	std::shared_ptr<Device> device;
+	Device &device;
 
 	std::unique_ptr<Pipeline> pipeline;
 	VkPipelineLayout pipelineLayout;

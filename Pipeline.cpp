@@ -9,19 +9,20 @@
 
 
 Pipeline::Pipeline(
-	std::shared_ptr<Device> device,
+	Device& device,
 	const std::string& vertFilepath,
 	const std::string& fragFilepath,
 	const PipelineConfigInfo& configInfo)
 	: device{ device } {
 
+	std::cout << device.getMaxUsableSampleCount(device.properties);
 	createGraphicsPipeline(vertFilepath, fragFilepath, configInfo);
 }
 
 Pipeline::~Pipeline() {
-	vkDestroyShaderModule(device->device(), vertShaderModule, nullptr);
-	vkDestroyShaderModule(device->device(), fragShaderModule, nullptr);
-	vkDestroyPipeline(device->device(), graphicsPipeline, nullptr);
+	vkDestroyShaderModule(device.device(), vertShaderModule, nullptr);
+	vkDestroyShaderModule(device.device(), fragShaderModule, nullptr);
+	vkDestroyPipeline(device.device(), graphicsPipeline, nullptr);
 }
 
 std::vector<char> Pipeline::readFile(const std::string& filepath)
@@ -107,7 +108,7 @@ void Pipeline::createGraphicsPipeline(const std::string& vertFilepath,
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
 	if (vkCreateGraphicsPipelines(
-		device->device(),
+		device.device(),
 		VK_NULL_HANDLE,
 		1,
 		&pipelineInfo,
@@ -124,7 +125,7 @@ void Pipeline::createShaderModule(const std::vector<char>& code, VkShaderModule*
 	createInfo.codeSize = code.size();
 	createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
 
-	if (vkCreateShaderModule(device->device(), &createInfo, nullptr, shaderModule) != VK_SUCCESS) {
+	if (vkCreateShaderModule(device.device(), &createInfo, nullptr, shaderModule) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create shader module");
 	}
 }

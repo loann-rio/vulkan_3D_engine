@@ -27,8 +27,7 @@ private:
 	void loadGameObjects();
 
 	Window window{ WIDTH, HEIGHT, "hello" };
-	std::shared_ptr<Device> device = std::make_shared<Device>(window);
-	//Device device{ window };
+	Device device{ window };
 	Renderer renderer{ window, device };
 
 	std::unique_ptr<DescriptorPool> globalPool{};

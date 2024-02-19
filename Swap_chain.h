@@ -14,8 +14,8 @@ class Swap_chain {
 public:
     static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
-    Swap_chain(std::shared_ptr<Device> deviceRef, VkExtent2D windowExtent);
-    Swap_chain(std::shared_ptr<Device> deviceRef, VkExtent2D windowExtent, std::shared_ptr<Swap_chain> previous);
+    Swap_chain(Device& deviceRef, VkExtent2D windowExtent);
+    Swap_chain(Device& deviceRef, VkExtent2D windowExtent, std::shared_ptr<Swap_chain> previous);
     ~Swap_chain();
 
     Swap_chain(const Swap_chain&) = delete;
@@ -73,7 +73,7 @@ private:
     std::vector<VkImage> swapChainImages;
     std::vector<VkImageView> swapChainImageViews;
 
-    std::shared_ptr<Device> device;
+    Device& device;
     VkExtent2D windowExtent;
 
     VkSwapchainKHR swapChain;

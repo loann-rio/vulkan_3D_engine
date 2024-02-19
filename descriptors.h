@@ -13,7 +13,7 @@ public:
 
     class Builder {
     public:
-        Builder(std::shared_ptr<Device> device) : device{ device } {}
+        Builder(Device& device) : device{ device } {}
 
         Builder& addBinding(
             uint32_t binding,
@@ -23,13 +23,13 @@ public:
         std::unique_ptr<DescriptorSetLayout> build() const;
 
     private:
-        std::shared_ptr<Device> device;
+        Device& device;
         std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings{};
     };
 
 
     DescriptorSetLayout(
-        std::shared_ptr<Device> device, std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings);
+        Device& device, std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings);
     ~DescriptorSetLayout();
     DescriptorSetLayout(const DescriptorSetLayout&) = delete;
     DescriptorSetLayout& operator=(const DescriptorSetLayout&) = delete;
@@ -37,7 +37,7 @@ public:
     VkDescriptorSetLayout getDescriptorSetLayout() const { return descriptorSetLayout; }
 
 private:
-    std::shared_ptr<Device> device;
+    Device& device;
     VkDescriptorSetLayout descriptorSetLayout;
     std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings;
 
@@ -51,7 +51,7 @@ class DescriptorPool {
 public:
     class Builder {
     public:
-        Builder(std::shared_ptr<Device> device) : device{ device } {}
+        Builder(Device& device) : device{ device } {}
 
         Builder& addPoolSize(VkDescriptorType descriptorType, uint32_t count);
         Builder& setPoolFlags(VkDescriptorPoolCreateFlags flags);
@@ -59,14 +59,14 @@ public:
         std::unique_ptr<DescriptorPool> build() const;
 
     private:
-        std::shared_ptr<Device> device;
+        Device& device;
         std::vector<VkDescriptorPoolSize> poolSizes{};
         uint32_t maxSets = 1000;
         VkDescriptorPoolCreateFlags poolFlags = 0;
     };
 
     DescriptorPool(
-        std::shared_ptr<Device> device,
+        Device& device,
         uint32_t maxSets,
         VkDescriptorPoolCreateFlags poolFlags,
         const std::vector<VkDescriptorPoolSize>& poolSizes);
@@ -82,7 +82,7 @@ public:
     void resetPool();
 
 private:
-    std::shared_ptr<Device> device;
+    Device& device;
     VkDescriptorPool descriptorPool;
 
     friend class DescriptorWriter;

@@ -12,7 +12,7 @@
 class PointLightSystem
 {
 public:
-	PointLightSystem(std::shared_ptr<Device> device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
+	PointLightSystem(Device& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
 	~PointLightSystem();
 
 	PointLightSystem(const PointLightSystem&) = delete;
@@ -26,7 +26,7 @@ private:
 	void createPipelineLayout(VkDescriptorSetLayout globalSetLayout);
 	void createPipeline(VkRenderPass renderPass);
 
-	std::shared_ptr<Device> device;
+	Device& device;
 
 	std::unique_ptr<Pipeline> pipeline;
 	VkPipelineLayout pipelineLayout;

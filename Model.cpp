@@ -25,14 +25,14 @@ namespace std {
 	};
 }
 
-Model::Model(std::shared_ptr<Device> device, const Model::Builder & builder) : device{device} {
+Model::Model(Device& device, const Model::Builder & builder) : device{device} {
 	createVertexBuffers(builder.vertices);
 	createIndexBuffers(builder.indices);
 }
 
 Model::~Model() {}
 
-std::unique_ptr<Model> Model::createModelFromFile(std::shared_ptr<Device> device, const std::string& filePath)
+std::unique_ptr<Model> Model::createModelFromFile(Device& device, const std::string& filePath)
 {
 	Builder builder{};
 	builder.loadModel(filePath);
@@ -90,7 +90,7 @@ void Model::createVertexBuffers(const std::vector<Vertex>& vertices)
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
 	);
 
-	device->copyBuffer(stagingBuffer.getBuffer(), vertexBuffer->getBuffer(), bufferSize);
+	device.copyBuffer(stagingBuffer.getBuffer(), vertexBuffer->getBuffer(), bufferSize);
 }
 
 void Model::createIndexBuffers(const std::vector<uint32_t>& indices)
@@ -122,7 +122,7 @@ void Model::createIndexBuffers(const std::vector<uint32_t>& indices)
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
 	);
 
-	device->copyBuffer(stagingBuffer.getBuffer(), indexBuffer->getBuffer(), bufferSize);
+	device.copyBuffer(stagingBuffer.getBuffer(), indexBuffer->getBuffer(), bufferSize);
 
 }
 

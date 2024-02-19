@@ -46,7 +46,7 @@ void App::run()
             1,
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-            device->properties.limits.minUniformBufferOffsetAlignment
+            device.properties.limits.minUniformBufferOffsetAlignment
         );
 
         uboBuffers[i]->map();
@@ -130,22 +130,21 @@ void App::run()
 
         frame = (frame + 1) % 36000;
 	}
+    globalSetLayout = nullptr;
 
-	vkDeviceWaitIdle(device->device());
+	vkDeviceWaitIdle(device.device());
 }
 
 void App::loadGameObjects() {
     
-    std::shared_ptr<Model> model = Model::createModelFromFile(device, "models/Koenigsegg.obj");
-    for (int i = 0; i < 1000; i++) {
-        auto gameObject = GameObject::createGameObject();
-        gameObject.model = model;
-        gameObject.transform.translation = { i, .0f, .0f };
-        gameObject.transform.scale = { .1f, -0.1f , .1f };
-        //gameObject.transform.rotation.x = glm::radians(90.0f);
-        gameObjects.emplace(gameObject.getId(), std::move(gameObject));
-    }
-    
+    std::shared_ptr<Model> model = Model::createModelFromFile(device, "models/smooth_vase.obj");
+
+    auto gameObject = GameObject::createGameObject();
+    gameObject.model = model;
+    gameObject.transform.translation = { .0f, .0f, .0f };
+    gameObject.transform.scale = { 1.01f, 1.01f , 1.01f };
+    //gameObject.transform.rotation.x = glm::radians(90.0f);
+    gameObjects.emplace(gameObject.getId(), std::move(gameObject));
 
     Model::Builder modelBuilder{};
     modelBuilder.vertices = {
@@ -173,7 +172,10 @@ void App::loadGameObjects() {
     for (int i = 0; i < lightColors.size(); i++) {
         auto pointLight = GameObject::makePointLight(0.5f, 0.05f, lightColors[i]);
         auto rotateLight = glm::rotate(glm::mat4(1.f), (i * glm::two_pi<float>()) / lightColors.size(), {0.f, -1.0f, 0.f});
-        pointLight.transform.translation = glm::vec3(rotateLight * glm::vec4(-2.f, -2.f, -2.f, 8.f));
+        pointLight.transform.translation = glm::vec3(rotateLight * glm::vec4(-1.f, -1.f, -1.f, 1.f));
         gameObjects.emplace(pointLight.getId(), std::move(pointLight));
     }
+
+    
+
 }
