@@ -30,10 +30,10 @@ std::unique_ptr<DescriptorSetLayout> DescriptorSetLayout::Builder::build() const
 // *************** Descriptor Set Layout *********************
 
 DescriptorSetLayout::DescriptorSetLayout(
-    Device& Device, std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings)
+    Device& device, std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings)
     : device{ device }, bindings{ bindings } {
     std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings{};
-    for (auto kv : bindings) {
+    for (auto& kv : bindings) {
         setLayoutBindings.push_back(kv.second);
     }
 
@@ -43,7 +43,7 @@ DescriptorSetLayout::DescriptorSetLayout(
     descriptorSetLayoutInfo.pBindings = setLayoutBindings.data();
 
     if (vkCreateDescriptorSetLayout(
-        Device.device(),
+        device.device(),
         &descriptorSetLayoutInfo,
         nullptr,
         &descriptorSetLayout) != VK_SUCCESS) {
@@ -99,7 +99,6 @@ DescriptorPool::DescriptorPool(
 }
 
 DescriptorPool::~DescriptorPool() {
-    std::cout << "descriptor destructor called \n";
     vkDestroyDescriptorPool(device.device(), descriptorPool, nullptr);
 }
 

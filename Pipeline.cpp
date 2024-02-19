@@ -15,7 +15,6 @@ Pipeline::Pipeline(
 	const PipelineConfigInfo& configInfo)
 	: device{ device } {
 
-	std::cout << device.getMaxUsableSampleCount(device.properties);
 	createGraphicsPipeline(vertFilepath, fragFilepath, configInfo);
 }
 

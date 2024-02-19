@@ -130,7 +130,6 @@ void App::run()
 
         frame = (frame + 1) % 36000;
 	}
-    globalSetLayout = nullptr;
 
 	vkDeviceWaitIdle(device.device());
 }
@@ -175,7 +174,4 @@ void App::loadGameObjects() {
         pointLight.transform.translation = glm::vec3(rotateLight * glm::vec4(-1.f, -1.f, -1.f, 1.f));
         gameObjects.emplace(pointLight.getId(), std::move(pointLight));
     }
-
-    
-
 }
