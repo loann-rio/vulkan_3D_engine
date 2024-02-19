@@ -14,7 +14,7 @@ struct SimplePushConstantData {
 	glm::mat4 normalMatrix{ 1.f };
 };
 
-RenderSystem::RenderSystem(Device& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout) : device{device}
+RenderSystem::RenderSystem(std::shared_ptr<Device> device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout) : device{device}
 {
 	createPipelineLayout(globalSetLayout);
 	createPipeline(renderPass);
@@ -22,7 +22,7 @@ RenderSystem::RenderSystem(Device& device, VkRenderPass renderPass, VkDescriptor
 
 RenderSystem::~RenderSystem()
 {
-	vkDestroyPipelineLayout(device.device(), pipelineLayout, nullptr);
+	vkDestroyPipelineLayout(device->device(), pipelineLayout, nullptr);
 }
 
 void RenderSystem::createPipelineLayout(VkDescriptorSetLayout globalSetLayout)
@@ -41,7 +41,7 @@ void RenderSystem::createPipelineLayout(VkDescriptorSetLayout globalSetLayout)
 	pipelineLayoutInfo.pushConstantRangeCount = 1;
 	pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 
-	if (vkCreatePipelineLayout(device.device(), &pipelineLayoutInfo, nullptr, &pipelineLayout) !=
+	if (vkCreatePipelineLayout(device->device(), &pipelineLayoutInfo, nullptr, &pipelineLayout) !=
 		VK_SUCCESS) {
 		throw std::runtime_error("fail to create pipeline layout");
 	}

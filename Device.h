@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <vulkan/vulkan.h>
+#include <memory>
 
 
 struct SwapChainSupportDetails {
@@ -35,11 +36,11 @@ public:
     ~Device();
 
     // Not copyable or movable
-    Device(const Device&) = delete;
-    Device& operator=(const Device&) = delete;
+    Device(const std::shared_ptr<Device>) = delete;
+    std::shared_ptr<Device> operator=(const std::shared_ptr<Device>) = delete;
 
-    Device(Device&&) = delete;
-    Device& operator=(Device&&) = delete;
+    Device(std::shared_ptr<Device>&) = delete;
+    std::shared_ptr<Device> operator=(std::shared_ptr<Device>&) = delete;
     
     VkCommandPool getCommandPool() const { return commandPool; }
     VkDevice device() const { return device_; }

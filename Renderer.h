@@ -14,7 +14,7 @@ class Renderer
 public:
 
 
-	Renderer(Window& window, Device& device);
+	Renderer(Window& window, std::shared_ptr<Device> device);
 	~Renderer();
 
 	Renderer(const Renderer&) = delete;
@@ -48,7 +48,7 @@ private:
 	void recreateSwapChain();
 
 	Window& window;
-	Device& device;
+	std::shared_ptr<Device> device;
 
 	std::unique_ptr<Swap_chain> swapChain;
 	std::vector<VkCommandBuffer> commandBuffers;

@@ -36,13 +36,13 @@ public:
 		void loadModel(const std::string& filepath);
 	};
 
-	Model(Device& device, const Model::Builder &builder);
+	Model(std::shared_ptr<Device> device, const Model::Builder &builder);
 	~Model();
 
 	Model(const Model&) = delete;
 	Model& operator=(const Model&) = delete;
 
-	static std::unique_ptr<Model> createModelFromFile(Device &device, const std::string &filePath);
+	static std::unique_ptr<Model> createModelFromFile(std::shared_ptr<Device> device, const std::string &filePath);
 
 	void bind(VkCommandBuffer commandBuffer);
 	void draw(VkCommandBuffer commandBuffer);
@@ -51,7 +51,7 @@ private:
 	void createVertexBuffers(const std::vector<Vertex>& vertices);
 	void createIndexBuffers(const std::vector<uint32_t>& indices);
 
-	Device& device;
+	std::shared_ptr<Device> device;
 
 	std::unique_ptr<Buffer> vertexBuffer;
 	uint32_t vertexCount;

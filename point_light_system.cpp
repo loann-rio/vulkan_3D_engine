@@ -15,7 +15,7 @@ struct PointLightPushConstants {
 	float radius;
 };
 
-PointLightSystem::PointLightSystem(Device& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout) : device{ device }
+PointLightSystem::PointLightSystem(std::shared_ptr<Device> device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout) : device{ device }
 {
 	createPipelineLayout(globalSetLayout);
 	createPipeline(renderPass);
@@ -23,7 +23,7 @@ PointLightSystem::PointLightSystem(Device& device, VkRenderPass renderPass, VkDe
 
 PointLightSystem::~PointLightSystem()
 {
-	vkDestroyPipelineLayout(device.device(), pipelineLayout, nullptr);
+	vkDestroyPipelineLayout(device->device(), pipelineLayout, nullptr);
 }
 
 void PointLightSystem::createPipelineLayout(VkDescriptorSetLayout globalSetLayout)
@@ -42,7 +42,7 @@ void PointLightSystem::createPipelineLayout(VkDescriptorSetLayout globalSetLayou
 	pipelineLayoutInfo.pushConstantRangeCount = 1;
 	pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 
-	if (vkCreatePipelineLayout(device.device(), &pipelineLayoutInfo, nullptr, &pipelineLayout) !=
+	if (vkCreatePipelineLayout(device->device(), &pipelineLayoutInfo, nullptr, &pipelineLayout) !=
 		VK_SUCCESS) {
 		throw std::runtime_error("fail to create pipeline layout");
 	}

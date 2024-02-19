@@ -1,12 +1,13 @@
 #pragma once
 
 #include "Device.h"
+#include <memory>
 
 class Buffer
 {
 public:
     Buffer(
-        Device& device,
+        std::shared_ptr<Device> device,
         VkDeviceSize instanceSize,
         uint32_t instanceCount,
         VkBufferUsageFlags usageFlags,
@@ -42,7 +43,7 @@ public:
 private:
     static VkDeviceSize getAlignment(VkDeviceSize instanceSize, VkDeviceSize minOffsetAlignment);
 
-    Device& device;
+    std::shared_ptr<Device> device;
     void* mapped = nullptr;
     VkBuffer buffer = VK_NULL_HANDLE;
     VkDeviceMemory memory = VK_NULL_HANDLE;

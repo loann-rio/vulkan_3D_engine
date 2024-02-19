@@ -7,7 +7,7 @@
 #include <memory>
 #include <vector>
 
-static std::unique_ptr<Model> createPlane(Device& device, int sizePlane, glm::vec3 color) {
+static std::unique_ptr<Model> createPlane(std::shared_ptr<Device> device, int sizePlane, glm::vec3 color) {
 	Model::Builder modelBuilder{};
 
 	for (unsigned int i = 0; i < sizePlane; i++) {

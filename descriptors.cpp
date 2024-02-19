@@ -30,7 +30,7 @@ std::unique_ptr<DescriptorSetLayout> DescriptorSetLayout::Builder::build() const
 // *************** Descriptor Set Layout *********************
 
 DescriptorSetLayout::DescriptorSetLayout(
-    Device& Device, std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings)
+    std::shared_ptr<Device> Device, std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings)
     : device{ device }, bindings{ bindings } {
     std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings{};
     for (auto kv : bindings) {
@@ -43,7 +43,7 @@ DescriptorSetLayout::DescriptorSetLayout(
     descriptorSetLayoutInfo.pBindings = setLayoutBindings.data();
 
     if (vkCreateDescriptorSetLayout(
-        Device.device(),
+        Device->device(),
         &descriptorSetLayoutInfo,
         nullptr,
         &descriptorSetLayout) != VK_SUCCESS) {
@@ -52,7 +52,7 @@ DescriptorSetLayout::DescriptorSetLayout(
 }
 
 DescriptorSetLayout::~DescriptorSetLayout() {
-    vkDestroyDescriptorSetLayout(device.device(), descriptorSetLayout, nullptr);
+    vkDestroyDescriptorSetLayout(device->device(), descriptorSetLayout, nullptr);
 }
 
 // *************** Descriptor Pool Builder *********************
@@ -80,7 +80,7 @@ std::unique_ptr<DescriptorPool> DescriptorPool::Builder::build() const {
 // *************** Descriptor Pool *********************
 
 DescriptorPool::DescriptorPool(
-    Device& device,
+    std::shared_ptr<Device> device,
     uint32_t maxSets,
     VkDescriptorPoolCreateFlags poolFlags,
     const std::vector<VkDescriptorPoolSize>& poolSizes)
@@ -92,7 +92,7 @@ DescriptorPool::DescriptorPool(
     descriptorPoolInfo.maxSets = maxSets;
     descriptorPoolInfo.flags = poolFlags;
 
-    if (vkCreateDescriptorPool(device.device(), &descriptorPoolInfo, nullptr, &descriptorPool) !=
+    if (vkCreateDescriptorPool(device->device(), &descriptorPoolInfo, nullptr, &descriptorPool) !=
         VK_SUCCESS) {
         throw std::runtime_error("failed to create descriptor pool!");
     }
@@ -100,7 +100,7 @@ DescriptorPool::DescriptorPool(
 
 DescriptorPool::~DescriptorPool() {
     std::cout << "descriptor destructor called \n";
-    vkDestroyDescriptorPool(device.device(), descriptorPool, nullptr);
+    vkDestroyDescriptorPool(device->device(), descriptorPool, nullptr);
 }
 
 bool DescriptorPool::allocateDescriptor(
@@ -113,7 +113,7 @@ bool DescriptorPool::allocateDescriptor(
 
     // Might want to create a "DescriptorPoolManager" class that handles this case, and builds
     // a new pool whenever an old pool fills up. But this is beyond our current scope
-    if (vkAllocateDescriptorSets(device.device(), &allocInfo, &descriptor) != VK_SUCCESS) {
+    if (vkAllocateDescriptorSets(device->device(), &allocInfo, &descriptor) != VK_SUCCESS) {
         return false;
     }
     return true;
@@ -121,14 +121,14 @@ bool DescriptorPool::allocateDescriptor(
 
 void DescriptorPool::freeDescriptors(std::vector<VkDescriptorSet>& descriptors) const {
     vkFreeDescriptorSets(
-        device.device(),
+        device->device(),
         descriptorPool,
         static_cast<uint32_t>(descriptors.size()),
         descriptors.data());
 }
 
 void DescriptorPool::resetPool() {
-    vkResetDescriptorPool(device.device(), descriptorPool, 0);
+    vkResetDescriptorPool(device->device(), descriptorPool, 0);
 }
 
 // *************** Descriptor Writer *********************
@@ -191,5 +191,5 @@ void DescriptorWriter::overwrite(VkDescriptorSet& set) {
     for (auto& write : writes) {
         write.dstSet = set;
     }
-    vkUpdateDescriptorSets(pool.device.device(), writes.size(), writes.data(), 0, nullptr);
+    vkUpdateDescriptorSets(pool.device->device(), writes.size(), writes.data(), 0, nullptr);
 }

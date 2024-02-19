@@ -5,7 +5,7 @@
 #include <cassert>
 
 
-Renderer::Renderer(Window& window, Device& device) : window{window} , device{device}
+Renderer::Renderer(Window& window, std::shared_ptr<Device> device) : window{window} , device{device}
 {
 	recreateSwapChain();
 	createCommandBuffer();
@@ -22,7 +22,7 @@ void Renderer::recreateSwapChain()
 		glfwWaitEvents();
 	}
 
-	vkDeviceWaitIdle(device.device());
+	vkDeviceWaitIdle(device->device());
 
 	if (swapChain == nullptr) {
 		swapChain = std::make_unique<Swap_chain>(device, extent);
@@ -137,10 +137,10 @@ void Renderer::createCommandBuffer()
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandPool = device.getCommandPool();
+	allocInfo.commandPool = device->getCommandPool();
 	allocInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
 
-	if (vkAllocateCommandBuffers(device.device(), &allocInfo, commandBuffers.data()) !=
+	if (vkAllocateCommandBuffers(device->device(), &allocInfo, commandBuffers.data()) !=
 		VK_SUCCESS) {
 		throw std::runtime_error("failed to allocate command buffer");
 	}
@@ -148,6 +148,6 @@ void Renderer::createCommandBuffer()
 
 void Renderer::freeCommandBuffer()
 {
-	vkFreeCommandBuffers(device.device(), device.getCommandPool(), static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+	vkFreeCommandBuffers(device->device(), device->getCommandPool(), static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
 	commandBuffers.clear();
 }
