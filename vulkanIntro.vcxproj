@@ -146,11 +146,9 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Model.cpp" />
     <ClCompile Include="Pipeline.cpp" />
-    <ClCompile Include="point_light_system.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="RenderSystem.cpp" />
     <ClCompile Include="Swap_chain.cpp" />
-    <ClCompile Include="TextOverlay.cpp" />
     <ClCompile Include="Utils.cpp" />
     <ClCompile Include="Window.cpp" />
   </ItemGroup>
@@ -165,19 +163,15 @@
     <ClInclude Include="KeyboardMovementController.h" />
     <ClInclude Include="Model.h" />
     <ClInclude Include="Pipeline.h" />
-    <ClInclude Include="point_light_system.h" />
     <ClInclude Include="preBuild.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="RenderSystem.h" />
     <ClInclude Include="Swap_chain.h" />
-    <ClInclude Include="TextOverlay.h" />
     <ClInclude Include="Utils.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="compile.bat" />
-    <None Include="point_light.frag" />
-    <None Include="point_light.vert" />
     <None Include="simple_shader.frag" />
     <None Include="simple_shader.vert" />
   </ItemGroup>

@@ -67,7 +67,7 @@ void RenderSystem::createPipeline(VkRenderPass renderPass)
 	);
 }
 
-void RenderSystem::renderGameObjects(FrameInfo& frameInfo)
+void RenderSystem::renderGameObjects(Frame_info::FrameInfo& frameInfo)
 {
 	pipeline->bind(frameInfo.commandBuffer);
 
@@ -85,7 +85,6 @@ void RenderSystem::renderGameObjects(FrameInfo& frameInfo)
 	{
 		auto& obj = kv.second;
 		if (obj.model == nullptr) continue;
-
 		SimplePushConstantData push{};
 		push.modelMatrix = obj.transform.mat4();
 		push.normalMatrix = obj.transform.normalMatrix();

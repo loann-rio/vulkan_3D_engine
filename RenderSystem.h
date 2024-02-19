@@ -20,7 +20,7 @@ public:
 
 	RenderSystem(const RenderSystem&) = delete;
 	RenderSystem& operator=(const RenderSystem&) = delete;
-	void renderGameObjects(FrameInfo& frameInfo);
+	void renderGameObjects(Frame_info::FrameInfo& frameInfo);
 
 
 private:

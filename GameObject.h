@@ -16,10 +16,6 @@ struct TransformComponent {
 	glm::mat3 normalMatrix();
 };
 
-struct PointLightComponent {
-	float LightIntencity = 1.0f;
-
-};
 
 class GameObject
 {
@@ -33,20 +29,17 @@ public:
 		return GameObject{ currentId++ };
 	}
 
-	static GameObject makePointLight(float intencity, float radius, glm::vec3 color);
-
 	GameObject(const GameObject&) = delete;
 	GameObject& operator=(const GameObject&) = delete;
 	GameObject(GameObject&&) = default;
 	GameObject& operator=(GameObject&&) = default;
 
+	std::shared_ptr<Model> model{};
+	glm::vec3 color{};
+
 	id_t getId() { return id; }
 
 	TransformComponent transform{};
-	glm::vec3 color{};
-
-	std::shared_ptr<Model> model{};
-	std::unique_ptr<PointLightComponent> pointLight = nullptr;
 
 private:
 	GameObject(id_t obId) : id{obId} {}

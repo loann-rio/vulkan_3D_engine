@@ -15,7 +15,6 @@ Pipeline::Pipeline(
 	const PipelineConfigInfo& configInfo)
 	: device{ device } {
 
-	std::cout << device.getMaxUsableSampleCount(device.properties);
 	createGraphicsPipeline(vertFilepath, fragFilepath, configInfo);
 }
 
@@ -77,8 +76,8 @@ void Pipeline::createGraphicsPipeline(const std::string& vertFilepath,
 	shaderStages[1].pNext = nullptr;
 	shaderStages[1].pSpecializationInfo = nullptr;
 
-	auto& bindingDescriptions = configInfo.bindingDescription;
-	auto& attributeDescriptions = configInfo.attributeDescription;
+	auto bindingDescriptions = Model::Vertex::getBindingDescriptions();
+	auto attributeDescriptions = Model::Vertex::getAttributeDescriptions();
 
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -117,7 +116,6 @@ void Pipeline::createGraphicsPipeline(const std::string& vertFilepath,
 		throw std::runtime_error("failed to create graphics pipeline");
 	}
 }
-
 
 void Pipeline::createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule) {
 	VkShaderModuleCreateInfo createInfo{};
@@ -205,23 +203,4 @@ void Pipeline::defaultPipelineConfigInfo(PipelineConfigInfo& configInfo)
 	configInfo.dynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(configInfo.dynamicStateEnables.size());
 	configInfo.dynamicStateInfo.flags = 0;
 
-	configInfo.bindingDescription = Model::Vertex::getBindingDescriptions();
-	configInfo.attributeDescription = Model::Vertex::getAttributeDescriptions();
-
-}
-
-
-void Pipeline::enableAlphaBlending(PipelineConfigInfo& configInfo)
-{
-	configInfo.colorBlendAttachment.blendEnable = VK_TRUE;
-
-	configInfo.colorBlendAttachment.colorWriteMask =
-		VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
-		VK_COLOR_COMPONENT_A_BIT;
-	configInfo.colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-	configInfo.colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA; 
-	configInfo.colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
-	configInfo.colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-	configInfo.colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-	configInfo.colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
 }
