@@ -18,7 +18,7 @@ public:
 	PointLightSystem(const PointLightSystem&) = delete;
 	PointLightSystem& operator=(const PointLightSystem&) = delete;
 
-	void update(FrameInfo& frameInfo, GlobalUbo& ubo);
+	void update(FrameInfo& frameInfo, GlobalUbo& ubo, int frameInd);
 	void render(FrameInfo& frameInfo);
 
 

@@ -20,7 +20,7 @@ layout(set = 0, binding = 0) uniform GlobalUbo {
 	mat4 view;
 	mat4 invView;
 	vec4 ambientLightColor;
-	pointLight pointLight[10];
+	PointLight pointLight[10];
 	int numLights;
 } ubo;
 

@@ -187,8 +187,17 @@ bool DescriptorWriter::build(VkDescriptorSet& set) {
 }
 
 void DescriptorWriter::overwrite(VkDescriptorSet& set) {
+
+    /*for (auto& write : writes) {
+        write.dstSet = set;
+        vkUpdateDescriptorSets(pool.device.device(), 1, &write, 0, nullptr);
+    }*/
+
     for (auto& write : writes) {
         write.dstSet = set;
     }
+
+    std::cout << writes.size() << "\n";
+
     vkUpdateDescriptorSets(pool.device.device(), writes.size(), writes.data(), 0, nullptr);
 }

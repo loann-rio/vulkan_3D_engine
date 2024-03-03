@@ -16,7 +16,7 @@ struct GlobalUbo {
 	glm::mat4 projection{ 1.0f };
 	glm::mat4 view{ 1.0f };
 	glm::mat4 inverseView{ 1.f };
-	glm::vec4 ambientLightColor{ 1.f, 1.f,  1.f, .2f };
+	glm::vec4 ambientLightColor{ 1.f, 1.f,  1.f, .05f };
 	PointLight pointLights[MAX_LIGHT];
 	int numLights;
 };

@@ -71,7 +71,7 @@ void PointLightSystem::createPipeline(VkRenderPass renderPass)
 	);
 }
 
-void PointLightSystem::update(FrameInfo& frameInfo, GlobalUbo& ubo)
+void PointLightSystem::update(FrameInfo& frameInfo, GlobalUbo& ubo, int frameInd)
 {
 	auto rotateLight = glm::rotate(glm::mat4(1.f), frameInfo.frameTime, { 0.f, -1.0f, 0.f });
 
@@ -84,7 +84,10 @@ void PointLightSystem::update(FrameInfo& frameInfo, GlobalUbo& ubo)
 		assert(lightIndex < MAX_LIGHT && "point lights exceed maximum");
 
 		// update light position:
-		obj.transform.translation = glm::vec3(rotateLight * glm::vec4(obj.transform.translation, 1.f));
+		//obj.transform.translation = glm::vec3(rotateLight * glm::vec4(obj.transform.translation, 1.f));
+		
+		// update light intensity
+		//obj.pointLight->LightIntencity = sin(frameInd/64.0f + 24);
 
 		// copy light to ubo
 		ubo.pointLights[lightIndex].position = glm::vec4(obj.transform.translation, 1.f);
