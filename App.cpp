@@ -77,7 +77,6 @@ void App::run()
             .writeBuffer(0, &bufferInfo)
             .writeImage(1, &imageInfo)
             .build(globalDescriptorSet[i]);
-
     }
 
     PointLightSystem pointLightSystem{ device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
@@ -105,7 +104,8 @@ void App::run()
         auto newTime = std::chrono::high_resolution_clock::now();
         float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
         currentTime = newTime;
-
+        std::cout << (1 / frameTime) << "\n";
+        currentTime = std::chrono::high_resolution_clock::now();
         cameraController.moveInPlaneXZ(window.getGLFWwindow(), frameTime, viewerObject);
         camera.setViewYXZ(viewerObject.transform.translation, viewerObject.transform.rotation);
 
@@ -151,22 +151,32 @@ void App::run()
 
 void App::loadGameObjects() {
     
+    //std::shared_ptr<Model> model_city = Model::createModelFromFile(device, "models/Lowpoly_City_Free_Pack.obj");
+
+    //auto Lowpoly_City = GameObject::createGameObject();
+    //Lowpoly_City.model = model_city;
+    //Lowpoly_City.transform.translation = { .0f, 0.0f, .0f };
+    //Lowpoly_City.transform.scale = { .01f, -0.01f , .01f };
+    ////gameObject.transform.rotation.x = glm::radians(90.0f);
+    //gameObjects.emplace(Lowpoly_City.getId(), std::move(Lowpoly_City));
+
     std::shared_ptr<Model> model = Model::createModelFromFile(device, "models/viking_room.obj");
 
     auto gameObject = GameObject::createGameObject();
     gameObject.model = model;
     gameObject.transform.translation = { .0f, 0.0f, .0f };
-    gameObject.transform.scale = { 1.1f, -1.1f , 1.1f };
+    gameObject.transform.scale = { 1.f, 1.f , 1.f };
     gameObject.transform.rotation.x = glm::radians(90.0f);
     gameObjects.emplace(gameObject.getId(), std::move(gameObject));
 
-    Model::Builder modelBuilder{};
+
+   /* Model::Builder modelBuilder{};
     modelBuilder.vertices = {
             {{-0.5f, 0, -0.5f}, {.5f, .5f, .5f}, {0.0f, -1.0f, 0.0f}},
             {{-0.5f, 0,  0.5f}, {.5f, .5f, .5f}, {0.0f, -1.0f, 0.0f}},
             {{ 0.5f, 0, -0.5f}, {.5f, .5f, .5f}, {0.0f, -1.0f, 0.0f}},
             {{ 0.5f, 0,  0.5f}, {.5f, .5f, .5f}, {0.0f, -1.0f, 0.0f}} };
-    modelBuilder.indices = { 0, 1, 3, 0, 2, 3 };
+    modelBuilder.indices = { 0, 1, 3, 0, 2, 3 };*/
 
     /*auto plane = GameObject::createGameObject();
     plane.model = std::make_unique<Model>(device, modelBuilder);
@@ -176,10 +186,13 @@ void App::loadGameObjects() {
 
     /*std::vector<glm::vec3> lightColors{
       {1.f, .1f, .1f},
-      {.1f, .1f, 1.f},
+      
       {.1f, 1.f, .1f},
+
       {1.f, 1.f, .1f},
       {.1f, 1.f, 1.f},
+                  {.1f, .1f, 1.f},
+
       {1.f, 1.f, 1.f}  
     };
 
@@ -190,7 +203,7 @@ void App::loadGameObjects() {
         gameObjects.emplace(pointLight.getId(), std::move(pointLight));
     }*/
 
-    auto pointLight = GameObject::makePointLight(0.7f, 0.0f, {1.0f, 0.5f, 0.f});
+    auto pointLight = GameObject::makePointLight(.7f, 0.0f, {1.0f, 0.5f, 0.f});
     pointLight.transform.translation = {-0.27f, -0.7f, .6f};
     gameObjects.emplace(pointLight.getId(), std::move(pointLight));
 

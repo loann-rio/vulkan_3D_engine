@@ -20,6 +20,7 @@ layout(set = 0, binding = 0) uniform GlobalUbo {
 	mat4 invView;
 	vec4 ambientLightColor;
 	PointLight pointLight[10];
+	vec4 globalLightDir;
 	int numLights;
 } ubo;
 
@@ -28,16 +29,26 @@ layout(push_constant) uniform Push {
 	mat4 normalMatrix;
 } push;
 
+
+
 void main() {
+
 	vec3 diffuseLight = ubo.ambientLightColor.xyz * ubo.ambientLightColor.w;
 	vec3 specularLight = vec3(0.0);
+
+
 	vec3 surfaceNormal = normalize(fragNormalWorld);
+
 
 	vec3 cameraWorldPos = ubo.invView[3].xyz;
 	vec3 viewDirection = normalize(cameraWorldPos - fragPositionWorld);
 
-	for (int i = 0; i < ubo.numLights; i++) {
+	// apply points light
+	for (int i = 0; i < ubo.numLights; i++) 
+	{
+
 		PointLight light = ubo.pointLight[i];
+
 		vec3 directionToLight = light.position.xyz - fragPositionWorld;
 		float attenuation = 1.0 / dot(directionToLight, directionToLight);
 		directionToLight = normalize(directionToLight);
@@ -54,12 +65,32 @@ void main() {
 		blinnTerm = pow(blinnTerm, 32.0);
 		specularLight += intencity * blinnTerm;
 
-
 	}
 
-	//outColor = vec4(fragTexCoord, 0.0, 1.0);
+	// global light
 
+	//vec4 globalLightDir; -> 4th value = intencity
+	//vec4 ambientLightColor; 
+
+	vec3 directionToLight = ubo.globalLightDir.xyz;
+
+	directionToLight = normalize(directionToLight);
+
+	float cosAngOfIncidence = max(dot(surfaceNormal, directionToLight), 0);
+	vec3 intencity = ubo.ambientLightColor.xyz * ubo.globalLightDir.w;
+
+	// specular lighting
+	/*vec3 halfAngle = normalize(directionToLight + viewDirection);
+	float blinnTerm = dot(surfaceNormal, halfAngle);
+	blinnTerm = clamp(blinnTerm, 0, 1);
+	blinnTerm = pow(blinnTerm, 32.0);
+	specularLight += intencity * blinnTerm;*/
+
+
+	// get texture color
 	vec4 color = texture(texSampler, fragTexCoord);
+	//vec4 color = vec4(1.0, 1.0, 1.0, 1.0);
 
-	outColor = vec4(diffuseLight, 1.0) * color + vec4(specularLight, 1.0) * color;
+	// sum colors
+	outColor = (vec4(diffuseLight, 1.0) + vec4(specularLight, 1.0)) * color +  cosAngOfIncidence * ubo.globalLightDir.w * color;  
 }

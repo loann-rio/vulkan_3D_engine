@@ -25,7 +25,7 @@ namespace std {
 	};
 }
 
-Model::Model(Device& device, const Model::Builder & builder) : device{device} {
+Model::Model(Device& device, const Model::Builder& builder) : device{ device } {
 	createVertexBuffers(builder.vertices);
 	createIndexBuffers(builder.indices);
 }
@@ -59,7 +59,7 @@ void Model::draw(VkCommandBuffer commandBuffer)
 	else {
 		vkCmdDraw(commandBuffer, vertexCount, 1, 0, 0);
 	}
-}   
+}
 
 void Model::createVertexBuffers(const std::vector<Vertex>& vertices)
 {
@@ -97,7 +97,7 @@ void Model::createIndexBuffers(const std::vector<uint32_t>& indices)
 {
 	indexCount = static_cast<uint32_t>(indices.size());
 	hasIndexBuffer = indexCount > 0;
-	
+
 	if (!hasIndexBuffer) return;
 
 	VkDeviceSize bufferSize = sizeof(indices[0]) * indexCount;
@@ -113,7 +113,7 @@ void Model::createIndexBuffers(const std::vector<uint32_t>& indices)
 
 	stagingBuffer.map();
 	stagingBuffer.writeToBuffer((void*)indices.data());
-	
+
 	indexBuffer = std::make_unique<Buffer>(
 		device,
 		indexSize,
@@ -164,7 +164,7 @@ void Model::Builder::loadModel(const std::string& filepath)
 	std::unordered_map<Vertex, uint32_t> uniqueVertices{};
 
 	for (const auto& shape : shapes) {
-		for (const auto & index : shape.mesh.indices)
+		for (const auto& index : shape.mesh.indices)
 		{
 			Vertex vertex{};
 			if (index.vertex_index >= 0) {
