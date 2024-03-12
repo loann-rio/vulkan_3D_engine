@@ -158,6 +158,16 @@ DescriptorWriter& DescriptorWriter::writeBuffer(
 
 DescriptorWriter& DescriptorWriter::writeImage(
     uint32_t binding, VkDescriptorImageInfo* imageInfo) {
+
+    uint16_t size = sizeof(VkDescriptorImageInfo);
+
+    std::cout << "size array = " << size << "\n";
+    for (int i = 0; i < 5; i++) {
+        std::cout << imageInfo[i].sampler << "\n";
+    }
+
+    assert(imageInfo != nullptr && "image info cannot be null");
+
     assert(setLayout.bindings.count(binding) == 1 && "Layout does not contain specified binding");
 
     auto& bindingDescription = setLayout.bindings[binding];
@@ -171,7 +181,7 @@ DescriptorWriter& DescriptorWriter::writeImage(
     write.descriptorType = bindingDescription.descriptorType;
     write.dstBinding = binding;
     write.pImageInfo = imageInfo;
-    write.descriptorCount = 1;
+    write.descriptorCount = 2;
 
     writes.push_back(write);
     return *this;
@@ -193,11 +203,32 @@ void DescriptorWriter::overwrite(VkDescriptorSet& set) {
         vkUpdateDescriptorSets(pool.device.device(), 1, &write, 0, nullptr);
     }*/
 
+    if (writes.empty()) {
+        std::cerr << "writes is empty\n";
+        // Log an error or handle the situation appropriately
+        return;
+    }
+
     for (auto& write : writes) {
         write.dstSet = set;
     }
 
     std::cout << writes.size() << "\n";
+    
+    // Validate descriptor image views
+    for (const auto& write : writes) {
+        std::cout << write.descriptorCount << "\n";
+        if (write.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER ||
+            write.descriptorType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE ||
+            write.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {
+            for (uint32_t i = 0; i < write.descriptorCount; ++i) {
+                if (write.pImageInfo[i].imageView == VK_NULL_HANDLE) {
+                    // Log an error or handle the situation appropriately
+                    std::cerr << "Error: Null VkImageView handle found for image descriptor write.\n";
+                }
+            }
+        }
+    }
 
     vkUpdateDescriptorSets(pool.device.device(), writes.size(), writes.data(), 0, nullptr);
 }

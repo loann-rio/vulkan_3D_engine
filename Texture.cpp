@@ -8,8 +8,11 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-Texture::Texture(Device& device) : device{device}
+Texture::Texture(Device& device, const char* filePathTexture) : device{device}
 {
+    createTextureImage(filePathTexture);
+    createTextureImageView();
+    createTextureSampler();
 }
 
 void Texture::createTextureImage(const char* path)

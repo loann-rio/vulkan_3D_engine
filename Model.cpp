@@ -1,5 +1,6 @@
 #include "Model.h"
 
+#include "Texture.h"
 #include "Utils.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION
@@ -25,19 +26,22 @@ namespace std {
 	};
 }
 
-Model::Model(Device& device, const Model::Builder& builder) : device{ device } {
+Model::Model(Device& device, const Model::Builder& builder, const char* filePathTexture) : device{ device } {
 	createVertexBuffers(builder.vertices);
 	createIndexBuffers(builder.indices);
+	Texture text(device, filePathTexture);
+	textureImageView = text.getImageView();
+	textureSampler = text.getSampler();
 }
 
 Model::~Model() {}
 
-std::unique_ptr<Model> Model::createModelFromFile(Device& device, const std::string& filePath)
+std::unique_ptr<Model> Model::createModelFromFile(Device& device, const std::string& filePath, const char* filePathTexture)
 {
 	Builder builder{};
 	builder.loadModel(filePath);
 	std::cout << "vertex count: " << builder.vertices.size() << "\n";
-	return std::make_unique<Model>(device, builder);
+	return std::make_unique<Model>(device, builder, filePathTexture);
 }
 
 void Model::bind(VkCommandBuffer commandBuffer)
@@ -59,6 +63,11 @@ void Model::draw(VkCommandBuffer commandBuffer)
 	else {
 		vkCmdDraw(commandBuffer, vertexCount, 1, 0, 0);
 	}
+}
+
+VkDescriptorImageInfo Model::getImageInfo()
+{
+	return { textureSampler, textureImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
 }
 
 void Model::createVertexBuffers(const std::vector<Vertex>& vertices)

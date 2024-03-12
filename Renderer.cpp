@@ -13,17 +13,26 @@ Renderer::Renderer(Window& window, Device& device) : window{window} , device{dev
 
 Renderer::~Renderer() { freeCommandBuffer(); }
 
+/*
+
+	recreate swap chain after redimentionning of the window
+
+*/
 void Renderer::recreateSwapChain()
 {
+	// get size window
 	auto extent = window.getExtent();
 
+	// if the size of the window is null, wait for the user to modify it to an allowed value
 	while (extent.width == 0 || extent.height == 0) {
 		extent = window.getExtent();
 		glfwWaitEvents();
 	}
 
+	// wait for the device to render previous frame
 	vkDeviceWaitIdle(device.device());
 
+	// if the swapchain does not already exist create a new one
 	if (swapChain == nullptr) {
 		swapChain = std::make_unique<Swap_chain>(device, extent);
 	}
@@ -32,7 +41,7 @@ void Renderer::recreateSwapChain()
 		swapChain = std::make_unique<Swap_chain>(device, extent, oldSwapChain);
 
 		if (!oldSwapChain->compareSwapFormat(*swapChain.get())) {
-			throw std::runtime_error("Swap chain imahe format as changed");
+			throw std::runtime_error("Swap chain image format as changed");
 		}
 	}
 }

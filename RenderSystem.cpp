@@ -1,5 +1,6 @@
 #include "RenderSystem.h"
 
+
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
@@ -67,9 +68,13 @@ void RenderSystem::createPipeline(VkRenderPass renderPass)
 	);
 }
 
-void RenderSystem::renderGameObjects(FrameInfo& frameInfo)
+void RenderSystem::renderGameObjects(FrameInfo& frameInfo, DescriptorSetLayout& setLayout, DescriptorPool& pool)
 {
 	pipeline->bind(frameInfo.commandBuffer);
+
+	//DescriptorWriter(setLayout, pool)
+	//			//.writeImage(1, &imageInfo)
+	//			.overwrite(frameInfo.globalDescriptorSet);
 
 	vkCmdBindDescriptorSets(
 		frameInfo.commandBuffer,
@@ -85,6 +90,23 @@ void RenderSystem::renderGameObjects(FrameInfo& frameInfo)
 	{
 		auto& obj = kv.second;
 		if (obj.model == nullptr) continue;
+
+		//VkDescriptorImageInfo imageInfo = obj.model->getImageInfo();
+
+		//vkCmdBindDescriptorSets(
+		//	frameInfo.commandBuffer,
+		//	VK_PIPELINE_BIND_POINT_GRAPHICS,
+		//	pipelineLayout,
+		//	0, 1,
+		//	&obj.descriptorSet[frameInfo.frameIndex],
+		//	0,
+		//	nullptr
+		//);
+
+		//DescriptorWriter(*obj.setLayout, pool)
+		//	//.writeBuffer(0, &bufferInfo)
+		//	.writeImage(1, &imageInfo)
+		//	.build(obj.descriptorSet[frameInfo.frameIndex]);
 
 		SimplePushConstantData push{};
 		push.modelMatrix = obj.transform.mat4();

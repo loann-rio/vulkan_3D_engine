@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Device.h"
+
 #include <vulkan/vulkan.h>
 
 #include <string>
@@ -11,7 +12,7 @@ class Texture
 {
 public:
 
-	Texture(Device& device);
+	Texture(Device& device, const char* filePathTexture);
 	~Texture() {
 		vkDestroySampler(device.device(), textureSampler, nullptr);
 		vkDestroyImageView(device.device(), textureImageView, nullptr);
@@ -19,15 +20,17 @@ public:
 		vkFreeMemory(device.device(), textureImageMemory, nullptr);
 	}
 
-	void createTextureImage(const char* path);
-	
 	VkDescriptorImageInfo getImageInfo();
 
-	void createTextureImageView();
-	void createTextureSampler();
+	VkImageView getImageView() const { return textureImageView; }
+	VkSampler getSampler() const { return textureSampler; }
 	
 
 private:
+
+	void createTextureImage(const char* path);
+	void createTextureImageView();
+	void createTextureSampler();
 
 	void bind(VkImage& image, VkMemoryPropertyFlags properties, VkDeviceMemory& imageMemory);
 	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayou);

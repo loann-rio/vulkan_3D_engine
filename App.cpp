@@ -31,6 +31,7 @@ App::App() {
         .setMaxSets(Swap_chain::MAX_FRAMES_IN_FLIGHT)
         .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Swap_chain::MAX_FRAMES_IN_FLIGHT)
         .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Swap_chain::MAX_FRAMES_IN_FLIGHT)
+
         .build();
 
     loadGameObjects(); 
@@ -60,12 +61,7 @@ void App::run()
         .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .build();
 
-    Texture texture{device};
-    texture.createTextureImage("textures/viking_room.png");
-    texture.createTextureImageView();
-    texture.createTextureSampler();
-
-
+    Texture texture{device, "textures/viking_room.png" };
 
     std::vector<VkDescriptorSet> globalDescriptorSet(Swap_chain::MAX_FRAMES_IN_FLIGHT);
     for (int i = 0; i < globalDescriptorSet.size(); i++)
@@ -86,7 +82,7 @@ void App::run()
 
     // camera setting
     Camera camera{};
-    auto viewerObject = GameObject::createGameObject();
+    auto viewerObject = GameObject::createGameObject(device);
     viewerObject.transform.translation = { 2.0f, -1.0f, 2.5f };
     viewerObject.transform.rotation.y = 180;
 
@@ -106,14 +102,20 @@ void App::run()
         currentTime = newTime;
         std::cout << (1 / frameTime) << "\n";
         currentTime = std::chrono::high_resolution_clock::now();
+
+        // move camera on event 
         cameraController.moveInPlaneXZ(window.getGLFWwindow(), frameTime, viewerObject);
         camera.setViewYXZ(viewerObject.transform.translation, viewerObject.transform.rotation);
 
+        //TODO -> not each frame,   create perspective matrix
         float aspec = renderer.getAspectRatio();
         camera.setPerspectiveProjection(glm::radians(50.f), aspec, .1f, 100.0f);
 
 		if (auto commandBuffer = renderer.beginFrame()) {
             int frameIndex = renderer.getFrameIndex();
+
+           
+
             FrameInfo frameInfo{
                 frameIndex,
                 frameTime,
@@ -122,6 +124,7 @@ void App::run()
                 globalDescriptorSet[frameIndex],
                 gameObjects
             };
+
             
             // update
             GlobalUbo ubo{};
@@ -133,11 +136,44 @@ void App::run()
             uboBuffers[frameIndex]->writeToBuffer(&ubo);
             uboBuffers[frameIndex]->flush();
 
+            const int sizeGameObjects = gameObjects.size();
+            std::vector<VkDescriptorImageInfo> descriptorImageInfos;
+
+            int i = 0;
+            for (auto& kv : frameInfo.gameObjects)
+            {
+
+                auto& obj = kv.second;
+
+                if (obj.model != nullptr) {
+                    descriptorImageInfos.push_back(obj.model->getImageInfo());
+                    obj.model->imageId = i;
+                    i++;
+                }
+                
+                
+            }
+            std::cout << "size of objects = " << i << "\n";
+
+            VkDescriptorImageInfo* descriptorArray = descriptorImageInfos.data();
+
+            assert(descriptorArray != nullptr && "descriptor array is null");
+
+            auto bufferInfo = uboBuffers[frameIndex]->descriptorInfo();
+            VkDescriptorImageInfo imageInfo = texture.getImageInfo();
+
+            DescriptorWriter(*globalSetLayout, *globalPool)
+                .writeBuffer(0, &bufferInfo)
+                .writeImage(1, descriptorArray)
+                .overwrite(globalDescriptorSet[frameIndex]);
+
             // render
 			renderer.beginSwapChainRenderPass(commandBuffer);
 
-            renderSystem.renderGameObjects(frameInfo);
+            renderSystem.renderGameObjects(frameInfo, *globalSetLayout, *globalPool);
             pointLightSystem.render(frameInfo);
+
+            
 
             renderer.endSwapChainRenderPass(commandBuffer);
             renderer.endFrame();
@@ -160,14 +196,23 @@ void App::loadGameObjects() {
     ////gameObject.transform.rotation.x = glm::radians(90.0f);
     //gameObjects.emplace(Lowpoly_City.getId(), std::move(Lowpoly_City));
 
-    std::shared_ptr<Model> model = Model::createModelFromFile(device, "models/viking_room.obj");
+    std::shared_ptr<Model> model = Model::createModelFromFile(device, "models/viking_room.obj", "textures/viking_room.png");
 
-    auto gameObject = GameObject::createGameObject();
+    auto gameObject = GameObject::createGameObject(device);
     gameObject.model = model;
     gameObject.transform.translation = { .0f, 0.0f, .0f };
     gameObject.transform.scale = { 1.f, 1.f , 1.f };
     gameObject.transform.rotation.x = glm::radians(90.0f);
     gameObjects.emplace(gameObject.getId(), std::move(gameObject));
+
+    std::shared_ptr<Model> model1 = Model::createModelFromFile(device, "models/smooth_vase.obj", "textures/Palette.jpg");
+
+    auto gameObject1 = GameObject::createGameObject(device);
+    gameObject1.model = model1;
+    gameObject1.transform.translation = { 3.0f, 0.0f, .0f };
+    gameObject1.transform.scale = { 3.f, 3.f , 3.f };
+    //gameObject.transform.rotation.x = glm::radians(90.0f);
+    gameObjects.emplace(gameObject1.getId(), std::move(gameObject1));
 
 
    /* Model::Builder modelBuilder{};
@@ -203,15 +248,15 @@ void App::loadGameObjects() {
         gameObjects.emplace(pointLight.getId(), std::move(pointLight));
     }*/
 
-    auto pointLight = GameObject::makePointLight(.7f, 0.0f, {1.0f, 0.5f, 0.f});
+    auto pointLight = GameObject::makePointLight(device, .7f, 0.0f, {1.0f, 0.5f, 0.f});
     pointLight.transform.translation = {-0.27f, -0.7f, .6f};
     gameObjects.emplace(pointLight.getId(), std::move(pointLight));
 
-    auto pointLight1 = GameObject::makePointLight(0.7f, 0.0f, { 1.0f, 0.5f, 0.f });
+    auto pointLight1 = GameObject::makePointLight(device, 0.7f, 0.0f, { 1.0f, 0.5f, 0.f });
     pointLight1.transform.translation = { -0.27f, -0.7f, -0.7f };
     gameObjects.emplace(pointLight1.getId(), std::move(pointLight1));
 
-    auto pointLight2 = GameObject::makePointLight(0.2f, 0.05f, { 1.0f, 0.f, 0.f });
+    auto pointLight2 = GameObject::makePointLight(device, 0.2f, 0.05f, { 1.0f, 0.f, 0.f });
     pointLight2.transform.translation = { 0.1f, -0.1f, .0f };
     gameObjects.emplace(pointLight2.getId(), std::move(pointLight2));
 }

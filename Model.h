@@ -36,16 +36,21 @@ public:
 		void loadModel(const std::string& filepath);
 	};
 
-	Model(Device& device, const Model::Builder &builder);
+	Model(Device& device, const Model::Builder &builder, const char* filePathTexture);
 	~Model();
 
 	Model(const Model&) = delete;
 	Model& operator=(const Model&) = delete;
 
-	static std::unique_ptr<Model> createModelFromFile(Device &device, const std::string &filePath);
+	static std::unique_ptr<Model> createModelFromFile(Device &device, const std::string &filePath, const char* filePathTexture);
 
 	void bind(VkCommandBuffer commandBuffer);
 	void draw(VkCommandBuffer commandBuffer);
+
+	bool hasTexture = false;
+	VkDescriptorImageInfo getImageInfo();
+
+	uint16_t imageId = 0;
 	
 private:
 	void createVertexBuffers(const std::vector<Vertex>& vertices);
@@ -59,5 +64,9 @@ private:
 	bool hasIndexBuffer = false;
 	std::unique_ptr<Buffer> indexBuffer;
 	uint32_t indexCount;
+
+	VkImageView textureImageView;
+	VkSampler textureSampler;
+
 };
 

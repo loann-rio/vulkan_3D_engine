@@ -5,6 +5,8 @@
 #include "GameObject.h"
 #include "Camera.h"
 #include "Frame_info.h"
+#include "descriptors.h"
+
 
 #include <memory>
 #include <vector>
@@ -20,7 +22,7 @@ public:
 
 	RenderSystem(const RenderSystem&) = delete;
 	RenderSystem& operator=(const RenderSystem&) = delete;
-	void renderGameObjects(FrameInfo& frameInfo);
+	void renderGameObjects(FrameInfo& frameInfo, DescriptorSetLayout& setLayout, DescriptorPool& pool);
 
 
 private:
