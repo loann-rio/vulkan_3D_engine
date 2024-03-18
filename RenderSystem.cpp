@@ -91,23 +91,6 @@ void RenderSystem::renderGameObjects(FrameInfo& frameInfo, DescriptorSetLayout& 
 		auto& obj = kv.second;
 		if (obj.model == nullptr) continue;
 
-		//VkDescriptorImageInfo imageInfo = obj.model->getImageInfo();
-
-		//vkCmdBindDescriptorSets(
-		//	frameInfo.commandBuffer,
-		//	VK_PIPELINE_BIND_POINT_GRAPHICS,
-		//	pipelineLayout,
-		//	0, 1,
-		//	&obj.descriptorSet[frameInfo.frameIndex],
-		//	0,
-		//	nullptr
-		//);
-
-		//DescriptorWriter(*obj.setLayout, pool)
-		//	//.writeBuffer(0, &bufferInfo)
-		//	.writeImage(1, &imageInfo)
-		//	.build(obj.descriptorSet[frameInfo.frameIndex]);
-
 		SimplePushConstantData push{};
 		push.modelMatrix = obj.transform.mat4();
 		push.normalMatrix = obj.transform.normalMatrix();

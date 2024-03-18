@@ -29,9 +29,9 @@ namespace std {
 Model::Model(Device& device, const Model::Builder& builder, const char* filePathTexture) : device{ device } {
 	createVertexBuffers(builder.vertices);
 	createIndexBuffers(builder.indices);
-	Texture text(device, filePathTexture);
-	textureImageView = text.getImageView();
-	textureSampler = text.getSampler();
+	//Texture text(device, filePathTexture);
+	//textureImageView = text.getImageView();
+	//textureSampler = text.getSampler();
 }
 
 Model::~Model() {}

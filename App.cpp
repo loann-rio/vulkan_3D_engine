@@ -8,6 +8,7 @@
 #include "Frame_info.h"
 #include "preBuild.h"
 #include "point_light_system.h"
+#include "preBuild.h"
 #include "Texture.h"
 
 
@@ -61,7 +62,7 @@ void App::run()
         .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .build();
 
-    Texture texture{device, "textures/viking_room.png" };
+    Texture texture{device, "textures/Palette.jpg" };
 
     std::vector<VkDescriptorSet> globalDescriptorSet(Swap_chain::MAX_FRAMES_IN_FLIGHT);
     for (int i = 0; i < globalDescriptorSet.size(); i++)
@@ -100,7 +101,7 @@ void App::run()
         auto newTime = std::chrono::high_resolution_clock::now();
         float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
         currentTime = newTime;
-        std::cout << (1 / frameTime) << "\n";
+        //std::cout << (1 / frameTime) << "\n";
         currentTime = std::chrono::high_resolution_clock::now();
 
         // move camera on event 
@@ -136,37 +137,6 @@ void App::run()
             uboBuffers[frameIndex]->writeToBuffer(&ubo);
             uboBuffers[frameIndex]->flush();
 
-            const int sizeGameObjects = gameObjects.size();
-            std::vector<VkDescriptorImageInfo> descriptorImageInfos;
-
-            int i = 0;
-            for (auto& kv : frameInfo.gameObjects)
-            {
-
-                auto& obj = kv.second;
-
-                if (obj.model != nullptr) {
-                    descriptorImageInfos.push_back(obj.model->getImageInfo());
-                    obj.model->imageId = i;
-                    i++;
-                }
-                
-                
-            }
-            std::cout << "size of objects = " << i << "\n";
-
-            VkDescriptorImageInfo* descriptorArray = descriptorImageInfos.data();
-
-            assert(descriptorArray != nullptr && "descriptor array is null");
-
-            auto bufferInfo = uboBuffers[frameIndex]->descriptorInfo();
-            VkDescriptorImageInfo imageInfo = texture.getImageInfo();
-
-            DescriptorWriter(*globalSetLayout, *globalPool)
-                .writeBuffer(0, &bufferInfo)
-                .writeImage(1, descriptorArray)
-                .overwrite(globalDescriptorSet[frameIndex]);
-
             // render
 			renderer.beginSwapChainRenderPass(commandBuffer);
 
@@ -187,76 +157,12 @@ void App::run()
 
 void App::loadGameObjects() {
     
-    //std::shared_ptr<Model> model_city = Model::createModelFromFile(device, "models/Lowpoly_City_Free_Pack.obj");
+    //std::shared_ptr<Model> model_city = Model::createModelFromFile(device, "models/viking_room.obj", "");
 
-    //auto Lowpoly_City = GameObject::createGameObject();
-    //Lowpoly_City.model = model_city;
-    //Lowpoly_City.transform.translation = { .0f, 0.0f, .0f };
-    //Lowpoly_City.transform.scale = { .01f, -0.01f , .01f };
-    ////gameObject.transform.rotation.x = glm::radians(90.0f);
-    //gameObjects.emplace(Lowpoly_City.getId(), std::move(Lowpoly_City));
+    std::shared_ptr<Model> model_city = createPlane(device, 10, 2, { 1.f, 1.f, 1.f });
 
-    std::shared_ptr<Model> model = Model::createModelFromFile(device, "models/viking_room.obj", "textures/viking_room.png");
+    auto Lowpoly_City = GameObject::createGameObject(device);
+    Lowpoly_City.model = model_city;
+    gameObjects.emplace(Lowpoly_City.getId(), std::move(Lowpoly_City));
 
-    auto gameObject = GameObject::createGameObject(device);
-    gameObject.model = model;
-    gameObject.transform.translation = { .0f, 0.0f, .0f };
-    gameObject.transform.scale = { 1.f, 1.f , 1.f };
-    gameObject.transform.rotation.x = glm::radians(90.0f);
-    gameObjects.emplace(gameObject.getId(), std::move(gameObject));
-
-    std::shared_ptr<Model> model1 = Model::createModelFromFile(device, "models/smooth_vase.obj", "textures/Palette.jpg");
-
-    auto gameObject1 = GameObject::createGameObject(device);
-    gameObject1.model = model1;
-    gameObject1.transform.translation = { 3.0f, 0.0f, .0f };
-    gameObject1.transform.scale = { 3.f, 3.f , 3.f };
-    //gameObject.transform.rotation.x = glm::radians(90.0f);
-    gameObjects.emplace(gameObject1.getId(), std::move(gameObject1));
-
-
-   /* Model::Builder modelBuilder{};
-    modelBuilder.vertices = {
-            {{-0.5f, 0, -0.5f}, {.5f, .5f, .5f}, {0.0f, -1.0f, 0.0f}},
-            {{-0.5f, 0,  0.5f}, {.5f, .5f, .5f}, {0.0f, -1.0f, 0.0f}},
-            {{ 0.5f, 0, -0.5f}, {.5f, .5f, .5f}, {0.0f, -1.0f, 0.0f}},
-            {{ 0.5f, 0,  0.5f}, {.5f, .5f, .5f}, {0.0f, -1.0f, 0.0f}} };
-    modelBuilder.indices = { 0, 1, 3, 0, 2, 3 };*/
-
-    /*auto plane = GameObject::createGameObject();
-    plane.model = std::make_unique<Model>(device, modelBuilder);
-    plane.transform.translation = { .0f, .0f, .0f };
-    plane.transform.scale = { 2.f, 1.f , 2.f };
-    gameObjects.emplace(plane.getId(), std::move(plane));*/
-
-    /*std::vector<glm::vec3> lightColors{
-      {1.f, .1f, .1f},
-      
-      {.1f, 1.f, .1f},
-
-      {1.f, 1.f, .1f},
-      {.1f, 1.f, 1.f},
-                  {.1f, .1f, 1.f},
-
-      {1.f, 1.f, 1.f}  
-    };
-
-    for (int i = 0; i < lightColors.size(); i++) {
-        auto pointLight = GameObject::makePointLight(0.5f, 0.05f, lightColors[i]);
-        auto rotateLight = glm::rotate(glm::mat4(1.f), (i * glm::two_pi<float>()) / lightColors.size(), {0.f, -1.0f, 0.f});
-        pointLight.transform.translation = glm::vec3(rotateLight * glm::vec4(-1.f, -1.f, -1.f, 1.f));
-        gameObjects.emplace(pointLight.getId(), std::move(pointLight));
-    }*/
-
-    auto pointLight = GameObject::makePointLight(device, .7f, 0.0f, {1.0f, 0.5f, 0.f});
-    pointLight.transform.translation = {-0.27f, -0.7f, .6f};
-    gameObjects.emplace(pointLight.getId(), std::move(pointLight));
-
-    auto pointLight1 = GameObject::makePointLight(device, 0.7f, 0.0f, { 1.0f, 0.5f, 0.f });
-    pointLight1.transform.translation = { -0.27f, -0.7f, -0.7f };
-    gameObjects.emplace(pointLight1.getId(), std::move(pointLight1));
-
-    auto pointLight2 = GameObject::makePointLight(device, 0.2f, 0.05f, { 1.0f, 0.f, 0.f });
-    pointLight2.transform.translation = { 0.1f, -0.1f, .0f };
-    gameObjects.emplace(pointLight2.getId(), std::move(pointLight2));
 }

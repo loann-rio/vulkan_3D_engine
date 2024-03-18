@@ -88,8 +88,8 @@ void main() {
 
 
 	// get texture color
-	vec4 color = texture(texSampler, fragTexCoord);
-	//vec4 color = vec4(1.0, 1.0, 1.0, 1.0);
+	//vec4 color = texture(texSampler, fragTexCoord);
+	vec4 color = vec4(fragColor, 1.0);
 
 	// sum colors
 	outColor = (vec4(diffuseLight, 1.0) + vec4(specularLight, 1.0)) * color +  cosAngOfIncidence * ubo.globalLightDir.w * color;  

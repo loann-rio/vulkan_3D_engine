@@ -38,6 +38,7 @@ void main() {
 
 	fragNormalWorld = normalize(mat3(push.normalMatrix)*normal);
 	fragPosWorld = positionWorld.xyz;
+
 	fragColor = color;
 	texCoord = uv;
 }
