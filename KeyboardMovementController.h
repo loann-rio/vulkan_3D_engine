@@ -23,7 +23,7 @@ public:
 
 
     KeyMappings keys{};
-    float sensiMove{ 3.f };
+    float sensiMove{ 5.f };
     float sensiLook{ 1.5f };
 
 };

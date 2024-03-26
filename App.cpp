@@ -8,7 +8,6 @@
 #include "Frame_info.h"
 #include "preBuild.h"
 #include "point_light_system.h"
-#include "preBuild.h"
 #include "Texture.h"
 
 
@@ -84,8 +83,8 @@ void App::run()
     // camera setting
     Camera camera{};
     auto viewerObject = GameObject::createGameObject(device);
-    viewerObject.transform.translation = { 2.0f, -1.0f, 2.5f };
-    viewerObject.transform.rotation.y = 180;
+    viewerObject.transform.translation = { 5.0f, -3.0f, 5.5f };
+    viewerObject.transform.rotation.y;
 
     // user inputs
     KeyboardMovementController cameraController{};
@@ -101,7 +100,8 @@ void App::run()
         auto newTime = std::chrono::high_resolution_clock::now();
         float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
         currentTime = newTime;
-        //std::cout << (1 / frameTime) << "\n";
+        
+        std::cout << (1 / frameTime) << "\n";
         currentTime = std::chrono::high_resolution_clock::now();
 
         // move camera on event 
@@ -159,10 +159,17 @@ void App::loadGameObjects() {
     
     //std::shared_ptr<Model> model_city = Model::createModelFromFile(device, "models/viking_room.obj", "");
 
-    std::shared_ptr<Model> model_city = createPlane(device, 10, 2, { 1.f, 1.f, 1.f });
 
+    std::shared_ptr<Model> model_city = createPlane1(device, 500, 50, { 1.f, 1.f, 1.f });
+
+    PerlinNoise pn{ 151487352 };
+    pn.Generate2DnoiseMap(4, 4, 30.f, 6, 0.35f, 2, 0, 0);
+   
     auto Lowpoly_City = GameObject::createGameObject(device);
+    Lowpoly_City.transform.scale = { 1.f, -1.f , 1.f };
     Lowpoly_City.model = model_city;
     gameObjects.emplace(Lowpoly_City.getId(), std::move(Lowpoly_City));
 
 }
+
+
