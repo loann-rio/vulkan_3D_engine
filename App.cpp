@@ -171,5 +171,3 @@ void App::loadGameObjects() {
     gameObjects.emplace(Lowpoly_City.getId(), std::move(Lowpoly_City));
 
 }
-
-

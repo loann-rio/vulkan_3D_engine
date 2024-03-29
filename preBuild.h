@@ -100,11 +100,11 @@ static std::unique_ptr<Model> createPlane1(Device& device, const int detail, con
     std::vector<terrainType> regions{
         {.3f  , {.137f, .192f, .596f }},
         {.4f  , {.145f, .271f, .659f }},
-        {.45f , {.878f, .823f, .4f   }},
-        {.55f , {.145f, .659f, .188f }},
-        {.6f  , {.176f, .557f, .208f }},
-        {.7f  , {.482f, .376f, .247f }},
-        {.85f , {.443f, .322f, .212f }},
+        {.5f , {.878f, .823f, .4f   }},
+        {.6f , {.145f, .659f, .188f }},
+        {.7f  , {.176f, .557f, .208f }},
+        {.8f  , {.482f, .376f, .247f }},
+        {.9f , {.443f, .322f, .212f }},
         {1.f  , {1.f  , 1.f  , 1.f   }},
     };
 
@@ -112,7 +112,7 @@ static std::unique_ptr<Model> createPlane1(Device& device, const int detail, con
 
 
     PerlinNoise pn{ 151487352 };
-    std::vector<std::vector<float>> noiseMap = pn.Generate2DnoiseMap(detail + 1, detail + 1, 50.f, 6, 0.35f, 2, 0, 0);
+    std::vector<std::vector<float>> noiseMap = pn.Generate2DnoiseMap(detail + 1, detail + 1, 50.f, 6, 0.55f, 2, 0, 0);
 
     Model::Builder modelBuilder{};
 
