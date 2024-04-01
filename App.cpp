@@ -132,6 +132,8 @@ void App::run()
             ubo.projection = camera.getProjection();
             ubo.view = camera.getView();
             ubo.inverseView = camera.getInverseView();
+            //ubo.globalLightDir = { cos((double)frame / 500), sin((double)frame / 500),0.f,  .5f };
+           
 
             pointLightSystem.update(frameInfo, ubo, frame);
             uboBuffers[frameIndex]->writeToBuffer(&ubo);
@@ -159,15 +161,28 @@ void App::loadGameObjects() {
     
     //std::shared_ptr<Model> model_city = Model::createModelFromFile(device, "models/viking_room.obj", "");
 
+    std::shared_ptr<Model> model_city = createPlane1(device, 100, 50, { 1.f, 1.f, 1.f });
 
-    std::shared_ptr<Model> model_city = createPlane1(device, 500, 50, { 1.f, 1.f, 1.f });
-
-    PerlinNoise pn{ 151487352 };
-    pn.Generate2DnoiseMap(4, 4, 30.f, 6, 0.35f, 2, 0, 0);
-   
     auto Lowpoly_City = GameObject::createGameObject(device);
     Lowpoly_City.transform.scale = { 1.f, -1.f , 1.f };
     Lowpoly_City.model = model_city;
     gameObjects.emplace(Lowpoly_City.getId(), std::move(Lowpoly_City));
+
+    /*std::vector<glm::vec3> lightColors{
+      {1.f, .1f, .1f},
+      {.1f, 1.f, .1f},
+      {1.f, 1.f, .1f},
+      {.1f, 1.f, 1.f},
+      {.1f, .1f, 1.f},
+      {1.f, 1.f, 1.f}
+    };
+
+    for (int i = 0; i < lightColors.size(); i++) {
+        auto pointLight = GameObject::makePointLight(device, 100.5f, 1.f, lightColors[i]);
+        auto rotateLight = glm::rotate(glm::mat4(1.f), (i * glm::two_pi<float>()) / lightColors.size(), { 0.f, -1.0f, 0.f });
+        pointLight.transform.translation = glm::vec3(rotateLight * glm::vec4(-10.f, -10.f, -10.f, 1.f));
+        gameObjects.emplace(pointLight.getId(), std::move(pointLight));
+    }*/
+
 
 }
