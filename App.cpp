@@ -151,7 +151,7 @@ void App::run()
             renderer.endFrame();
 		}
 
-        frame = (frame + 1) % 36000;
+        frame = (frame + 1) % (int) (500 * 2 * 3.1415);
 	}
 
 	vkDeviceWaitIdle(device.device());
