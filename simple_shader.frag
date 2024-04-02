@@ -72,7 +72,7 @@ void main() {
 
 
 	// water level
-	float height = -fragPositionWorld.y;
+	float height = -fragPositionWorld.y*2/3;
 	if (height <  0.15){
 		color = vec4(0.137, 0.192, 0.596, 1.0);
 	} else if (height <  0.23){

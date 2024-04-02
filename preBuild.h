@@ -114,16 +114,17 @@ static std::unique_ptr<Model> createPlane1(Device& device, const int detail, con
             {1.f  , {1.f  , 1.f  , 1.f   }},
     };
 
-    float heightMultiplier = 2.f;
+    float heightMultiplier = 3.f;
 
     
     PerlinNoise pn{ 3141592 };
-    std::vector<std::vector<float>> noiseMap = pn.Generate2DnoiseMap(detail + 1, detail + 1, 50.f, 6, 0.55f, 2, 0, 10);
+    std::vector<std::vector<float>> noiseMap = pn.Generate2DnoiseMap(detail + 1, detail + 1, 20.f, 6, 0.55f, 2, 0, 10);
 
     Model::Builder modelBuilder{};
 
-    for (unsigned int i = 0; i < detail + 1; i++) {
-        for (unsigned int j = 0; j < detail + 1; j++)
+    for (unsigned int i = 0; i < detail + 1; i++) 
+    {
+        for (unsigned int j = 0; j < detail + 1; j++) 
         {
             float height = noiseMap[i][j];
 
@@ -140,8 +141,6 @@ static std::unique_ptr<Model> createPlane1(Device& device, const int detail, con
             height = pow(height, 3);
 
             modelBuilder.vertices.push_back({ {i * sizePlane / detail, height * heightMultiplier, j * sizePlane / detail}, color , { 0.0, -1.0, 0.0 }});
-
-            //modelBuilder.vertices.push_back({ {i * sizePlane / detail, ((double)rand() / (RAND_MAX)), j * sizePlane / detail}, { 0.f, 1.f, 0.f } });
         }
     }
 
@@ -149,7 +148,7 @@ static std::unique_ptr<Model> createPlane1(Device& device, const int detail, con
     //for (unsigned int i = 1; i < detail - 2; i++) {
     //    for (unsigned int j = 1; j < detail - 2; j++) {
     //        glm::vec3 normal(0.0f, 0.0f, 0.0f); // Initialize normal to zero vector
-
+    //
     //        // Calculate normals of adjacent triangles and sum them up
     //        normal += glm::normalize(glm::cross(
     //            modelBuilder.vertices[(i - 1) + detail * (j - 1)].position - modelBuilder.vertices[i + detail * j].position,
@@ -172,7 +171,7 @@ static std::unique_ptr<Model> createPlane1(Device& device, const int detail, con
     //        normal += glm::normalize(glm::cross(
     //            modelBuilder.vertices[(i - 1) + detail * (j + 1)].position - modelBuilder.vertices[i + detail * j].position,
     //            modelBuilder.vertices[(i - 1) + detail * (j)].position - modelBuilder.vertices[i + detail * j].position));
-
+    //
     //        // Normalize the sum to get the average normal
     //        modelBuilder.vertices[i + detail * j].normal = glm::normalize(normal);
     //    }
