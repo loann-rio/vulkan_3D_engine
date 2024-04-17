@@ -29,9 +29,9 @@ namespace std {
 Model::Model(Device& device, const Model::Builder& builder, const char* filePathTexture) : device{ device } {
 	createVertexBuffers(builder.vertices);
 	createIndexBuffers(builder.indices);
-	//Texture text(device, filePathTexture);
-	//textureImageView = text.getImageView();
-	//textureSampler = text.getSampler();
+
+	texture = std::make_unique<Texture>( device, filePathTexture );
+
 }
 
 Model::~Model() {}
@@ -65,10 +65,10 @@ void Model::draw(VkCommandBuffer commandBuffer)
 	}
 }
 
-VkDescriptorImageInfo Model::getImageInfo()
-{
-	return { textureSampler, textureImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
-}
+//VkDescriptorImageInfo Model::getImageInfo()
+//{
+//	return { textureSampler, textureImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
+//}
 
 void Model::createVertexBuffers(const std::vector<Vertex>& vertices)
 {

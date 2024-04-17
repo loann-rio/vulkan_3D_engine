@@ -31,6 +31,11 @@ layout(push_constant) uniform Push {
 	mat4 normalMatrix;
 } push;
 
+// Define the texture sampler
+//layout(set = 1, binding = 0) uniform sampler2D texSampler;
+
+
+
 void main() {
 	vec4 positionWorld = push.modelMatrix * vec4(position, 1.0);
 

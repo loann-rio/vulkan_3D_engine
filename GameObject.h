@@ -4,10 +4,12 @@
 #include "Swap_chain.h"
 #include "descriptors.h"
 #include "Device.h"
+#include "Texture.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <memory>
+#include <iostream>
 #include <unordered_map>
 
 struct TransformComponent {
@@ -33,7 +35,7 @@ public:
 
 	static GameObject createGameObject(Device& device) {
 		static id_t currentId = 0;
-		return GameObject{ currentId++, device };
+		return GameObject{ currentId++, device};
 	}
 
 	static GameObject makePointLight(Device& device, float intencity, float radius, glm::vec3 color);
@@ -53,20 +55,14 @@ public:
 
 	std::vector<VkDescriptorSet> descriptorSet{ Swap_chain::MAX_FRAMES_IN_FLIGHT };
 
-	std::unique_ptr<DescriptorSetLayout> setLayout = nullptr;
+	//void createDescriptorSet();
 
 
 private:
 
 	Device& device;
 
-	GameObject(id_t obId, Device& device) : id{obId} , device{device}
-	{
-		setLayout = DescriptorSetLayout::Builder(device)
-			.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
-			.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-			.build();
+	GameObject(id_t obId, Device& devicel) : id{obId} , device{device} {}
 
-	}
 	id_t id;
 };

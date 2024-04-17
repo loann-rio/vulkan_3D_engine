@@ -7,13 +7,11 @@ layout( location = 3 ) in vec2 fragTexCoord;
 
 layout( location = 0 ) out vec4 outColor;
 
-layout(binding = 1) uniform sampler2D texSampler;
-
 struct PointLight {
 	vec4 position;
 	vec4 color;
 };
-
+			
 layout(set = 0, binding = 0) uniform GlobalUbo {
 	mat4 projection;
 	mat4 view;
@@ -28,6 +26,10 @@ layout(push_constant) uniform Push {
 	mat4 modelMatrix;
 	mat4 normalMatrix;
 } push;
+
+// Define the texture sampler
+layout(set = 1, binding = 0) uniform sampler2D texSampler;
+
 
 
 
@@ -88,8 +90,8 @@ void main() {
 
 
 	// get texture color
-	//vec4 color = texture(texSampler, fragTexCoord);
-	vec4 color = vec4(fragColor, 1.0);
+	vec4 color = texture(texSampler, fragTexCoord);
+	//vec4 color = vec4(fragColor, 1.0);
 
 	// sum colors
 	outColor = (vec4(diffuseLight, 1.0) + vec4(specularLight, 1.0)) * color +  cosAngOfIncidence * ubo.globalLightDir.w * color;  

@@ -29,10 +29,9 @@
 
 App::App() { 
     globalPool = DescriptorPool::Builder(device)
-        .setMaxSets(Swap_chain::MAX_FRAMES_IN_FLIGHT)
+        .setMaxSets(Swap_chain::MAX_FRAMES_IN_FLIGHT * 8)
         .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Swap_chain::MAX_FRAMES_IN_FLIGHT)
         .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Swap_chain::MAX_FRAMES_IN_FLIGHT)
-
         .build();
 
     loadGameObjects(); 
@@ -57,29 +56,40 @@ void App::run()
         uboBuffers[i]->map();
     }
 
-    auto globalSetLayout = DescriptorSetLayout::Builder(device)
-        .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
-        .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .build();
-
-    Texture texture{device, "textures/Palette.jpg" };
+    auto globalSetLayout = DescriptorSetLayout::Builder(device).addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS).build();
 
     std::vector<VkDescriptorSet> globalDescriptorSet(Swap_chain::MAX_FRAMES_IN_FLIGHT);
-    for (int i = 0; i < globalDescriptorSet.size(); i++)
+    for (int i = 0; i < globalDescriptorSet.size() && i < 2; i++)
     {
         auto bufferInfo = uboBuffers[i]->descriptorInfo();
-        VkDescriptorImageInfo imageInfo = texture.getImageInfo();
 
         DescriptorWriter(*globalSetLayout, *globalPool)
             .writeBuffer(0, &bufferInfo)
-            .writeImage(1, &imageInfo)
             .build(globalDescriptorSet[i]);
     }
 
+    auto textureSetLayout = DescriptorSetLayout::Builder(device)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .build();
+
+    for (auto& kv : gameObjects)
+    {
+        auto& obj = kv.second;
+        if (obj.model == nullptr) continue;
+        std::vector<VkDescriptorSet> ds{ Swap_chain::MAX_FRAMES_IN_FLIGHT };
+        for (int i = 0; i < ds.size(); i++)
+        {
+            auto imageInfo = obj.model->texture->getImageInfo();
+            DescriptorWriter(*textureSetLayout, *globalPool)
+                .writeImage(0, &imageInfo)
+                .build(obj.descriptorSet[i]);
+        }
+    }
+
+
+
     PointLightSystem pointLightSystem{ device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
 	RenderSystem renderSystem{ device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
-
-    
 
     // camera setting
     Camera camera{};
@@ -87,13 +97,16 @@ void App::run()
     viewerObject.transform.translation = { 2.0f, -1.0f, 2.5f };
     viewerObject.transform.rotation.y = 180;
 
+    //TODO -> not each frame,   create perspective matrix
+    float aspec = renderer.getAspectRatio();
+    camera.setPerspectiveProjection(glm::radians(50.f), aspec, .1f, 100.0f);
+
     // user inputs
     KeyboardMovementController cameraController{};
 
     auto currentTime = std::chrono::high_resolution_clock::now();
 
     int frame = 0;
-
 	while (!window.shouldClose())
 	{
 		glfwPollEvents();
@@ -101,28 +114,24 @@ void App::run()
         auto newTime = std::chrono::high_resolution_clock::now();
         float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
         currentTime = newTime;
-        //std::cout << (1 / frameTime) << "\n";
+        std::cout << (1 / frameTime) << "\n";
         currentTime = std::chrono::high_resolution_clock::now();
 
         // move camera on event 
         cameraController.moveInPlaneXZ(window.getGLFWwindow(), frameTime, viewerObject);
         camera.setViewYXZ(viewerObject.transform.translation, viewerObject.transform.rotation);
 
-        //TODO -> not each frame,   create perspective matrix
-        float aspec = renderer.getAspectRatio();
-        camera.setPerspectiveProjection(glm::radians(50.f), aspec, .1f, 100.0f);
+        
 
 		if (auto commandBuffer = renderer.beginFrame()) {
             int frameIndex = renderer.getFrameIndex();
-
-           
 
             FrameInfo frameInfo{
                 frameIndex,
                 frameTime,
                 commandBuffer,
                 camera,
-                globalDescriptorSet[frameIndex],
+                globalDescriptorSet,
                 gameObjects
             };
 
@@ -140,7 +149,8 @@ void App::run()
             // render
 			renderer.beginSwapChainRenderPass(commandBuffer);
 
-            renderSystem.renderGameObjects(frameInfo, *globalSetLayout, *globalPool);
+            auto bufferInfo = uboBuffers[frameIndex]->descriptorInfo();
+            renderSystem.renderGameObjects(frameInfo);
             pointLightSystem.render(frameInfo);
 
             
@@ -157,12 +167,18 @@ void App::run()
 
 void App::loadGameObjects() {
     
-    //std::shared_ptr<Model> model_city = Model::createModelFromFile(device, "models/viking_room.obj", "");
-
-    std::shared_ptr<Model> model_city = createPlane(device, 10, 2, { 1.f, 1.f, 1.f });
-
+    std::shared_ptr<Model> model_city = Model::createModelFromFile(device, "models/viking_room.obj", "textures/viking_room.png");
     auto Lowpoly_City = GameObject::createGameObject(device);
+    Lowpoly_City.transform.rotation.x = pi<float> / 2;
     Lowpoly_City.model = model_city;
     gameObjects.emplace(Lowpoly_City.getId(), std::move(Lowpoly_City));
+
+
+    std::shared_ptr<Model> model_city1 = Model::createModelFromFile(device, "models/viking_room.obj", "textures/Palette.jpg");
+    auto Lowpoly_City1= GameObject::createGameObject(device);
+    Lowpoly_City1.transform.rotation.x = pi<float> / 2;
+    Lowpoly_City1.model = model_city1;
+    Lowpoly_City1.transform.translation.z = 2;
+    gameObjects.emplace(Lowpoly_City1.getId(), std::move(Lowpoly_City1));
 
 }

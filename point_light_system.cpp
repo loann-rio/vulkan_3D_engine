@@ -118,7 +118,7 @@ void PointLightSystem::render(FrameInfo& frameInfo)
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
 		pipelineLayout,
 		0, 1,
-		&frameInfo.globalDescriptorSet,
+		&frameInfo.globalDescriptorSet[frameInfo.frameIndex],
 		0,
 		nullptr
 	);

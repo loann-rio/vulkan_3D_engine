@@ -59,6 +59,7 @@ void Texture::createTextureImage(const char* path)
 
     vkDestroyBuffer(device.device(), stagingBuffer, nullptr);
     vkFreeMemory(device.device(), stagingBufferMemory, nullptr);
+
 }
 
 

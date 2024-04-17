@@ -17,7 +17,13 @@ struct SimplePushConstantData {
 
 RenderSystem::RenderSystem(Device& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout) : device{device}
 {
-	createPipelineLayout(globalSetLayout);
+	auto textureLayout = (*DescriptorSetLayout::Builder(device)
+		.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+		.build())
+		.getDescriptorSetLayout();
+
+	createPipelineLayout({ globalSetLayout, textureLayout});
+
 	createPipeline(renderPass);
 }
 
@@ -26,14 +32,24 @@ RenderSystem::~RenderSystem()
 	vkDestroyPipelineLayout(device.device(), pipelineLayout, nullptr);
 }
 
-void RenderSystem::createPipelineLayout(VkDescriptorSetLayout globalSetLayout)
+void RenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout> descriptorSetLayout)
 {
 	VkPushConstantRange pushConstantRange{};
 	pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 	pushConstantRange.offset = 0;
 	pushConstantRange.size = sizeof(SimplePushConstantData);
 
-	std::vector<VkDescriptorSetLayout> descriptorSetLayout{ globalSetLayout };
+	VkDescriptorBindingFlags descriptorBindingFlags[] = {
+	0,  // For non-dynamic descriptor sets
+	VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT // For dynamic descriptor sets
+	};
+
+
+	VkDescriptorSetLayoutBindingFlagsCreateInfoEXT bindingFlagsInfo = {};
+	bindingFlagsInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT;
+	bindingFlagsInfo.bindingCount = sizeof(descriptorBindingFlags) / sizeof(descriptorBindingFlags[0]);
+	bindingFlagsInfo.pBindingFlags = descriptorBindingFlags;
+	
 
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -41,6 +57,7 @@ void RenderSystem::createPipelineLayout(VkDescriptorSetLayout globalSetLayout)
 	pipelineLayoutInfo.pSetLayouts = descriptorSetLayout.data();
 	pipelineLayoutInfo.pushConstantRangeCount = 1;
 	pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
+	pipelineLayoutInfo.pNext = &bindingFlagsInfo;
 
 	if (vkCreatePipelineLayout(device.device(), &pipelineLayoutInfo, nullptr, &pipelineLayout) !=
 		VK_SUCCESS) {
@@ -68,28 +85,37 @@ void RenderSystem::createPipeline(VkRenderPass renderPass)
 	);
 }
 
-void RenderSystem::renderGameObjects(FrameInfo& frameInfo, DescriptorSetLayout& setLayout, DescriptorPool& pool)
+void RenderSystem::renderGameObjects(FrameInfo& frameInfo)
 {
 	pipeline->bind(frameInfo.commandBuffer);
-
-	//DescriptorWriter(setLayout, pool)
-	//			//.writeImage(1, &imageInfo)
-	//			.overwrite(frameInfo.globalDescriptorSet);
 
 	vkCmdBindDescriptorSets(
 		frameInfo.commandBuffer,
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
 		pipelineLayout,
 		0, 1,
-		&frameInfo.globalDescriptorSet,
+		&frameInfo.globalDescriptorSet[frameInfo.frameIndex],
 		0,
 		nullptr
 	);
 
+	
+	int i = 0;
 	for (auto& kv : frameInfo.gameObjects)
 	{
 		auto& obj = kv.second;
-		if (obj.model == nullptr) continue;
+		if (obj.model == nullptr) continue;	
+
+
+		vkCmdBindDescriptorSets(
+			frameInfo.commandBuffer,
+			VK_PIPELINE_BIND_POINT_GRAPHICS,
+			pipelineLayout,
+			1, 1,
+			&obj.descriptorSet[frameInfo.frameIndex],
+			0,
+			nullptr
+		);
 
 		SimplePushConstantData push{};
 		push.modelMatrix = obj.transform.mat4();
@@ -103,7 +129,10 @@ void RenderSystem::renderGameObjects(FrameInfo& frameInfo, DescriptorSetLayout& 
 			sizeof(SimplePushConstantData),
 			&push
 		);
+
 		obj.model->bind(frameInfo.commandBuffer);
 		obj.model->draw(frameInfo.commandBuffer);
+
+		i++;
 	}
 }

@@ -88,9 +88,11 @@ VkResult Swap_chain::acquireNextImage(uint32_t* imageIndex) {
 
 VkResult Swap_chain::submitCommandBuffers(
     const VkCommandBuffer* buffers, uint32_t* imageIndex) {
+
     if (imagesInFlight[*imageIndex] != VK_NULL_HANDLE) {
         vkWaitForFences(device.device(), 1, &imagesInFlight[*imageIndex], VK_TRUE, UINT64_MAX);
     }
+
     imagesInFlight[*imageIndex] = inFlightFences[currentFrame];
 
     VkSubmitInfo submitInfo = {};
@@ -398,12 +400,12 @@ VkSurfaceFormatKHR Swap_chain::chooseSwapSurfaceFormat(
 
 VkPresentModeKHR Swap_chain::chooseSwapPresentMode(
     const std::vector<VkPresentModeKHR>& availablePresentModes) {
-    for (const auto& availablePresentMode : availablePresentModes) {
-        if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) { // VK_PRESENT_MODE_MAILBOX_KHR    VK_PRESENT_MODE_IMMEDIATE_KHR
-            std::cout << "Present mode: Mailbox" << std::endl;
-            return availablePresentMode;
-        }
-    }
+    //for (const auto& availablePresentMode : availablePresentModes) {
+    //    if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) { // VK_PRESENT_MODE_MAILBOX_KHR    VK_PRESENT_MODE_IMMEDIATE_KHR
+    //        std::cout << "Present mode: Mailbox" << std::endl;
+    //        return availablePresentMode;
+    //    }
+    //}
 
     // for (const auto &availablePresentMode : availablePresentModes) {
     //   if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR) {

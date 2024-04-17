@@ -3,6 +3,7 @@
 #include <vulkan/vulkan.h>
 #include "Device.h"
 #include "Buffer.h"
+#include "Texture.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -33,11 +34,11 @@ public:
 		std::vector<Vertex> vertices{};
 		std::vector<uint32_t> indices{};
 
-		void loadModel(const std::string& filepath);
+		void loadModel(const std::string& filepath); 
 	};
 
-	Model(Device& device, const Model::Builder &builder, const char* filePathTexture);
-	~Model();
+	Model(Device& device, const Model::Builder &builder, const char* filePathTexture); 
+	~Model(); 
 
 	Model(const Model&) = delete;
 	Model& operator=(const Model&) = delete;
@@ -48,9 +49,9 @@ public:
 	void draw(VkCommandBuffer commandBuffer);
 
 	bool hasTexture = false;
-	VkDescriptorImageInfo getImageInfo();
+	//VkDescriptorImageInfo getImageInfo();
 
-	uint16_t imageId = 0;
+	std::unique_ptr<Texture> texture;
 	
 private:
 	void createVertexBuffers(const std::vector<Vertex>& vertices);
@@ -64,9 +65,6 @@ private:
 	bool hasIndexBuffer = false;
 	std::unique_ptr<Buffer> indexBuffer;
 	uint32_t indexCount;
-
-	VkImageView textureImageView;
-	VkSampler textureSampler;
 
 };
 

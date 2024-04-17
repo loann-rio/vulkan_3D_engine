@@ -22,11 +22,11 @@ public:
 
 	RenderSystem(const RenderSystem&) = delete;
 	RenderSystem& operator=(const RenderSystem&) = delete;
-	void renderGameObjects(FrameInfo& frameInfo, DescriptorSetLayout& setLayout, DescriptorPool& pool);
+	void renderGameObjects(FrameInfo& frameInfo);
 
 
 private:
-	void createPipelineLayout(VkDescriptorSetLayout globalSetLayout);
+	void createPipelineLayout(std::vector<VkDescriptorSetLayout> descriptorSetLayout);
 	void createPipeline(VkRenderPass renderPass);
 
 	Device &device;

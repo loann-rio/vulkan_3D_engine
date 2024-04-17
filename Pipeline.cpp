@@ -86,6 +86,8 @@ void Pipeline::createGraphicsPipeline(const std::string& vertFilepath,
 	vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 	vertexInputInfo.pVertexBindingDescriptions = bindingDescriptions.data();
 
+	
+
 	VkGraphicsPipelineCreateInfo pipelineInfo{};
 	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 	pipelineInfo.stageCount = 2;
@@ -98,7 +100,7 @@ void Pipeline::createGraphicsPipeline(const std::string& vertFilepath,
 	pipelineInfo.pColorBlendState = &configInfo.colorBlendInfo;
 	pipelineInfo.pDepthStencilState = &configInfo.depthStencilInfo;
 	pipelineInfo.pDynamicState = &configInfo.dynamicStateInfo;
-
+	
 	pipelineInfo.layout = configInfo.pipelineLayout;
 	pipelineInfo.renderPass = configInfo.renderPass;
 	pipelineInfo.subpass = configInfo.subpass;

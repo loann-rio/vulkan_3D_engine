@@ -79,11 +79,8 @@ std::unique_ptr<DescriptorPool> DescriptorPool::Builder::build() const {
 
 // *************** Descriptor Pool *********************
 
-DescriptorPool::DescriptorPool(
-    Device& device,
-    uint32_t maxSets,
-    VkDescriptorPoolCreateFlags poolFlags,
-    const std::vector<VkDescriptorPoolSize>& poolSizes)
+DescriptorPool::DescriptorPool(Device& device, uint32_t maxSets,
+    VkDescriptorPoolCreateFlags poolFlags, const std::vector<VkDescriptorPoolSize>& poolSizes)
     : device{ device } {
     VkDescriptorPoolCreateInfo descriptorPoolInfo{};
     descriptorPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
