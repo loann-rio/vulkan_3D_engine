@@ -68,25 +68,12 @@ void App::run()
             .build(globalDescriptorSet[i]);
     }
 
-    auto textureSetLayout = DescriptorSetLayout::Builder(device)
-        .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .build();
-
     for (auto& kv : gameObjects)
     {
         auto& obj = kv.second;
         if (obj.model == nullptr) continue;
-        std::vector<VkDescriptorSet> ds{ Swap_chain::MAX_FRAMES_IN_FLIGHT };
-        for (int i = 0; i < ds.size(); i++)
-        {
-            auto imageInfo = obj.model->texture->getImageInfo();
-            DescriptorWriter(*textureSetLayout, *globalPool)
-                .writeImage(0, &imageInfo)
-                .build(obj.descriptorSet[i]);
-        }
+        obj.createDescriptorSet(*globalPool, device);
     }
-
-
 
     PointLightSystem pointLightSystem{ device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
 	RenderSystem renderSystem{ device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
@@ -97,7 +84,6 @@ void App::run()
     viewerObject.transform.translation = { 2.0f, -1.0f, 2.5f };
     viewerObject.transform.rotation.y = 180;
 
-    //TODO -> not each frame,   create perspective matrix
     float aspec = renderer.getAspectRatio();
     camera.setPerspectiveProjection(glm::radians(50.f), aspec, .1f, 100.0f);
 
@@ -116,6 +102,7 @@ void App::run()
         currentTime = newTime;
         std::cout << (1 / frameTime) << "\n";
         currentTime = std::chrono::high_resolution_clock::now();
+
 
         // move camera on event 
         cameraController.moveInPlaneXZ(window.getGLFWwindow(), frameTime, viewerObject);
@@ -149,17 +136,15 @@ void App::run()
             // render
 			renderer.beginSwapChainRenderPass(commandBuffer);
 
-            auto bufferInfo = uboBuffers[frameIndex]->descriptorInfo();
             renderSystem.renderGameObjects(frameInfo);
             pointLightSystem.render(frameInfo);
 
             
-
             renderer.endSwapChainRenderPass(commandBuffer);
             renderer.endFrame();
 		}
 
-        frame = (frame + 1) % 36000;
+        frame = (frame + 1) % 36000; 
 	}
 
 	vkDeviceWaitIdle(device.device());

@@ -17,12 +17,12 @@ struct SimplePushConstantData {
 
 RenderSystem::RenderSystem(Device& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout) : device{device}
 {
-	auto textureLayout = (*DescriptorSetLayout::Builder(device)
+	//auto textureLayout = ;
+
+	createPipelineLayout({ globalSetLayout, (*DescriptorSetLayout::Builder(device)
 		.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.build())
-		.getDescriptorSetLayout();
-
-	createPipelineLayout({ globalSetLayout, textureLayout});
+		.getDescriptorSetLayout() });
 
 	createPipeline(renderPass);
 }

@@ -55,7 +55,7 @@ public:
 
 	std::vector<VkDescriptorSet> descriptorSet{ Swap_chain::MAX_FRAMES_IN_FLIGHT };
 
-	//void createDescriptorSet();
+	void createDescriptorSet(DescriptorPool& pool, Device& device);
 
 
 private:
