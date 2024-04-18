@@ -62,7 +62,7 @@ private:
 
 	Device& device;
 
-	GameObject(id_t obId, Device& devicel) : id{obId} , device{device} {}
+	GameObject(id_t obId, Device& device) : id{obId} , device{device} {}
 
 	id_t id;
 };
