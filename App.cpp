@@ -10,7 +10,7 @@
 #include "point_light_system.h"
 #include "preBuild.h"
 #include "Texture.h"
-
+#include "TerrainRenderer.h"
 
 // glm
 #define GLM_FORCE_RADIANS
@@ -41,6 +41,7 @@ App::~App() { globalPool = nullptr;  }
 
 void App::run()
 {
+
     std::vector<std::unique_ptr<Buffer>> uboBuffers(Swap_chain::MAX_FRAMES_IN_FLIGHT);
     for (int i = 0; i < uboBuffers.size(); i++)
     {
@@ -77,6 +78,7 @@ void App::run()
 
     PointLightSystem pointLightSystem{ device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
 	RenderSystem renderSystem{ device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
+    TerrainRenderer terrainRenderer{ device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
 
     // camera setting
     Camera camera{};
@@ -100,7 +102,7 @@ void App::run()
         auto newTime = std::chrono::high_resolution_clock::now();
         float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
         currentTime = newTime;
-        std::cout << (1 / frameTime) << "\n";
+        //std::cout << (1 / frameTime) << "\n";
         currentTime = std::chrono::high_resolution_clock::now();
 
 
@@ -136,7 +138,9 @@ void App::run()
             // render
 			renderer.beginSwapChainRenderPass(commandBuffer);
 
-            renderSystem.renderGameObjects(frameInfo);
+            //renderSystem.renderGameObjects(frameInfo);
+            terrainRenderer.renderTerrain(frameInfo);
+
             pointLightSystem.render(frameInfo);
 
             

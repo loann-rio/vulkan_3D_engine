@@ -162,7 +162,7 @@ void Pipeline::defaultPipelineConfigInfo(PipelineConfigInfo& configInfo)
 
 	configInfo.multisampleInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 	configInfo.multisampleInfo.sampleShadingEnable = VK_FALSE;
-	configInfo.multisampleInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+	configInfo.multisampleInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;   // AAA
 	configInfo.multisampleInfo.minSampleShading = 1.0f;           // Optional
 	configInfo.multisampleInfo.pSampleMask = nullptr;             // Optional
 	configInfo.multisampleInfo.alphaToCoverageEnable = VK_FALSE;  // Optional

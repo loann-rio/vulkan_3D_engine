@@ -122,6 +122,7 @@ void Device::pickPhysicalDevice() {
     for (const auto& device : devices) {
         if (isDeviceSuitable(device)) {
             physicalDevice = device;
+            
             break;
         }
     }
@@ -131,6 +132,9 @@ void Device::pickPhysicalDevice() {
     }
 
     vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+
+    //msaaSamples = getMaxUsableSampleCount(properties);
+
     std::cout << "physical device: " << properties.deviceName << std::endl;
 }
 

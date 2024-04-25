@@ -72,6 +72,9 @@
     <ClCompile Include="Texture.cpp">
       <Filter>Fichiers sources</Filter>
     </ClCompile>
+    <ClCompile Include="terrainRenderer.cpp">
+      <Filter>Fichiers sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Window.h">
@@ -131,6 +134,12 @@
     <ClInclude Include="Texture.h">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
+    <ClInclude Include="PerlinNoise.h">
+      <Filter>Fichiers d%27en-tête</Filter>
+    </ClInclude>
+    <ClInclude Include="terrainRenderer.h">
+      <Filter>Fichiers d%27en-tête</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="compile.bat">
@@ -146,6 +155,12 @@
       <Filter>shaders</Filter>
     </None>
     <None Include="point_light.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="terrain.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="terrain.vert">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>
