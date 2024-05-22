@@ -80,7 +80,7 @@ void App::run()
     PointLightSystem pointLightSystem{ device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
 	RenderSystem renderSystem{ device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
 
-    TextOverlay textOverlay{ device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
+    TextOverlay textOverlay{ device, renderer.getSwapChainRenderPass() };
     textOverlay.prepareResources(*globalPool);
 
 

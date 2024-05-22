@@ -10,12 +10,7 @@
 #include <cassert>
 
 
-struct SimplePushConstantData {
-	glm::mat4 modelMatrix{ 1.f };
-	glm::mat4 normalMatrix{ 1.f };
-};
-
-TextOverlay::TextOverlay(Device& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout) : device{ device }
+TextOverlay::TextOverlay(Device& device, VkRenderPass renderPass) : device{ device }
 {
 	createPipelineLayout({ (*DescriptorSetLayout::Builder(device)
 		.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
@@ -108,9 +103,7 @@ void TextOverlay::renderText(FrameInfo& frameInfo)
 	VkDeviceSize offsets[] = { 0 };
 	vkCmdBindVertexBuffers(frameInfo.commandBuffer, 0, 1, buffers, offsets);
 
-	for (uint32_t j = 0; j < numLetters; j++) {
-		vkCmdDraw(frameInfo.commandBuffer, 6, 2, j * 6, 0);
-	}
+	vkCmdDraw(frameInfo.commandBuffer, 6 * numLetters, numLetters, 0, 0);
 
 }
 
@@ -169,24 +162,21 @@ void TextOverlay::prepareResources(DescriptorPool& pool)
 
 void TextOverlay::addText(std::string text, float x, float y, TextAlign align, uint32_t width, uint32_t height)
 {
-	frameBufferHeight = &height;
-	frameBufferWidth = &width;
 
 	const uint32_t firstChar = STB_FONT_consolas_24_latin1_FIRST_CHAR;
 
-	mapped = (glm::vec4*)(vertexBuffer->getMappedMemory());
+	glm::vec4* mapped = (glm::vec4*)(vertexBuffer->getMappedMemory());
 
 	assert(mapped != nullptr);
 
-	const float charW = 1.5f * scale / (float) *frameBufferWidth;
-	const float charH = 1.5f * scale / (float) *frameBufferHeight;
+	float fbW = width;
+	float fbH = height;
 
-	float fbW = (float)*frameBufferWidth;
-	float fbH = (float)*frameBufferHeight;
+	const float charW = 1.5f * scale / fbW;
+	const float charH = 1.5f * scale / fbH;
 
 	x = (x / fbW * 2.0f) - 1.0f;
 	y = (y / fbH * 2.0f) - 1.0f;
-
 
 
 	// Calculate text width

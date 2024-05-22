@@ -10,9 +10,7 @@
 #include "descriptors.h"
 #include "Model.h"
 
-
 #include "external/stb/consolas/stb_font_consolas_24_latin1.inl"
-
 
 #include <memory>
 #include <vector>
@@ -21,7 +19,7 @@
 class TextOverlay
 {
 public:
-	TextOverlay(Device& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
+	TextOverlay(Device& device, VkRenderPass renderPass);
 	~TextOverlay();
 
 	TextOverlay(const TextOverlay&) = delete;
@@ -32,7 +30,7 @@ public:
 	void prepareResources(DescriptorPool& pool);
 
 	void beginTextUpdate() { vertexBuffer->map(VK_WHOLE_SIZE, 0); numLetters = 0; };
-	void endTextUpdate() { vertexBuffer->unmap(); mapped = nullptr; };
+	void endTextUpdate() { vertexBuffer->unmap(); };
 
 	void addText(std::string text, float x, float y, TextAlign align, uint32_t width, uint32_t height);
 
@@ -52,11 +50,8 @@ private:
 	std::unique_ptr<Pipeline> pipeline;
 	VkPipelineLayout pipelineLayout;
 
-	uint32_t* frameBufferWidth;
-	uint32_t* frameBufferHeight;
-
 	float scale = 1.f;
-	glm::vec4* mapped = nullptr;
+
 	stb_fontchar stbFontData[STB_FONT_consolas_24_latin1_NUM_CHARS];
 
 	std::unique_ptr<Texture> texture;
