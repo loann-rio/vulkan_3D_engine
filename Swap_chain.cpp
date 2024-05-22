@@ -34,8 +34,6 @@ void Swap_chain::init()
     createSyncObjects();
 }
 
-
-
 Swap_chain::~Swap_chain() {
     for (auto imageView : swapChainImageViews) {
         vkDestroyImageView(device.device(), imageView, nullptr);

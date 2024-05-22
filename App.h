@@ -5,9 +5,11 @@
 #include "GameObject.h"
 #include "Renderer.h"
 #include "descriptors.h"
+#include "TextOverlay.h"
 
 #include <memory>
 #include <vector>
+#include <deque>
 
 class App
 {
@@ -25,6 +27,7 @@ public:
 
 private:
 	void loadGameObjects();
+	void getFrameRate(float lastFrameTime);
 
 	Window window{ WIDTH, HEIGHT, "hello" };
 	Device device{ window };
@@ -32,5 +35,8 @@ private:
 
 	std::unique_ptr<DescriptorPool> globalPool{};
 	GameObject::Map gameObjects;
+
+	std::vector<float> frameTimeVector;
+	float frameTimeSum = 0;
 };
 

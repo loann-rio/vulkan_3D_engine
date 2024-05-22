@@ -29,12 +29,14 @@
 
 App::App() { 
     globalPool = DescriptorPool::Builder(device)
-        .setMaxSets(Swap_chain::MAX_FRAMES_IN_FLIGHT * 8)
+        .setMaxSets(Swap_chain::MAX_FRAMES_IN_FLIGHT * 12)
         .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Swap_chain::MAX_FRAMES_IN_FLIGHT)
-        .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Swap_chain::MAX_FRAMES_IN_FLIGHT)
+        .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Swap_chain::MAX_FRAMES_IN_FLIGHT*8)
         .build();
 
     loadGameObjects(); 
+
+    frameTimeVector = std::vector<float>(300);
 }
 
 App::~App() { globalPool = nullptr;  }
@@ -78,6 +80,10 @@ void App::run()
     PointLightSystem pointLightSystem{ device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
 	RenderSystem renderSystem{ device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
 
+    TextOverlay textOverlay{ device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
+    textOverlay.prepareResources(*globalPool);
+
+
     // camera setting
     Camera camera{};
     auto viewerObject = GameObject::createGameObject(device);
@@ -97,12 +103,21 @@ void App::run()
 	{
 		glfwPollEvents();
 
+
+        // calculate frame time
         auto newTime = std::chrono::high_resolution_clock::now();
         float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
         currentTime = newTime;
-        std::cout << (1 / frameTime) << "\n";
-        currentTime = std::chrono::high_resolution_clock::now();
 
+        // show fps count on screen
+        getFrameRate(frameTime);
+
+        std::stringstream ss;
+        ss << std::fixed << std::setprecision(2) << frameTimeSum << " fps";
+
+        textOverlay.beginTextUpdate();
+        textOverlay.addText(ss.str(), 10, 10, TextOverlay::alignLeft, renderer.getWidth(), renderer.getHeight());
+        textOverlay.endTextUpdate();
 
         // move camera on event 
         cameraController.moveInPlaneXZ(window.getGLFWwindow(), frameTime, viewerObject);
@@ -138,6 +153,7 @@ void App::run()
 
             renderSystem.renderGameObjects(frameInfo);
             pointLightSystem.render(frameInfo);
+            textOverlay.renderText(frameInfo);
 
             
             renderer.endSwapChainRenderPass(commandBuffer);
@@ -166,4 +182,14 @@ void App::loadGameObjects() {
     Lowpoly_City1.transform.translation.z = 2;
     gameObjects.emplace(Lowpoly_City1.getId(), std::move(Lowpoly_City1));
 
+}
+
+void App::getFrameRate(float lastFrameTime)
+{
+    float v = 1 / (lastFrameTime * 300);
+    frameTimeSum += v;
+    frameTimeSum -= frameTimeVector[0];
+
+    frameTimeVector.push_back(v);
+    frameTimeVector.erase(frameTimeVector.begin());
 }

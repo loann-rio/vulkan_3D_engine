@@ -15,6 +15,52 @@ Texture::Texture(Device& device, const char* filePathTexture) : device{device}
     createTextureSampler();
 }
 
+Texture::Texture(Device& device, unsigned char* rgbaPixels, const uint32_t fontWidth, const uint32_t fontHeight) : device{ device }
+{
+    createTextureImage(rgbaPixels, fontWidth, fontHeight);
+    createTextureImageView();
+    createTextureSampler();
+}
+
+void Texture::createTextureImage(unsigned char* rgbaPixels, const uint32_t fontWidth, const uint32_t fontHeight) {
+
+    int texWidth = fontWidth;
+    int texHeight = fontHeight;
+    VkDeviceSize imageSize = texWidth * texHeight * 4;
+
+    // create staging buffer
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+    device.createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+    // transfer to device and copy from staging
+    void* data;
+    vkMapMemory(device.device(), stagingBufferMemory, 0, imageSize, 0, &data);
+
+    memcpy(data, rgbaPixels, static_cast<size_t>(imageSize));
+    vkUnmapMemory(device.device(), stagingBufferMemory);
+
+    // free local memory
+    delete[] rgbaPixels;
+
+    createImage(
+        texWidth,
+        texHeight,
+        VK_FORMAT_R8G8B8A8_SRGB,
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        textureImage,
+        textureImageMemory);
+
+    transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    device.copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1);
+    transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+    vkDestroyBuffer(device.device(), stagingBuffer, nullptr);
+    vkFreeMemory(device.device(), stagingBufferMemory, nullptr);
+}
+
 void Texture::createTextureImage(const char* path)
 {
 

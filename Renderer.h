@@ -22,6 +22,10 @@ public:
 
 	VkRenderPass getSwapChainRenderPass() const { return swapChain->getRenderPass(); }
 	float getAspectRatio() const { return swapChain->extentAspectRatio(); }
+
+	uint32_t getWidth() const { return swapChain->width(); }
+	uint32_t getHeight() const { return swapChain->height(); }
+
 	bool isFrameInProgress() const { return isFrameStarted;	}
 
 	VkCommandBuffer getCurrentCommandBuffer() const {

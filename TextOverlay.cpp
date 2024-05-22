@@ -1,4 +1,5 @@
-/*#include "TextOverlay.h"
+#include "TextOverlay.h"
+
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -7,17 +8,19 @@
 #include <stdexcept>
 #include <array>
 #include <cassert>
-#include <map>
 
-//struct PointLightPushConstants {
-//	glm::vec4 position{};
-//	glm::vec4 color{};
-//	float radius;
-//};
 
+struct SimplePushConstantData {
+	glm::mat4 modelMatrix{ 1.f };
+	glm::mat4 normalMatrix{ 1.f };
+};
 
 TextOverlay::TextOverlay(Device& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout) : device{ device }
 {
+	createPipelineLayout({ (*DescriptorSetLayout::Builder(device)
+		.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+		.build())
+		.getDescriptorSetLayout() });
 
 	createPipeline(renderPass);
 }
@@ -27,21 +30,21 @@ TextOverlay::~TextOverlay()
 	vkDestroyPipelineLayout(device.device(), pipelineLayout, nullptr);
 }
 
-void TextOverlay::createPipelineLayout(VkDescriptorSetLayout globalSetLayout)
+void TextOverlay::createPipelineLayout(std::vector<VkDescriptorSetLayout> descriptorSetLayout)
 {
-	VkPushConstantRange pushConstantRange{};
-	pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-	pushConstantRange.offset = 0;
-	pushConstantRange.size = sizeof(PointLightPushConstants);
+	VkDescriptorBindingFlags descriptorBindingFlags[] = {
+		0,  // For non-dynamic descriptor sets
+		VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT // For dynamic descriptor sets
+	};
 
-	std::vector<VkDescriptorSetLayout> descriptorSetLayout{ globalSetLayout };
-
+	
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayout.size());
 	pipelineLayoutInfo.pSetLayouts = descriptorSetLayout.data();
-	pipelineLayoutInfo.pushConstantRangeCount = 1;
-	pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
+	pipelineLayoutInfo.pushConstantRangeCount = 0;
+	pipelineLayoutInfo.pPushConstantRanges = nullptr;
+	pipelineLayoutInfo.pNext = nullptr;
 
 	if (vkCreatePipelineLayout(device.device(), &pipelineLayoutInfo, nullptr, &pipelineLayout) !=
 		VK_SUCCESS) {
@@ -57,58 +60,38 @@ void TextOverlay::createPipeline(VkRenderPass renderPass)
 
 	Pipeline::defaultPipelineConfigInfo(pipelineConfig);
 	Pipeline::enableAlphaBlending(pipelineConfig);
-	pipelineConfig.bindingDescription.clear();
-	pipelineConfig.attributeDescription.clear();
+
 
 	pipelineConfig.renderPass = renderPass;
 
 	pipelineConfig.pipelineLayout = pipelineLayout;
 
+	std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
+
+	attributeDescriptions.push_back({ 0, 0, VK_FORMAT_R32G32_SFLOAT, 0 });
+	attributeDescriptions.push_back({ 1, 0, VK_FORMAT_R32G32_SFLOAT, sizeof(glm::vec2) });
+
+	pipelineConfig.attributeDescription = attributeDescriptions;
+
+	std::vector<VkVertexInputBindingDescription> bindingDescription(1);
+	bindingDescription[0].binding = 0;
+	bindingDescription[0].stride = 2 * sizeof(glm::vec2);
+	bindingDescription[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+	pipelineConfig.bindingDescription = bindingDescription;
+
+	
+
 	pipeline = std::make_unique<Pipeline>(
 		device,
-		"point_light.vert.spv",
-		"point_light.frag.spv",
+		"text.vert.spv",
+		"text.frag.spv",
 		pipelineConfig
 	);
 }
 
-void TextOverlay::update(FrameInfo& frameInfo, GlobalUbo& ubo)
+void TextOverlay::renderText(FrameInfo& frameInfo)
 {
-	auto rotateLight = glm::rotate(glm::mat4(1.f), frameInfo.frameTime, { 0.f, -1.0f, 0.f });
-
-
-	int lightIndex = 0;
-	for (auto& kv : frameInfo.gameObjects) {
-		auto& obj = kv.second;
-		if (obj.pointLight == nullptr) continue;
-
-		assert(lightIndex < MAX_LIGHT && "point lights exceed maximum");
-
-		// update light position:
-		obj.transform.translation = glm::vec3(rotateLight * glm::vec4(obj.transform.translation, 1.f));
-
-		// copy light to ubo
-		ubo.pointLights[lightIndex].position = glm::vec4(obj.transform.translation, 1.f);
-		ubo.pointLights[lightIndex].color = glm::vec4(obj.color, obj.pointLight->LightIntencity);
-		lightIndex++;
-	}
-	ubo.numLights = lightIndex;
-}
-
-void TextOverlay::render(FrameInfo& frameInfo)
-{
-	// sort lights
-	std::map<float, GameObject::id_t> sorted;
-	for (auto& kv : frameInfo.gameObjects) {
-		auto& obj = kv.second;
-		if (obj.pointLight == nullptr) continue;
-
-		// get dist
-		auto offset = frameInfo.camera.getPosition() - obj.transform.translation;
-		float disSquared = glm::dot(offset, offset);
-		sorted[disSquared] = obj.getId();
-	}
-
 	pipeline->bind(frameInfo.commandBuffer);
 
 	vkCmdBindDescriptorSets(
@@ -116,31 +99,170 @@ void TextOverlay::render(FrameInfo& frameInfo)
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
 		pipelineLayout,
 		0, 1,
-		&frameInfo.globalDescriptorSet,
+		&descriptorSet[frameInfo.frameIndex],
 		0,
 		nullptr
 	);
 
-	// iterate through sorted map in inverse order:
-	for (auto it = sorted.rbegin(); it != sorted.rend(); it++) {
-		auto& obj = frameInfo.gameObjects.at(it->second);
+	VkBuffer buffers[] = { vertexBuffer->getBuffer() };
+	VkDeviceSize offsets[] = { 0 };
+	vkCmdBindVertexBuffers(frameInfo.commandBuffer, 0, 1, buffers, offsets);
 
-		PointLightPushConstants push{};
-		push.position = glm::vec4(obj.transform.translation, 1.f);
-		push.color = glm::vec4(obj.color, obj.pointLight->LightIntencity);
-		push.radius = obj.transform.scale.x;
-
-		vkCmdPushConstants(
-			frameInfo.commandBuffer,
-			pipelineLayout,
-			VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-			0,
-			sizeof(PointLightPushConstants),
-			&push
-		);
-		vkCmdDraw(frameInfo.commandBuffer, 6, 1, 0, 0);
+	for (uint32_t j = 0; j < numLetters; j++) {
+		vkCmdDraw(frameInfo.commandBuffer, 6, 2, j * 6, 0);
 	}
 
-
 }
-*/
+
+void TextOverlay::prepareResources(DescriptorPool& pool)
+{
+	const uint32_t fontWidth = STB_FONT_consolas_24_latin1_BITMAP_WIDTH;
+	const uint32_t fontHeight = STB_FONT_consolas_24_latin1_BITMAP_HEIGHT;
+
+	static unsigned char font24pixels[fontHeight][fontWidth];
+	stb_font_consolas_24_latin1(stbFontData, font24pixels, fontHeight);
+	VkDeviceSize bufferSize = TEXTOVERLAY_MAX_CHAR_COUNT * 4 * sizeof(glm::vec4);
+
+
+	// create buffer corresponding to the position in the texture of each letter (max nb of letters)
+
+	vertexBuffer = std::make_unique<Buffer>(
+		device,
+		bufferSize,
+		1,
+		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+	);
+
+
+	// create texture
+	
+	// convert the font24pixels data to RGBA format
+	unsigned char* rgbaPixels = new unsigned char[fontWidth * fontHeight * 4];
+	for (int y = 0; y < fontHeight; y++) {
+		for (int x = 0; x < fontWidth; x++) {
+			int index = (y * fontWidth + x) * 4;
+			unsigned char pixel = font24pixels[y][x];
+			rgbaPixels[index] = pixel;        // R
+			rgbaPixels[index + 1] = pixel;    // G
+			rgbaPixels[index + 2] = pixel;    // B
+			rgbaPixels[index + 3] = 255;      // A
+		}
+	}
+
+	texture = std::make_unique<Texture>(device, rgbaPixels, fontWidth, fontHeight );
+
+	// descriptor things
+
+	auto textureSetLayout = DescriptorSetLayout::Builder(device)
+		.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+		.build();
+
+	for (int i = 0; i < descriptorSet.size(); i++)
+	{
+		auto imageInfo = texture->getImageInfo();
+		DescriptorWriter(*textureSetLayout, pool)
+			.writeImage(0, &imageInfo)
+			.build(descriptorSet[i]);
+	}
+}
+
+void TextOverlay::addText(std::string text, float x, float y, TextAlign align, uint32_t width, uint32_t height)
+{
+	frameBufferHeight = &height;
+	frameBufferWidth = &width;
+
+	const uint32_t firstChar = STB_FONT_consolas_24_latin1_FIRST_CHAR;
+
+	mapped = (glm::vec4*)(vertexBuffer->getMappedMemory());
+
+	assert(mapped != nullptr);
+
+	const float charW = 1.5f * scale / (float) *frameBufferWidth;
+	const float charH = 1.5f * scale / (float) *frameBufferHeight;
+
+	float fbW = (float)*frameBufferWidth;
+	float fbH = (float)*frameBufferHeight;
+
+	x = (x / fbW * 2.0f) - 1.0f;
+	y = (y / fbH * 2.0f) - 1.0f;
+
+
+
+	// Calculate text width
+	float textWidth = 0;
+	for (auto letter : text)
+	{
+		stb_fontchar* charData = &stbFontData[(uint32_t)letter - firstChar];
+		textWidth += charData->advance * charW;
+	}
+
+	switch (align)
+	{
+	case alignRight:
+		x -= textWidth;
+		break;
+	case alignCenter:
+		x -= textWidth / 2.0f;
+		break;
+	case alignLeft:
+		break;
+	}
+
+	
+
+	// Generate a uv mapped quad per char in the new text
+	for (auto letter : text)
+	{
+
+		
+		stb_fontchar* charData = &stbFontData[(uint32_t)letter - firstChar];
+		
+		
+		float x0 = x + charData->x0 * charW;
+		float y0 = y + charData->y0 * charH;
+		float x1 = x + charData->x1 * charW;
+		float y1 = y + charData->y1 * charH;
+
+		mapped->x = x0;
+		mapped->y = y0;
+		mapped->z = charData->s0;
+		mapped->w = charData->t0;
+		mapped++;
+
+		mapped->x = x1;
+		mapped->y = y0;
+		mapped->z = charData->s1;
+		mapped->w = charData->t0;
+		mapped++;
+
+		mapped->x = x1;
+		mapped->y = y1;
+		mapped->z = charData->s1;
+		mapped->w = charData->t1;
+		mapped++;
+
+		mapped->x = x0;
+		mapped->y = y0;
+		mapped->z = charData->s0;
+		mapped->w = charData->t0;
+		mapped++;
+
+		mapped->x = x1;
+		mapped->y = y1;
+		mapped->z = charData->s1;
+		mapped->w = charData->t1;
+		mapped++;
+
+		mapped->x = x0;
+		mapped->y = y1;
+		mapped->z = charData->s0;
+		mapped->w = charData->t1;
+		mapped++;
+
+
+		x += charData->advance * charW;
+
+		numLetters++;
+	}
+}

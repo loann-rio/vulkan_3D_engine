@@ -72,6 +72,9 @@
     <ClCompile Include="Texture.cpp">
       <Filter>Fichiers sources</Filter>
     </ClCompile>
+    <ClCompile Include="TextTexture.cpp">
+      <Filter>Fichiers sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Window.h">
@@ -131,6 +134,9 @@
     <ClInclude Include="Texture.h">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
+    <ClInclude Include="TextTexture.h">
+      <Filter>Fichiers d%27en-tête</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="compile.bat">
@@ -146,6 +152,12 @@
       <Filter>shaders</Filter>
     </None>
     <None Include="point_light.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="text.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="text.frag">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>

@@ -13,6 +13,10 @@ class Texture
 public:
 
 	Texture(Device& device, const char* filePathTexture);
+	Texture(Device& device, unsigned char* rgbaPixels, const uint32_t fontWidth, const uint32_t fontHeight);
+
+	
+	
 	~Texture() {
 		vkDestroySampler(device.device(), textureSampler, nullptr);
 		vkDestroyImageView(device.device(), textureImageView, nullptr);
@@ -29,6 +33,8 @@ public:
 private:
 
 	void createTextureImage(const char* path);
+	void createTextureImage(unsigned char* rgbaPixels, const uint32_t fontWidth, const uint32_t fontHeight);
+
 	void createTextureImageView();
 	void createTextureSampler();
 
