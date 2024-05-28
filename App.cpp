@@ -168,7 +168,7 @@ void App::run()
 
 void App::loadGameObjects() {
     
-    std::shared_ptr<Model> model_city = Model::createModelFromFile(device, "models/viking_room.obj", "textures/viking_room.png");
+    /*std::shared_ptr<Model> model_city = Model::createModelFromFile(device, "models/viking_room.obj", "textures/viking_room.png");
     auto Lowpoly_City = GameObject::createGameObject(device);
     Lowpoly_City.transform.rotation.x = pi<float> / 2;
     Lowpoly_City.model = model_city;
@@ -180,7 +180,17 @@ void App::loadGameObjects() {
     Lowpoly_City1.transform.rotation.x = pi<float> / 2;
     Lowpoly_City1.model = model_city1;
     Lowpoly_City1.transform.translation.z = 2;
-    gameObjects.emplace(Lowpoly_City1.getId(), std::move(Lowpoly_City1));
+    gameObjects.emplace(Lowpoly_City1.getId(), std::move(Lowpoly_City1));*/
+
+
+    std::shared_ptr<Model> cube = Model::createModelFromFile(device, "models/cube.obj", "textures/floor.jpg");
+    auto cube1 = GameObject::createGameObject(device);
+    cube1.transform.rotation.x = pi<float> / 2;
+    cube1.model = cube;
+    cube1.transform.translation.y = 1;
+    gameObjects.emplace(cube1.getId(), std::move(cube1));
+
+    std::shared_ptr<Model> plane = 
 
 }
 
