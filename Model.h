@@ -35,6 +35,7 @@ public:
 		std::vector<uint32_t> indices{};
 
 		void loadModel(const std::string& filepath); 
+		void loadOBJModel(const std::string& filepath);
 	};
 
 	Model(Device& device, const Model::Builder &builder, const char* filePathTexture); 

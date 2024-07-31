@@ -47,11 +47,14 @@ public:
     VkQueue graphicsQueue() const { return graphicsQueue_; }
     VkQueue presentQueue() const { return presentQueue_; }
 
+    VkPhysicalDevice getPhysicalDevice() const { return physicalDevice; }
     SwapChainSupportDetails getSwapChainSupport() { return querySwapChainSupport(physicalDevice); }
     uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
     VkSampleCountFlagBits getMaxUsableSampleCount(VkPhysicalDeviceProperties properties);
     QueueFamilyIndices findPhysicalQueueFamilies() { return findQueueFamilies(physicalDevice); }
     VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
+    void getPhysicalFeatures(VkPhysicalDeviceFeatures* pFeatures) { vkGetPhysicalDeviceFeatures(physicalDevice, pFeatures); }
+    bool isFormatSupported(const VkFormat candidate);
 
     // Buffer Helper Functions
     void createBuffer(
@@ -66,7 +69,7 @@ public:
     void endSingleTimeCommands(VkCommandBuffer commandBuffer);
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
     
-    void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount);
+    void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount, uint32_t mipLevel = 0, uint32_t bufferOffset = 0);
 
     void createImageWithInfo(
         const VkImageCreateInfo& imageInfo,

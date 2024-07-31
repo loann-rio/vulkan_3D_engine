@@ -88,7 +88,7 @@ void App::run()
     Camera camera{};
     auto viewerObject = GameObject::createGameObject(device);
     viewerObject.transform.translation = { 2.0f, -1.0f, 2.5f };
-    viewerObject.transform.rotation.y = 180;
+    //viewerObject.transform.rotation.y = 180;
 
     float aspec = renderer.getAspectRatio();
     camera.setPerspectiveProjection(glm::radians(50.f), aspec, .1f, 100.0f);
@@ -160,7 +160,7 @@ void App::run()
             renderer.endFrame();
 		}
 
-        frame = (frame + 1) % 36000; 
+        //frame = (frame + 1) % 36000; 
 	}
 
 	vkDeviceWaitIdle(device.device());
@@ -168,14 +168,16 @@ void App::run()
 
 void App::loadGameObjects() {
     
-    /*std::shared_ptr<Model> model_city = Model::createModelFromFile(device, "models/viking_room.obj", "textures/viking_room.png");
+    std::shared_ptr<Model> model_city = Model::createModelFromFile(device, "models/viking_room.obj", "textures/viking_room.png");
     auto Lowpoly_City = GameObject::createGameObject(device);
     Lowpoly_City.transform.rotation.x = pi<float> / 2;
+    Lowpoly_City.transform.rotation.y = pi<float> ;
+    Lowpoly_City.transform.translation = { 7, 0, 7 };
     Lowpoly_City.model = model_city;
     gameObjects.emplace(Lowpoly_City.getId(), std::move(Lowpoly_City));
 
 
-    std::shared_ptr<Model> model_city1 = Model::createModelFromFile(device, "models/viking_room.obj", "textures/Palette.jpg");
+    /*std::shared_ptr<Model> model_city1 = Model::createModelFromFile(device, "models/viking_room.obj", "textures/Palette.jpg");
     auto Lowpoly_City1= GameObject::createGameObject(device);
     Lowpoly_City1.transform.rotation.x = pi<float> / 2;
     Lowpoly_City1.model = model_city1;
@@ -183,15 +185,21 @@ void App::loadGameObjects() {
     gameObjects.emplace(Lowpoly_City1.getId(), std::move(Lowpoly_City1));*/
 
 
-    std::shared_ptr<Model> cube = Model::createModelFromFile(device, "models/cube.obj", "textures/floor.jpg");
+    std::shared_ptr<Model> cube = Model::createModelFromFile(device, "models/cube.obj", "textures/emptyTexture.jpg");
     auto cube1 = GameObject::createGameObject(device);
     cube1.transform.rotation.x = pi<float> / 2;
     cube1.model = cube;
-    cube1.transform.translation.y = 1;
+    cube1.transform.scale = { 0.5f, 0.5f, 0.5f };
+
+    cube1.transform.translation = { 2, -0.4f, 6 };
     gameObjects.emplace(cube1.getId(), std::move(cube1));
 
-    std::shared_ptr<Model> plane = 
+    std::shared_ptr<Model> plane = createPlane(device, 10, 10, { 0, 0, 0 });
 
+    auto plane1 = GameObject::createGameObject(device);
+    plane1.model = plane;
+    plane1.transform.translation.y = 0.1;
+    gameObjects.emplace(plane1.getId(), std::move(plane1));
 }
 
 void App::getFrameRate(float lastFrameTime)
