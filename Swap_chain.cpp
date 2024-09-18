@@ -21,7 +21,7 @@ Swap_chain::Swap_chain(Device& deviceRef, VkExtent2D windowExtent, std::shared_p
 {
     init();
 
-    oldSwapChain = nullptr;
+    //oldSwapChain = nullptr;
 }
 
 void Swap_chain::init()

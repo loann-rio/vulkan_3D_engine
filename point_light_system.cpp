@@ -84,7 +84,7 @@ void PointLightSystem::update(FrameInfo& frameInfo, GlobalUbo& ubo, int frameInd
 		assert(lightIndex < MAX_LIGHT && "point lights exceed maximum");
 
 		// update light position:
-		//obj.transform.translation = glm::vec3(rotateLight * glm::vec4(obj.transform.translation, 1.f));
+		obj.transform.translation = glm::vec3(rotateLight * glm::vec4(obj.transform.translation - glm::vec3{ 7, 0, 7 }, 1.f))+glm::vec3{ 7, 0, 7 };
 		
 		// update light intensity
 		//obj.pointLight->LightIntencity = sin(frameInd/64.0f + 24);

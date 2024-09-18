@@ -14,7 +14,7 @@ public:
 
 	Texture(Device& device, const char* filePathTexture);
 	Texture(Device& device, unsigned char* rgbaPixels, const uint32_t fontWidth, const uint32_t fontHeight, VkDeviceSize imageSize = 0, uint32_t mipLevel = 1);
-	Texture(Device& device, unsigned char* rgbaPixels, const uint32_t fontWidth, const uint32_t fontHeight, VkDeviceSize imageSize = 0, uint32_t mipLevel = 1);
+	//Texture(Device& device, unsigned char* rgbaPixels, const uint32_t fontWidth, const uint32_t fontHeight, VkDeviceSize imageSize = 0, uint32_t mipLevel = 1);
 	
 	
 	~Texture() {
@@ -56,6 +56,7 @@ private:
 	VkImageView textureImageView;
 	VkSampler textureSampler;
 
+	uint32_t mipLevels;
 	
 
 };

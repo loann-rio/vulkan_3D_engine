@@ -1,9 +1,15 @@
 #pragma once
 
+
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
 #include <string>
+
+#pragma comment (lib, "User32.lib")
+#pragma comment (lib, "Shell32.lib")
+#pragma comment (lib, "Gdi32.lib")
+
 
 class Window
 {
@@ -34,7 +40,5 @@ public:
 	bool wasWindowResized() { return frameBufferResized; }
 	void resetWindowResizedFlag() { frameBufferResized = false; }
 	GLFWwindow* getGLFWwindow() const { return window; }
-	
-
 };
 

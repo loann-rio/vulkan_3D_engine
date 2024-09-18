@@ -26,6 +26,10 @@
 #include <iostream>
 #include <chrono>
 #include <string>
+#include <sstream>
+#include <iomanip>
+
+
 
 App::App() { 
     globalPool = DescriptorPool::Builder(device)
@@ -112,7 +116,7 @@ void App::run()
         // show fps count on screen
         getFrameRate(frameTime);
 
-        std::stringstream ss;
+        std::stringstream ss("");
         ss << std::fixed << std::setprecision(2) << frameTimeSum << " fps";
 
         textOverlay.beginTextUpdate();
@@ -168,7 +172,7 @@ void App::run()
 
 void App::loadGameObjects() {
     
-    std::shared_ptr<Model> model_city = Model::createModelFromFile(device, "models/viking_room.obj", "textures/viking_room.png");
+    std::shared_ptr<Model> model_city = Model::createModelFromFile(device, "model/viking_room.obj.txt", "textures/viking_room.png");
     auto Lowpoly_City = GameObject::createGameObject(device);
     Lowpoly_City.transform.rotation.x = pi<float> / 2;
     Lowpoly_City.transform.rotation.y = pi<float> ;
@@ -185,26 +189,42 @@ void App::loadGameObjects() {
     gameObjects.emplace(Lowpoly_City1.getId(), std::move(Lowpoly_City1));*/
 
 
-    std::shared_ptr<Model> cube = Model::createModelFromFile(device, "models/cube.obj", "textures/emptyTexture.jpg");
+    /*std::shared_ptr<Model> cube = Model::createModelFromFile(device, "models/cube.obj", "textures/emptyTexture.jpg");
     auto cube1 = GameObject::createGameObject(device);
     cube1.transform.rotation.x = pi<float> / 2;
     cube1.model = cube;
     cube1.transform.scale = { 0.5f, 0.5f, 0.5f };
 
     cube1.transform.translation = { 2, -0.4f, 6 };
-    gameObjects.emplace(cube1.getId(), std::move(cube1));
+    gameObjects.emplace(cube1.getId(), std::move(cube1));*/
 
     std::shared_ptr<Model> plane = createPlane(device, 10, 10, { 0, 0, 0 });
 
     auto plane1 = GameObject::createGameObject(device);
     plane1.model = plane;
-    plane1.transform.translation.y = 0.1;
+    plane1.transform.translation.y = 0.1f;
     gameObjects.emplace(plane1.getId(), std::move(plane1));
+
+    std::vector<glm::vec3> lightColors{
+      {1.f, .1f, .1f},
+      {.1f, 1.f, .1f},
+      {1.f, 1.f, .1f},
+      {.1f, 1.f, 1.f},
+      {.1f, .1f, 1.f},
+      {1.f, 1.f, 1.f}
+    };
+
+    for (int i = 0; i < lightColors.size(); i++) {
+        auto pointLight = GameObject::makePointLight(device, 1.f, 0.05f, lightColors[i]);
+        auto rotateLight = glm::rotate(glm::mat4(1.f), (i * glm::two_pi<float>()) / lightColors.size(), { 0.f, -1.0f, 0.f });
+        pointLight.transform.translation = glm::vec3(rotateLight * glm::vec4(-1.f, -1.f, -1.f, 4.f)) + glm::vec3{ 7, 0, 7 };
+        gameObjects.emplace(pointLight.getId(), std::move(pointLight));
+    }
 }
 
 void App::getFrameRate(float lastFrameTime)
 {
-    float v = 1 / (lastFrameTime * 300);
+    float v = 1 / (lastFrameTime * 100);
     frameTimeSum += v;
     frameTimeSum -= frameTimeVector[0];
 

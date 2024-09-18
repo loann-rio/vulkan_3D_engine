@@ -1,9 +1,12 @@
 light bloom
-update of elemnt on graphic card
+update of element on graphic card
 light as game object
 obtimize maximum number of light
 multiSampling
-flush model ram memory + Vram when done using
+flush model Vram when done using
+shadow casting
+gltf models
+
 
 
 

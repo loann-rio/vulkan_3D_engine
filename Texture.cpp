@@ -18,7 +18,7 @@ Texture::Texture(Device& device, const char* filePathTexture) : device{device}
 }
 
 Texture::Texture(Device& device, unsigned char* rgbaPixels, const uint32_t fontWidth, const uint32_t fontHeight, VkDeviceSize imageSize, uint32_t mipLevel) : device{ device }
-{
+{ 
     createTextureImage(rgbaPixels, fontWidth, fontHeight, imageSize, mipLevel);
     createTextureImageView();
     createTextureSampler();
@@ -66,8 +66,9 @@ void Texture::createTextureImage(unsigned char* rgbaPixels, const uint32_t fontW
     vkFreeMemory(device.device(), stagingBufferMemory, nullptr);
 }
 
-void Texture::createTextureImage(unsigned char* rgbaPixels, const uint32_t fontWidth, const uint32_t fontHeight, VkDeviceSize imageSize, uint32_t mipLevel, const bool targetFormatIsUncompressed) {
-    /*int texWidth = fontWidth;
+/*void Texture::createTextureImage(unsigned char* rgbaPixels, const uint32_t fontWidth, const uint32_t fontHeight, VkDeviceSize imageSize, uint32_t mipLevel, const bool targetFormatIsUncompressed) {
+    /*
+    int texWidth = fontWidth;
     int texHeight = fontHeight;
 
 
@@ -142,7 +143,7 @@ void Texture::createTextureImage(unsigned char* rgbaPixels, const uint32_t fontW
     transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     vkDestroyBuffer(device.device(), stagingBuffer, nullptr);
-    vkFreeMemory(device.device(), stagingBufferMemory, nullptr);*/
+    vkFreeMemory(device.device(), stagingBufferMemory, nullptr);
 
     basist::ktx2_transcoder ktxTranscoder;
     const std::string filename = path + "\\" + gltfimage.uri;
@@ -283,25 +284,26 @@ void Texture::createTextureImage(unsigned char* rgbaPixels, const uint32_t fontW
 
     delete[] buffer;
     delete[] inputData;
-}
+}*/
 
 void Texture::createTextureImage(const char* path)
 {
-
     // create image from file
     int texWidth, texHeight, texChannels;
     stbi_uc* pixels = stbi_load(path, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-    VkDeviceSize imageSize = texWidth * texHeight * 4;
+    
 
     if (!pixels) {
         throw std::runtime_error("failed to load texture image!");
     }
 
+    mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
+    VkDeviceSize imageSize = texWidth * texHeight * 4;
 
     // create staging buffer
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
-    device.createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+    device.createBuffer(imageSize*2, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
     // transfer to device and copy from staging
     void* data;
@@ -318,14 +320,16 @@ void Texture::createTextureImage(const char* path)
         texHeight, 
         VK_FORMAT_R8G8B8A8_SRGB, 
         VK_IMAGE_TILING_OPTIMAL, 
-        VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 
+        VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
         textureImage, 
-        textureImageMemory);
+        textureImageMemory, 
+        mipLevels);
 
-    transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
     device.copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1);
-    transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    generateMipChain(mipLevels, texWidth, texHeight);
+    transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevels);
 
     vkDestroyBuffer(device.device(), stagingBuffer, nullptr);
     vkFreeMemory(device.device(), stagingBufferMemory, nullptr);
@@ -458,29 +462,49 @@ void Texture::transitionImageLayout(VkImage image, VkFormat format, VkImageLayou
 
 void Texture::generateMipChain(uint32_t mipLevels, uint32_t width, uint32_t height)
 {
+
+    /*VkFormatProperties formatProperties;
+    vkGetPhysicalDeviceFormatProperties(device.getPhysicalDevice(), , &formatProperties);
+
+    if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)) {
+        throw std::runtime_error("texture image format does not support linear blitting!");
+    }*/
+
     // Generate the mip chain (glTF uses jpg and png, so we need to create this manually)
     VkCommandBuffer commandBuffer = device.beginSingleTimeCommands();
 
     for (uint32_t i = 1; i < mipLevels; i++) {
         VkImageBlit imageBlit{};
 
+        //imageBlit.srcOffsets[1].x = int32_t(width >> (i - 1));
+        //imageBlit.srcOffsets[1].y = int32_t(height >> (i - 1));
+        //imageBlit.srcOffsets[1].z = 1;
+
+        /*imageBlit.dstOffsets[1].x = int32_t(width >> i);
+        imageBlit.dstOffsets[1].y = int32_t(height >> i);
+        imageBlit.dstOffsets[1].z = 1;*/
+
+        imageBlit.srcOffsets[0] = { 0, 0, 0 };
+        imageBlit.srcOffsets[1] = { int32_t(width >> (i - 1)), (int) height, 0 };
+
         imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         imageBlit.srcSubresource.layerCount = 1;
         imageBlit.srcSubresource.mipLevel = i - 1;
-        imageBlit.srcOffsets[1].x = int32_t(width >> (i - 1));
-        imageBlit.srcOffsets[1].y = int32_t(height >> (i - 1));
-        imageBlit.srcOffsets[1].z = 1;
+        imageBlit.srcSubresource.baseArrayLayer = 0;
 
+        imageBlit.dstOffsets[0] = { 0, 0, 0 };
+        imageBlit.dstOffsets[1] = { int32_t(width >> i), int32_t(height >> i), 1 };
+        
         imageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         imageBlit.dstSubresource.layerCount = 1;
         imageBlit.dstSubresource.mipLevel = i;
-        imageBlit.dstOffsets[1].x = int32_t(width >> i);
-        imageBlit.dstOffsets[1].y = int32_t(height >> i);
-        imageBlit.dstOffsets[1].z = 1;
+        imageBlit.dstSubresource.baseArrayLayer = 0;
+
+        
 
         VkImageSubresourceRange mipSubRange = {};
         mipSubRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        mipSubRange.baseMipLevel = i;
+        mipSubRange.baseMipLevel = i - 1;
         mipSubRange.levelCount = 1;
         mipSubRange.layerCount = 1;
 
@@ -516,12 +540,10 @@ void Texture::generateMipChain(uint32_t mipLevels, uint32_t width, uint32_t heig
     subresourceRange.layerCount = 1;
     subresourceRange.levelCount = mipLevels;
 
-    //imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
     {
         VkImageMemoryBarrier imageMemoryBarrier{};
         imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
         imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
         imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
@@ -553,7 +575,7 @@ VkImageView Texture::createImageView(VkImage image, VkFormat format, uint32_t mi
     viewInfo.format = format;
     viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     viewInfo.subresourceRange.baseMipLevel = 0;
-    viewInfo.subresourceRange.levelCount = 0;
+    viewInfo.subresourceRange.levelCount = mipLevel;
     viewInfo.subresourceRange.baseArrayLayer = 0;
     viewInfo.subresourceRange.layerCount = 1;
 
