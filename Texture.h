@@ -31,11 +31,11 @@ public:
 	
 	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayou, uint32_t mipLevel = 1);
 
-	void generateMipChain(uint32_t mipLevels, uint32_t width, uint32_t height);
+	void generateMipChain(VkImage image, uint32_t mipLevels, uint32_t width, uint32_t height);
 
 private:
 
-	void createTextureImage(const char* path);
+	uint32_t createTextureImage(const char* path);
 	void createTextureImage(unsigned char* rgbaPixels, const uint32_t fontWidth, const uint32_t fontHeight, VkDeviceSize imSize = 0, uint32_t mipLevel = 1);
 
 	void createTextureImageView(uint32_t mipLevel = 1);
@@ -54,10 +54,7 @@ private:
 	VkDeviceMemory textureImageMemory;
 
 	VkImageView textureImageView;
-	VkSampler textureSampler;
-
-	uint32_t mipLevels;
-	
+	VkSampler textureSampler;	
 
 };
 

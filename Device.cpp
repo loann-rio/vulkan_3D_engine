@@ -503,8 +503,8 @@ void Device::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize siz
 
 void Device::copyBufferToImage(
     VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount, uint32_t mipLevel, uint32_t bufferOffset) {
+    
     VkCommandBuffer commandBuffer = beginSingleTimeCommands();
-
     VkBufferImageCopy region{};
     region.bufferOffset = bufferOffset;
     region.bufferRowLength = 0;
@@ -514,6 +514,12 @@ void Device::copyBufferToImage(
     region.imageSubresource.mipLevel = mipLevel;
     region.imageSubresource.baseArrayLayer = 0;
     region.imageSubresource.layerCount = layerCount;
+
+    uint32_t mipWidth = std::max(1u, width >> mipLevel);
+    uint32_t mipHeight = std::max(1u, height >> mipLevel);
+
+
+    std::cout << "mipLevel = " << mipLevel << " width = " << (width) << " height = " << (height) << "\n";
 
     region.imageOffset = { 0, 0, 0 };
     region.imageExtent = { width, height, 1 };

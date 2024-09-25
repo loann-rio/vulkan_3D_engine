@@ -198,12 +198,12 @@ void App::loadGameObjects() {
     cube1.transform.translation = { 2, -0.4f, 6 };
     gameObjects.emplace(cube1.getId(), std::move(cube1));*/
 
-    std::shared_ptr<Model> plane = createPlane(device, 10, 10, { 0, 0, 0 });
+    /*std::shared_ptr<Model> plane = createPlane(device, 10, 10, { 0, 0, 0 });
 
     auto plane1 = GameObject::createGameObject(device);
     plane1.model = plane;
     plane1.transform.translation.y = 0.1f;
-    gameObjects.emplace(plane1.getId(), std::move(plane1));
+    gameObjects.emplace(plane1.getId(), std::move(plane1));*/
 
     std::vector<glm::vec3> lightColors{
       {1.f, .1f, .1f},
