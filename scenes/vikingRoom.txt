@@ -1,0 +1,20 @@
+std::shared_ptr<Model> model = Model::createModelFromFile(device, "models/viking_room.obj", "textures/viking_room.png");
+
+auto gameObject = GameObject::createGameObject(device);
+gameObject.model = model;
+gameObject.transform.translation = { .0f, 0.0f, .0f };
+gameObject.transform.scale = { 1.f, 1.f , 1.f };
+gameObject.transform.rotation.x = glm::radians(90.0f);
+gameObjects.emplace(gameObject.getId(), std::move(gameObject));
+
+auto pointLight = GameObject::makePointLight(device, .7f, 0.0f, {1.0f, 0.5f, 0.f});
+pointLight.transform.translation = {-0.27f, -0.7f, .6f};
+gameObjects.emplace(pointLight.getId(), std::move(pointLight));
+
+auto pointLight1 = GameObject::makePointLight(device, 0.7f, 0.0f, { 1.0f, 0.5f, 0.f });
+pointLight1.transform.translation = { -0.27f, -0.7f, -0.7f };
+gameObjects.emplace(pointLight1.getId(), std::move(pointLight1));
+
+auto pointLight2 = GameObject::makePointLight(device, 0.2f, 0.05f, { 1.0f, 0.f, 0.f });
+pointLight2.transform.translation = { 0.1f, -0.1f, .0f };
+gameObjects.emplace(pointLight2.getId(), std::move(pointLight2));

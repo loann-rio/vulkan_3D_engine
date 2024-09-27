@@ -1,0 +1,18 @@
+light bloom
+update of element on graphic card
+light as game object
+obtimize maximum number of light
+multiSampling
+flush model Vram when done using
+shadow casting
+gltf models
+
+
+
+
+
+
+
+
+water simulation
+fire simulation
