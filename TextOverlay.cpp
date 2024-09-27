@@ -142,7 +142,7 @@ void TextOverlay::prepareResources(DescriptorPool& pool)
 			rgbaPixels[index + 3] = 255;      // A
 		}
 	}
-
+		
 	texture = std::make_unique<Texture>(device, rgbaPixels, fontWidth, fontHeight );
 
 	// descriptor things

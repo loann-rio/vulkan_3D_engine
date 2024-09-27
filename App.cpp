@@ -181,12 +181,12 @@ void App::loadGameObjects() {
     gameObjects.emplace(Lowpoly_City.getId(), std::move(Lowpoly_City));
 
 
-    /*std::shared_ptr<Model> model_city1 = Model::createModelFromFile(device, "models/viking_room.obj", "textures/Palette.jpg");
+    std::shared_ptr<Model> model_city1 = Model::createModelFromFile(device, "model/viking_room.obj.txt", "textures/Palette.jpg");
     auto Lowpoly_City1= GameObject::createGameObject(device);
     Lowpoly_City1.transform.rotation.x = pi<float> / 2;
     Lowpoly_City1.model = model_city1;
     Lowpoly_City1.transform.translation.z = 2;
-    gameObjects.emplace(Lowpoly_City1.getId(), std::move(Lowpoly_City1));*/
+    gameObjects.emplace(Lowpoly_City1.getId(), std::move(Lowpoly_City1));
 
 
     /*std::shared_ptr<Model> cube = Model::createModelFromFile(device, "models/cube.obj", "textures/emptyTexture.jpg");
@@ -198,12 +198,12 @@ void App::loadGameObjects() {
     cube1.transform.translation = { 2, -0.4f, 6 };
     gameObjects.emplace(cube1.getId(), std::move(cube1));*/
 
-    /*std::shared_ptr<Model> plane = createPlane(device, 10, 10, { 0, 0, 0 });
+    std::shared_ptr<Model> plane = createPlane(device, 10, 10, { 0, 0, 0 });
 
     auto plane1 = GameObject::createGameObject(device);
     plane1.model = plane;
     plane1.transform.translation.y = 0.1f;
-    gameObjects.emplace(plane1.getId(), std::move(plane1));*/
+    gameObjects.emplace(plane1.getId(), std::move(plane1));
 
     std::vector<glm::vec3> lightColors{
       {1.f, .1f, .1f},

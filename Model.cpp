@@ -164,6 +164,7 @@ void Model::Builder::loadModel(const std::string& filepath)
 	std::string warn, err;
 
 	if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filepath.c_str())) {
+		std::cout << filepath.c_str() << std::endl;
 		throw std::runtime_error(warn + err);
 	}
 

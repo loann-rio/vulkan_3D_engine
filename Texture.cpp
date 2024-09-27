@@ -41,7 +41,6 @@ void Texture::createTextureImage(unsigned char* rgbaPixels, const uint32_t fontW
     // transfer to device and copy from staging
     void* data;
     vkMapMemory(device.device(), stagingBufferMemory, 0, imageSize, 0, &data);
-
     memcpy(data, rgbaPixels, static_cast<size_t>(imageSize));
     vkUnmapMemory(device.device(), stagingBufferMemory);
 
@@ -60,7 +59,7 @@ void Texture::createTextureImage(unsigned char* rgbaPixels, const uint32_t fontW
         mipLevel);
 
     transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevel);
-    device.copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1, mipLevel);
+    device.copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1, mipLevel - 1);
     transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevel);
 
     vkDestroyBuffer(device.device(), stagingBuffer, nullptr);
@@ -82,8 +81,6 @@ uint32_t Texture::createTextureImage(const char* path)
     //uint32_t mipLevel = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
     uint32_t mipLevel = 1;
     VkDeviceSize imageSize = texWidth * texHeight * 4;
-
-    std::cout << mipLevel << " miplevel \n";
 
     // create staging buffer
     VkBuffer stagingBuffer;
@@ -108,22 +105,20 @@ uint32_t Texture::createTextureImage(const char* path)
         VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
         textureImage, 
-        textureImageMemory, 
+        textureImageMemory,
         mipLevel);
 
     transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevel);
     
-    std::cout << static_cast<uint32_t>(texWidth) << " "<< static_cast<uint32_t>(texHeight) << "\n";
-
-    device.copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1, mipLevel);
+    device.copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1, mipLevel-1);
     
-        
-    std::cout << "4 " << "\n";
-    //generateMipChain(textureImage, mipLevel, texWidth, texHeight);
-
-    std::cout << "4 " << "\n";
-
-    transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevel);
+    if (mipLevel > 1) {
+        generateMipChain(textureImage, mipLevel, texWidth, texHeight);
+    }
+    else
+    {
+        transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevel);
+    }    
 
     vkDestroyBuffer(device.device(), stagingBuffer, nullptr);
     vkFreeMemory(device.device(), stagingBufferMemory, nullptr);
@@ -193,9 +188,7 @@ void Texture::createImage(uint32_t width, uint32_t height,
     VkImageCreateInfo imageInfo{};
     imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     imageInfo.imageType = VK_IMAGE_TYPE_2D;
-    imageInfo.extent.width = width;
-    imageInfo.extent.height = height;
-    imageInfo.extent.depth = 1;
+    
     imageInfo.mipLevels = mipLevels;
     imageInfo.arrayLayers = 1;
     imageInfo.format = format;
@@ -205,9 +198,17 @@ void Texture::createImage(uint32_t width, uint32_t height,
     imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
     imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
+    imageInfo.extent.width = width;
+    imageInfo.extent.height = height;
+    imageInfo.extent.depth = 1;
+
+    
+
     if (vkCreateImage(device.device(), &imageInfo, nullptr, &image) != VK_SUCCESS) {
         throw std::runtime_error("failed to create image!");
     }
+
+    std::cout << imageInfo.extent.width << " " << imageInfo.extent.height << " " << imageInfo.extent.depth << "\n";
 
     bind(image, properties, imageMemory);
 }

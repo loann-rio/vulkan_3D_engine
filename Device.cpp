@@ -515,14 +515,14 @@ void Device::copyBufferToImage(
     region.imageSubresource.baseArrayLayer = 0;
     region.imageSubresource.layerCount = layerCount;
 
-    uint32_t mipWidth = std::max(1u, width >> mipLevel);
-    uint32_t mipHeight = std::max(1u, height >> mipLevel);
+    uint32_t mipWidth = std::max(1u, width >> (mipLevel));
+    uint32_t mipHeight = std::max(1u, height >> (mipLevel));
 
 
     std::cout << "mipLevel = " << mipLevel << " width = " << (width) << " height = " << (height) << "\n";
 
     region.imageOffset = { 0, 0, 0 };
-    region.imageExtent = { width, height, 1 };
+    region.imageExtent = { mipWidth, mipHeight, 1 };
 
     vkCmdCopyBufferToImage(
         commandBuffer,
