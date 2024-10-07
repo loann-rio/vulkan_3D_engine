@@ -81,8 +81,8 @@ void App::run()
         obj.createDescriptorSet(*globalPool, device);
     }
 
-    PointLightSystem pointLightSystem{ device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
-	RenderSystem renderSystem{ device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
+    PointLightSystem pointLightSystem{  device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
+	RenderSystem renderSystem{          device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
 
     TextOverlay textOverlay{ device, renderer.getSwapChainRenderPass() };
     textOverlay.prepareResources(*globalPool);
@@ -92,7 +92,7 @@ void App::run()
     Camera camera{};
     auto viewerObject = GameObject::createGameObject(device);
     viewerObject.transform.translation = { 2.0f, -1.0f, 2.5f };
-    //viewerObject.transform.rotation.y = 180;
+    viewerObject.transform.rotation.y = pi<float>*1/3;
 
     float aspec = renderer.getAspectRatio();
     camera.setPerspectiveProjection(glm::radians(50.f), aspec, .1f, 100.0f);
@@ -113,22 +113,23 @@ void App::run()
         float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
         currentTime = newTime;
 
-        // show fps count on screen
-        getFrameRate(frameTime);
+        {
+            // show fps count on screen
+            getFrameRate(frameTime);
 
-        std::stringstream ss("");
-        ss << std::fixed << std::setprecision(2) << frameTimeSum << " fps";
+            std::stringstream ss("");
+            ss << std::fixed << std::setprecision(2) << frameTimeSum << " fps";
 
-        textOverlay.beginTextUpdate();
-        textOverlay.addText(ss.str(), 10, 10, TextOverlay::alignLeft, renderer.getWidth(), renderer.getHeight());
-        textOverlay.endTextUpdate();
-
+            textOverlay.beginTextUpdate();
+            textOverlay.addText(ss.str(), 10, 10, TextOverlay::alignLeft, renderer.getWidth(), renderer.getHeight());
+            textOverlay.endTextUpdate();
+        }
+        
         // move camera on event 
         cameraController.moveInPlaneXZ(window.getGLFWwindow(), frameTime, viewerObject);
         camera.setViewYXZ(viewerObject.transform.translation, viewerObject.transform.rotation);
 
         
-
 		if (auto commandBuffer = renderer.beginFrame()) {
             int frameIndex = renderer.getFrameIndex();
 
@@ -142,15 +143,17 @@ void App::run()
             };
 
             
-            // update
+            // update ubo
             GlobalUbo ubo{};
             ubo.projection = camera.getProjection();
             ubo.view = camera.getView();
             ubo.inverseView = camera.getInverseView();
-
-            pointLightSystem.update(frameInfo, ubo, frame);
             uboBuffers[frameIndex]->writeToBuffer(&ubo);
             uboBuffers[frameIndex]->flush();
+            
+            // update objects
+            pointLightSystem.update(frameInfo, ubo, frame);
+
 
             // render
 			renderer.beginSwapChainRenderPass(commandBuffer);
@@ -172,7 +175,7 @@ void App::run()
 
 void App::loadGameObjects() {
     
-    std::shared_ptr<Model> model_city = Model::createModelFromFile(device, "model/viking_room.obj.txt", "textures/viking_room.png");
+    std::shared_ptr<Model> model_city = Model::createModelFromFile(device, "model/viking_room.obj", "textures/viking_room.png");
     auto Lowpoly_City = GameObject::createGameObject(device);
     Lowpoly_City.transform.rotation.x = pi<float> / 2;
     Lowpoly_City.transform.rotation.y = pi<float> ;
@@ -181,12 +184,12 @@ void App::loadGameObjects() {
     gameObjects.emplace(Lowpoly_City.getId(), std::move(Lowpoly_City));
 
 
-    std::shared_ptr<Model> model_city1 = Model::createModelFromFile(device, "model/viking_room.obj.txt", "textures/Palette.jpg");
+    /*std::shared_ptr<Model> model_city1 = Model::createModelFromFile(device, "model/viking_room.obj", "textures/Palette.jpg");
     auto Lowpoly_City1= GameObject::createGameObject(device);
     Lowpoly_City1.transform.rotation.x = pi<float> / 2;
     Lowpoly_City1.model = model_city1;
     Lowpoly_City1.transform.translation.z = 2;
-    gameObjects.emplace(Lowpoly_City1.getId(), std::move(Lowpoly_City1));
+    gameObjects.emplace(Lowpoly_City1.getId(), std::move(Lowpoly_City1));*/
 
 
     /*std::shared_ptr<Model> cube = Model::createModelFromFile(device, "models/cube.obj", "textures/emptyTexture.jpg");
@@ -205,7 +208,7 @@ void App::loadGameObjects() {
     plane1.transform.translation.y = 0.1f;
     gameObjects.emplace(plane1.getId(), std::move(plane1));
 
-    std::vector<glm::vec3> lightColors{
+    /*std::vector<glm::vec3> lightColors{
       {1.f, .1f, .1f},
       {.1f, 1.f, .1f},
       {1.f, 1.f, .1f},
@@ -219,7 +222,7 @@ void App::loadGameObjects() {
         auto rotateLight = glm::rotate(glm::mat4(1.f), (i * glm::two_pi<float>()) / lightColors.size(), { 0.f, -1.0f, 0.f });
         pointLight.transform.translation = glm::vec3(rotateLight * glm::vec4(-1.f, -1.f, -1.f, 4.f)) + glm::vec3{ 7, 0, 7 };
         gameObjects.emplace(pointLight.getId(), std::move(pointLight));
-    }
+    }*/
 }
 
 void App::getFrameRate(float lastFrameTime)

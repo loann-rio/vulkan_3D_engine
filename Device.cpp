@@ -285,14 +285,14 @@ void Device::hasGflwRequiredInstanceExtensions() {
     std::cout << "available extensions:" << std::endl;
     std::unordered_set<std::string> available;
     for (const auto& extension : extensions) {
-        std::cout << "\t" << extension.extensionName << std::endl;
+        //std::cout << "\t" << extension.extensionName << std::endl;
         available.insert(extension.extensionName);
     }
 
     std::cout << "required extensions:" << std::endl;
     auto requiredExtensions = getRequiredExtensions();
     for (const auto& required : requiredExtensions) {
-        std::cout << "\t" << required << std::endl;
+        //std::cout << "\t" << required << std::endl;
         if (available.find(required) == available.end()) {
             throw std::runtime_error("Missing required glfw extension");
         }
@@ -518,8 +518,6 @@ void Device::copyBufferToImage(
     uint32_t mipWidth = std::max(1u, width >> (mipLevel));
     uint32_t mipHeight = std::max(1u, height >> (mipLevel));
 
-
-    std::cout << "mipLevel = " << mipLevel << " width = " << (width) << " height = " << (height) << "\n";
 
     region.imageOffset = { 0, 0, 0 };
     region.imageExtent = { mipWidth, mipHeight, 1 };

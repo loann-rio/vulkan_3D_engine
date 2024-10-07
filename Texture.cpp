@@ -3,7 +3,7 @@
 #include <stdexcept>
 
 #include "Buffer.h"
-#include "basisu_transcoder.h"
+//#include "basisu_transcoder.h"
 
 
 
@@ -13,7 +13,6 @@
 Texture::Texture(Device& device, const char* filePathTexture) : device{device}
 {
     uint32_t mipLevel = createTextureImage(filePathTexture);
-    std::cout << "miplevel fghjhgfd = " << mipLevel << "\n";
     createTextureImageView(mipLevel);
     createTextureSampler(mipLevel);
 }
@@ -167,9 +166,6 @@ void Texture::createTextureSampler(uint32_t mipLevel)
     samplerInfo.minLod = 0.0f;
     samplerInfo.maxLod = static_cast<float>(mipLevel);
 
-    std::cout << "miplevel = " << mipLevel << "\n";
-
-
     if (vkCreateSampler(device.device(), &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS) {
         throw std::runtime_error("failed to create texture sampler!");
     }
@@ -181,9 +177,6 @@ void Texture::createImage(uint32_t width, uint32_t height,
     VkImageUsageFlags usage, VkMemoryPropertyFlags properties, 
     VkImage& image, VkDeviceMemory& imageMemory, uint32_t mipLevels) 
 {
-
-    std::cout << "create image -- width = " << width << " height = " << height << "\n";
-    std::cout << "mip level = " << mipLevels << "\n";
 
     VkImageCreateInfo imageInfo{};
     imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -208,15 +201,11 @@ void Texture::createImage(uint32_t width, uint32_t height,
         throw std::runtime_error("failed to create image!");
     }
 
-    std::cout << imageInfo.extent.width << " " << imageInfo.extent.height << " " << imageInfo.extent.depth << "\n";
-
     bind(image, properties, imageMemory);
 }
 
 void Texture::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevel)
 {
-
-    std::cout << "miplevel = " << mipLevel << "\n";
     VkCommandBuffer commandBuffer = device.beginSingleTimeCommands();
 
     VkImageMemoryBarrier barrier{};
@@ -412,8 +401,6 @@ VkImageView Texture::createImageView(VkImage image, VkFormat format, uint32_t mi
     viewInfo.subresourceRange.levelCount = mipLevel;
     viewInfo.subresourceRange.baseArrayLayer = 0;
     viewInfo.subresourceRange.layerCount = 1;
-
-    std::cout << "miplevel = " << mipLevel << "\n";
 
     VkImageView imageView;
     if (vkCreateImageView(device.device(), &viewInfo, nullptr, &imageView) != VK_SUCCESS) {

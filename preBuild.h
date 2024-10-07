@@ -89,11 +89,6 @@ static std::unique_ptr<Model> createPlane(Device& device, const unsigned int det
     }
 
 
-    std::cout << modelBuilder.vertices.size() << "\n";
-    std::cout << modelBuilder.indices.size() << "\n";
-
-
-
     return std::make_unique<Model>(device, modelBuilder, "textures/floor.jpg");
 }
 
