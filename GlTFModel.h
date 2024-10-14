@@ -1,11 +1,17 @@
 #pragma once
 
+////
+// this class use the implementation of GlTF model from sascha willems:
+//https://github.com/SaschaWillems/Vulkan-glTF-PBR?tab=readme-ov-file
+////
+
 #include <vulkan/vulkan.h>
 #include "Device.h"
 #include "Buffer.h"
 #include "Texture.h"
 
 #define GLM_FORCE_RADIANS
+#define GLM_ENABLE_EXPERIMENTAL
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 
 #include <glm/glm.hpp>
@@ -213,7 +219,10 @@ class GlTFModel
 		float end = std::numeric_limits<float>::min();
 	};
 
+	public:
+
 	struct ModelGltf {
+
 		struct Vertex {
 			glm::vec3 position{};
 
@@ -261,8 +270,9 @@ class GlTFModel
 			size_t vertexPos = 0;
 		};
 
-		std::string filePath;
+		std::string filePath2;
 
+		ModelGltf(Device& device) : device{ device }{};
 		void destroy(VkDevice device);
 		void loadNode(Node* parent, const tinygltf::Node& node, uint32_t nodeIndex, const tinygltf::Model& model, LoaderInfo& loaderInfo, float globalscale);
 		void getNodeProps(const tinygltf::Node& node, const tinygltf::Model& model, size_t& vertexCount, size_t& indexCount);
@@ -273,7 +283,7 @@ class GlTFModel
 		void loadTextureSamplers(tinygltf::Model& gltfModel);
 		void loadMaterials(tinygltf::Model& gltfModel);
 		void loadAnimations(tinygltf::Model& gltfModel);
-		void loadFromFile(std::string filename, Device& device, VkQueue transferQueue, float scale = 1.0f);
+		void loadFromFile(std::string filename, VkQueue transferQueue, float scale = 1.0f);
 		void drawNode(Node* node, VkCommandBuffer commandBuffer);
 		void draw(VkCommandBuffer commandBuffer);
 		void calculateBoundingBox(Node* node, Node* parent);
@@ -282,12 +292,23 @@ class GlTFModel
 		void createVertexBuffers(LoaderInfo loaderInfo);
 		void createIndexBuffers(LoaderInfo loaderInfo);
 
+		VkDescriptorSet* getDecriptorSet();
+		void bind(VkCommandBuffer commandBuffer);
+
+
 		GlTFModel::Node* findNode(Node* parent, uint32_t index);
 		GlTFModel::Node* nodeFromIndex(uint32_t index);
 
 		Device& device;
 
+
+
 	};
 
+	GlTFModel(const GlTFModel&) = delete;
+	GlTFModel& operator=(const GlTFModel&) = delete;
+
+	static std::unique_ptr<GlTFModel::ModelGltf> createModelFromFile(Device& device, const std::string& filePath);
+	ModelGltf model;
 };
 

@@ -4,6 +4,9 @@
 #include "Device.h"
 #include "Buffer.h"
 #include "Texture.h"
+#include "Swap_chain.h"
+#include "descriptors.h"
+
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -52,6 +55,13 @@ public:
 	//VkDescriptorImageInfo getImageInfo();
 
 	std::unique_ptr<Texture> texture;
+
+	std::vector<VkDescriptorSet> descriptorSet{ Swap_chain::MAX_FRAMES_IN_FLIGHT };
+	void createDescriptorSet(DescriptorPool& pool, Device& device);
+	std::vector<VkDescriptorSet> getDecriptorSet() { return descriptorSet; };
+
+	void updateAnimation() {};
+	void update() {};
 	
 private:
 	void createVertexBuffers(const std::vector<Vertex>& vertices);

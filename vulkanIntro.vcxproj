@@ -191,6 +191,7 @@
     <ClInclude Include="Frame_info.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="GlTFModel.h" />
+    <ClInclude Include="Imodel.h" />
     <ClInclude Include="json.hpp" />
     <ClInclude Include="KeyboardMovementController.h" />
     <ClInclude Include="Model.h" />

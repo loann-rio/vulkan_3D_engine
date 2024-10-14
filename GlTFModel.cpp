@@ -2,7 +2,6 @@
 
 #define STBI_MSC_SECURE_CRT
 
-#define GLM_ENABLE_EXPERIMENTAL
 
 #include <glm/ext/quaternion_common.hpp>
 #include <iostream>
@@ -275,10 +274,11 @@ void GlTFModel::ModelGltf::loadNode(Node* parent, const tinygltf::Node& node, ui
 					return;
 				}
 			}
-
+			
+			/*
 			Primitive* newPrimitive = new Primitive(indexStart, indexCount, vertexCount, primitive.material > -1 ? materials[primitive.material] : materials.back());
 			newPrimitive->setBoundingBox(posMin, posMax);
-			newMesh->primitives.push_back(newPrimitive);
+			newMesh->primitives.push_back(newPrimitive);*/
 		}
 
 		// Mesh BB from BBs of primitives
@@ -484,7 +484,7 @@ void GlTFModel::ModelGltf::loadAnimations(tinygltf::Model& gltfModel)
 	}
 }
 
-void GlTFModel::ModelGltf::loadFromFile(std::string filename, Device& device, VkQueue transferQueue, float scale)
+void GlTFModel::ModelGltf::loadFromFile(std::string filename, VkQueue transferQueue, float scale)
 {
 
 	basist::basisu_transcoder_init();
@@ -497,6 +497,7 @@ void GlTFModel::ModelGltf::loadFromFile(std::string filename, Device& device, Vk
 
 	//this->device = device;
 
+
 	bool binary = false;
 	size_t extpos = filename.rfind('.', filename.length());
 	if (extpos != std::string::npos) {
@@ -508,7 +509,9 @@ void GlTFModel::ModelGltf::loadFromFile(std::string filename, Device& device, Vk
 		pos = filename.find_last_of('\\');
 	}
 
-	filePath = filename.substr(0, pos);
+	std::string filePath = filename.substr(0, pos);
+
+	std::cout << filePath << "  \n";
 
 	// @todo
 	gltfContext.SetImageLoader(loadImageDataFunc, nullptr);
@@ -571,6 +574,7 @@ void GlTFModel::ModelGltf::loadFromFile(std::string filename, Device& device, Vk
 				node->update();
 			}
 		}
+
 	}
 	else {
 		// TODO: throw
@@ -585,6 +589,10 @@ void GlTFModel::ModelGltf::loadFromFile(std::string filename, Device& device, Vk
 	delete[] loaderInfo.indexBuffer;
 
 	//getSceneDimensions();
+}
+
+void GlTFModel::ModelGltf::draw(VkCommandBuffer commandBuffer)
+{
 }
 
 
@@ -675,6 +683,15 @@ void GlTFModel::ModelGltf::createIndexBuffers(LoaderInfo loaderInfo)
 
 }
 
+void GlTFModel::ModelGltf::bind(VkCommandBuffer commandBuffer)
+{
+	VkBuffer buffers[] = { vertexBuffer->getBuffer() };
+	VkDeviceSize offsets[] = { 0 };
+
+	vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
+	vkCmdBindIndexBuffer(commandBuffer, indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
+}
+
 GlTFModel::Node* GlTFModel::ModelGltf::findNode(Node* parent, uint32_t index)
 {
 	Node* nodeFound = nullptr;
@@ -747,4 +764,42 @@ GlTFModel::Node::~Node()
 	for (auto& child : children) {
 		delete child;
 	}
+}
+
+GlTFModel::BoundingBox GlTFModel::BoundingBox::getAABB(glm::mat4 m)
+{
+	glm::vec3 min = glm::vec3(m[3]);
+	glm::vec3 max = min;
+	glm::vec3 v0, v1;
+
+	glm::vec3 right = glm::vec3(m[0]);
+	v0 = right * this->min.x;
+	v1 = right * this->max.x;
+	min += glm::min(v0, v1);
+	max += glm::max(v0, v1);
+
+	glm::vec3 up = glm::vec3(m[1]);
+	v0 = up * this->min.y;
+	v1 = up * this->max.y;
+	min += glm::min(v0, v1);
+	max += glm::max(v0, v1);
+
+	glm::vec3 back = glm::vec3(m[2]);
+	v0 = back * this->min.z;
+	v1 = back * this->max.z;
+	min += glm::min(v0, v1);
+	max += glm::max(v0, v1);
+
+	return BoundingBox(min, max);
+}
+
+std::unique_ptr<GlTFModel::ModelGltf> GlTFModel::createModelFromFile(Device& device, const std::string& filePath)
+{
+	std::unique_ptr<GlTFModel::ModelGltf> model = std::make_unique<GlTFModel::ModelGltf>(device);;
+	model->filePath2 = "vjfnkelc";
+	
+	model->loadFromFile(filePath, device.graphicsQueue());
+
+
+	return model;
 }

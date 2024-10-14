@@ -2,14 +2,17 @@
 
 // local
 #include "KeyboardMovementController.h"
+
 #include "RenderSystem.h"
 #include "Camera.h"
 #include "Buffer.h"
 #include "Frame_info.h"
-#include "preBuild.h"
+
 #include "point_light_system.h"
 #include "preBuild.h"
+
 #include "Texture.h"
+#include "TextOverlay.h"
 
 
 // glm
@@ -78,7 +81,7 @@ void App::run()
     {
         auto& obj = kv.second;
         if (obj.model == nullptr) continue;
-        obj.createDescriptorSet(*globalPool, device);
+        obj.model->createDescriptorSet(*globalPool, device);
     }
 
     PointLightSystem pointLightSystem{  device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
@@ -175,7 +178,7 @@ void App::run()
 
 void App::loadGameObjects() {
     
-    std::shared_ptr<Model> model_city = Model::createModelFromFile(device, "model/viking_room.obj", "textures/viking_room.png");
+    std::shared_ptr<Model> model_city =  Model::createModelFromFile(device, "model/viking_room.obj", "textures/viking_room.png");
     auto Lowpoly_City = GameObject::createGameObject(device);
     Lowpoly_City.transform.rotation.x = pi<float> / 2;
     Lowpoly_City.transform.rotation.y = pi<float> ;
@@ -201,7 +204,7 @@ void App::loadGameObjects() {
     cube1.transform.translation = { 2, -0.4f, 6 };
     gameObjects.emplace(cube1.getId(), std::move(cube1));*/
 
-    std::shared_ptr<Model> plane = createPlane(device, 10, 10, { 0, 0, 0 });
+    std::shared_ptr<Model> plane = createPlane(device, 10, 10, {0, 0, 0});
 
     auto plane1 = GameObject::createGameObject(device);
     plane1.model = plane;
@@ -223,6 +226,15 @@ void App::loadGameObjects() {
         pointLight.transform.translation = glm::vec3(rotateLight * glm::vec4(-1.f, -1.f, -1.f, 4.f)) + glm::vec3{ 7, 0, 7 };
         gameObjects.emplace(pointLight.getId(), std::move(pointLight));
     }*/
+
+    std::shared_ptr<GlTFModel::ModelGltf> drone = GlTFModel::createModelFromFile(device, "model/drone/scene.gltf");
+
+    auto GODrone = GameObject::createGameObject(device);
+    GODrone.transform.translation = { 8, 0, 11 };
+    GODrone.gltfModel = drone;
+    gameObjects.emplace(GODrone.getId(), std::move(GODrone));
+
+    
 }
 
 void App::getFrameRate(float lastFrameTime)

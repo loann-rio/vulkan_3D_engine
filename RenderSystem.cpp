@@ -104,35 +104,69 @@ void RenderSystem::renderGameObjects(FrameInfo& frameInfo)
 	for (auto& kv : frameInfo.gameObjects)
 	{
 		auto& obj = kv.second;
-		if (obj.model == nullptr) continue;	
 
+		if (obj.model != nullptr)
+		{
+			vkCmdBindDescriptorSets(
+				frameInfo.commandBuffer,
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				pipelineLayout,
+				1, 1,
+				&obj.model->getDecriptorSet()[frameInfo.frameIndex],
+				0,
+				nullptr
+			);
 
-		vkCmdBindDescriptorSets(
-			frameInfo.commandBuffer,
-			VK_PIPELINE_BIND_POINT_GRAPHICS,
-			pipelineLayout,
-			1, 1,
-			&obj.descriptorSet[frameInfo.frameIndex],
-			0,
-			nullptr
-		);
+			SimplePushConstantData push{};
+			push.modelMatrix = obj.transform.mat4();
+			push.normalMatrix = obj.transform.normalMatrix();
 
-		SimplePushConstantData push{};
-		push.modelMatrix = obj.transform.mat4();
-		push.normalMatrix = obj.transform.normalMatrix();
+			vkCmdPushConstants(
+				frameInfo.commandBuffer,
+				pipelineLayout,
+				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+				0,
+				sizeof(SimplePushConstantData),
+				&push
+			);
 
-		vkCmdPushConstants(
-			frameInfo.commandBuffer,
-			pipelineLayout,
-			VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-			0,
-			sizeof(SimplePushConstantData),
-			&push
-		);
+			obj.model->bind(frameInfo.commandBuffer);
+			obj.model->draw(frameInfo.commandBuffer);
 
-		obj.model->bind(frameInfo.commandBuffer);
-		obj.model->draw(frameInfo.commandBuffer);
+			i++;
 
-		i++;
+		}
+		else if (obj.gltfModel != nullptr)
+		{
+			vkCmdBindDescriptorSets(
+				frameInfo.commandBuffer,
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				pipelineLayout,
+				1, 1,
+				&obj.gltfModel->getDecriptorSet()[frameInfo.frameIndex],
+				0,
+				nullptr
+			);
+
+			SimplePushConstantData push{};
+			push.modelMatrix = obj.transform.mat4();
+			push.normalMatrix = obj.transform.normalMatrix();
+
+			vkCmdPushConstants(
+				frameInfo.commandBuffer,
+				pipelineLayout,
+				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+				0,
+				sizeof(SimplePushConstantData),
+				&push
+			);
+
+			obj.gltfModel->bind(frameInfo.commandBuffer);
+			obj.gltfModel->draw(frameInfo.commandBuffer);
+
+			i++;
+		}
+
+		
 	}
 }

@@ -1,9 +1,10 @@
 #pragma once
 
-#include "model.h"
+#include "Model.h"
 #include "Swap_chain.h"
 #include "descriptors.h"
 #include "Device.h"
+#include "GlTFModel.h"
 #include "Texture.h"
 
 #include <glm/gtc/matrix_transform.hpp>
@@ -51,12 +52,8 @@ public:
 	glm::vec3 color{};
 
 	std::shared_ptr<Model> model{};
+	std::shared_ptr<GlTFModel::ModelGltf> gltfModel{};
 	std::unique_ptr<PointLightComponent> pointLight = nullptr;
-
-	std::vector<VkDescriptorSet> descriptorSet{ Swap_chain::MAX_FRAMES_IN_FLIGHT };
-
-	void createDescriptorSet(DescriptorPool& pool, Device& device);
-
 
 private:
 

@@ -70,20 +70,3 @@ GameObject GameObject::makePointLight(Device& device, float intencity, float rad
     gameObj.pointLight->LightIntencity = intencity;
     return gameObj;
 }
-
-void GameObject::createDescriptorSet(DescriptorPool& pool, Device& device)
-{
-
-    auto textureSetLayout = DescriptorSetLayout::Builder(device)
-        .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .build();
-
-    for (int i = 0; i < descriptorSet.size(); i++)
-    {
-        auto imageInfo = model->texture->getImageInfo();
-        DescriptorWriter(*textureSetLayout, pool)
-            .writeImage(0, &imageInfo)
-            .build(descriptorSet[i]);
-    }
-
-}

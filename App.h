@@ -5,7 +5,6 @@
 #include "GameObject.h"
 #include "Renderer.h"
 #include "descriptors.h"
-#include "TextOverlay.h"
 
 #include <memory>
 #include <vector>
