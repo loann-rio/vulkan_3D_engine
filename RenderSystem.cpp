@@ -17,22 +17,32 @@ struct SimplePushConstantData {
 
 RenderSystem::RenderSystem(Device& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout) : device{device}
 {
-	//auto textureLayout = ;
 
+	//// Obj pipeline
 	createPipelineLayout({ globalSetLayout, (*DescriptorSetLayout::Builder(device)
 		.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.build())
-		.getDescriptorSetLayout() });
+		.getDescriptorSetLayout() }, objPipelineLayout);
 
 	createPipeline(renderPass);
+
+
+
+	//// GlTf pipeline
+	createPipelineLayout({ globalSetLayout }, GlTFPipelineLayout);
+
+	createPipelineGlTf(renderPass);
+
+
 }
 
 RenderSystem::~RenderSystem()
 {
-	vkDestroyPipelineLayout(device.device(), pipelineLayout, nullptr);
+	vkDestroyPipelineLayout(device.device(), objPipelineLayout , nullptr);
+	vkDestroyPipelineLayout(device.device(), GlTFPipelineLayout, nullptr);
 }
 
-void RenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout> descriptorSetLayout)
+void RenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout> descriptorSetLayout, VkPipelineLayout & pipelineLayout)
 {
 	VkPushConstantRange pushConstantRange{};
 	pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -67,7 +77,7 @@ void RenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout> descr
 
 void RenderSystem::createPipeline(VkRenderPass renderPass)
 {
-	assert(pipelineLayout != nullptr && "Cannot create pipeline before pipeline layout");
+	assert(objPipelineLayout != nullptr && "Cannot create pipeline before pipeline layout");
 
 	PipelineConfigInfo pipelineConfig{};
 
@@ -75,9 +85,9 @@ void RenderSystem::createPipeline(VkRenderPass renderPass)
 
 	pipelineConfig.renderPass = renderPass;
 
-	pipelineConfig.pipelineLayout = pipelineLayout; 
+	pipelineConfig.pipelineLayout = objPipelineLayout;
 
-	pipeline = std::make_unique<Pipeline>(
+	objPipeline = std::make_unique<Pipeline>(
 		device,
 		"simple_shader.vert.spv",
 		"simple_shader.frag.spv",
@@ -85,14 +95,91 @@ void RenderSystem::createPipeline(VkRenderPass renderPass)
 	);
 }
 
+void RenderSystem::createPipelineGlTf(VkRenderPass renderPass)
+{
+	assert(GlTFPipelineLayout != nullptr && "Cannot create pipeline before pipeline layout");
+
+	PipelineConfigInfo pipelineConfig{};
+
+	Pipeline::defaultPipelineConfigInfo(pipelineConfig);
+
+	pipelineConfig.bindingDescription = GlTFModel::ModelGltf::Vertex::getBindingDescriptionsGlTF();
+	pipelineConfig.attributeDescription = GlTFModel::ModelGltf::Vertex::getAttributeDescriptionsGlTF();
+
+	pipelineConfig.renderPass = renderPass;
+	pipelineConfig.pipelineLayout = GlTFPipelineLayout;
+
+	GlTFPipeline = std::make_unique<Pipeline>(
+		device,
+		"GlTFshader.vert.spv",
+		"GlTFshader.frag.spv",
+		pipelineConfig
+	);
+}
+
+void RenderSystem::renderObjModel(FrameInfo& frameInfo, GameObject& obj)
+{
+	if (obj.model != nullptr)
+	{
+		vkCmdBindDescriptorSets(
+			frameInfo.commandBuffer,
+			VK_PIPELINE_BIND_POINT_GRAPHICS,
+			objPipelineLayout,
+			1, 1,
+			&obj.model->getDecriptorSet()[frameInfo.frameIndex],
+			0,
+			nullptr
+		);
+
+		SimplePushConstantData push{};
+		push.modelMatrix = obj.transform.mat4();
+		push.normalMatrix = obj.transform.normalMatrix();
+
+		vkCmdPushConstants(
+			frameInfo.commandBuffer,
+			objPipelineLayout,
+			VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+			0,
+			sizeof(SimplePushConstantData),
+			&push
+		);
+
+		obj.model->bind(frameInfo.commandBuffer);
+		obj.model->draw(frameInfo.commandBuffer);
+	}
+}
+
+void RenderSystem::renderGlTFModel(FrameInfo& frameInfo, GameObject& obj)
+{
+	if (obj.gltfModel != nullptr)
+	{
+
+		SimplePushConstantData push{};
+		push.modelMatrix = obj.transform.mat4();
+		push.normalMatrix = obj.transform.normalMatrix();
+
+		vkCmdPushConstants(
+			frameInfo.commandBuffer,
+			GlTFPipelineLayout,
+			VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+			0,
+			sizeof(SimplePushConstantData),
+			&push
+		);
+
+		obj.gltfModel->bind(frameInfo.commandBuffer);
+		obj.gltfModel->draw(frameInfo.commandBuffer);
+	}
+}
+
 void RenderSystem::renderGameObjects(FrameInfo& frameInfo)
 {
-	pipeline->bind(frameInfo.commandBuffer);
+	objPipeline->bind(frameInfo.commandBuffer);
 
 	vkCmdBindDescriptorSets(
 		frameInfo.commandBuffer,
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
-		pipelineLayout,
+		objPipelineLayout,
 		0, 1,
 		&frameInfo.globalDescriptorSet[frameInfo.frameIndex],
 		0,
@@ -106,67 +193,7 @@ void RenderSystem::renderGameObjects(FrameInfo& frameInfo)
 		auto& obj = kv.second;
 
 		if (obj.model != nullptr)
-		{
-			vkCmdBindDescriptorSets(
-				frameInfo.commandBuffer,
-				VK_PIPELINE_BIND_POINT_GRAPHICS,
-				pipelineLayout,
-				1, 1,
-				&obj.model->getDecriptorSet()[frameInfo.frameIndex],
-				0,
-				nullptr
-			);
-
-			SimplePushConstantData push{};
-			push.modelMatrix = obj.transform.mat4();
-			push.normalMatrix = obj.transform.normalMatrix();
-
-			vkCmdPushConstants(
-				frameInfo.commandBuffer,
-				pipelineLayout,
-				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-				0,
-				sizeof(SimplePushConstantData),
-				&push
-			);
-
-			obj.model->bind(frameInfo.commandBuffer);
-			obj.model->draw(frameInfo.commandBuffer);
-
-			i++;
-
-		}
-		else if (obj.gltfModel != nullptr)
-		{
-			vkCmdBindDescriptorSets(
-				frameInfo.commandBuffer,
-				VK_PIPELINE_BIND_POINT_GRAPHICS,
-				pipelineLayout,
-				1, 1,
-				&obj.gltfModel->getDecriptorSet()[frameInfo.frameIndex],
-				0,
-				nullptr
-			);
-
-			SimplePushConstantData push{};
-			push.modelMatrix = obj.transform.mat4();
-			push.normalMatrix = obj.transform.normalMatrix();
-
-			vkCmdPushConstants(
-				frameInfo.commandBuffer,
-				pipelineLayout,
-				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-				0,
-				sizeof(SimplePushConstantData),
-				&push
-			);
-
-			obj.gltfModel->bind(frameInfo.commandBuffer);
-			obj.gltfModel->draw(frameInfo.commandBuffer);
-
-			i++;
-		}
-
-		
+			renderObjModel(frameInfo, obj);
+		i++;
 	}
 }

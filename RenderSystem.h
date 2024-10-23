@@ -11,9 +11,6 @@
 #include <memory>
 #include <vector>
 
-template<class T>
-constexpr T pi = T(3.1415926535897932385L);
-
 class RenderSystem
 {
 public:
@@ -26,12 +23,19 @@ public:
 
 
 private:
-	void createPipelineLayout(std::vector<VkDescriptorSetLayout> descriptorSetLayout);
+	void createPipelineLayout(std::vector<VkDescriptorSetLayout> descriptorSetLayout, VkPipelineLayout& pipelineLayout);
 	void createPipeline(VkRenderPass renderPass);
+	void createPipelineGlTf(VkRenderPass renderPass);
+
+	void renderObjModel(FrameInfo& frameInfo, GameObject& obj);
+	void renderGlTFModel(FrameInfo& frameInfo, GameObject& obj);
 
 	Device &device;
 
-	std::unique_ptr<Pipeline> pipeline;
-	VkPipelineLayout pipelineLayout;
+	std::unique_ptr<Pipeline> objPipeline;
+	VkPipelineLayout objPipelineLayout;
+
+	std::unique_ptr<Pipeline> GlTFPipeline;
+	VkPipelineLayout GlTFPipelineLayout;
 };
 

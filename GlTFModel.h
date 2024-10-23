@@ -134,10 +134,11 @@ class GlTFModel
 		uint32_t firstIndex;
 		uint32_t indexCount;
 		uint32_t vertexCount;
-		Material& material;
+
+		//Material& material;
 		bool hasIndices;
 		BoundingBox bb;
-		Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t vertexCount, Material& material);
+		Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t vertexCount);// , Material& material);
 		void setBoundingBox(glm::vec3 min, glm::vec3 max);
 	};
 
@@ -235,6 +236,12 @@ class GlTFModel
 			glm::vec4 weight0;
 
 			glm::vec3 color{};
+
+			
+
+			static std::vector<VkVertexInputBindingDescription> getBindingDescriptionsGlTF();
+			static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptionsGlTF();
+
 		};
 
 		std::unique_ptr<Buffer> vertexBuffer;
@@ -251,6 +258,7 @@ class GlTFModel
 		std::vector<Skin*> skins;
 
 		std::vector<TextureModel> textures; 
+		std::vector<TextureSampler> textureSamplers;
 
 		std::vector<Material> materials;
 		std::vector<Animation> animations;

@@ -275,10 +275,10 @@ void GlTFModel::ModelGltf::loadNode(Node* parent, const tinygltf::Node& node, ui
 				}
 			}
 			
-			/*
-			Primitive* newPrimitive = new Primitive(indexStart, indexCount, vertexCount, primitive.material > -1 ? materials[primitive.material] : materials.back());
+			
+			Primitive* newPrimitive = new Primitive(indexStart, indexCount, vertexCount);// , primitive.material > -1 ? materials[primitive.material] : materials.back());
 			newPrimitive->setBoundingBox(posMin, posMax);
-			newMesh->primitives.push_back(newPrimitive);*/
+			newMesh->primitives.push_back(newPrimitive);
 		}
 
 		// Mesh BB from BBs of primitives
@@ -356,6 +356,96 @@ void GlTFModel::ModelGltf::loadSkins(tinygltf::Model& gltfModel)
 		}
 
 		skins.push_back(newSkin);
+	}
+
+}
+
+VkSamplerAddressMode GlTFModel::ModelGltf::getVkWrapMode(int32_t wrapMode)
+{
+	switch (wrapMode) {
+	case -1:
+	case 10497:
+		return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	case 33071:
+		return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+	case 33648:
+		return VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+	}
+
+	std::cerr << "Unknown wrap mode for getVkWrapMode: " << wrapMode << std::endl;
+	return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+
+}
+
+VkFilter GlTFModel::ModelGltf::getVkFilterMode(int32_t filterMode)
+{
+	switch (filterMode) {
+	case -1:
+	case 9728:
+		return VK_FILTER_NEAREST;
+	case 9729:
+		return VK_FILTER_LINEAR;
+	case 9984:
+		return VK_FILTER_NEAREST;
+	case 9985:
+		return VK_FILTER_NEAREST;
+	case 9986:
+		return VK_FILTER_LINEAR;
+	case 9987:
+		return VK_FILTER_LINEAR;
+	}
+
+	std::cerr << "Unknown filter mode for getVkFilterMode: " << filterMode << std::endl;
+	return VK_FILTER_NEAREST;
+
+}
+
+/*void GlTFModel::ModelGltf::loadTextures(tinygltf::Model& gltfModel, Device& device, VkQueue transferQueue)
+{
+	for (tinygltf::Texture& tex : gltfModel.textures) 
+	{
+		int source = tex.source;
+		// If this texture uses the KHR_texture_basisu, we need to get the source index from the extension structure
+		if (tex.extensions.find("KHR_texture_basisu") != tex.extensions.end()) 
+		{
+			auto ext = tex.extensions.find("KHR_texture_basisu");
+			auto value = ext->second.Get("source");
+			source = value.Get<int>();
+		}
+
+		tinygltf::Image image = gltfModel.images[source];
+
+		TextureSampler textureSampler;
+
+		if (tex.sampler == -1) {
+			// No sampler specified, use a default one
+			textureSampler.magFilter = VK_FILTER_LINEAR;
+			textureSampler.minFilter = VK_FILTER_LINEAR;
+			textureSampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+			textureSampler.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+			textureSampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		}
+		else {
+			textureSampler = textureSamplers[tex.sampler];
+		}
+
+		TextureModel texture;
+		texture.fromglTfImage(device, image, filePath, textureSampler, transferQueue);
+		textures.push_back(texture);
+	}
+}*/
+
+void GlTFModel::ModelGltf::loadTextureSamplers(tinygltf::Model& gltfModel)
+{
+	for (tinygltf::Sampler smpl : gltfModel.samplers) 
+	{
+		TextureSampler sampler{};
+		sampler.minFilter = getVkFilterMode(smpl.minFilter);
+		sampler.magFilter = getVkFilterMode(smpl.magFilter);
+		sampler.addressModeU = getVkWrapMode(smpl.wrapS);
+		sampler.addressModeV = getVkWrapMode(smpl.wrapT);
+		sampler.addressModeW = sampler.addressModeV;
+		textureSamplers.push_back(sampler);
 	}
 
 }
@@ -534,7 +624,7 @@ void GlTFModel::ModelGltf::loadFromFile(std::string filename, VkQueue transferQu
 
 		/////// load textures
 
-		//loadTextureSamplers(gltfModel);
+		loadTextureSamplers(gltfModel);
 		//loadTextures(gltfModel, device, transferQueue);
 		//loadMaterials(gltfModel);
 
@@ -562,7 +652,7 @@ void GlTFModel::ModelGltf::loadFromFile(std::string filename, VkQueue transferQu
 		}
 
 		/////// load skins
-		//loadSkins(gltfModel);
+		loadSkins(gltfModel);
 
 		for (auto node : linearNodes) {
 			// Assign skins
@@ -588,18 +678,60 @@ void GlTFModel::ModelGltf::loadFromFile(std::string filename, VkQueue transferQu
 	delete[] loaderInfo.vertexBuffer;
 	delete[] loaderInfo.indexBuffer;
 
-	//getSceneDimensions();
+	getSceneDimensions();
+}
+
+void GlTFModel::ModelGltf::drawNode(Node* node, VkCommandBuffer commandBuffer)
+{	
+	if (node->mesh) {
+		for (Primitive* primitive : node->mesh->primitives) {
+			vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
+		}
+	}
+
+	for (auto& child : node->children) {
+		drawNode(child, commandBuffer);
+	}
+
 }
 
 void GlTFModel::ModelGltf::draw(VkCommandBuffer commandBuffer)
 {
+	for (auto& node : nodes) {
+		drawNode(node, commandBuffer);
+	}
+
+}
+
+void GlTFModel::ModelGltf::calculateBoundingBox(Node* node, Node* parent)
+{
+	BoundingBox parentBvh = parent ? parent->bvh : BoundingBox(dimensions.min, dimensions.max);
+
+	if (node->mesh) {
+		if (node->mesh->bb.valid) {
+			node->aabb = node->mesh->bb.getAABB(node->getMatrix());
+			if (node->children.size() == 0) {
+				node->bvh.min = node->aabb.min;
+				node->bvh.max = node->aabb.max;
+				node->bvh.valid = true;
+			}
+		}
+	}
+
+	parentBvh.min = glm::min(parentBvh.min, node->bvh.min);
+	parentBvh.max = glm::min(parentBvh.max, node->bvh.max);
+
+	for (auto& child : node->children) {
+		calculateBoundingBox(child, node);
+	}
+
 }
 
 
 void GlTFModel::ModelGltf::getSceneDimensions()
 {
 	// Calculate binary volume hierarchy for all nodes in the scene
-	/*for (auto node : linearNodes) {
+	for (auto node : linearNodes) {
 		calculateBoundingBox(node, nullptr);
 	}
 
@@ -617,7 +749,7 @@ void GlTFModel::ModelGltf::getSceneDimensions()
 	aabb = glm::scale(glm::mat4(1.0f), glm::vec3(dimensions.max[0] - dimensions.min[0], dimensions.max[1] - dimensions.min[1], dimensions.max[2] - dimensions.min[2]));
 	aabb[3][0] = dimensions.min[0];
 	aabb[3][1] = dimensions.min[1];
-	aabb[3][2] = dimensions.min[2];*/
+	aabb[3][2] = dimensions.min[2];
 }
 
 void GlTFModel::ModelGltf::createVertexBuffers(LoaderInfo loaderInfo)
@@ -625,9 +757,11 @@ void GlTFModel::ModelGltf::createVertexBuffers(LoaderInfo loaderInfo)
 
 	assert(loaderInfo.vertexCount >= 3 && "Vertex count must be at least 3");
 
-	VkDeviceSize bufferSize = sizeof(Vertex) * loaderInfo.vertexCount;
-
 	uint32_t vertexSize = sizeof(Vertex);
+
+	VkDeviceSize bufferSize = vertexSize * loaderInfo.vertexCount;
+	
+	std::cout << vertexSize << "\n";
 
 	Buffer stagingBuffer{
 		device,
@@ -740,7 +874,8 @@ void GlTFModel::Mesh::setBoundingBox(glm::vec3 min, glm::vec3 max)
 	bb.valid = true;
 }
 
-GlTFModel::Primitive::Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t vertexCount, Material& material) : firstIndex(firstIndex), indexCount(indexCount), vertexCount(vertexCount), material(material) {
+GlTFModel::Primitive::Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t vertexCount) : firstIndex(firstIndex), indexCount(indexCount), vertexCount(vertexCount) //, material(material) {
+{
 	hasIndices = indexCount > 0;
 }
 
@@ -749,6 +884,34 @@ void GlTFModel::Primitive::setBoundingBox(glm::vec3 min, glm::vec3 max)
 	bb.min = min;
 	bb.max = max;
 	bb.valid = true;
+}
+
+glm::mat4 GlTFModel::Node::localMatrix()
+{
+	if (!useCachedMatrix) {
+		cachedLocalMatrix = glm::translate(glm::mat4(1.0f), translation) * glm::mat4(rotation) * glm::scale(glm::mat4(1.0f), scale) * matrix;
+	};
+
+	return cachedLocalMatrix;
+
+}
+
+glm::mat4 GlTFModel::Node::getMatrix()
+{
+	if (!useCachedMatrix) {
+		glm::mat4 m = localMatrix();
+		Node* p = parent;
+		while (p) {
+			m = p->localMatrix() * m;
+			p = p->parent;
+		}
+		cachedMatrix = m;
+		useCachedMatrix = true;
+		return m;
+	}
+	else {
+		return cachedMatrix;
+	}
 }
 
 void GlTFModel::Node::update()
@@ -802,4 +965,28 @@ std::unique_ptr<GlTFModel::ModelGltf> GlTFModel::createModelFromFile(Device& dev
 
 
 	return model;
+}
+
+std::vector<VkVertexInputBindingDescription> GlTFModel::ModelGltf::Vertex::getBindingDescriptionsGlTF()
+{
+	std::vector<VkVertexInputBindingDescription> bindingDescription(1);
+	bindingDescription[0].binding = 0;
+	bindingDescription[0].stride = sizeof(Vertex);
+	bindingDescription[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+	return bindingDescription;
+}
+
+std::vector<VkVertexInputAttributeDescription> GlTFModel::ModelGltf::Vertex::getAttributeDescriptionsGlTF()
+{
+	std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
+
+	attributeDescriptions.push_back({ 0, 0, VK_FORMAT_R32G32B32_SFLOAT    , offsetof(Vertex, position) });
+	attributeDescriptions.push_back({ 1, 0, VK_FORMAT_R32G32B32_SFLOAT    , offsetof(Vertex, normal)   });
+	attributeDescriptions.push_back({ 2, 0, VK_FORMAT_R32G32_SFLOAT       , offsetof(Vertex, uv0)      });
+	attributeDescriptions.push_back({ 3, 0, VK_FORMAT_R32G32_SFLOAT       , offsetof(Vertex, uv1)      });
+	attributeDescriptions.push_back({ 4, 0, VK_FORMAT_R32G32B32A32_UINT   , offsetof(Vertex, joint0)   });
+	attributeDescriptions.push_back({ 5, 0, VK_FORMAT_R32G32B32A32_SFLOAT , offsetof(Vertex, weight0)  });
+	attributeDescriptions.push_back({ 6, 0, VK_FORMAT_R32G32B32_SFLOAT    , offsetof(Vertex, color)    });
+
+	return attributeDescriptions;
 }

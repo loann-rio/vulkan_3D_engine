@@ -169,6 +169,7 @@
     <ClCompile Include="Frame_info.cpp" />
     <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="GlTFModel.cpp" />
+    <ClCompile Include="GLTFrenderSystem.cpp" />
     <ClCompile Include="KeyboardMovementController.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Model.cpp" />
@@ -191,6 +192,7 @@
     <ClInclude Include="Frame_info.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="GlTFModel.h" />
+    <ClInclude Include="GLTFrenderSystem.h" />
     <ClInclude Include="Imodel.h" />
     <ClInclude Include="json.hpp" />
     <ClInclude Include="KeyboardMovementController.h" />
@@ -211,6 +213,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="compile.bat" />
+    <None Include="GlTFshader.frag" />
+    <None Include="GlTFshader.vert" />
     <None Include="point_light.frag" />
     <None Include="point_light.vert" />
     <None Include="simple_shader.frag" />

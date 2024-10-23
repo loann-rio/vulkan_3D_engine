@@ -3,6 +3,7 @@
 // local
 #include "KeyboardMovementController.h"
 
+#include "GLTFrenderSystem.h"
 #include "RenderSystem.h"
 #include "Camera.h"
 #include "Buffer.h"
@@ -86,6 +87,7 @@ void App::run()
 
     PointLightSystem pointLightSystem{  device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
 	RenderSystem renderSystem{          device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
+    GlTFrenderSystem GlTfrenderSystem{  device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
 
     TextOverlay textOverlay{ device, renderer.getSwapChainRenderPass() };
     textOverlay.prepareResources(*globalPool);
@@ -162,6 +164,7 @@ void App::run()
 			renderer.beginSwapChainRenderPass(commandBuffer);
 
             renderSystem.renderGameObjects(frameInfo);
+            GlTfrenderSystem.renderGameObjects(frameInfo);
             pointLightSystem.render(frameInfo);
             textOverlay.renderText(frameInfo);
 
@@ -227,14 +230,13 @@ void App::loadGameObjects() {
         gameObjects.emplace(pointLight.getId(), std::move(pointLight));
     }*/
 
-    std::shared_ptr<GlTFModel::ModelGltf> drone = GlTFModel::createModelFromFile(device, "model/drone/scene.gltf");
+    std::shared_ptr<GlTFModel::ModelGltf> drone = GlTFModel::createModelFromFile(device, "model/DamagedHelmet.gltf");
 
     auto GODrone = GameObject::createGameObject(device);
-    GODrone.transform.translation = { 8, 0, 11 };
+    GODrone.transform.translation = { 8, 1, 4 };
+    GODrone.transform.scale = { 0.7f, 0.7f , 0.7f };
     GODrone.gltfModel = drone;
     gameObjects.emplace(GODrone.getId(), std::move(GODrone));
-
-    
 }
 
 void App::getFrameRate(float lastFrameTime)
