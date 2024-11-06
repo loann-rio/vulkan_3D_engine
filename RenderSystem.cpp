@@ -22,27 +22,17 @@ RenderSystem::RenderSystem(Device& device, VkRenderPass renderPass, VkDescriptor
 	createPipelineLayout({ globalSetLayout, (*DescriptorSetLayout::Builder(device)
 		.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.build())
-		.getDescriptorSetLayout() }, objPipelineLayout);
+		.getDescriptorSetLayout() });
 
 	createPipeline(renderPass);
-
-
-
-	//// GlTf pipeline
-	createPipelineLayout({ globalSetLayout }, GlTFPipelineLayout);
-
-	createPipelineGlTf(renderPass);
-
-
 }
 
 RenderSystem::~RenderSystem()
 {
 	vkDestroyPipelineLayout(device.device(), objPipelineLayout , nullptr);
-	vkDestroyPipelineLayout(device.device(), GlTFPipelineLayout, nullptr);
 }
 
-void RenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout> descriptorSetLayout, VkPipelineLayout & pipelineLayout)
+void RenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout> descriptorSetLayout)
 {
 	VkPushConstantRange pushConstantRange{};
 	pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -69,7 +59,7 @@ void RenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout> descr
 	pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 	pipelineLayoutInfo.pNext = &bindingFlagsInfo;
 
-	if (vkCreatePipelineLayout(device.device(), &pipelineLayoutInfo, nullptr, &pipelineLayout) !=
+	if (vkCreatePipelineLayout(device.device(), &pipelineLayoutInfo, nullptr, &objPipelineLayout) !=
 		VK_SUCCESS) {
 		throw std::runtime_error("fail to create pipeline layout");
 	}
@@ -91,28 +81,6 @@ void RenderSystem::createPipeline(VkRenderPass renderPass)
 		device,
 		"simple_shader.vert.spv",
 		"simple_shader.frag.spv",
-		pipelineConfig
-	);
-}
-
-void RenderSystem::createPipelineGlTf(VkRenderPass renderPass)
-{
-	assert(GlTFPipelineLayout != nullptr && "Cannot create pipeline before pipeline layout");
-
-	PipelineConfigInfo pipelineConfig{};
-
-	Pipeline::defaultPipelineConfigInfo(pipelineConfig);
-
-	pipelineConfig.bindingDescription = GlTFModel::ModelGltf::Vertex::getBindingDescriptionsGlTF();
-	pipelineConfig.attributeDescription = GlTFModel::ModelGltf::Vertex::getAttributeDescriptionsGlTF();
-
-	pipelineConfig.renderPass = renderPass;
-	pipelineConfig.pipelineLayout = GlTFPipelineLayout;
-
-	GlTFPipeline = std::make_unique<Pipeline>(
-		device,
-		"GlTFshader.vert.spv",
-		"GlTFshader.frag.spv",
 		pipelineConfig
 	);
 }
@@ -149,29 +117,6 @@ void RenderSystem::renderObjModel(FrameInfo& frameInfo, GameObject& obj)
 	}
 }
 
-void RenderSystem::renderGlTFModel(FrameInfo& frameInfo, GameObject& obj)
-{
-	if (obj.gltfModel != nullptr)
-	{
-
-		SimplePushConstantData push{};
-		push.modelMatrix = obj.transform.mat4();
-		push.normalMatrix = obj.transform.normalMatrix();
-
-		vkCmdPushConstants(
-			frameInfo.commandBuffer,
-			GlTFPipelineLayout,
-			VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-			0,
-			sizeof(SimplePushConstantData),
-			&push
-		);
-
-		obj.gltfModel->bind(frameInfo.commandBuffer);
-		obj.gltfModel->draw(frameInfo.commandBuffer);
-	}
-}
-
 void RenderSystem::renderGameObjects(FrameInfo& frameInfo)
 {
 	objPipeline->bind(frameInfo.commandBuffer);
@@ -187,13 +132,11 @@ void RenderSystem::renderGameObjects(FrameInfo& frameInfo)
 	);
 
 	
-	int i = 0;
 	for (auto& kv : frameInfo.gameObjects)
 	{
 		auto& obj = kv.second;
 
 		if (obj.model != nullptr)
 			renderObjModel(frameInfo, obj);
-		i++;
 	}
 }

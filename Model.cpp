@@ -66,11 +66,6 @@ void Model::draw(VkCommandBuffer commandBuffer)
 	}
 }
 
-//VkDescriptorImageInfo Model::getImageInfo()
-//{
-//	return { textureSampler, textureImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
-//}
-
 void Model::createDescriptorSet(DescriptorPool& pool, Device& device)
 {
 	auto textureSetLayout = DescriptorSetLayout::Builder(device)

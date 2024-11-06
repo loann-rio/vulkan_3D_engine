@@ -1,14 +1,12 @@
 #include "Texture.h"
 
-#include <stdexcept>
-
 #include "Buffer.h"
-//#include "basisu_transcoder.h"
-
-
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+
+#include <stdexcept>
+
 
 Texture::Texture(Device& device, const char* filePathTexture) : device{device}
 {
@@ -44,7 +42,7 @@ void Texture::createTextureImage(unsigned char* rgbaPixels, const uint32_t fontW
     vkUnmapMemory(device.device(), stagingBufferMemory);
 
     // free local memory
-    delete[] rgbaPixels;
+    //delete[] rgbaPixels;
 
     createImage(
         texWidth,
@@ -111,13 +109,10 @@ uint32_t Texture::createTextureImage(const char* path)
     
     device.copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1, mipLevel-1);
     
-    if (mipLevel > 1) {
+    if (mipLevel > 1) 
         generateMipChain(textureImage, mipLevel, texWidth, texHeight);
-    }
-    else
-    {
+    else 
         transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevel);
-    }    
 
     vkDestroyBuffer(device.device(), stagingBuffer, nullptr);
     vkFreeMemory(device.device(), stagingBufferMemory, nullptr);

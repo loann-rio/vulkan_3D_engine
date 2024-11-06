@@ -21,7 +21,15 @@ GlTFrenderSystem::GlTFrenderSystem(Device& device, VkRenderPass renderPass, VkDe
 {
 
 	//// GlTf pipeline
-	createPipelineLayout({ globalSetLayout });
+	createPipelineLayout({ globalSetLayout, (*DescriptorSetLayout::Builder(device)
+		.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+		.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+		.addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+		.addBinding(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+		.addBinding(5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+		.build())
+		.getDescriptorSetLayout() });
+
 	createPipelineGlTf(renderPass);
 }
 
@@ -89,6 +97,21 @@ void GlTFrenderSystem::renderGlTFModel(FrameInfo& frameInfo, GameObject& obj)
 {
 	if (obj.gltfModel != nullptr)
 	{
+
+		auto& descriptorSet = obj.gltfModel->getDescriptorSet(0)[frameInfo.frameIndex];
+		if (descriptorSet == VK_NULL_HANDLE) {
+			std::cerr << "Error: Descriptor set is null for frame index " << frameInfo.frameIndex << std::endl;
+		}
+
+		vkCmdBindDescriptorSets(
+			frameInfo.commandBuffer,
+			VK_PIPELINE_BIND_POINT_GRAPHICS,
+			GlTFPipelineLayout,
+			1, 1,
+			&obj.gltfModel->descriptorSet[frameInfo.frameIndex],
+			0,
+			nullptr
+		);
 
 		SimplePushConstantData push{};
 		push.modelMatrix = obj.transform.mat4();

@@ -187,6 +187,8 @@ bool DescriptorWriter::build(VkDescriptorSet& set) {
 void DescriptorWriter::overwrite(VkDescriptorSet& set) {
 
     for (auto& write : writes) {
+        write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        write.pNext = nullptr;  // Ensure no unintended extensions or structures are attached
         write.dstSet = set;
     }
 

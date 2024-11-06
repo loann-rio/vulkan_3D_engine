@@ -6,6 +6,7 @@
 #include "Camera.h"
 #include "Frame_info.h"
 #include "descriptors.h"
+#include "Swap_chain.h"
 
 #include <memory>
 #include <vector>
@@ -21,8 +22,8 @@ public:
 
 	GlTFrenderSystem(const GlTFrenderSystem&) = delete;
 	GlTFrenderSystem& operator=(const GlTFrenderSystem&) = delete;
-	void renderGameObjects(FrameInfo& frameInfo);
 
+	void renderGameObjects(FrameInfo& frameInfo);
 
 private:
 	void createPipelineLayout(std::vector<VkDescriptorSetLayout> descriptorSetLayout);

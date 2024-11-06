@@ -31,15 +31,20 @@ layout(push_constant) uniform Push {
 } push;
 
 // Define the texture sampler
-//layout(set = 1, binding = 0) uniform sampler2D texSampler;
 
+layout(set = 1, binding = 1) uniform sampler2D texSampler;
+layout(set = 1, binding = 2) uniform sampler2D texSampler2;
+layout(set = 1, binding = 3) uniform sampler2D texSampler3;
+layout(set = 1, binding = 4) uniform sampler2D texSampler4;
+layout(set = 1, binding = 5) uniform sampler2D texSampler5;
 
 
 
 void main() {
 
 	//vec4 color = vec4(1.0, 1.0, 1.0, 1.0);
+	vec4 color = texture(texSampler, inUV0) + texture(texSampler3, inUV0);
 
 	// sum colors
-	outColor =  inColor0;
+	outColor =  color;
 }

@@ -9,6 +9,9 @@
 #include "Device.h"
 #include "Buffer.h"
 #include "Texture.h"
+#include "Swap_chain.h"
+#include "descriptors.h"
+
 
 #define GLM_FORCE_RADIANS
 #define GLM_ENABLE_EXPERIMENTAL
@@ -53,19 +56,19 @@ class GlTFModel
 		BoundingBox getAABB(glm::mat4 m);
 	};
 
-	struct TextureModel {
-		//Device& device;
-		
+	struct TextureModel {		
 		uint32_t width, height;
 		uint32_t mipLevels;
 		uint32_t layerCount;
-		Texture* texture;
+		std::shared_ptr<Texture> texture;
 
 		VkDescriptorImageInfo descriptor;
+		std::vector<VkDescriptorSet> descriptorSet{ Swap_chain::MAX_FRAMES_IN_FLIGHT };
+
 		TextureModel() {}
 		void updateDescriptor();
-		void destroy() { delete texture; };
-		void fromglTfImage(Device& device, tinygltf::Image& gltfimage, std::string path, VkQueue copyQueue);
+		void destroy() {};
+		void TextFromglTfImage(Device& device, tinygltf::Image& gltfimage, std::string path = "");
 	};
 
 	struct TextureSampler {
@@ -160,7 +163,6 @@ class GlTFModel
 		
 		void setBoundingBox(glm::vec3 min, glm::vec3 max);
 		Device& device;
-
 	};
 
 	struct Skin {
@@ -245,10 +247,7 @@ class GlTFModel
 		};
 
 		std::unique_ptr<Buffer> vertexBuffer;
-		//uint32_t vertexCount;
-
 		std::unique_ptr<Buffer> indexBuffer;
-		//uint32_t indexCount;
 
 		glm::mat4 aabb;
 
@@ -264,6 +263,9 @@ class GlTFModel
 		std::vector<Animation> animations;
 		std::vector<std::string> extensions; 
 
+		std::vector<VkDescriptorSet> descriptorSet{ Swap_chain::MAX_FRAMES_IN_FLIGHT };
+		std::shared_ptr<Texture> texture;
+
 		struct Dimensions {
 			glm::vec3 min = glm::vec3(FLT_MAX);
 			glm::vec3 max = glm::vec3(-FLT_MAX);
@@ -277,8 +279,6 @@ class GlTFModel
 			size_t indexPos = 0;
 			size_t vertexPos = 0;
 		};
-
-		std::string filePath2;
 
 		ModelGltf(Device& device) : device{ device }{};
 		void destroy(VkDevice device);
@@ -299,8 +299,10 @@ class GlTFModel
 		void updateAnimation(uint32_t index, float time);
 		void createVertexBuffers(LoaderInfo loaderInfo);
 		void createIndexBuffers(LoaderInfo loaderInfo);
+		void createDescriptorSet(DescriptorPool& pool, Device& device);
 
-		VkDescriptorSet* getDecriptorSet();
+
+		std::vector<VkDescriptorSet> getDescriptorSet(uint32_t index);
 		void bind(VkCommandBuffer commandBuffer);
 
 
@@ -308,9 +310,6 @@ class GlTFModel
 		GlTFModel::Node* nodeFromIndex(uint32_t index);
 
 		Device& device;
-
-
-
 	};
 
 	GlTFModel(const GlTFModel&) = delete;

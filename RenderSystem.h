@@ -23,12 +23,10 @@ public:
 
 
 private:
-	void createPipelineLayout(std::vector<VkDescriptorSetLayout> descriptorSetLayout, VkPipelineLayout& pipelineLayout);
+	void createPipelineLayout(std::vector<VkDescriptorSetLayout> descriptorSetLayout);
 	void createPipeline(VkRenderPass renderPass);
-	void createPipelineGlTf(VkRenderPass renderPass);
 
 	void renderObjModel(FrameInfo& frameInfo, GameObject& obj);
-	void renderGlTFModel(FrameInfo& frameInfo, GameObject& obj);
 
 	Device &device;
 

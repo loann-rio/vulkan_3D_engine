@@ -37,9 +37,9 @@
 
 App::App() { 
     globalPool = DescriptorPool::Builder(device)
-        .setMaxSets(Swap_chain::MAX_FRAMES_IN_FLIGHT * 12)
+        .setMaxSets(Swap_chain::MAX_FRAMES_IN_FLIGHT * 16)
         .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Swap_chain::MAX_FRAMES_IN_FLIGHT)
-        .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Swap_chain::MAX_FRAMES_IN_FLIGHT*8)
+        .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Swap_chain::MAX_FRAMES_IN_FLIGHT*16)
         .build();
 
     loadGameObjects(); 
@@ -81,8 +81,13 @@ void App::run()
     for (auto& kv : gameObjects)
     {
         auto& obj = kv.second;
-        if (obj.model == nullptr) continue;
-        obj.model->createDescriptorSet(*globalPool, device);
+        if (obj.model != nullptr) {
+            obj.model->createDescriptorSet(*globalPool, device);
+        }
+        else if (obj.gltfModel != nullptr) {
+            obj.gltfModel->createDescriptorSet(*globalPool, device);
+        }
+        
     }
 
     PointLightSystem pointLightSystem{  device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
@@ -230,11 +235,13 @@ void App::loadGameObjects() {
         gameObjects.emplace(pointLight.getId(), std::move(pointLight));
     }*/
 
-    std::shared_ptr<GlTFModel::ModelGltf> drone = GlTFModel::createModelFromFile(device, "model/DamagedHelmet.gltf");
+    std::shared_ptr<GlTFModel::ModelGltf> drone = GlTFModel::createModelFromFile(device, "model/2.0/DamagedHelmet/glTF/DamagedHelmet.gltf");
 
     auto GODrone = GameObject::createGameObject(device);
     GODrone.transform.translation = { 8, 1, 4 };
     GODrone.transform.scale = { 0.7f, 0.7f , 0.7f };
+    GODrone.transform.rotation.x = pi<float> / 2;
+    GODrone.transform.rotation.y = -pi<float> / 2;
     GODrone.gltfModel = drone;
     gameObjects.emplace(GODrone.getId(), std::move(GODrone));
 }

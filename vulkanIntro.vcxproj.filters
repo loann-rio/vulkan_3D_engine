@@ -84,6 +84,9 @@
     <ClCompile Include="external\basisu\zstd\zstd.c">
       <Filter>Fichiers sources</Filter>
     </ClCompile>
+    <ClCompile Include="GLTFrenderSystem.cpp">
+      <Filter>Fichiers sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Window.h">
@@ -161,6 +164,9 @@
     <ClInclude Include="Imodel.h">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
+    <ClInclude Include="GLTFrenderSystem.h">
+      <Filter>Fichiers d%27en-tête</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="compile.bat">
@@ -182,6 +188,12 @@
       <Filter>shaders</Filter>
     </None>
     <None Include="text.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="GlTFshader.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="GlTFshader.frag">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>
