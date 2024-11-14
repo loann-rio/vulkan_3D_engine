@@ -91,11 +91,11 @@ class GlTFModel
 		glm::vec4 baseColorFactor = glm::vec4(1.0f); 
 		glm::vec4 emissiveFactor  = glm::vec4(0.0f);
 
-		Texture* baseColorTexture;
-		Texture* metallicRoughnessTexture; 
-		Texture* normalTexture;
-		Texture* occlusionTexture;
-		Texture* emissiveTexture;
+		TextureModel* baseColorTexture;
+		TextureModel* metallicRoughnessTexture;
+		TextureModel* normalTexture;
+		TextureModel* occlusionTexture;
+		TextureModel* emissiveTexture;
 
 		bool doubleSided = false;
 
@@ -112,8 +112,8 @@ class GlTFModel
 
 		struct Extension 
 		{
-			Texture* specularGlossinessTexture;
-			Texture* diffuseTexture;
+			TextureModel* specularGlossinessTexture;
+			TextureModel* diffuseTexture;
 
 			glm::vec4 diffuseFactor  = glm::vec4(1.0f); 
 			glm::vec3 specularFactor = glm::vec3(0.0f); 
@@ -138,10 +138,10 @@ class GlTFModel
 		uint32_t indexCount;
 		uint32_t vertexCount;
 
-		//Material& material;
+		Material& material;
 		bool hasIndices;
 		BoundingBox bb;
-		Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t vertexCount);// , Material& material);
+		Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t vertexCount, Material& material);
 		void setBoundingBox(glm::vec3 min, glm::vec3 max);
 	};
 
@@ -158,10 +158,13 @@ class GlTFModel
 			uint32_t jointcount{ 0 };
 		} uniformBlock;
 
+		std::vector<VkDescriptorSet> descriptorSet{ Swap_chain::MAX_FRAMES_IN_FLIGHT };
+
 		Mesh(Device& device, glm::mat4 matrix);
 		~Mesh();
 		
 		void setBoundingBox(glm::vec3 min, glm::vec3 max);
+		void createBuffer(bool hasSkin);
 		Device& device;
 	};
 
@@ -266,6 +269,10 @@ class GlTFModel
 		std::vector<VkDescriptorSet> descriptorSet{ Swap_chain::MAX_FRAMES_IN_FLIGHT };
 		std::shared_ptr<Texture> texture;
 
+		int32_t animationIndex = 0;
+		float animationTimer = 0.0f;
+		bool animate = true;
+
 		struct Dimensions {
 			glm::vec3 min = glm::vec3(FLT_MAX);
 			glm::vec3 max = glm::vec3(-FLT_MAX);
@@ -292,19 +299,18 @@ class GlTFModel
 		void loadMaterials(tinygltf::Model& gltfModel);
 		void loadAnimations(tinygltf::Model& gltfModel);
 		void loadFromFile(std::string filename, VkQueue transferQueue, float scale = 1.0f);
-		void drawNode(Node* node, VkCommandBuffer commandBuffer);
-		void draw(VkCommandBuffer commandBuffer);
+		void drawNode(Node* node, VkCommandBuffer commandBuffer, VkPipelineLayout& GlTFPipelineLayout);
+		void draw(VkCommandBuffer commandBuffer, VkPipelineLayout& GlTFPipelineLayout);
 		void calculateBoundingBox(Node* node, Node* parent);
 		void getSceneDimensions();
 		void updateAnimation(uint32_t index, float time);
 		void createVertexBuffers(LoaderInfo loaderInfo);
 		void createIndexBuffers(LoaderInfo loaderInfo);
-		void createDescriptorSet(DescriptorPool& pool, Device& device);
 
+		void createDescriptorSet(DescriptorPool& pool, Device& device);
 
 		std::vector<VkDescriptorSet> getDescriptorSet(uint32_t index);
 		void bind(VkCommandBuffer commandBuffer);
-
 
 		GlTFModel::Node* findNode(Node* parent, uint32_t index);
 		GlTFModel::Node* nodeFromIndex(uint32_t index);

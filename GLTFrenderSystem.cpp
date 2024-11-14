@@ -127,9 +127,11 @@ void GlTFrenderSystem::renderGlTFModel(FrameInfo& frameInfo, GameObject& obj)
 		);
 
 		obj.gltfModel->bind(frameInfo.commandBuffer);
-		obj.gltfModel->draw(frameInfo.commandBuffer);
+		obj.gltfModel->draw(frameInfo.commandBuffer, GlTFPipelineLayout);
 	}
 }
+
+
 
 void GlTFrenderSystem::renderGameObjects(FrameInfo& frameInfo)
 {

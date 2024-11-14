@@ -224,6 +224,7 @@ void GlTFModel::ModelGltf::loadNode(Node* parent, const tinygltf::Node& node, ui
 					}
 
 					vert.weight0 = hasSkin ? glm::make_vec4(&bufferWeights[v * weightByteStride]) : glm::vec4(0.0f);
+					newMesh->createBuffer(hasSkin);
 
 					// Fix for all zero weights
 					if (glm::length(vert.weight0) == 0.0f) {
@@ -276,7 +277,7 @@ void GlTFModel::ModelGltf::loadNode(Node* parent, const tinygltf::Node& node, ui
 			}
 			
 			
-			Primitive* newPrimitive = new Primitive(indexStart, indexCount, vertexCount);// , primitive.material > -1 ? materials[primitive.material] : materials.back());
+			Primitive* newPrimitive = new Primitive(indexStart, indexCount, vertexCount, primitive.material > -1 ? materials[primitive.material] : materials.back());
 			newPrimitive->setBoundingBox(posMin, posMax);
 			newMesh->primitives.push_back(newPrimitive);
 		}
@@ -450,6 +451,108 @@ void GlTFModel::ModelGltf::loadTextureSamplers(tinygltf::Model& gltfModel)
 
 }
 
+void GlTFModel::ModelGltf::loadMaterials(tinygltf::Model& gltfModel)
+{
+	for (tinygltf::Material& mat : gltfModel.materials) {
+		Material material{};
+		material.doubleSided = mat.doubleSided;
+		if (mat.values.find("baseColorTexture") != mat.values.end()) {
+			material.baseColorTexture = &textures[mat.values["baseColorTexture"].TextureIndex()];
+			material.texCoordSets.baseColor = mat.values["baseColorTexture"].TextureTexCoord();
+		}
+		if (mat.values.find("metallicRoughnessTexture") != mat.values.end()) {
+			material.metallicRoughnessTexture = &textures[mat.values["metallicRoughnessTexture"].TextureIndex()];
+			material.texCoordSets.metallicRoughness = mat.values["metallicRoughnessTexture"].TextureTexCoord();
+		}
+		if (mat.values.find("roughnessFactor") != mat.values.end()) {
+			material.roughnessFactor = static_cast<float>(mat.values["roughnessFactor"].Factor());
+		}
+		if (mat.values.find("metallicFactor") != mat.values.end()) {
+			material.metallicFactor = static_cast<float>(mat.values["metallicFactor"].Factor());
+		}
+		if (mat.values.find("baseColorFactor") != mat.values.end()) {
+			material.baseColorFactor = glm::make_vec4(mat.values["baseColorFactor"].ColorFactor().data());
+		}
+		if (mat.additionalValues.find("normalTexture") != mat.additionalValues.end()) {
+			material.normalTexture = &textures[mat.additionalValues["normalTexture"].TextureIndex()];
+			material.texCoordSets.normal = mat.additionalValues["normalTexture"].TextureTexCoord();
+		}
+		if (mat.additionalValues.find("emissiveTexture") != mat.additionalValues.end()) {
+			material.emissiveTexture = &textures[mat.additionalValues["emissiveTexture"].TextureIndex()];
+			material.texCoordSets.emissive = mat.additionalValues["emissiveTexture"].TextureTexCoord();
+		}
+		if (mat.additionalValues.find("occlusionTexture") != mat.additionalValues.end()) {
+			material.occlusionTexture = &textures[mat.additionalValues["occlusionTexture"].TextureIndex()];
+			material.texCoordSets.occlusion = mat.additionalValues["occlusionTexture"].TextureTexCoord();
+		}
+		if (mat.additionalValues.find("alphaMode") != mat.additionalValues.end()) {
+			tinygltf::Parameter param = mat.additionalValues["alphaMode"];
+			if (param.string_value == "BLEND") {
+				material.alphaMode = Material::ALPHAMODE_BLEND;
+			}
+			if (param.string_value == "MASK") {
+				material.alphaCutoff = 0.5f;
+				material.alphaMode = Material::ALPHAMODE_MASK;
+			}
+		}
+		if (mat.additionalValues.find("alphaCutoff") != mat.additionalValues.end()) {
+			material.alphaCutoff = static_cast<float>(mat.additionalValues["alphaCutoff"].Factor());
+		}
+		if (mat.additionalValues.find("emissiveFactor") != mat.additionalValues.end()) {
+			material.emissiveFactor = glm::vec4(glm::make_vec3(mat.additionalValues["emissiveFactor"].ColorFactor().data()), 1.0);
+		}
+
+		// Extensions
+		if (mat.extensions.find("KHR_materials_pbrSpecularGlossiness") != mat.extensions.end()) {
+			auto ext = mat.extensions.find("KHR_materials_pbrSpecularGlossiness");
+			if (ext->second.Has("specularGlossinessTexture")) {
+				auto index = ext->second.Get("specularGlossinessTexture").Get("index");
+				material.extension.specularGlossinessTexture = &textures[index.Get<int>()];
+				auto texCoordSet = ext->second.Get("specularGlossinessTexture").Get("texCoord");
+				material.texCoordSets.specularGlossiness = texCoordSet.Get<int>();
+				material.pbrWorkflows.specularGlossiness = true;
+				material.pbrWorkflows.metallicRoughness = false;
+			}
+			if (ext->second.Has("diffuseTexture")) {
+				auto index = ext->second.Get("diffuseTexture").Get("index");
+				material.extension.diffuseTexture = &textures[index.Get<int>()];
+			}
+			if (ext->second.Has("diffuseFactor")) {
+				auto factor = ext->second.Get("diffuseFactor");
+				for (uint32_t i = 0; i < factor.ArrayLen(); i++) {
+					auto val = factor.Get(i);
+					material.extension.diffuseFactor[i] = val.IsNumber() ? (float)val.Get<double>() : (float)val.Get<int>();
+				}
+			}
+			if (ext->second.Has("specularFactor")) {
+				auto factor = ext->second.Get("specularFactor");
+				for (uint32_t i = 0; i < factor.ArrayLen(); i++) {
+					auto val = factor.Get(i);
+					material.extension.specularFactor[i] = val.IsNumber() ? (float)val.Get<double>() : (float)val.Get<int>();
+				}
+			}
+		}
+
+		if (mat.extensions.find("KHR_materials_unlit") != mat.extensions.end()) {
+			material.unlit = true;
+		}
+
+		if (mat.extensions.find("KHR_materials_emissive_strength") != mat.extensions.end()) {
+			auto ext = mat.extensions.find("KHR_materials_emissive_strength");
+			if (ext->second.Has("emissiveStrength")) {
+				auto value = ext->second.Get("emissiveStrength");
+				material.emissiveStrength = (float)value.Get<double>();
+			}
+		}
+
+		material.index = static_cast<uint32_t>(materials.size());
+		materials.push_back(material);
+	}
+	// Push a default material at the end of the list for meshes with no material assigned
+	materials.push_back(Material());
+
+}
+
 void GlTFModel::ModelGltf::loadAnimations(tinygltf::Model& gltfModel)
 {
 	for (tinygltf::Animation& anim : gltfModel.animations) 
@@ -585,8 +688,6 @@ void GlTFModel::ModelGltf::loadFromFile(std::string filename, VkQueue transferQu
 	std::string error;
 	std::string warning;
 
-	//this->device = device;
-
 
 	bool binary = false;
 	size_t extpos = filename.rfind('.', filename.length());
@@ -626,7 +727,7 @@ void GlTFModel::ModelGltf::loadFromFile(std::string filename, VkQueue transferQu
 
 		loadTextureSamplers(gltfModel);
 		loadTextures(gltfModel, device, transferQueue);
-		//loadMaterials(gltfModel);
+		loadMaterials(gltfModel);
 
 		const tinygltf::Scene& scene = gltfModel.scenes[gltfModel.defaultScene > -1 ? gltfModel.defaultScene : 0];
 
@@ -648,7 +749,7 @@ void GlTFModel::ModelGltf::loadFromFile(std::string filename, VkQueue transferQu
 
 		/////// load animations
 		if (gltfModel.animations.size() > 0) {
-			//loadAnimations(gltfModel);
+			loadAnimations(gltfModel);
 		}
 
 		/////// load skins
@@ -681,24 +782,25 @@ void GlTFModel::ModelGltf::loadFromFile(std::string filename, VkQueue transferQu
 	getSceneDimensions();
 }
 
-void GlTFModel::ModelGltf::drawNode(Node* node, VkCommandBuffer commandBuffer)
+void GlTFModel::ModelGltf::drawNode(Node* node, VkCommandBuffer commandBuffer, VkPipelineLayout& GlTFPipelineLayout)
 {	
 	if (node->mesh) {
+
 		for (Primitive* primitive : node->mesh->primitives) {
 			vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
 		}
 	}
 
 	for (auto& child : node->children) {
-		drawNode(child, commandBuffer);
+		drawNode(child, commandBuffer, GlTFPipelineLayout);
 	}
 
 }
 
-void GlTFModel::ModelGltf::draw(VkCommandBuffer commandBuffer)
+void GlTFModel::ModelGltf::draw(VkCommandBuffer commandBuffer, VkPipelineLayout& GlTFPipelineLayout)
 {
 	for (auto& node : nodes) {
-		drawNode(node, commandBuffer);
+		drawNode(node, commandBuffer, GlTFPipelineLayout);
 	}
 }
 
@@ -823,24 +925,28 @@ void GlTFModel::ModelGltf::createDescriptorSet(DescriptorPool& pool, Device& dev
 		auto imageInfo = textures[i].texture->getImageInfo();
 		imagesInfo.push_back(imageInfo);
 	}
-	std::cout << textures.size() << "\n";
+
 	auto textureSetLayout = DescriptorSetLayout::Builder(device)
 		.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.addBinding(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.addBinding(5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+		//.addBinding(6, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
 		.build();
 
-	for (int i = 0; i < descriptorSet.size(); i++)
+	auto bufferInfo = nodes[0]->mesh->uniformBuffer->descriptorInfo(); 
+
+	for (int i = 0; i < descriptorSet.size(); i++) 
 	{
-		DescriptorWriter(*textureSetLayout, pool)
-			.writeImage(1, &imagesInfo[0])
-			.writeImage(2, &imagesInfo[1])
-			.writeImage(3, &imagesInfo[2])
-			.writeImage(4, &imagesInfo[3])
-			.writeImage(5, &imagesInfo[4])
-			.build(descriptorSet[i]);
+		DescriptorWriter(*textureSetLayout, pool) 
+			.writeImage(1, &imagesInfo[0]) 
+			.writeImage(2, &imagesInfo[1]) 
+			.writeImage(3, &imagesInfo[2]) 
+			.writeImage(4, &imagesInfo[3]) 
+			.writeImage(5, &imagesInfo[4]) 
+		//	.writeBuffer(6, &bufferInfo)
+			.build(descriptorSet[i]); 
 	}
 	
 }
@@ -910,7 +1016,27 @@ void GlTFModel::Mesh::setBoundingBox(glm::vec3 min, glm::vec3 max)
 	bb.valid = true;
 }
 
-GlTFModel::Primitive::Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t vertexCount) : firstIndex(firstIndex), indexCount(indexCount), vertexCount(vertexCount) //, material(material) {
+void GlTFModel::Mesh::createBuffer(bool hasSkin)
+{
+	VkDeviceSize sizeBuffer;
+	if (hasSkin)
+		sizeBuffer = sizeof(glm::mat4);
+	else
+		sizeBuffer = sizeof(UniformBlock);
+
+	uniformBuffer = std::make_unique<Buffer>(
+		device,
+		sizeBuffer,
+		1,
+		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+		device.properties.limits.minUniformBufferOffsetAlignment
+	);
+
+	uniformBuffer->map();
+}
+
+GlTFModel::Primitive::Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t vertexCount, Material& matrial) : firstIndex(firstIndex), indexCount(indexCount), vertexCount(vertexCount), material(material) 
 {
 	hasIndices = indexCount > 0;
 }
@@ -952,6 +1078,40 @@ glm::mat4 GlTFModel::Node::getMatrix()
 
 void GlTFModel::Node::update()
 {
+	useCachedMatrix = false; 
+
+	if (mesh) {
+		glm::mat4 m = getMatrix();
+		if (skin)
+		{
+
+			mesh->uniformBlock.matrix = m;
+
+			// Update join matrices
+			glm::mat4 inverseTransform = glm::inverse(m);
+
+			size_t numJoints = std::min((uint32_t)skin->joints.size(), MAX_NUM_JOINTS);
+
+			for (size_t i = 0; i < numJoints; i++)
+			{
+				Node* jointNode = skin->joints[i];
+				glm::mat4 jointMat = jointNode->getMatrix() * skin->inverseBindMatrices[i];
+				jointMat = inverseTransform * jointMat;
+				mesh->uniformBlock.jointMatrix[i] = jointMat;
+			}
+
+			mesh->uniformBlock.jointcount = static_cast<uint32_t>(numJoints);
+			mesh->uniformBuffer->writeToBuffer(&mesh->uniformBlock, sizeof(mesh->uniformBlock), 0);
+		}
+		else {
+			mesh->uniformBuffer->writeToBuffer(&m, sizeof(glm::mat4), 0);
+		}
+		mesh->uniformBuffer->flush();
+	}
+
+	for (auto& child : children) {
+		child->update();
+	}
 }
 
 GlTFModel::Node::~Node()
@@ -1477,5 +1637,161 @@ void GlTFModel::TextureModel::TextFromglTfImage(Device& device, tinygltf::Image&
 		*/
 	}
 
+
+}
+
+// Cube spline interpolation function used for translate/scale/rotate with cubic spline animation samples
+// Details on how this works can be found in the specs https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#appendix-c-spline-interpolation
+glm::vec4 GlTFModel::AnimationSampler::cubicSplineInterpolation(size_t index, float time, uint32_t stride)
+{
+	float delta = inputs[index + 1] - inputs[index];
+	float t = (time - inputs[index]) / delta;
+	const size_t current = index * stride * 3;
+	const size_t next = (index + 1) * stride * 3;
+	const size_t A = 0;
+	const size_t V = stride * 1;
+	const size_t B = stride * 2;
+
+	float t2 = powf(t, 2);
+	float t3 = powf(t, 3);
+	glm::vec4 pt{ 0.0f };
+	for (uint32_t i = 0; i < stride; i++) {
+		float p0 = outputs[current + i + V];			// starting point at t = 0
+		float m0 = delta * outputs[current + i + A];	// scaled starting tangent at t = 0
+		float p1 = outputs[next + i + V];				// ending point at t = 1
+		float m1 = delta * outputs[next + i + B];		// scaled ending tangent at t = 1
+		pt[i] = ((2.f * t3 - 3.f * t2 + 1.f) * p0) + ((t3 - 2.f * t2 + t) * m0) + ((-2.f * t3 + 3.f * t2) * p1) + ((t3 - t2) * m0);
+	}
+	return pt;
+
+}
+
+void GlTFModel::AnimationSampler::translate(size_t index, float time, Node* node)
+{
+	switch (interpolation) {
+		case AnimationSampler::InterpolationType::LINEAR: {
+			float u = std::max(0.0f, time - inputs[index]) / (inputs[index + 1] - inputs[index]);
+			node->translation = glm::mix(outputsVec4[index], outputsVec4[index + 1], u);
+			break;
+		}
+		case AnimationSampler::InterpolationType::STEP: {
+			node->translation = outputsVec4[index];
+			break;
+		}
+		case AnimationSampler::InterpolationType::CUBICSPLINE: {
+			node->translation = cubicSplineInterpolation(index, time, 3);
+			break;
+		}
+	}
+
+}
+
+void GlTFModel::AnimationSampler::scale(size_t index, float time, Node* node)
+{
+	switch (interpolation) {
+		case AnimationSampler::InterpolationType::LINEAR: {
+			float u = std::max(0.0f, time - inputs[index]) / (inputs[index + 1] - inputs[index]);
+			node->scale = glm::mix(outputsVec4[index], outputsVec4[index + 1], u);
+			break;
+		}
+		case AnimationSampler::InterpolationType::STEP: {
+			node->scale = outputsVec4[index];
+			break;
+		}
+		case AnimationSampler::InterpolationType::CUBICSPLINE: {
+			node->scale = cubicSplineInterpolation(index, time, 3);
+			break;
+		}
+	}
+
+}
+
+void GlTFModel::AnimationSampler::rotate(size_t index, float time, Node* node)
+{
+	switch (interpolation) {
+		case AnimationSampler::InterpolationType::LINEAR: {
+			float u = std::max(0.0f, time - inputs[index]) / (inputs[index + 1] - inputs[index]);
+			glm::quat q1;
+			q1.x = outputsVec4[index].x;
+			q1.y = outputsVec4[index].y;
+			q1.z = outputsVec4[index].z;
+			q1.w = outputsVec4[index].w;
+			glm::quat q2;
+			q2.x = outputsVec4[index + 1].x;
+			q2.y = outputsVec4[index + 1].y;
+			q2.z = outputsVec4[index + 1].z;
+			q2.w = outputsVec4[index + 1].w;
+			node->rotation = glm::normalize(glm::slerp(q1, q2, u));
+			break;
+		}
+		case AnimationSampler::InterpolationType::STEP: {
+			glm::quat q1;
+			q1.x = outputsVec4[index].x;
+			q1.y = outputsVec4[index].y;
+			q1.z = outputsVec4[index].z;
+			q1.w = outputsVec4[index].w;
+			node->rotation = q1;
+			break;
+		}
+		case AnimationSampler::InterpolationType::CUBICSPLINE: {
+			glm::vec4 rot = cubicSplineInterpolation(index, time, 4);
+			glm::quat q;
+			q.x = rot.x;
+			q.y = rot.y;
+			q.z = rot.z;
+			q.w = rot.w;
+			node->rotation = glm::normalize(q);
+			break;
+		}
+	}
+
+}
+
+void GlTFModel::ModelGltf::updateAnimation(uint32_t index, float time)
+{
+	if (animations.empty()) {
+		std::cout << ".glTF does not contain animation." << std::endl;
+		return;
+	}
+
+	if (index > static_cast<uint32_t>(animations.size()) - 1) {
+		std::cout << "No animation with index " << index << std::endl;
+		return;
+	}
+
+	Animation& animation = animations[index];
+
+	bool updated = false;
+	for (auto& channel : animation.channels) {
+		AnimationSampler& sampler = animation.samplers[channel.samplerIndex];
+		if (sampler.inputs.size() > sampler.outputsVec4.size()) {
+			continue;
+		}
+
+		for (size_t i = 0; i < sampler.inputs.size() - 1; i++) {
+			if ((time >= sampler.inputs[i]) && (time <= sampler.inputs[i + 1])) {
+				float u = std::max(0.0f, time - sampler.inputs[i]) / (sampler.inputs[i + 1] - sampler.inputs[i]);
+				if (u <= 1.0f) {
+					switch (channel.path) {
+					case AnimationChannel::PathType::TRANSLATION:
+						sampler.translate(i, time, channel.node);
+						break;
+					case AnimationChannel::PathType::SCALE:
+						sampler.scale(i, time, channel.node);
+						break;
+					case AnimationChannel::PathType::ROTATION:
+						sampler.rotate(i, time, channel.node);
+						break;
+					}
+					updated = true;
+				}
+			}
+		}
+	}
+	if (updated) {
+		for (auto& node : nodes) {
+			node->update();
+		}
+	}
 
 }

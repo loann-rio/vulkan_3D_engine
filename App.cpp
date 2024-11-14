@@ -38,7 +38,7 @@
 App::App() { 
     globalPool = DescriptorPool::Builder(device)
         .setMaxSets(Swap_chain::MAX_FRAMES_IN_FLIGHT * 16)
-        .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Swap_chain::MAX_FRAMES_IN_FLIGHT)
+        .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Swap_chain::MAX_FRAMES_IN_FLIGHT * 10)
         .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Swap_chain::MAX_FRAMES_IN_FLIGHT*16)
         .build();
 
@@ -102,7 +102,7 @@ void App::run()
     Camera camera{};
     auto viewerObject = GameObject::createGameObject(device);
     viewerObject.transform.translation = { 2.0f, -1.0f, 2.5f };
-    viewerObject.transform.rotation.y = pi<float>*1/3;
+    viewerObject.transform.rotation.y = pi<float> * 1/3;
 
     float aspec = renderer.getAspectRatio();
     camera.setPerspectiveProjection(glm::radians(50.f), aspec, .1f, 100.0f);

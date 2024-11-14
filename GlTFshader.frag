@@ -32,18 +32,18 @@ layout(push_constant) uniform Push {
 
 // Define the texture sampler
 
-layout(set = 1, binding = 1) uniform sampler2D texSampler;
-layout(set = 1, binding = 2) uniform sampler2D texSampler2;
-layout(set = 1, binding = 3) uniform sampler2D texSampler3;
-layout(set = 1, binding = 4) uniform sampler2D texSampler4;
-layout(set = 1, binding = 5) uniform sampler2D texSampler5;
+layout(set = 1, binding = 1) uniform sampler2D colorMap;
+layout(set = 1, binding = 2) uniform sampler2D physicalDescriptorMap;
+layout(set = 1, binding = 3) uniform sampler2D emissiveMap;
+layout(set = 1, binding = 4) uniform sampler2D aoMap;
+layout(set = 1, binding = 5) uniform sampler2D normalMap;
 
 
 
 void main() {
 
 	//vec4 color = vec4(1.0, 1.0, 1.0, 1.0);
-	vec4 color = texture(texSampler, inUV0) + texture(texSampler3, inUV0);
+	vec4 color = texture(colorMap, inUV0) * texture(aoMap, inUV0) + texture(emissiveMap, inUV0);
 
 	// sum colors
 	outColor =  color;
