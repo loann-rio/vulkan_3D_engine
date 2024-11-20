@@ -62,12 +62,8 @@ class GlTFModel
 		uint32_t layerCount;
 		std::shared_ptr<Texture> texture;
 
-		VkDescriptorImageInfo descriptor;
-		std::vector<VkDescriptorSet> descriptorSet{ Swap_chain::MAX_FRAMES_IN_FLIGHT };
-
 		TextureModel() {}
-		void updateDescriptor();
-		void destroy() {};
+		TextureModel(uint32_t width, uint32_t height, Texture texture) : width{ width }, height{ height }, texture{ &texture } {}
 		void TextFromglTfImage(Device& device, tinygltf::Image& gltfimage, std::string path = "");
 	};
 
@@ -91,11 +87,11 @@ class GlTFModel
 		glm::vec4 baseColorFactor = glm::vec4(1.0f); 
 		glm::vec4 emissiveFactor  = glm::vec4(0.0f);
 
-		TextureModel* baseColorTexture;
-		TextureModel* metallicRoughnessTexture;
-		TextureModel* normalTexture;
-		TextureModel* occlusionTexture;
-		TextureModel* emissiveTexture;
+		std::shared_ptr<TextureModel> baseColorTexture;
+		std::shared_ptr<TextureModel> metallicRoughnessTexture; 
+		std::shared_ptr<TextureModel> normalTexture; 
+		std::shared_ptr<TextureModel> occlusionTexture; 
+		std::shared_ptr<TextureModel> emissiveTexture;
 
 		bool doubleSided = false;
 
@@ -267,7 +263,6 @@ class GlTFModel
 		std::vector<std::string> extensions; 
 
 		std::vector<VkDescriptorSet> descriptorSet{ Swap_chain::MAX_FRAMES_IN_FLIGHT };
-		std::shared_ptr<Texture> texture;
 
 		int32_t animationIndex = 0;
 		float animationTimer = 0.0f;
@@ -309,7 +304,6 @@ class GlTFModel
 
 		void createDescriptorSet(DescriptorPool& pool, Device& device);
 
-		std::vector<VkDescriptorSet> getDescriptorSet(uint32_t index);
 		void bind(VkCommandBuffer commandBuffer);
 
 		GlTFModel::Node* findNode(Node* parent, uint32_t index);

@@ -239,9 +239,9 @@ void App::loadGameObjects() {
 
     auto GODrone = GameObject::createGameObject(device);
     GODrone.transform.translation = { 8, 1, 4 };
-    GODrone.transform.scale = { 0.7f, 0.7f , 0.7f };
-    GODrone.transform.rotation.x = pi<float> / 2;
-    GODrone.transform.rotation.y = -pi<float> / 2;
+    GODrone.transform.scale = { .50f, .50f , .50f };
+    //GODrone.transform.rotation.x = pi<float> / 2;
+    GODrone.transform.rotation.y = pi<float> / 2;
     GODrone.gltfModel = drone;
     gameObjects.emplace(GODrone.getId(), std::move(GODrone));
 }

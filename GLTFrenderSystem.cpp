@@ -98,11 +98,6 @@ void GlTFrenderSystem::renderGlTFModel(FrameInfo& frameInfo, GameObject& obj)
 	if (obj.gltfModel != nullptr)
 	{
 
-		auto& descriptorSet = obj.gltfModel->getDescriptorSet(0)[frameInfo.frameIndex];
-		if (descriptorSet == VK_NULL_HANDLE) {
-			std::cerr << "Error: Descriptor set is null for frame index " << frameInfo.frameIndex << std::endl;
-		}
-
 		vkCmdBindDescriptorSets(
 			frameInfo.commandBuffer,
 			VK_PIPELINE_BIND_POINT_GRAPHICS,
