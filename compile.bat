@@ -10,4 +10,7 @@ C:\VulkanSDK\1.3.290.0\Bin\glslc.exe text.frag -o text.frag.spv
 C:\VulkanSDK\1.3.290.0\Bin\glslc.exe GlTFshader.vert -o GlTFshader.vert.spv
 C:\VulkanSDK\1.3.290.0\Bin\glslc.exe GlTFshader.frag -o GlTFshader.frag.spv
 
+C:\VulkanSDK\1.3.290.0\Bin\glslc.exe terrainShader.vert -o terrainShader.vert.spv
+C:\VulkanSDK\1.3.290.0\Bin\glslc.exe terrainShader.frag -o terrainShader.frag.spv
+
 pause

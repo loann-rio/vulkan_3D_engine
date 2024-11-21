@@ -11,10 +11,12 @@
 
 #include "point_light_system.h"
 #include "preBuild.h"
+#include "GenerateTerrainTile.h"
 
 #include "Texture.h"
 #include "TextOverlay.h"
 
+#include "TerrainRenderer.h"
 
 // glm
 #define GLM_FORCE_RADIANS
@@ -93,6 +95,7 @@ void App::run()
     PointLightSystem pointLightSystem{  device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
 	RenderSystem renderSystem{          device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
     GlTFrenderSystem GlTfrenderSystem{  device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
+    TerrainRenderer terrainRenderer{    device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
 
     TextOverlay textOverlay{ device, renderer.getSwapChainRenderPass() };
     textOverlay.prepareResources(*globalPool);
@@ -167,9 +170,10 @@ void App::run()
 
             // render
 			renderer.beginSwapChainRenderPass(commandBuffer);
-
-            renderSystem.renderGameObjects(frameInfo);
-            GlTfrenderSystem.renderGameObjects(frameInfo);
+            
+            terrainRenderer.renderTerrain(frameInfo);
+            //renderSystem.renderGameObjects(frameInfo);
+            //GlTfrenderSystem.renderGameObjects(frameInfo);
             pointLightSystem.render(frameInfo);
             textOverlay.renderText(frameInfo);
 
@@ -186,64 +190,25 @@ void App::run()
 
 void App::loadGameObjects() {
     
-    std::shared_ptr<Model> model_city =  Model::createModelFromFile(device, "model/viking_room.obj", "textures/viking_room.png");
-    auto Lowpoly_City = GameObject::createGameObject(device);
-    Lowpoly_City.transform.rotation.x = pi<float> / 2;
-    Lowpoly_City.transform.rotation.y = pi<float> ;
-    Lowpoly_City.transform.translation = { 7, 0, 7 };
-    Lowpoly_City.model = model_city;
-    gameObjects.emplace(Lowpoly_City.getId(), std::move(Lowpoly_City));
+
+    GenerateTerrainTile tileGenerator;
+    std::shared_ptr<Model> terrain = createPlane(device, 100, 10, { 0, 0, 0 });//tileGenerator.generateMesh(device);
+    tileGenerator.generateHeightMap(device);
+    terrain->texture = tileGenerator.noiseTexture;
 
 
-    /*std::shared_ptr<Model> model_city1 = Model::createModelFromFile(device, "model/viking_room.obj", "textures/Palette.jpg");
-    auto Lowpoly_City1= GameObject::createGameObject(device);
-    Lowpoly_City1.transform.rotation.x = pi<float> / 2;
-    Lowpoly_City1.model = model_city1;
-    Lowpoly_City1.transform.translation.z = 2;
-    gameObjects.emplace(Lowpoly_City1.getId(), std::move(Lowpoly_City1));*/
 
+        //create_terrain(device, 300, 50, { 1.f, 1.f, 1.f });
 
-    /*std::shared_ptr<Model> cube = Model::createModelFromFile(device, "models/cube.obj", "textures/emptyTexture.jpg");
-    auto cube1 = GameObject::createGameObject(device);
-    cube1.transform.rotation.x = pi<float> / 2;
-    cube1.model = cube;
-    cube1.transform.scale = { 0.5f, 0.5f, 0.5f };
+    auto terrain_object = GameObject::createGameObject(device);
+    terrain_object.transform.translation.y = 0.1f;
 
-    cube1.transform.translation = { 2, -0.4f, 6 };
-    gameObjects.emplace(cube1.getId(), std::move(cube1));*/
+    terrain_object.model = terrain;
+    gameObjects.emplace(terrain_object.getId(), std::move(terrain_object));
 
-    std::shared_ptr<Model> plane = createPlane(device, 10, 10, {0, 0, 0});
+    
 
-    auto plane1 = GameObject::createGameObject(device);
-    plane1.model = plane;
-    plane1.transform.translation.y = 0.1f;
-    gameObjects.emplace(plane1.getId(), std::move(plane1));
-
-    /*std::vector<glm::vec3> lightColors{
-      {1.f, .1f, .1f},
-      {.1f, 1.f, .1f},
-      {1.f, 1.f, .1f},
-      {.1f, 1.f, 1.f},
-      {.1f, .1f, 1.f},
-      {1.f, 1.f, 1.f}
-    };
-
-    for (int i = 0; i < lightColors.size(); i++) {
-        auto pointLight = GameObject::makePointLight(device, 1.f, 0.05f, lightColors[i]);
-        auto rotateLight = glm::rotate(glm::mat4(1.f), (i * glm::two_pi<float>()) / lightColors.size(), { 0.f, -1.0f, 0.f });
-        pointLight.transform.translation = glm::vec3(rotateLight * glm::vec4(-1.f, -1.f, -1.f, 4.f)) + glm::vec3{ 7, 0, 7 };
-        gameObjects.emplace(pointLight.getId(), std::move(pointLight));
-    }*/
-
-    std::shared_ptr<GlTFModel::ModelGltf> drone = GlTFModel::createModelFromFile(device, "model/2.0/DamagedHelmet/glTF/DamagedHelmet.gltf");
-
-    auto GODrone = GameObject::createGameObject(device);
-    GODrone.transform.translation = { 8, 1, 4 };
-    GODrone.transform.scale = { .50f, .50f , .50f };
-    //GODrone.transform.rotation.x = pi<float> / 2;
-    GODrone.transform.rotation.y = pi<float> / 2;
-    GODrone.gltfModel = drone;
-    gameObjects.emplace(GODrone.getId(), std::move(GODrone));
+ 
 }
 
 void App::getFrameRate(float lastFrameTime)

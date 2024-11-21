@@ -87,6 +87,12 @@
     <ClCompile Include="GLTFrenderSystem.cpp">
       <Filter>Fichiers sources</Filter>
     </ClCompile>
+    <ClCompile Include="TerrainRenderer.cpp">
+      <Filter>Fichiers sources</Filter>
+    </ClCompile>
+    <ClCompile Include="GenerateTerrainTile.cpp">
+      <Filter>Fichiers sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Window.h">
@@ -167,6 +173,15 @@
     <ClInclude Include="GLTFrenderSystem.h">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
+    <ClInclude Include="PerlinNoise.h">
+      <Filter>Fichiers d%27en-tête</Filter>
+    </ClInclude>
+    <ClInclude Include="TerrainRenderer.h">
+      <Filter>Fichiers d%27en-tête</Filter>
+    </ClInclude>
+    <ClInclude Include="GenerateTerrainTile.h">
+      <Filter>Fichiers d%27en-tête</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="compile.bat">
@@ -196,5 +211,7 @@
     <None Include="GlTFshader.frag">
       <Filter>shaders</Filter>
     </None>
+    <None Include="terrainShader.vert" />
+    <None Include="terrainShader.frag" />
   </ItemGroup>
 </Project>

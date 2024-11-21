@@ -54,7 +54,7 @@ public:
 	bool hasTexture = false;
 	//VkDescriptorImageInfo getImageInfo();
 
-	std::unique_ptr<Texture> texture;
+	std::shared_ptr<Texture> texture;
 
 	std::vector<VkDescriptorSet> descriptorSet{ Swap_chain::MAX_FRAMES_IN_FLIGHT };
 	void createDescriptorSet(DescriptorPool& pool, Device& device);
