@@ -12,13 +12,20 @@ void GenerateTerrainTile::generateHeightMap(Device& device)
     for (int32_t x = 0; x < detailX + 1; ++x) {
         for (int32_t y = 0; y < detailY + 1; ++y) {
 
+            glm::vec3 color = getHeigthColor(noiseMap[y][x]);
+
             for (int32_t j = 0; j < 3; ++j) {
                 
-                traverseBuffer[j] = noiseMap[y][x] * 255;
+                traverseBuffer[j] = heightTransform(noiseMap[y][x]) * 255;
             }
+            
+           /* traverseBuffer[0] = color.x * 255;
+            traverseBuffer[1] = color.y * 255;
+            traverseBuffer[2] = color.z * 255;*/
 
             traverseBuffer[3] = heightTransform(noiseMap[y][x]) * 255;
             traverseBuffer += 4;
+
         }
     }
 
@@ -27,20 +34,29 @@ void GenerateTerrainTile::generateHeightMap(Device& device)
     delete[] buffer;
 }
 
-std::shared_ptr<Model> GenerateTerrainTile::generateMesh(Device& device)
+glm::vec3 GenerateTerrainTile::getHeigthColor(float height)
+{
+    for (terrainType tt : regions) {
+        if (tt.height > height)
+            return tt.color;
+    }
+}
+
+std::unique_ptr<Model> GenerateTerrainTile::generateMesh(Device& device)
 {
     Model::Builder modelBuilder{};
 
-    for (uint16_t x = 0; x < detailX + 1; x++)
-    {
-        for (uint16_t y = 0; y < detailY + 1; y++)
+    for (unsigned int i = 0; i < detailX + 1; i++) {
+        for (unsigned int j = 0; j < detailY + 1; j++)
         {
-            modelBuilder.vertices.push_back({ {x * sizePlaneX / detailX, 0, y * sizePlaneY / detailY}, {0, 0, 0} , {0.0, -1.0, 0.0}, {(float)(x) / (float)detailX , (float)(y) / (float)detailY} });
+
+            modelBuilder.vertices.push_back({ {i * sizePlaneX / detailX, 0.f, j * sizePlaneY / detailY}, {0, 0, 0}, {0, -1, 0}, {(float)(i) / (float)detailX , (float)(j) / (float)detailY } });
+
         }
     }
-    
+
     int row = 0;
-    for (int i = 0; i < (detailX + 1) * detailX - 1; i++) {
+    for (unsigned int i = 0; i < (detailX + 1) * detailX - 1; i++) {
         if ((i - row) % detailX == 0 && i != 0) {
             i++;
             row++;
@@ -59,5 +75,5 @@ std::shared_ptr<Model> GenerateTerrainTile::generateMesh(Device& device)
     }
 
     return std::make_unique<Model>(device, modelBuilder, "textures/floor.jpg");
-
 }
+   

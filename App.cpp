@@ -192,11 +192,11 @@ void App::loadGameObjects() {
     
 
     GenerateTerrainTile tileGenerator;
-    std::shared_ptr<Model> terrain = createPlane(device, 100, 10, { 0, 0, 0 });//tileGenerator.generateMesh(device);
+    std::shared_ptr<Model> terrain = tileGenerator.generateMesh(device);
     tileGenerator.generateHeightMap(device);
     terrain->texture = tileGenerator.noiseTexture;
 
-
+    //createPlane(device, 100, 10, { 0, 0, 0 });//
 
         //create_terrain(device, 300, 50, { 1.f, 1.f, 1.f });
 
