@@ -4,7 +4,7 @@ void GenerateTerrainTile::generateHeightMap(Device& device)
 {
 
     std::vector<std::vector<float>> noiseMap = pn.Generate2DnoiseMap(detailX + 1, detailY + 1, scale, octave, persistance, lacunarity, offsetX, offsetY);
-
+                 
     unsigned char* buffer = new unsigned char[(detailX + 1) * (detailY + 1) * 4];
     unsigned char* traverseBuffer = buffer;
 
@@ -14,18 +14,18 @@ void GenerateTerrainTile::generateHeightMap(Device& device)
 
             glm::vec3 color = getHeigthColor(noiseMap[y][x]);
 
-            for (int32_t j = 0; j < 3; ++j) {
-                
-                traverseBuffer[j] = heightTransform(noiseMap[y][x]) * 255;
-            }
-            
-           /* traverseBuffer[0] = color.x * 255;
+            traverseBuffer[0] = color.x * 255;
             traverseBuffer[1] = color.y * 255;
-            traverseBuffer[2] = color.z * 255;*/
+            traverseBuffer[2] = color.z * 255;
 
+            /*for (int32_t j = 0; j < 3; ++j) {    
+                traverseBuffer[j] = color * 255;
+            }*/
+            
             traverseBuffer[3] = heightTransform(noiseMap[y][x]) * 255;
             traverseBuffer += 4;
 
+            std::cout << x << " " << y << " " << noiseMap.size() << "\n";
         }
     }
 
@@ -46,12 +46,10 @@ std::unique_ptr<Model> GenerateTerrainTile::generateMesh(Device& device)
 {
     Model::Builder modelBuilder{};
 
-    for (unsigned int i = 0; i < detailX + 1; i++) {
-        for (unsigned int j = 0; j < detailY + 1; j++)
+    for (unsigned int i = 0; i <= detailX; i++) {
+        for (unsigned int j = 0; j <= detailY; j++)
         {
-
-            modelBuilder.vertices.push_back({ {i * sizePlaneX / detailX, 0.f, j * sizePlaneY / detailY}, {0, 0, 0}, {0, -1, 0}, {(float)(i) / (float)detailX , (float)(j) / (float)detailY } });
-
+            modelBuilder.vertices.push_back({ {i * sizePlaneX / detailX, 0.f, j * sizePlaneY / detailY}, {0, 0, 0}, {0, -1, 0}, {(float)(i) / (float)(detailX + 1) , (float)(j) / (float)(detailY + 1) } });
         }
     }
 

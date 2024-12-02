@@ -75,8 +75,6 @@ void TextOverlay::createPipeline(VkRenderPass renderPass)
 
 	pipelineConfig.bindingDescription = bindingDescription;
 
-	
-
 	pipeline = std::make_unique<Pipeline>(
 		device,
 		"text.vert.spv",
@@ -166,6 +164,7 @@ void TextOverlay::addText(std::string text, float x, float y, TextAlign align, u
 	const uint32_t firstChar = STB_FONT_consolas_24_latin1_FIRST_CHAR;
 
 	glm::vec4* mapped = (glm::vec4*)(vertexBuffer->getMappedMemory());
+	mapped += numLetters * 6;
 
 	assert(mapped != nullptr);
 

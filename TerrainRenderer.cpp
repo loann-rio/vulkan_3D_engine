@@ -83,7 +83,7 @@ void TerrainRenderer::createPipeline(VkRenderPass renderPass)
 	);
 }
 
-void TerrainRenderer::renderTerrain(FrameInfo& frameInfo)
+void TerrainRenderer::renderTerrain(FrameInfo& frameInfo, GameObject::Map& chunks)
 {
 	pipeline->bind(frameInfo.commandBuffer);
 
@@ -99,7 +99,7 @@ void TerrainRenderer::renderTerrain(FrameInfo& frameInfo)
 
 
 	int i = 0;
-	for (auto& kv : frameInfo.gameObjects)
+	for (auto& kv : chunks)
 	{
 		auto& obj = kv.second;
 		if (obj.model == nullptr) continue;

@@ -45,16 +45,16 @@ void main() {
 
 	
 
-	vec4 color = texture(texSampler, fragTexCoord);
+	vec4 color = texture(texSampler, fragTexCoord) * fragTexCoord.x * fragTexCoord.y;
 
 	// water level
 	//float height = -fragPositionWorld.y*2/3;
 
-	if (color.w < 0.3){
+	/*if (color.w > 0.7){
 		color = vec4(0.137, 0.192, 0.596, 1.0);
 	} else if (color.w <  0.4){
 		color = vec4(0.145, 0.271, 0.659, 1.0 );
-	} 
+	} */
 
 	
 

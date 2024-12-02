@@ -36,7 +36,7 @@ private:
            {1.f  , {1.f  , 1.f  , 1.f   }},
     };
 
-    const uint32_t seed = 33456789;
+    const uint32_t seed = 3346789;
 
     std::vector<std::vector<float>> HeightMap;
 
@@ -46,27 +46,33 @@ private:
     int y = 0;
     int z = 0;
 
-    int detailX = 1000;
-    int detailY = 1000;
-    int octave = 6;
-    float scale = 200.f;
+    
+    int octave = 1;
     float persistance = 0.55f;
     float lacunarity = 2;
-    float offsetX = 0;
-    float offsetY = 0;
+    
     float heightMultiplier = 3.f;
 
 
-    const float sizePlaneX = 10;
-    const float sizePlaneY = 10;
+    const float sizePlaneX = 5;
+    const float sizePlaneY = 5;
+
+    int posX = 0;
+    int posY = 0;
 
     PerlinNoise pn{ seed };
 public:
+    float offsetX = 0;
+    float offsetY = 0;
+
+    int detailX = 10;
+    int detailY = 10;
+
+    float scale = 20.f;
+
 
     void generateHeightMap(Device& device);
     glm::vec3 getHeigthColor(float height);
-
-    void generateColorMap(Device& device);
 
     std::unique_ptr<Model> generateMesh(Device& device);
 

@@ -19,7 +19,7 @@ public:
 
 	TerrainRenderer(const TerrainRenderer&) = delete;
 	TerrainRenderer& operator=(const TerrainRenderer&) = delete;
-	void renderTerrain(FrameInfo& frameInfo);
+	void renderTerrain(FrameInfo& frameInfo, GameObject::Map& chunks);
 
 
 private:

@@ -12,6 +12,7 @@
 #include "point_light_system.h"
 #include "preBuild.h"
 #include "GenerateTerrainTile.h"
+#include "ChunckManager.h"
 
 #include "Texture.h"
 #include "TextOverlay.h"
@@ -113,6 +114,17 @@ void App::run()
     // user inputs
     KeyboardMovementController cameraController{};
 
+
+    // chunkj management
+    ChunckManager chunks{ device };
+
+    // update terrain:
+    chunks.updateChuncks(
+        viewerObject.transform.translation.x / chunks.sizePlaneX,
+        viewerObject.transform.translation.z / chunks.sizePlaneY);
+
+
+
     auto currentTime = std::chrono::high_resolution_clock::now();
 
     int frame = 0;
@@ -143,6 +155,7 @@ void App::run()
         camera.setViewYXZ(viewerObject.transform.translation, viewerObject.transform.rotation);
 
         
+
 		if (auto commandBuffer = renderer.beginFrame()) {
             int frameIndex = renderer.getFrameIndex();
 
@@ -171,7 +184,7 @@ void App::run()
             // render
 			renderer.beginSwapChainRenderPass(commandBuffer);
             
-            terrainRenderer.renderTerrain(frameInfo);
+            terrainRenderer.renderTerrain(frameInfo, chunks.chunks);
             //renderSystem.renderGameObjects(frameInfo);
             //GlTfrenderSystem.renderGameObjects(frameInfo);
             pointLightSystem.render(frameInfo);
@@ -190,22 +203,17 @@ void App::run()
 
 void App::loadGameObjects() {
     
+    /*for (int i = 0; i < 10; i++)
+    {
+        GenerateTerrainTile tileGenerator;
+        std::shared_ptr<Model> terrain = tileGenerator.generateMesh(device);
+        tileGenerator.generateHeightMap(device);
+        terrain->texture = tileGenerator.noiseTexture;
 
-    GenerateTerrainTile tileGenerator;
-    std::shared_ptr<Model> terrain = tileGenerator.generateMesh(device);
-    tileGenerator.generateHeightMap(device);
-    terrain->texture = tileGenerator.noiseTexture;
-
-    //createPlane(device, 100, 10, { 0, 0, 0 });//
-
-        //create_terrain(device, 300, 50, { 1.f, 1.f, 1.f });
-
-    auto terrain_object = GameObject::createGameObject(device);
-    terrain_object.transform.translation.y = 0.1f;
-
-    terrain_object.model = terrain;
-    gameObjects.emplace(terrain_object.getId(), std::move(terrain_object));
-
+        auto terrain_object = GameObject::createGameObject(device);
+        terrain_object.model = terrain;
+        gameObjects.emplace(terrain_object.getId(), std::move(terrain_object));
+    }*/
     
 
  

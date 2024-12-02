@@ -162,6 +162,7 @@
     <ClCompile Include="App.cpp" />
     <ClCompile Include="Buffer.cpp" />
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="ChunckManager.cpp" />
     <ClCompile Include="descriptors.cpp" />
     <ClCompile Include="Device.cpp" />
     <ClCompile Include="external\basisu\transcoder\basisu_transcoder.cpp" />
@@ -189,6 +190,7 @@
     <ClInclude Include="App.h" />
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="ChunckManager.h" />
     <ClInclude Include="descriptors.h" />
     <ClInclude Include="Device.h" />
     <ClInclude Include="Frame_info.h" />
