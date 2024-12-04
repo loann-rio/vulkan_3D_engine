@@ -89,7 +89,7 @@
       <PreprocessorDefinitions>
       </PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\riolo\Documents\Visual Studio 2022\library\glm-1.0.1;C:\Users\riolo\Documents\Visual Studio 2022\library\stb-master;C:\Users\riolo\Documents\Visual Studio 2022\library\basis_universal-master\transcoder;C:\Users\riolo\Documents\Visual Studio 2022\library\glfw-3.4.bin.WIN64\include;C:\Users\riolo\Documents\Visual Studio 2022\library\tinyobjloader-release;C:\VulkanSDK\1.3.290.0\Include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\riolo\Desktop\introVulkan\external\glfw-3.4.bin.WIN64\include;C:\Users\riolo\Desktop\introVulkan\external\basis_universal-master\transcoder;C:\Users\riolo\Desktop\introVulkan\external\stb-master;C:\Users\riolo\Desktop\introVulkan\external\glm-1.0.1;C:\Users\riolo\Desktop\introVulkan\external\tinyobjloader-release;C:\VulkanSDK\1.3.290.0\Include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -108,7 +108,7 @@
       <PreprocessorDefinitions>
       </PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\riolo\Desktop\introVulkan\external\basisu\zstd;C:\Users\riolo\Desktop\introVulkan\external\basisu\transcoder;C:\Users\riolo\Documents\Visual Studio 2022\library\glm-1.0.1;C:\Users\riolo\Documents\Visual Studio 2022\library\stb-master;C:\Users\riolo\Documents\Visual Studio 2022\library\glfw-3.4.bin.WIN64\include;C:\Users\riolo\Documents\Visual Studio 2022\library\tinyobjloader-release;C:\VulkanSDK\1.3.290.0\Include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\riolo\Desktop\introVulkan\external\glfw-3.4.bin.WIN64\include;C:\Users\riolo\Desktop\introVulkan\external\basis_universal-master\transcoder;C:\Users\riolo\Desktop\introVulkan\external\stb-master;C:\Users\riolo\Desktop\introVulkan\external\glm-1.0.1;C:\Users\riolo\Desktop\introVulkan\external\tinyobjloader-release;C:\VulkanSDK\1.3.290.0\Include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -127,7 +127,7 @@
       <PreprocessorDefinitions>
       </PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\riolo\Documents\Visual Studio 2022\library\glm-1.0.1;C:\Users\riolo\Documents\Visual Studio 2022\library\stb-master;C:\Users\riolo\Documents\Visual Studio 2022\library\basis_universal-master\transcoder;C:\Users\riolo\Documents\Visual Studio 2022\library\glfw-3.4.bin.WIN64\include;C:\Users\riolo\Documents\Visual Studio 2022\library\tinyobjloader-release;C:\VulkanSDK\1.3.290.0\Include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\riolo\Desktop\introVulkan\external\glfw-3.4.bin.WIN64\include;C:\Users\riolo\Desktop\introVulkan\external\basis_universal-master\transcoder;C:\Users\riolo\Desktop\introVulkan\external\stb-master;C:\Users\riolo\Desktop\introVulkan\external\glm-1.0.1;C:\Users\riolo\Desktop\introVulkan\external\tinyobjloader-release;C:\VulkanSDK\1.3.290.0\Include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -146,7 +146,7 @@
       <PreprocessorDefinitions>
       </PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\riolo\Desktop\introVulkan\external\basisu\zstd;C:\Users\riolo\Desktop\introVulkan\external\basisu\transcoder;C:\Users\riolo\Documents\Visual Studio 2022\library\glm-1.0.1;C:\Users\riolo\Documents\Visual Studio 2022\library\stb-master;C:\Users\riolo\Documents\Visual Studio 2022\library\glfw-3.4.bin.WIN64\include;C:\Users\riolo\Documents\Visual Studio 2022\library\tinyobjloader-release;C:\VulkanSDK\1.3.290.0\Include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\riolo\Desktop\introVulkan\external\glfw-3.4.bin.WIN64\include;C:\Users\riolo\Desktop\introVulkan\external\basis_universal-master\transcoder;C:\Users\riolo\Desktop\introVulkan\external\stb-master;C:\Users\riolo\Desktop\introVulkan\external\glm-1.0.1;C:\Users\riolo\Desktop\introVulkan\external\tinyobjloader-release;C:\VulkanSDK\1.3.290.0\Include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
