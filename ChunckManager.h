@@ -2,6 +2,8 @@
 
 #include <iostream>
 #include <vector>
+#include <chrono>
+#include <ctime>
 
 #include "GameObject.h"
 #include "GenerateTerrainTile.h"
@@ -15,9 +17,9 @@ public:
 	GameObject::Map chunks;
 
 	const float sizePlaneX = 5;
-	const float sizePlaneY = 5;
+	const float sizePlaneZ = 5;
 
-	void updateChuncks(int x, int y);
+	void updateChuncks(int x, int z);
 	void createChunk(int x, int z);
 
 private:

@@ -45,7 +45,7 @@ void main() {
 
 	
 
-	vec4 color = texture(texSampler, fragTexCoord) * fragTexCoord.x * fragTexCoord.y;
+	vec4 color = texture(texSampler, fragTexCoord);
 
 	// water level
 	//float height = -fragPositionWorld.y*2/3;

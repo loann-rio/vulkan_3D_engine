@@ -93,8 +93,8 @@ public:
 
 		std::vector<glm::vec2> octavesOffsets(octaves);
 		for (int i = 0; i < octaves; i++) {
-			float offsetX = Xoffset;// + prng() % 200000 - 100000;
-			float offsetY = Yoffset;// + prng() % 200000 - 100000
+			float offsetX = Xoffset + prng() % 200000 - 100000;
+			float offsetY = Yoffset + prng() % 200000 - 100000;
 			octavesOffsets[i] = { offsetX, offsetY };
 		}
 
@@ -119,8 +119,8 @@ public:
 				float noiseHeight = 0;
 
 				for (int i = 0; i < octaves; i++) {
-					float sampleX = ((float)x - halfWidth) / scale * frequency + (float)octavesOffsets[i].x;
-					float sampleY = ((float)y - halfHeight) / scale * frequency + (float)octavesOffsets[i].y;
+					float sampleX = ((float)x - halfWidth  + (float)octavesOffsets[i].x) / scale * frequency;
+					float sampleY = ((float)y - halfHeight + (float)octavesOffsets[i].y) / scale * frequency;
 
 					float perlinValue = noise(sampleX, sampleY) * 2 - 1;
 
@@ -142,6 +142,9 @@ public:
 				noiseMap[x][y] = noiseHeight;
 			}
 		}
+
+		minHeight = -0.75f;
+		maxHeight = 0.7f;
 
 		// map the range to 0-1
 		for (int y = 0; y < height; y++) {

@@ -40,9 +40,9 @@
 
 App::App() { 
     globalPool = DescriptorPool::Builder(device)
-        .setMaxSets(Swap_chain::MAX_FRAMES_IN_FLIGHT * 16)
-        .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Swap_chain::MAX_FRAMES_IN_FLIGHT * 10)
-        .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Swap_chain::MAX_FRAMES_IN_FLIGHT*16)
+        .setMaxSets(Swap_chain::MAX_FRAMES_IN_FLIGHT * 40)
+        .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Swap_chain::MAX_FRAMES_IN_FLIGHT * 40)
+        .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Swap_chain::MAX_FRAMES_IN_FLIGHT*40)
         .build();
 
     loadGameObjects(); 
@@ -121,7 +121,7 @@ void App::run()
     // update terrain:
     chunks.updateChuncks(
         viewerObject.transform.translation.x / chunks.sizePlaneX,
-        viewerObject.transform.translation.z / chunks.sizePlaneY);
+        viewerObject.transform.translation.z / chunks.sizePlaneZ);
 
 
 
@@ -185,6 +185,7 @@ void App::run()
 			renderer.beginSwapChainRenderPass(commandBuffer);
             
             terrainRenderer.renderTerrain(frameInfo, chunks.chunks);
+            terrainRenderer.renderTerrain(frameInfo, gameObjects);
             //renderSystem.renderGameObjects(frameInfo);
             //GlTfrenderSystem.renderGameObjects(frameInfo);
             pointLightSystem.render(frameInfo);
@@ -214,9 +215,56 @@ void App::loadGameObjects() {
         terrain_object.model = terrain;
         gameObjects.emplace(terrain_object.getId(), std::move(terrain_object));
     }*/
-    
+    for (int i = 0; i < 5; i ++)
+    {
+        GenerateTerrainTile tileGenerator;
 
- 
+        tileGenerator.x = 0;
+        tileGenerator.z = 0;
+
+        tileGenerator.detailX = 100;
+        tileGenerator.detailZ = 100;
+
+        tileGenerator.offsetX = ((float) i) * tileGenerator.detailX;
+        tileGenerator.offsetZ = (float)0 * tileGenerator.detailX;
+
+        tileGenerator.scale = 25.f * 2;
+
+        std::shared_ptr<Model> terrain = tileGenerator.generateMesh(device);
+
+        tileGenerator.generateHeightMap(device);
+        terrain->texture = tileGenerator.noiseTexture;
+
+        auto terrain_object = GameObject::createGameObject(device);
+        terrain_object.transform.translation = { 5.f * i, 0, 6 };
+        terrain_object.model = terrain;
+        gameObjects.emplace(terrain_object.getId(), std::move(terrain_object));
+    }
+    
+   /* {
+        GenerateTerrainTile tileGenerator;
+
+        tileGenerator.x = 1;
+        tileGenerator.z = 0;
+
+        tileGenerator.detailX = 30;
+        tileGenerator.detailZ = 30;
+
+        tileGenerator.offsetX = (float)1 * (float)tileGenerator.detailX / tileGenerator.scale;
+        tileGenerator.offsetZ = (float)0 * (float)tileGenerator.detailZ / tileGenerator.scale;
+
+        tileGenerator.scale = 25.f / 2;
+
+        std::shared_ptr<Model> terrain = tileGenerator.generateMesh(device);
+
+        tileGenerator.generateHeightMap(device);
+        terrain->texture = tileGenerator.noiseTexture;
+
+        auto terrain_object = GameObject::createGameObject(device);
+        terrain_object.transform.translation = { 5, 0, 0 };
+        terrain_object.model = terrain;
+        gameObjects.emplace(terrain_object.getId(), std::move(terrain_object));
+    }*/
 }
 
 void App::getFrameRate(float lastFrameTime)
