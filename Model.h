@@ -48,21 +48,24 @@ public:
 
 	static std::unique_ptr<Model> createModelFromFile(Device &device, const std::string &filePath, const char* filePathTexture);
 
-	void bind(VkCommandBuffer commandBuffer);
-	void draw(VkCommandBuffer commandBuffer);
+	void bind(VkCommandBuffer& commandBuffer);
+	void draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout);
 
 	bool hasTexture = false;
-	//VkDescriptorImageInfo getImageInfo();
-
 	std::unique_ptr<Texture> texture;
 
 	std::vector<VkDescriptorSet> descriptorSet{ Swap_chain::MAX_FRAMES_IN_FLIGHT };
 	void createDescriptorSet(DescriptorPool& pool, Device& device);
-	std::vector<VkDescriptorSet> getDecriptorSet() { return descriptorSet; };
+	std::vector<VkDescriptorSet> getDescriptorSets() { return descriptorSet; };
 
 	void updateAnimation() {};
 	void update() {};
-	
+
+	static std::vector<VkDescriptorType> getDescriptorType() { return { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER }; }
+	static std::string getType() { return "obj"; }
+
+	const uint16_t descriptorSetIndex = 2;
+
 private:
 	void createVertexBuffers(const std::vector<Vertex>& vertices);
 	void createIndexBuffers(const std::vector<uint32_t>& indices);
@@ -76,5 +79,6 @@ private:
 	std::unique_ptr<Buffer> indexBuffer;
 	uint32_t indexCount;
 
+	static std::vector<VkDescriptorType> bindingDescription;
 };
 

@@ -87,6 +87,9 @@
     <ClCompile Include="GLTFrenderSystem.cpp">
       <Filter>Fichiers sources</Filter>
     </ClCompile>
+    <ClCompile Include="GlobalRenderSystem.cpp">
+      <Filter>Fichiers sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Window.h">
@@ -161,10 +164,10 @@
     <ClInclude Include="json.hpp">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
-    <ClInclude Include="Imodel.h">
+    <ClInclude Include="GLTFrenderSystem.h">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
-    <ClInclude Include="GLTFrenderSystem.h">
+    <ClInclude Include="GlobalRenderSystem.h">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
   </ItemGroup>

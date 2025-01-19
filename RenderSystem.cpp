@@ -18,7 +18,6 @@ struct SimplePushConstantData {
 RenderSystem::RenderSystem(Device& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout) : device{device}
 {
 
-	//// Obj pipeline
 	createPipelineLayout({ globalSetLayout, (*DescriptorSetLayout::Builder(device)
 		.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.build())
@@ -87,14 +86,14 @@ void RenderSystem::createPipeline(VkRenderPass renderPass)
 
 void RenderSystem::renderObjModel(FrameInfo& frameInfo, GameObject& obj)
 {
-	if (obj.model != nullptr)
+	if (obj.hasModel)
 	{
 		vkCmdBindDescriptorSets(
 			frameInfo.commandBuffer,
 			VK_PIPELINE_BIND_POINT_GRAPHICS,
 			objPipelineLayout,
 			1, 1,
-			&obj.model->getDecriptorSet()[frameInfo.frameIndex],
+			&obj.getDescriptorSets()[frameInfo.frameIndex],
 			0,
 			nullptr
 		);
@@ -112,8 +111,8 @@ void RenderSystem::renderObjModel(FrameInfo& frameInfo, GameObject& obj)
 			&push
 		);
 
-		obj.model->bind(frameInfo.commandBuffer);
-		obj.model->draw(frameInfo.commandBuffer);
+		obj.bindModel(frameInfo.commandBuffer);
+		obj.drawModel(frameInfo.commandBuffer, GlTFPipelineLayout);
 	}
 }
 
@@ -136,7 +135,7 @@ void RenderSystem::renderGameObjects(FrameInfo& frameInfo)
 	{
 		auto& obj = kv.second;
 
-		if (obj.model != nullptr)
+		if (obj.hasModel)
 			renderObjModel(frameInfo, obj);
 	}
 }

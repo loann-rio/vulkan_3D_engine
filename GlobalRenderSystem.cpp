@@ -1,5 +1,4 @@
-#include "GLTFrenderSystem.h"
-
+#include "GlobalRenderSystem.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -15,28 +14,29 @@ struct SimplePushConstantData {
 	glm::mat4 normalMatrix{ 1.f };
 };
 
-GlTFrenderSystem::GlTFrenderSystem(Device& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout) : device{ device }
+GlobalRenderSystem::GlobalRenderSystem(Device& device, VkRenderPass renderPass, 
+	VkDescriptorSetLayout globalSetLayout, std::vector<VkDescriptorType> bindings, 
+	const std::string& vertFilepath, const std::string& fragFilepath,
+	std::string modelType,
+	std::vector<VkVertexInputBindingDescription> bindingDescription, std::vector<VkVertexInputAttributeDescription> attributeDescription)
+	: device{ device }, modelType{ modelType }
 {
+	auto builder = DescriptorSetLayout::Builder(device);
 
-	//// GlTf pipeline
-	createPipelineLayout({ globalSetLayout, (*DescriptorSetLayout::Builder(device)
-		.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-		.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-		.addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-		.addBinding(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-		.addBinding(5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-		.build())
-		.getDescriptorSetLayout() });
+	for (int i = 0; i < bindings.size(); i++) {
+		builder.addBinding(i + 1, bindings[i], VK_SHADER_STAGE_FRAGMENT_BIT);
+	}
 
-	createPipelineGlTf(renderPass);
+	createPipelineLayout({ globalSetLayout, (*builder.build()).getDescriptorSetLayout() });
+	createPipeline(renderPass, vertFilepath, fragFilepath, bindingDescription, attributeDescription);
 }
 
-GlTFrenderSystem::~GlTFrenderSystem()
+GlobalRenderSystem::~GlobalRenderSystem()
 {
-	vkDestroyPipelineLayout(device.device(), GlTFPipelineLayout, nullptr);
+	vkDestroyPipelineLayout(device.device(), objPipelineLayout, nullptr);
 }
 
-void GlTFrenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout> descriptorSetLayout)
+void GlobalRenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout> descriptorSetLayout)
 {
 	VkPushConstantRange pushConstantRange{};
 	pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -48,12 +48,10 @@ void GlTFrenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout> d
 	VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT // For dynamic descriptor sets
 	};
 
-
 	VkDescriptorSetLayoutBindingFlagsCreateInfoEXT bindingFlagsInfo = {};
 	bindingFlagsInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT;
 	bindingFlagsInfo.bindingCount = sizeof(descriptorBindingFlags) / sizeof(descriptorBindingFlags[0]);
 	bindingFlagsInfo.pBindingFlags = descriptorBindingFlags;
-
 
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -63,40 +61,49 @@ void GlTFrenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout> d
 	pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 	pipelineLayoutInfo.pNext = &bindingFlagsInfo;
 
-	if (vkCreatePipelineLayout(device.device(), &pipelineLayoutInfo, nullptr, &GlTFPipelineLayout) !=
+	if (vkCreatePipelineLayout(device.device(), &pipelineLayoutInfo, nullptr, &objPipelineLayout) !=
 		VK_SUCCESS) {
 		throw std::runtime_error("fail to create pipeline layout");
 	}
 }
 
-void GlTFrenderSystem::createPipelineGlTf(VkRenderPass renderPass)
+void GlobalRenderSystem::createPipeline(VkRenderPass renderPass, const std::string& vertFilepath, const std::string& fragFilepath, 
+	std::vector<VkVertexInputBindingDescription> bindingDescription, std::vector<VkVertexInputAttributeDescription> attributeDescription)
 {
-	assert(GlTFPipelineLayout != nullptr && "Cannot create pipeline before pipeline layout");
+	assert(objPipelineLayout != nullptr && "Cannot create pipeline before pipeline layout");
 
 	PipelineConfigInfo pipelineConfig{};
 
 	Pipeline::defaultPipelineConfigInfo(pipelineConfig);
 
-	pipelineConfig.bindingDescription = GlTFModel::ModelGltf::Vertex::getBindingDescriptions();
-	pipelineConfig.attributeDescription = GlTFModel::ModelGltf::Vertex::getAttributeDescriptions();
+	if (!bindingDescription.empty()) {
+		pipelineConfig.bindingDescription = bindingDescription;
+	}
+
+	if (!attributeDescription.empty()) {
+		pipelineConfig.attributeDescription = attributeDescription;
+	}
 
 	pipelineConfig.renderPass = renderPass;
-	pipelineConfig.pipelineLayout = GlTFPipelineLayout;
+	pipelineConfig.pipelineLayout = objPipelineLayout;
 
-	GlTFPipeline = std::make_unique<Pipeline>(
+	objPipeline = std::make_unique<Pipeline>(
 		device,
-		"GlTFshader.vert.spv",
-		"GlTFshader.frag.spv",
+		vertFilepath,
+		fragFilepath,
 		pipelineConfig
 	);
 }
 
-void GlTFrenderSystem::renderGlTFModel(FrameInfo& frameInfo, GameObject& obj)
+void GlobalRenderSystem::renderObjModel(FrameInfo& frameInfo, GameObject& obj)
 {
+	std::cout << obj.getDescriptorSetIndex() << "\n";
+	std::cout << obj.getDescriptorSets()[frameInfo.frameIndex] << "\n";
+
 	vkCmdBindDescriptorSets(
 		frameInfo.commandBuffer,
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
-		GlTFPipelineLayout,
+		objPipelineLayout,
 		1, 1,
 		&obj.getDescriptorSets()[frameInfo.frameIndex],
 		0,
@@ -109,7 +116,7 @@ void GlTFrenderSystem::renderGlTFModel(FrameInfo& frameInfo, GameObject& obj)
 
 	vkCmdPushConstants(
 		frameInfo.commandBuffer,
-		GlTFPipelineLayout,
+		objPipelineLayout,
 		VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 		0,
 		sizeof(SimplePushConstantData),
@@ -117,20 +124,18 @@ void GlTFrenderSystem::renderGlTFModel(FrameInfo& frameInfo, GameObject& obj)
 	);
 
 	obj.bindModel(frameInfo.commandBuffer);
-	obj.drawModel(frameInfo.commandBuffer, GlTFPipelineLayout);
+	obj.drawModel(frameInfo.commandBuffer, objPipelineLayout);
 	
 }
 
-
-
-void GlTFrenderSystem::renderGameObjects(FrameInfo& frameInfo)
+void GlobalRenderSystem::renderGameObjects(FrameInfo& frameInfo)
 {
-	GlTFPipeline->bind(frameInfo.commandBuffer);
+	objPipeline->bind(frameInfo.commandBuffer);
 
 	vkCmdBindDescriptorSets(
 		frameInfo.commandBuffer,
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
-		GlTFPipelineLayout,
+		objPipelineLayout,
 		0, 1,
 		&frameInfo.globalDescriptorSet[frameInfo.frameIndex],
 		0,
@@ -140,8 +145,8 @@ void GlTFrenderSystem::renderGameObjects(FrameInfo& frameInfo)
 	for (auto& kv : frameInfo.gameObjects)
 	{
 		auto& obj = kv.second;
-
-		if (obj.hasModel)
-			renderGlTFModel(frameInfo, obj);
+		if (obj.hasModel && obj.modelType == modelType)
+			renderObjModel(frameInfo, obj);
 	}
 }
+

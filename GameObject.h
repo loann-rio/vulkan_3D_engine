@@ -11,7 +11,12 @@
 
 #include <memory>
 #include <iostream>
+#include <type_traits>
+#include <variant>
 #include <unordered_map>
+
+using ModelVariant = std::variant<std::shared_ptr<Model>, 
+					std::shared_ptr<GlTFModel::ModelGltf>>;
 
 struct TransformComponent {
 	glm::vec3 translation{};
@@ -24,7 +29,6 @@ struct TransformComponent {
 
 struct PointLightComponent {
 	float LightIntencity = 1.0f;
-
 };
 
 class GameObject
@@ -51,9 +55,62 @@ public:
 	TransformComponent transform{};
 	glm::vec3 color{};
 
-	std::shared_ptr<Model> model{};
-	std::shared_ptr<GlTFModel::ModelGltf> gltfModel{};
+	bool hasModel = false;
+	std::string modelType;
+
+	ModelVariant model;
+
 	std::unique_ptr<PointLightComponent> pointLight = nullptr;
+
+	template <typename T>
+	void setModel(std::shared_ptr<T> newModel) {
+		model = std::move(newModel);
+		modelType = T::getType();
+		hasModel = true;
+	}
+
+	void createDescriptorSet(DescriptorPool& pool) const {
+		std::visit([&pool, &device = this->device](const auto& modelInstance) {
+			if (modelInstance) {
+				modelInstance->createDescriptorSet(pool, device);
+			}
+		}, model);
+	}
+
+	std::vector<VkDescriptorSet> getDescriptorSets() const {
+		return std::visit([](const auto& modelInstance) -> std::vector<VkDescriptorSet> {
+			if (modelInstance) {
+				return modelInstance->getDescriptorSets();
+			}
+			return {};
+		}, model);
+	}
+
+	uint16_t getDescriptorSetIndex() const {
+		return std::visit([](const auto& modelInstance) -> uint16_t {
+			if (modelInstance) {
+				return modelInstance->descriptorSetIndex;
+			}
+			return 1;
+		}, model);
+	}
+
+	void bindModel(VkCommandBuffer& commandBuffer) const {
+		std::visit([&](const auto& modelInstance) {
+			if (modelInstance) {
+				modelInstance->bind(commandBuffer);
+			}
+		}, model);
+	}
+
+	void drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout) const {
+		std::visit([&](const auto& modelInstance) {
+			if (modelInstance) {
+				modelInstance->draw(commandBuffer, GlTFPipelineLayout);
+			}
+		}, model);
+	}
+
 
 private:
 

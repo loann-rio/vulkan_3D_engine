@@ -28,7 +28,7 @@ layout(push_constant) uniform Push {
 } push;
 
 // Define the texture sampler
-layout(set = 1, binding = 0) uniform sampler2D texSampler;
+layout(set = 1, binding = 1) uniform sampler2D texSampler;
 
 
 

@@ -22,7 +22,7 @@ public:
 	void renderGameObjects(FrameInfo& frameInfo);
 
 
-private:
+private: 
 	void createPipelineLayout(std::vector<VkDescriptorSetLayout> descriptorSetLayout);
 	void createPipeline(VkRenderPass renderPass);
 

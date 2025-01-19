@@ -168,6 +168,7 @@
     <ClCompile Include="external\basisu\zstd\zstd.c" />
     <ClCompile Include="Frame_info.cpp" />
     <ClCompile Include="GameObject.cpp" />
+    <ClCompile Include="GlobalRenderSystem.cpp" />
     <ClCompile Include="GlTFModel.cpp" />
     <ClCompile Include="GLTFrenderSystem.cpp" />
     <ClCompile Include="KeyboardMovementController.cpp" />
@@ -191,9 +192,9 @@
     <ClInclude Include="Device.h" />
     <ClInclude Include="Frame_info.h" />
     <ClInclude Include="GameObject.h" />
+    <ClInclude Include="GlobalRenderSystem.h" />
     <ClInclude Include="GlTFModel.h" />
     <ClInclude Include="GLTFrenderSystem.h" />
-    <ClInclude Include="Imodel.h" />
     <ClInclude Include="json.hpp" />
     <ClInclude Include="KeyboardMovementController.h" />
     <ClInclude Include="Model.h" />

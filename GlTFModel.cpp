@@ -803,7 +803,7 @@ void GlTFModel::ModelGltf::loadFromFile(std::string filename, VkQueue transferQu
 	getSceneDimensions();
 }
 
-void GlTFModel::ModelGltf::drawNode(Node* node, VkCommandBuffer commandBuffer, VkPipelineLayout& GlTFPipelineLayout)
+void GlTFModel::ModelGltf::drawNode(Node* node, VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout)
 {	
 	if (node->mesh) {
 
@@ -818,8 +818,10 @@ void GlTFModel::ModelGltf::drawNode(Node* node, VkCommandBuffer commandBuffer, V
 
 }
 
-void GlTFModel::ModelGltf::draw(VkCommandBuffer commandBuffer, VkPipelineLayout& GlTFPipelineLayout)
+void GlTFModel::ModelGltf::draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout)
 {
+
+	std::cout << "draw gltf \n";
 	for (auto& node : nodes) {
 		drawNode(node, commandBuffer, GlTFPipelineLayout);
 	}
@@ -938,6 +940,15 @@ void GlTFModel::ModelGltf::createIndexBuffers(LoaderInfo loaderInfo)
 
 }
 
+std::vector<VkDescriptorType> GlTFModel::ModelGltf::getDescriptorType()
+{
+	return {
+		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
+	};
+}
+
 void GlTFModel::ModelGltf::createDescriptorSet(DescriptorPool& pool, Device& device)
 {
 
@@ -947,7 +958,6 @@ void GlTFModel::ModelGltf::createDescriptorSet(DescriptorPool& pool, Device& dev
 		.addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.addBinding(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.addBinding(5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-		//.addBinding(6, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
 		.build();
 
 	auto bufferInfo = nodes[0]->mesh->uniformBuffer->descriptorInfo(); 
@@ -969,13 +979,12 @@ void GlTFModel::ModelGltf::createDescriptorSet(DescriptorPool& pool, Device& dev
 			.writeImage(3, &emissiveInfo)
 			.writeImage(4, &occlusionInfo)
 			.writeImage(5, &normalInfo)
-		//	.writeBuffer(6, &bufferInfo)
 			.build(descriptorSet[i]); 
 	}
 	
 }
 
-void GlTFModel::ModelGltf::bind(VkCommandBuffer commandBuffer)
+void GlTFModel::ModelGltf::bind(VkCommandBuffer& commandBuffer)
 {
 	VkBuffer buffers[] = { vertexBuffer->getBuffer() };
 	VkDeviceSize offsets[] = { 0 };
@@ -1175,7 +1184,7 @@ std::unique_ptr<GlTFModel::ModelGltf> GlTFModel::createModelFromFile(Device& dev
 	return model;
 }
 
-std::vector<VkVertexInputBindingDescription> GlTFModel::ModelGltf::Vertex::getBindingDescriptionsGlTF()
+std::vector<VkVertexInputBindingDescription> GlTFModel::ModelGltf::Vertex::getBindingDescriptions()
 {
 	std::vector<VkVertexInputBindingDescription> bindingDescription(1);
 	bindingDescription[0].binding = 0;
@@ -1184,7 +1193,7 @@ std::vector<VkVertexInputBindingDescription> GlTFModel::ModelGltf::Vertex::getBi
 	return bindingDescription;
 }
 
-std::vector<VkVertexInputAttributeDescription> GlTFModel::ModelGltf::Vertex::getAttributeDescriptionsGlTF()
+std::vector<VkVertexInputAttributeDescription> GlTFModel::ModelGltf::Vertex::getAttributeDescriptions()
 {
 	std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
 

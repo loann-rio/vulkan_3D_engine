@@ -45,7 +45,7 @@ std::unique_ptr<Model> Model::createModelFromFile(Device& device, const std::str
 	return m;
 }
 
-void Model::bind(VkCommandBuffer commandBuffer)
+void Model::bind(VkCommandBuffer& commandBuffer)
 {
 	VkBuffer buffers[] = { vertexBuffer->getBuffer() };
 	VkDeviceSize offsets[] = { 0 };
@@ -56,8 +56,10 @@ void Model::bind(VkCommandBuffer commandBuffer)
 	}
 }
 
-void Model::draw(VkCommandBuffer commandBuffer)
+void Model::draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout)
 {
+	std::cout << "draw obj \n";
+
 	if (hasIndexBuffer) {
 		vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
 	}
@@ -69,14 +71,14 @@ void Model::draw(VkCommandBuffer commandBuffer)
 void Model::createDescriptorSet(DescriptorPool& pool, Device& device)
 {
 	auto textureSetLayout = DescriptorSetLayout::Builder(device)
-		.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+		.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.build();
 
 	for (int i = 0; i < descriptorSet.size(); i++)
 	{
 		auto imageInfo = texture->getImageInfo();
 		DescriptorWriter(*textureSetLayout, pool)
-			.writeImage(0, &imageInfo)
+			.writeImage(1, &imageInfo)
 			.build(descriptorSet[i]);
 	}
 }

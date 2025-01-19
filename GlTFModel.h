@@ -20,9 +20,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-//#include <gli/gli.hpp>
 #include <glm/gtx/string_cast.hpp>
-
 
 #include <vector>
 #include <memory>
@@ -36,9 +34,7 @@
 #define TINYGLTF_USE_RAPIDJSON_CRTALLOCATOR
 
 #include "tiny_gltf.h"
-
 #include "basisu_transcoder.h"
-
 
 #define MAX_NUM_JOINTS 128u
 
@@ -238,10 +234,8 @@ class GlTFModel
 
 			glm::vec3 color{};
 
-			
-
-			static std::vector<VkVertexInputBindingDescription> getBindingDescriptionsGlTF();
-			static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptionsGlTF();
+			static std::vector<VkVertexInputBindingDescription> getBindingDescriptions();
+			static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
 
 		};
 
@@ -294,20 +288,26 @@ class GlTFModel
 		void loadMaterials(tinygltf::Model& gltfModel);
 		void loadAnimations(tinygltf::Model& gltfModel);
 		void loadFromFile(std::string filename, VkQueue transferQueue, float scale = 1.0f);
-		void drawNode(Node* node, VkCommandBuffer commandBuffer, VkPipelineLayout& GlTFPipelineLayout);
-		void draw(VkCommandBuffer commandBuffer, VkPipelineLayout& GlTFPipelineLayout);
+		void drawNode(Node* node, VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout);
+		void draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout);
 		void calculateBoundingBox(Node* node, Node* parent);
 		void getSceneDimensions();
 		void updateAnimation(uint32_t index, float time);
 		void createVertexBuffers(LoaderInfo loaderInfo);
 		void createIndexBuffers(LoaderInfo loaderInfo);
+		static std::vector<VkDescriptorType> getDescriptorType();
+		static std::string getType() { return "gltf"; }
+
+		const uint16_t descriptorSetIndex = 1;
 
 		void createDescriptorSet(DescriptorPool& pool, Device& device);
 
-		void bind(VkCommandBuffer commandBuffer);
+		void bind(VkCommandBuffer& commandBuffer);
 
 		GlTFModel::Node* findNode(Node* parent, uint32_t index);
 		GlTFModel::Node* nodeFromIndex(uint32_t index);
+
+		std::vector<VkDescriptorSet>& getDescriptorSets() { return descriptorSet; }
 
 		Device& device;
 	};

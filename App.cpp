@@ -3,12 +3,14 @@
 // local
 #include "KeyboardMovementController.h"
 
+#include "GlobalRenderSystem.h"
 #include "GLTFrenderSystem.h"
 #include "RenderSystem.h"
 #include "Camera.h"
 #include "Buffer.h"
 #include "Frame_info.h"
 
+#include "GlTFModel.h"
 #include "point_light_system.h"
 #include "preBuild.h"
 
@@ -78,25 +80,31 @@ void App::run()
             .build(globalDescriptorSet[i]);
     }
 
-    for (auto& kv : gameObjects)
-    {
+    for (auto& kv : gameObjects) {
         auto& obj = kv.second;
-        if (obj.model != nullptr) {
-            obj.model->createDescriptorSet(*globalPool, device);
+        if (obj.hasModel) {
+            obj.createDescriptorSet(*globalPool);
         }
-        else if (obj.gltfModel != nullptr) {
-            obj.gltfModel->createDescriptorSet(*globalPool, device);
-        }
-        
     }
 
     PointLightSystem pointLightSystem{  device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
-	RenderSystem renderSystem{          device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
-    GlTFrenderSystem GlTfrenderSystem{  device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
+    /*GlobalRenderSystem globalRenderSystem{ device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout(),
+        Model::getDescriptorType(), "simple_shader.vert.spv", "simple_shader.frag.spv"};*/
+
+    /*GlobalRenderSystem gltfRenderSystem{ device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout(),
+       GlTFModel::ModelGltf::getDescriptorType(), "GlTFshader.vert.spv", "GlTFshader.frag.spv",
+       GlTFModel::ModelGltf::Vertex::getBindingDescriptionsGlTF(), GlTFModel::ModelGltf::Vertex::getAttributeDescriptionsGlTF() } ;*/
+
+    GlobalRenderSystem gltfRenderSystem = GlobalRenderSystem::create<GlTFModel::ModelGltf>(
+        device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout(), 
+        "GlTFshader.vert.spv", "GlTFshader.frag.spv" );
+
+    GlobalRenderSystem objRenderSystem = GlobalRenderSystem::create<Model>(
+        device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout(),
+        "simple_shader.vert.spv", "simple_shader.frag.spv");
 
     TextOverlay textOverlay{ device, renderer.getSwapChainRenderPass() };
     textOverlay.prepareResources(*globalPool);
-
 
     // camera setting
     Camera camera{};
@@ -168,8 +176,9 @@ void App::run()
             // render
 			renderer.beginSwapChainRenderPass(commandBuffer);
 
-            renderSystem.renderGameObjects(frameInfo);
-            GlTfrenderSystem.renderGameObjects(frameInfo);
+            gltfRenderSystem.renderGameObjects(frameInfo);
+            objRenderSystem.renderGameObjects(frameInfo);
+
             pointLightSystem.render(frameInfo);
             textOverlay.renderText(frameInfo);
 
@@ -186,36 +195,23 @@ void App::run()
 
 void App::loadGameObjects() {
     
-    std::shared_ptr<Model> model_city =  Model::createModelFromFile(device, "model/viking_room.obj", "textures/viking_room.png");
+    std::shared_ptr<Model> viking_room = Model::createModelFromFile(device, "model/viking_room.obj", "textures/viking_room.png");
     auto Lowpoly_City = GameObject::createGameObject(device);
-    Lowpoly_City.transform.rotation.x = pi<float> / 2;
-    Lowpoly_City.transform.rotation.y = pi<float> ;
+    Lowpoly_City.transform.rotation = { pi<float> / 2, pi<float>, 0 };
     Lowpoly_City.transform.translation = { 7, 0, 7 };
-    Lowpoly_City.model = model_city;
+    Lowpoly_City.setModel(viking_room);
     gameObjects.emplace(Lowpoly_City.getId(), std::move(Lowpoly_City));
 
-
-    /*std::shared_ptr<Model> model_city1 = Model::createModelFromFile(device, "model/viking_room.obj", "textures/Palette.jpg");
-    auto Lowpoly_City1= GameObject::createGameObject(device);
-    Lowpoly_City1.transform.rotation.x = pi<float> / 2;
-    Lowpoly_City1.model = model_city1;
-    Lowpoly_City1.transform.translation.z = 2;
-    gameObjects.emplace(Lowpoly_City1.getId(), std::move(Lowpoly_City1));*/
-
-
-    /*std::shared_ptr<Model> cube = Model::createModelFromFile(device, "models/cube.obj", "textures/emptyTexture.jpg");
-    auto cube1 = GameObject::createGameObject(device);
-    cube1.transform.rotation.x = pi<float> / 2;
-    cube1.model = cube;
-    cube1.transform.scale = { 0.5f, 0.5f, 0.5f };
-
-    cube1.transform.translation = { 2, -0.4f, 6 };
-    gameObjects.emplace(cube1.getId(), std::move(cube1));*/
+    std::shared_ptr<GlTFModel::ModelGltf> damagedHelmet = GlTFModel::createModelFromFile(device, "model/2.0/damagedhelmet/gltf/damagedhelmet.gltf");
+    auto godh = GameObject::createGameObject(device);
+    godh.transform.rotation = { pi<float> / 2, pi<float>, 0 };
+    godh.transform.translation = { 10, 3, 7 };
+    godh.setModel(damagedHelmet);
+    gameObjects.emplace(godh.getId(), std::move(godh));
 
     std::shared_ptr<Model> plane = createPlane(device, 10, 10, {0, 0, 0});
-
     auto plane1 = GameObject::createGameObject(device);
-    plane1.model = plane;
+    plane1.setModel(plane);
     plane1.transform.translation.y = 0.1f;
     gameObjects.emplace(plane1.getId(), std::move(plane1));
 
@@ -235,15 +231,6 @@ void App::loadGameObjects() {
         gameObjects.emplace(pointLight.getId(), std::move(pointLight));
     }*/
 
-    std::shared_ptr<GlTFModel::ModelGltf> drone = GlTFModel::createModelFromFile(device, "model/2.0/DamagedHelmet/glTF/DamagedHelmet.gltf");
-
-    auto GODrone = GameObject::createGameObject(device);
-    GODrone.transform.translation = { 8, 1, 4 };
-    GODrone.transform.scale = { .50f, .50f , .50f };
-    //GODrone.transform.rotation.x = pi<float> / 2;
-    GODrone.transform.rotation.y = pi<float> / 2;
-    GODrone.gltfModel = drone;
-    gameObjects.emplace(GODrone.getId(), std::move(GODrone));
 }
 
 void App::getFrameRate(float lastFrameTime)
