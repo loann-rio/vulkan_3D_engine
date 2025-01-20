@@ -4,8 +4,6 @@
 #include "KeyboardMovementController.h"
 
 #include "GlobalRenderSystem.h"
-#include "GLTFrenderSystem.h"
-#include "RenderSystem.h"
 #include "Camera.h"
 #include "Buffer.h"
 #include "Frame_info.h"
@@ -88,12 +86,7 @@ void App::run()
     }
 
     PointLightSystem pointLightSystem{  device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
-    /*GlobalRenderSystem globalRenderSystem{ device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout(),
-        Model::getDescriptorType(), "simple_shader.vert.spv", "simple_shader.frag.spv"};*/
-
-    /*GlobalRenderSystem gltfRenderSystem{ device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout(),
-       GlTFModel::ModelGltf::getDescriptorType(), "GlTFshader.vert.spv", "GlTFshader.frag.spv",
-       GlTFModel::ModelGltf::Vertex::getBindingDescriptionsGlTF(), GlTFModel::ModelGltf::Vertex::getAttributeDescriptionsGlTF() } ;*/
+ 
 
     GlobalRenderSystem gltfRenderSystem = GlobalRenderSystem::create<GlTFModel::ModelGltf>(
         device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout(), 

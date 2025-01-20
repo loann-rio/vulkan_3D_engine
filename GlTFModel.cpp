@@ -820,8 +820,6 @@ void GlTFModel::ModelGltf::drawNode(Node* node, VkCommandBuffer& commandBuffer, 
 
 void GlTFModel::ModelGltf::draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout)
 {
-
-	std::cout << "draw gltf \n";
 	for (auto& node : nodes) {
 		drawNode(node, commandBuffer, GlTFPipelineLayout);
 	}

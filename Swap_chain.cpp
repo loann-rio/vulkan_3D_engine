@@ -332,10 +332,11 @@ void Swap_chain::createDepthResources() {
         imageInfo.format = depthFormat;
         imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
         imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
         imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
         imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
         imageInfo.flags = 0;
+        imageInfo.pNext = NULL;
 
         device.createImageWithInfo(
             imageInfo,
@@ -398,10 +399,11 @@ VkSurfaceFormatKHR Swap_chain::chooseSwapSurfaceFormat(
 
 VkPresentModeKHR Swap_chain::chooseSwapPresentMode(
     const std::vector<VkPresentModeKHR>& availablePresentModes) {
-    //for (const auto& availablePresentMode : availablePresentModes) {
-    //    if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) { // VK_PRESENT_MODE_MAILBOX_KHR    VK_PRESENT_MODE_IMMEDIATE_KHR
-    //        std::cout << "Present mode: Mailbox" << std::endl;
-    //        return availablePresentMode;
+
+    //for (const auto& availablepresentmode : availablePresentModes) {
+    //    if (availablepresentmode == VK_PRESENT_MODE_IMMEDIATE_KHR) { // vk_present_mode_mailbox_khr    vk_present_mode_immediate_khr
+    //        std::cout << "present mode: mailbox" << std::endl;
+    //        return availablepresentmode;
     //    }
     //}
 

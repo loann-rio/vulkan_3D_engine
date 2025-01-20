@@ -97,8 +97,6 @@ void GlobalRenderSystem::createPipeline(VkRenderPass renderPass, const std::stri
 
 void GlobalRenderSystem::renderObjModel(FrameInfo& frameInfo, GameObject& obj)
 {
-	std::cout << obj.getDescriptorSetIndex() << "\n";
-	std::cout << obj.getDescriptorSets()[frameInfo.frameIndex] << "\n";
 
 	vkCmdBindDescriptorSets(
 		frameInfo.commandBuffer,

@@ -31,8 +31,6 @@ layout(push_constant) uniform Push {
 layout(set = 1, binding = 1) uniform sampler2D texSampler;
 
 
-
-
 void main() {
 
 	vec3 diffuseLight = ubo.ambientLightColor.xyz * ubo.ambientLightColor.w;
@@ -95,5 +93,6 @@ void main() {
 	//vec4 color = vec4(1.0, 1.0, 1.0, 1.0);
 
 	// sum colors
+
 	outColor = (vec4(diffuseLight, 1.0) + vec4(specularLight, 1.0)) * color +  cosAngOfIncidence * ubo.globalLightDir.w * color;  
 }

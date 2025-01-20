@@ -58,8 +58,6 @@ void Model::bind(VkCommandBuffer& commandBuffer)
 
 void Model::draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout)
 {
-	std::cout << "draw obj \n";
-
 	if (hasIndexBuffer) {
 		vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
 	}
