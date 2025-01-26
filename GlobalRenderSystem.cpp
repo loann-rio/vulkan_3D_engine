@@ -18,8 +18,8 @@ GlobalRenderSystem::GlobalRenderSystem(Device& device, VkRenderPass renderPass,
 	VkDescriptorSetLayout globalSetLayout, std::vector<VkDescriptorType> bindings, 
 	const std::string& vertFilepath, const std::string& fragFilepath,
 	std::string modelType,
-	std::vector<VkVertexInputBindingDescription> bindingDescription, std::vector<VkVertexInputAttributeDescription> attributeDescription)
-	: device{ device }, modelType{ modelType }
+	std::vector<VkVertexInputBindingDescription> bindingDescription, std::vector<VkVertexInputAttributeDescription> attributeDescription, bool isShadow)
+	: device{ device }, modelType{ modelType }, isShadow{ isShadow }
 {
 	auto builder = DescriptorSetLayout::Builder(device);
 
@@ -98,15 +98,17 @@ void GlobalRenderSystem::createPipeline(VkRenderPass renderPass, const std::stri
 void GlobalRenderSystem::renderObjModel(FrameInfo& frameInfo, GameObject& obj)
 {
 
-	vkCmdBindDescriptorSets(
-		frameInfo.commandBuffer,
-		VK_PIPELINE_BIND_POINT_GRAPHICS,
-		objPipelineLayout,
-		1, 1,
-		&obj.getDescriptorSets()[frameInfo.frameIndex],
-		0,
-		nullptr
-	);
+	if (!isShadow) {
+		vkCmdBindDescriptorSets(
+			frameInfo.commandBuffer,
+			VK_PIPELINE_BIND_POINT_GRAPHICS,
+			objPipelineLayout,
+			1, 1,
+			&obj.getDescriptorSets()[frameInfo.frameIndex],
+			0,
+			nullptr
+		);
+	}
 
 	SimplePushConstantData push{};
 	push.modelMatrix = obj.transform.mat4();

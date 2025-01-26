@@ -10,4 +10,9 @@ C:\VulkanSDK\1.3.290.0\Bin\glslc.exe text.frag -o text.frag.spv
 C:\VulkanSDK\1.3.290.0\Bin\glslc.exe GlTFshader.vert -o GlTFshader.vert.spv
 C:\VulkanSDK\1.3.290.0\Bin\glslc.exe GlTFshader.frag -o GlTFshader.frag.spv
 
+C:\VulkanSDK\1.3.290.0\Bin\glslc.exe shadowmap.vert -o shadowmap.vert.spv
+
+C:\VulkanSDK\1.3.290.0\Bin\glslc.exe depthView.vert -o depthView.vert.spv
+C:\VulkanSDK\1.3.290.0\Bin\glslc.exe depthView.frag -o depthView.frag.spv
+
 pause

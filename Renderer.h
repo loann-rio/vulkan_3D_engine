@@ -21,6 +21,7 @@ public:
 	Renderer& operator=(const Renderer&) = delete;
 
 	VkRenderPass getSwapChainRenderPass() const { return swapChain->getRenderPass(); }
+	VkRenderPass getDepthRenderPass() const { return swapChain->getRenderDepthPass(); }
 	float getAspectRatio() const { return swapChain->extentAspectRatio(); }
 
 	uint32_t getWidth() const { return swapChain->width(); }
@@ -32,23 +33,42 @@ public:
 		assert(isFrameStarted && "cannot get command buffer when frame not in progress");
 		return commandBuffers[currentFrameIndex];
 	}
+	
+	VkCommandBuffer getCurrentDepthCommandBuffer() const {
+		assert(isDepthStarted && "cannot get command buffer when frame not in progress");
+		return depthCommandBuffers[currentDepthIndex];
+	}
 
 	int getFrameIndex() const {
 		assert(isFrameStarted && "cannot get frame index when frame not in progress");
 		return currentFrameIndex;
 	}
 
+	int getDepthIndex() const {
+		assert(isDepthStarted && "cannot get frame index when frame not in progress");
+		return currentDepthIndex;
+	}
+
 	VkCommandBuffer beginFrame();
 	void endFrame();
 
+	VkCommandBuffer beginDepthFrame();
+	void endDepthFrame();
+
 	void beginSwapChainRenderPass(VkCommandBuffer commandBuffer);
 	void endSwapChainRenderPass(VkCommandBuffer commandBuffer);
+
+	void beginShadowRenderPass(VkCommandBuffer commandBuffer);
+	void endShadowRenderPass(VkCommandBuffer commandBuffer);
+
+	void submitCommandBuffers();
 
 
 private:
 
 	void createCommandBuffer();
-	void freeCommandBuffer();
+	void createDepthCommandBuffer();
+	void freeCommandBuffers();
 	void recreateSwapChain();
 
 	Window& window;
@@ -56,9 +76,14 @@ private:
 
 	std::unique_ptr<Swap_chain> swapChain;
 	std::vector<VkCommandBuffer> commandBuffers;
+	std::vector<VkCommandBuffer> depthCommandBuffers;
 
 	uint32_t currentImageIndex;
+	uint32_t currentDepthImageIndex;
+
 	int currentFrameIndex;
+	int currentDepthIndex;
 	bool isFrameStarted = false;
+	bool isDepthStarted = false;
 };
 

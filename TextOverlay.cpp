@@ -145,6 +145,8 @@ void TextOverlay::prepareResources(DescriptorPool& pool)
 		
 	texture = std::make_unique<Texture>(device, rgbaPixels, fontWidth, fontHeight );
 
+	delete[] rgbaPixels;
+
 	// descriptor things
 
 	auto textureSetLayout = DescriptorSetLayout::Builder(device)

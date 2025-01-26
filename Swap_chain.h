@@ -24,6 +24,11 @@ public:
     VkFramebuffer getFrameBuffer(int index) { return swapChainFramebuffers[index]; }
     VkRenderPass getRenderPass() { return renderPass; }
     VkImageView getImageView(int index) { return swapChainImageViews[index]; }
+
+    VkFramebuffer getDepthFramebuffers(int index) { return depthFramebuffers[index]; }
+    VkRenderPass getRenderDepthPass() { return renderDepthPass; }
+    VkImageView getDepthImageView(int index) { return depthImageViews[index]; }
+
     size_t imageCount() { return swapChainImages.size(); }
     VkFormat getSwapChainImageFormat() { return swapChainImageFormat; }
     VkExtent2D getSwapChainExtent() { return swapChainExtent; }
@@ -33,25 +38,35 @@ public:
     float extentAspectRatio() {
         return static_cast<float>(swapChainExtent.width) / static_cast<float>(swapChainExtent.height);
     }
+
     VkFormat findDepthFormat();
 
     VkResult acquireNextImage(uint32_t* imageIndex);
     VkResult submitCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex);
+    VkResult submitDepthCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex);
+    VkResult submitDepthAndMainCommandBuffers(
+        const VkCommandBuffer* depthCommandBuffer,
+        const VkCommandBuffer* mainCommandBuffer,
+        uint32_t* imageIndex);
 
     bool compareSwapFormat(const Swap_chain& swapChain) const {
         return swapChain.swapChainDepthFormat == swapChainDepthFormat && 
             swapChain.swapChainImageFormat == swapChainImageFormat;
-
     }
 
 private:
     void init();
     void createSwapChain();
     void createImageViews();
-    void createDepthResources();
+    void createDepthResources(std::vector<VkImage>& image, std::vector<VkDeviceMemory>& imageMemory, std::vector<VkImageView>& imageView);
     void createRenderPass();
     void createFramebuffers();
     void createSyncObjects();
+
+    // depth pass
+    void createRenderDepthPass();
+    void createRenderDepthFramebuffers();
+
 
     // Helper functions
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(
@@ -65,11 +80,18 @@ private:
     VkExtent2D swapChainExtent;
 
     std::vector<VkFramebuffer> swapChainFramebuffers;
+    std::vector<VkFramebuffer> depthFramebuffers;
     VkRenderPass renderPass;
+    VkRenderPass renderDepthPass;
+
+    std::vector<VkImage> shadowDepthImages;
+    std::vector<VkDeviceMemory> shadowDepthImageMemorys;
+    std::vector<VkImageView> shadowDepthImageViews;
 
     std::vector<VkImage> depthImages;
     std::vector<VkDeviceMemory> depthImageMemorys;
     std::vector<VkImageView> depthImageViews;
+
     std::vector<VkImage> swapChainImages;
     std::vector<VkImageView> swapChainImageViews;
 

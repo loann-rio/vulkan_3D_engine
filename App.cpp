@@ -96,6 +96,14 @@ void App::run()
         device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout(),
         "simple_shader.vert.spv", "simple_shader.frag.spv");
 
+    GlobalRenderSystem DepthRenderSystem = GlobalRenderSystem::createDepth<Model>(
+        device, renderer.getDepthRenderPass(), globalSetLayout->getDescriptorSetLayout(),
+        "shadowmap.vert.spv", "");
+
+    /*GlobalRenderSystem depthVisualisation = GlobalRenderSystem::createDepth<Model>(
+        device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout(),
+        "depthView.vert.spv", "depthView.frag.spv");*/
+
     TextOverlay textOverlay{ device, renderer.getSwapChainRenderPass() };
     textOverlay.prepareResources(*globalPool);
 
@@ -108,6 +116,14 @@ void App::run()
     float aspec = renderer.getAspectRatio();
     camera.setPerspectiveProjection(glm::radians(50.f), aspec, .1f, 100.0f);
 
+
+    Camera lightSource{};
+    auto lightSourceObject = GameObject::createGameObject(device);
+    lightSourceObject.transform.translation = { 2.0f, -1.0f, 2.5f };
+    lightSourceObject.transform.rotation.y = pi<float> *1 / 3;
+
+    lightSource.setPerspectiveProjection(glm::radians(50.f), aspec, .1f, 100.0f);
+
     // user inputs
     KeyboardMovementController cameraController{};
 
@@ -117,7 +133,6 @@ void App::run()
 	while (!window.shouldClose())
 	{
 		glfwPollEvents();
-
 
         // calculate frame time
         auto newTime = std::chrono::high_resolution_clock::now();
@@ -140,6 +155,39 @@ void App::run()
         cameraController.moveInPlaneXZ(window.getGLFWwindow(), frameTime, viewerObject);
         camera.setViewYXZ(viewerObject.transform.translation, viewerObject.transform.rotation);
 
+        lightSource.setViewYXZ(lightSourceObject.transform.translation, lightSourceObject.transform.rotation);
+
+
+        // render depthframe
+        if (auto depthCommandBuffer = renderer.beginDepthFrame()) {
+            int depthFrameIndex = renderer.getDepthIndex();
+
+            FrameInfo frameinfo{
+                depthFrameIndex,
+
+                frameTime,
+                depthCommandBuffer,
+                lightSource,
+                globalDescriptorSet,
+                gameObjects
+            };
+
+            //todo create separate ubo for light to avoid updates every frames
+            GlobalUbo ubo{}; 
+            ubo.projection = lightSource.getProjection();
+            ubo.view = lightSource.getView();
+            ubo.inverseView = lightSource.getInverseView();
+            uboBuffers[depthFrameIndex]->writeToBuffer(&ubo);
+            uboBuffers[depthFrameIndex]->flush();
+            
+            // render
+            renderer.beginShadowRenderPass(depthCommandBuffer);
+
+            DepthRenderSystem.renderGameObjects(frameinfo);
+
+            renderer.endShadowRenderPass(depthCommandBuffer);
+            renderer.endDepthFrame();
+        }
         
 		if (auto commandBuffer = renderer.beginFrame()) {
             int frameIndex = renderer.getFrameIndex();
@@ -152,7 +200,6 @@ void App::run()
                 globalDescriptorSet,
                 gameObjects
             };
-
             
             // update ubo
             GlobalUbo ubo{};
@@ -175,12 +222,13 @@ void App::run()
             pointLightSystem.render(frameInfo);
             textOverlay.renderText(frameInfo);
 
-            
             renderer.endSwapChainRenderPass(commandBuffer);
             renderer.endFrame();
 		}
 
-        //frame = (frame + 1) % 36000; 
+        renderer.submitCommandBuffers();
+
+        frame = (frame + 1) % 3; 
 	}
 
 	vkDeviceWaitIdle(device.device());
@@ -198,7 +246,8 @@ void App::loadGameObjects() {
     std::shared_ptr<GlTFModel::ModelGltf> damagedHelmet = GlTFModel::createModelFromFile(device, "model/2.0/damagedhelmet/gltf/damagedhelmet.gltf");
     auto godh = GameObject::createGameObject(device);
     godh.transform.rotation = { pi<float> / 2, pi<float>, 0 };
-    godh.transform.translation = { 10, 3, 7 };
+    godh.transform.translation = { 7, 1, 5 };
+    godh.transform.scale = { 0.5f, 0.5f, 0.5f };
     godh.setModel(damagedHelmet);
     gameObjects.emplace(godh.getId(), std::move(godh));
 
@@ -207,6 +256,21 @@ void App::loadGameObjects() {
     plane1.setModel(plane);
     plane1.transform.translation.y = 0.1f;
     gameObjects.emplace(plane1.getId(), std::move(plane1));
+
+    std::shared_ptr<Model> planeModel = createPlane(device, 2, 10, { 0, 0, 0 }, "textures/emptyTexture.jpg");
+    auto plane2 = GameObject::createGameObject(device);
+    plane2.setModel(planeModel);
+    plane2.transform.rotation.z = -pi<float> / 2;
+    plane2.transform.translation.x = 10.f;
+    plane2.transform.translation.y = 1.f;
+    gameObjects.emplace(plane2.getId(), std::move(plane2));
+
+    auto plane3 = GameObject::createGameObject(device);
+    plane3.setModel(planeModel);
+    plane3.transform.rotation.x = pi<float> / 2;
+    plane3.transform.translation.z = 10.f;
+    plane3.transform.translation.y = 1.f;
+    gameObjects.emplace(plane3.getId(), std::move(plane3));
 
     /*std::vector<glm::vec3> lightColors{
       {1.f, .1f, .1f},

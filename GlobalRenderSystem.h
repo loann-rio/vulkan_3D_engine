@@ -19,11 +19,15 @@ public:
 	template <class T> static GlobalRenderSystem create(Device& device, VkRenderPass renderPass,
 		VkDescriptorSetLayout globalSetLayout, const std::string& vertFilepath, const std::string& fragFilepath);
 
+	template <class T> static GlobalRenderSystem createDepth(Device& device, VkRenderPass renderPass, 
+		VkDescriptorSetLayout globalSetLayout, const std::string& vertFilepath, const std::string& fragFilepath); 
+
 	GlobalRenderSystem(Device& device, VkRenderPass renderPass, 
 		VkDescriptorSetLayout globalSetLayout, std::vector<VkDescriptorType> bindings, 
 		const std::string& vertFilepath, const std::string& fragFilepath,
 		std::string modelType,
-		std::vector<VkVertexInputBindingDescription> bindingDescription, std::vector<VkVertexInputAttributeDescription> attributeDescription
+		std::vector<VkVertexInputBindingDescription> bindingDescription, std::vector<VkVertexInputAttributeDescription> attributeDescription,
+		bool isShadow = false
 	);
 
 	~GlobalRenderSystem();
@@ -53,6 +57,9 @@ private:
 	VkPipelineLayout GlTFPipelineLayout;
 
 	const std::string modelType;
+	const bool isShadow = false;
+
+	
 };
 
 template<class T>
@@ -69,5 +76,21 @@ inline GlobalRenderSystem GlobalRenderSystem::create(Device& device, VkRenderPas
 		vertFilepath, fragFilepath, 
 		modelType,
 		bindingDescription, attributeDescription
+	);
+}
+
+template<class T>
+inline GlobalRenderSystem GlobalRenderSystem::createDepth(Device& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout, const std::string& vertFilepath, const std::string& fragFilepath)
+{
+	std::vector<VkVertexInputBindingDescription> bindingDescription = T::Vertex::getBindingDescriptionsShadow();
+	std::vector<VkVertexInputAttributeDescription> attributeDescription = T::Vertex::getAttributeDescriptionsShadow(); 
+	std::string modelType = T::getType(); 
+
+	return GlobalRenderSystem( 
+		device, renderPass,
+		globalSetLayout, {},
+		vertFilepath, fragFilepath,
+		modelType, 
+		bindingDescription, attributeDescription , true
 	);
 }

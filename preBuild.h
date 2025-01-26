@@ -24,7 +24,7 @@ struct terrainType {
 /// <param name="color"></param>
 /// <returns> pointer to a new model </returns>
 /// 
-static std::unique_ptr<Model> createPlane(Device& device, const unsigned int detail, const float sizePlane, glm::vec3 color) {
+static std::unique_ptr<Model> createPlane(Device& device, const unsigned int detail, const float sizePlane, glm::vec3 color, const char* path = "textures/floor.jpg") {
     Model::Builder modelBuilder{};
 
     for (unsigned int i = 0; i < detail + 1; i++) {
@@ -89,7 +89,7 @@ static std::unique_ptr<Model> createPlane(Device& device, const unsigned int det
     }
 
 
-    return std::make_unique<Model>(device, modelBuilder, "textures/floor.jpg");
+    return std::make_unique<Model>(device, modelBuilder, path);
 }
 
 /*static std::unique_ptr<Model> createPlane1(Device& device, const int detail, const float sizePlane, glm::vec3 color) {

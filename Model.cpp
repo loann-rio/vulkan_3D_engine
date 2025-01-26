@@ -167,6 +167,24 @@ std::vector<VkVertexInputAttributeDescription> Model::Vertex::getAttributeDescri
 	return attributeDescriptions;
 }
 
+std::vector<VkVertexInputBindingDescription> Model::Vertex::getBindingDescriptionsShadow()
+{
+	std::vector<VkVertexInputBindingDescription> bindingDescription(1);
+	bindingDescription[0].binding = 0;
+	bindingDescription[0].stride = sizeof(Vertex);
+	bindingDescription[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+	return bindingDescription;
+}
+
+std::vector<VkVertexInputAttributeDescription> Model::Vertex::getAttributeDescriptionsShadow()
+{
+	std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
+
+	attributeDescriptions.push_back({ 0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0 }); // offsetof(Vertex, position) });
+	
+	return attributeDescriptions;
+}
+
 void Model::Builder::loadOBJModel(const std::string& filepath)
 {
 	tinyobj::attrib_t attrib;

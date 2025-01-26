@@ -28,9 +28,16 @@ void Swap_chain::init()
 {
     createSwapChain();
     createImageViews();
+
     createRenderPass();
-    createDepthResources();
+    createRenderDepthPass();
+
+    createDepthResources(depthImages, depthImageMemorys, depthImageViews);
+    createDepthResources(shadowDepthImages, shadowDepthImageMemorys, shadowDepthImageViews);
+
     createFramebuffers();
+    createRenderDepthFramebuffers();
+
     createSyncObjects();
 }
 
@@ -51,8 +58,22 @@ Swap_chain::~Swap_chain() {
         vkFreeMemory(device.device(), depthImageMemorys[i], nullptr);
     }
 
+    for (int i = 0; i < shadowDepthImages.size(); i++) {
+        vkDestroyImageView(device.device(), shadowDepthImageViews[i], nullptr);
+        vkDestroyImage(device.device(), shadowDepthImages[i], nullptr);
+        vkFreeMemory(device.device(), shadowDepthImageMemorys[i], nullptr);
+    }
+
     for (auto framebuffer : swapChainFramebuffers) {
         vkDestroyFramebuffer(device.device(), framebuffer, nullptr);
+    }
+
+    for (auto framebuffer : depthFramebuffers) {
+        vkDestroyFramebuffer(device.device(), framebuffer, nullptr);
+    }
+
+    if (renderDepthPass != nullptr) {
+        vkDestroyRenderPass(device.device(), renderDepthPass, nullptr);
     }
 
     vkDestroyRenderPass(device.device(), renderPass, nullptr);
@@ -84,55 +105,99 @@ VkResult Swap_chain::acquireNextImage(uint32_t* imageIndex) {
     return result;
 }
 
-VkResult Swap_chain::submitCommandBuffers(
-    const VkCommandBuffer* buffers, uint32_t* imageIndex) {
-
-    if (imagesInFlight[*imageIndex] != VK_NULL_HANDLE) {
-        vkWaitForFences(device.device(), 1, &imagesInFlight[*imageIndex], VK_TRUE, UINT64_MAX);
-    }
-
-    imagesInFlight[*imageIndex] = inFlightFences[currentFrame];
-
-    VkSubmitInfo submitInfo = {};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-    VkSemaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrame] };
-    VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-    submitInfo.waitSemaphoreCount = 1;
-    submitInfo.pWaitSemaphores = waitSemaphores;
-    submitInfo.pWaitDstStageMask = waitStages;
-
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = buffers;
-
-    VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[currentFrame] };
-    submitInfo.signalSemaphoreCount = 1;
-    submitInfo.pSignalSemaphores = signalSemaphores;
-
-    vkResetFences(device.device(), 1, &inFlightFences[currentFrame]);
-    if (vkQueueSubmit(device.graphicsQueue(), 1, &submitInfo, inFlightFences[currentFrame]) !=
-        VK_SUCCESS) {
-        throw std::runtime_error("failed to submit draw command buffer!");
-    }
-
-    VkPresentInfoKHR presentInfo = {};
-    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
-    presentInfo.waitSemaphoreCount = 1;
-    presentInfo.pWaitSemaphores = signalSemaphores;
-
-    VkSwapchainKHR swapChains[] = { swapChain };
-    presentInfo.swapchainCount = 1;
-    presentInfo.pSwapchains = swapChains;
-
-    presentInfo.pImageIndices = imageIndex;
-
-    auto result = vkQueuePresentKHR(device.presentQueue(), &presentInfo);
-
-    currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-
-    return result;
-}
+//VkResult Swap_chain::submitCommandBuffers(
+//    const VkCommandBuffer* buffers, uint32_t* imageIndex) {
+//
+//    if (imagesInFlight[*imageIndex] != VK_NULL_HANDLE) {
+//        vkWaitForFences(device.device(), 1, &imagesInFlight[*imageIndex], VK_TRUE, UINT64_MAX);
+//    }
+//
+//    imagesInFlight[*imageIndex] = inFlightFences[currentFrame];
+//
+//    VkSubmitInfo submitInfo = {};
+//    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+//
+//    VkSemaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrame] };
+//    VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+//    submitInfo.waitSemaphoreCount = 1;
+//    submitInfo.pWaitSemaphores = waitSemaphores;
+//    submitInfo.pWaitDstStageMask = waitStages;
+//
+//    submitInfo.commandBufferCount = 1;
+//    submitInfo.pCommandBuffers = buffers;
+//
+//    VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[currentFrame] };
+//    submitInfo.signalSemaphoreCount = 1;
+//    submitInfo.pSignalSemaphores = signalSemaphores;
+//
+//    vkResetFences(device.device(), 1, &inFlightFences[currentFrame]);
+//    if (vkQueueSubmit(device.graphicsQueue(), 1, &submitInfo, inFlightFences[currentFrame]) !=
+//        VK_SUCCESS) {
+//        throw std::runtime_error("failed to submit draw command buffer!");
+//    }
+//
+//    VkPresentInfoKHR presentInfo = {};
+//    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+//
+//    presentInfo.waitSemaphoreCount = 1;
+//    presentInfo.pWaitSemaphores = signalSemaphores;
+//
+//    VkSwapchainKHR swapChains[] = { swapChain };
+//    presentInfo.swapchainCount = 1;
+//    presentInfo.pSwapchains = swapChains;
+//
+//    presentInfo.pImageIndices = imageIndex;
+//
+//    auto result = vkQueuePresentKHR(device.presentQueue(), &presentInfo);
+//
+//    currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+//
+//    return result;
+//}
+//
+//VkResult Swap_chain::submitDepthCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex)
+//{
+//
+//    // Wait for the fence of the current frame if it's in use
+//    if (imagesInFlight[*imageIndex] != VK_NULL_HANDLE) {
+//        vkWaitForFences(device.device(), 1, &imagesInFlight[*imageIndex], VK_TRUE, UINT64_MAX);
+//    }
+//
+//    imagesInFlight[*imageIndex] = inFlightFences[currentFrame]; 
+//
+//    VkSubmitInfo submitInfo = {};
+//    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+//    submitInfo.commandBufferCount = 1; 
+//    submitInfo.pCommandBuffers = buffers; 
+//
+//    VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[currentFrame] }; 
+//    submitInfo.signalSemaphoreCount = 1; 
+//    submitInfo.pSignalSemaphores = signalSemaphores; 
+//
+//    vkResetFences(device.device(), 1, &inFlightFences[currentFrame]);
+//    if (vkQueueSubmit(device.graphicsQueue(), 1, &submitInfo, inFlightFences[currentFrame]) !=
+//        VK_SUCCESS) {
+//        throw std::runtime_error("failed to submit draw command buffer!");
+//    }
+//
+//    VkPresentInfoKHR presentInfo = {};
+//    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+//
+//    presentInfo.waitSemaphoreCount = 1;
+//    presentInfo.pWaitSemaphores = signalSemaphores;
+//
+//    VkSwapchainKHR swapChains[] = { swapChain };
+//    presentInfo.swapchainCount = 1;
+//    presentInfo.pSwapchains = swapChains;
+//
+//    presentInfo.pImageIndices = imageIndex;
+//
+//    auto result = vkQueuePresentKHR(device.presentQueue(), &presentInfo);
+//
+//    currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+//
+//    return result;
+//}
 
 
 void Swap_chain::createSwapChain() {
@@ -286,6 +351,48 @@ void Swap_chain::createRenderPass() {
 
 }
 
+void Swap_chain::createRenderDepthPass()
+{
+    VkAttachmentDescription depthAttachment{};
+    depthAttachment.format = findDepthFormat();
+    depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE; // Store depth results
+    depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+    VkAttachmentReference depthAttachmentRef{};
+    depthAttachmentRef.attachment = 0;
+    depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+    VkSubpassDescription subpass{};
+    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpass.pDepthStencilAttachment = &depthAttachmentRef;
+
+    VkSubpassDependency dependency{};
+    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependency.dstSubpass = 0;
+    dependency.srcStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    dependency.srcAccessMask = 0;
+    dependency.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    dependency.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+    VkRenderPassCreateInfo renderPassInfo{};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    renderPassInfo.attachmentCount = 1;
+    renderPassInfo.pAttachments = &depthAttachment;
+    renderPassInfo.subpassCount = 1;
+    renderPassInfo.pSubpasses = &subpass;
+    renderPassInfo.dependencyCount = 1;
+    renderPassInfo.pDependencies = &dependency;
+
+    if (vkCreateRenderPass(device.device(), &renderPassInfo, nullptr, &renderDepthPass) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create pre-render depth pass!");
+    }
+}
+
 void Swap_chain::createFramebuffers() {
     swapChainFramebuffers.resize(imageCount());
     for (size_t i = 0; i < imageCount(); i++) {
@@ -311,16 +418,37 @@ void Swap_chain::createFramebuffers() {
     }
 }
 
-void Swap_chain::createDepthResources() {
+void Swap_chain::createRenderDepthFramebuffers() {
+    depthFramebuffers.resize(imageCount());
+    for (size_t i = 0; i < imageCount(); i++) {
+        VkFramebufferCreateInfo framebufferInfo{};
+        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebufferInfo.renderPass = renderDepthPass;
+        framebufferInfo.attachmentCount = 1;
+        framebufferInfo.pAttachments = &shadowDepthImageViews[i]; // Depth only
+        framebufferInfo.width = swapChainExtent.width;
+        framebufferInfo.height = swapChainExtent.height;
+        framebufferInfo.layers = 1;
+
+        if (vkCreateFramebuffer(device.device(), &framebufferInfo, nullptr, &depthFramebuffers[i]) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create pre-render depth framebuffer!");
+        }
+    }
+}
+
+
+void Swap_chain::createDepthResources(std::vector<VkImage>& image, std::vector<VkDeviceMemory>& imageMemory, std::vector<VkImageView>& imageView) {
     VkFormat depthFormat = findDepthFormat();
     swapChainDepthFormat = depthFormat;
     VkExtent2D swapChainExtent = getSwapChainExtent();
 
-    depthImages.resize(imageCount());
-    depthImageMemorys.resize(imageCount());
-    depthImageViews.resize(imageCount());
+    image.resize(imageCount());
+    imageMemory.resize(imageCount());
+    imageView.resize(imageCount());
 
-    for (int i = 0; i < depthImages.size(); i++) {
+    std::cout << "image count = " << imageCount() << "\n";
+
+    for (int i = 0; i < image.size(); i++) {
         VkImageCreateInfo imageInfo{};
         imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
         imageInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -341,12 +469,12 @@ void Swap_chain::createDepthResources() {
         device.createImageWithInfo(
             imageInfo,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            depthImages[i],
-            depthImageMemorys[i]);
+            image[i],
+            imageMemory[i]);
 
         VkImageViewCreateInfo viewInfo{};
         viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        viewInfo.image = depthImages[i];
+        viewInfo.image = image[i];
         viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
         viewInfo.format = depthFormat;
         viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
@@ -355,7 +483,7 @@ void Swap_chain::createDepthResources() {
         viewInfo.subresourceRange.baseArrayLayer = 0;
         viewInfo.subresourceRange.layerCount = 1;
 
-        if (vkCreateImageView(device.device(), &viewInfo, nullptr, &depthImageViews[i]) != VK_SUCCESS) {
+        if (vkCreateImageView(device.device(), &viewInfo, nullptr, &imageView[i]) != VK_SUCCESS) {
             throw std::runtime_error("failed to create texture image view!");
         }
     }
@@ -440,4 +568,94 @@ VkFormat Swap_chain::findDepthFormat() {
         { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
         VK_IMAGE_TILING_OPTIMAL,
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+}
+
+VkResult Swap_chain::submitDepthAndMainCommandBuffers(
+    const VkCommandBuffer* depthCommandBuffer,
+    const VkCommandBuffer* mainCommandBuffer,
+    uint32_t* imageIndex)
+{
+    // Wait for the fence of the current frame if it's in use
+    if (imagesInFlight[*imageIndex] != VK_NULL_HANDLE) {
+        vkWaitForFences(device.device(), 1, &imagesInFlight[*imageIndex], VK_TRUE, UINT64_MAX);
+    }
+
+    imagesInFlight[*imageIndex] = inFlightFences[currentFrame];
+
+    // Create the semaphore for depth pass signaling
+    VkSemaphore depthFinishedSemaphore;
+    VkSemaphoreCreateInfo semaphoreInfo{};
+    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    if (vkCreateSemaphore(device.device(), &semaphoreInfo, nullptr, &depthFinishedSemaphore) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create depth semaphore!");
+    }
+
+    // Submit Depth Pass
+    VkSubmitInfo depthSubmitInfo{};
+    depthSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    depthSubmitInfo.commandBufferCount = 1;
+    depthSubmitInfo.pCommandBuffers = depthCommandBuffer;
+
+    // Signal semaphore after depth pass
+    depthSubmitInfo.signalSemaphoreCount = 1;
+    depthSubmitInfo.pSignalSemaphores = &depthFinishedSemaphore;
+
+    VkSemaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrame] };
+    VkPipelineStageFlags depthWaitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+    depthSubmitInfo.waitSemaphoreCount = 1;
+    depthSubmitInfo.pWaitSemaphores = waitSemaphores;
+    depthSubmitInfo.pWaitDstStageMask = depthWaitStages;
+
+
+    vkResetFences(device.device(), 1, &inFlightFences[currentFrame]);
+    if (vkQueueSubmit(device.graphicsQueue(), 1, &depthSubmitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
+        throw std::runtime_error("failed to submit depth command buffer!");
+    }
+
+    // Submit Main Pass
+    VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT };
+
+    VkSubmitInfo mainSubmitInfo{};
+    mainSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    mainSubmitInfo.commandBufferCount = 1;
+    mainSubmitInfo.pCommandBuffers = mainCommandBuffer;
+
+    // Wait for the depth pass to finish
+    mainSubmitInfo.waitSemaphoreCount = 1;
+    mainSubmitInfo.pWaitSemaphores = &depthFinishedSemaphore;
+    mainSubmitInfo.pWaitDstStageMask = waitStages;
+
+    // Signal the render finished semaphore for presentation
+    VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[currentFrame] };
+    mainSubmitInfo.signalSemaphoreCount = 1;
+    mainSubmitInfo.pSignalSemaphores = signalSemaphores;
+
+    if (vkQueueSubmit(device.graphicsQueue(), 1, &mainSubmitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
+        throw std::runtime_error("failed to submit main command buffer!");
+    }
+
+    // Present the swapchain image
+    VkPresentInfoKHR presentInfo{};
+    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+    presentInfo.waitSemaphoreCount = 1;
+    presentInfo.pWaitSemaphores = signalSemaphores;
+
+    VkSwapchainKHR swapChains[] = { swapChain };
+    presentInfo.swapchainCount = 1;
+    presentInfo.pSwapchains = swapChains;
+    presentInfo.pImageIndices = imageIndex;
+
+    auto result = vkQueuePresentKHR(device.presentQueue(), &presentInfo);
+
+    vkQueueWaitIdle(device.presentQueue()); 
+
+    // Clean up the depth semaphore
+    vkDestroySemaphore(device.device(), depthFinishedSemaphore, nullptr);
+
+    // Increment the current frame
+    currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+
+    return result;
 }
