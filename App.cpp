@@ -261,12 +261,20 @@ void App::loadGameObjects() {
     Lowpoly_City.setModel(viking_room);
     gameObjects.emplace(Lowpoly_City.getId(), std::move(Lowpoly_City));
 
-    std::shared_ptr<GlTFModel::ModelGltf> damagedHelmet = GlTFModel::createModelFromFile(device, "model/2.0/damagedhelmet/gltf/damagedhelmet.gltf");
+   /* std::shared_ptr<GlTFModel::ModelGltf> damagedHelmet = GlTFModel::createModelFromFile(device, "model/2.0/damagedhelmet/gltf/damagedhelmet.gltf");
     auto godh = GameObject::createGameObject(device);
     godh.transform.rotation = { pi<float> / 2, pi<float>, 0 };
     godh.transform.translation = { 7, 1, 5 };
     godh.transform.scale = { 0.5f, 0.5f, 0.5f };
     godh.setModel(damagedHelmet);
+    gameObjects.emplace(godh.getId(), std::move(godh));*/
+
+    std::shared_ptr<GlTFModel::ModelGltf> spotlight = GlTFModel::createModelFromFile(device, "model/spotlight/scene.gltf");
+    auto godh = GameObject::createGameObject(device);
+    godh.transform.rotation = { pi<float> / 2, pi<float>, 0 };
+    godh.transform.translation = { 7, 1, 5 };
+    godh.transform.scale = { 0.5f, 0.5f, 0.5f };
+    godh.setModel(spotlight);
     gameObjects.emplace(godh.getId(), std::move(godh));
 
     std::shared_ptr<Model> plane = createPlane(device, 10, 10, {0, 0, 0});

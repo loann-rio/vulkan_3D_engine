@@ -88,6 +88,12 @@ void GlobalRenderSystem::createPipeline(VkRenderPass renderPass, const std::stri
 	pipelineConfig.renderPass = renderPass;
 	pipelineConfig.pipelineLayout = objPipelineLayout;
 
+	if (fragFilepath.empty()) {
+		pipelineConfig.rasterizationInfo.depthBiasEnable = VK_TRUE;
+		pipelineConfig.rasterizationInfo.depthBiasConstantFactor = 4.0f;
+		pipelineConfig.rasterizationInfo.depthBiasSlopeFactor = 1.5f;
+	}
+
 	objPipeline = std::make_unique<Pipeline>(
 		device,
 		vertFilepath,
