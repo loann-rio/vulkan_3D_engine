@@ -17,11 +17,8 @@ Swap_chain::Swap_chain(Device& deviceRef, VkExtent2D windowExtent)
 }
 
 Swap_chain::Swap_chain(Device& deviceRef, VkExtent2D windowExtent, std::shared_ptr<Swap_chain> previous) 
-    : device{ deviceRef }, windowExtent{ windowExtent }, oldSwapChain{ previous }
-{
+    : device{ deviceRef }, windowExtent{ windowExtent }, oldSwapChain{ previous } {
     init();
-
-    //oldSwapChain = nullptr;
 }
 
 void Swap_chain::init()
@@ -33,10 +30,10 @@ void Swap_chain::init()
     createRenderDepthPass();
 
     createDepthResources(depthImages, depthImageMemorys, depthImageViews);
-    createDepthResources(shadowDepthImages, shadowDepthImageMemorys, shadowDepthImageViews);
+    createDepthResources(shadowDepthImages, shadowImageMemorys, shadowDepthImageViews);
 
     createFramebuffers();
-    createRenderDepthFramebuffers();
+    createDepthbuffers();
 
     createSyncObjects();
 }
@@ -61,7 +58,12 @@ Swap_chain::~Swap_chain() {
     for (int i = 0; i < shadowDepthImages.size(); i++) {
         vkDestroyImageView(device.device(), shadowDepthImageViews[i], nullptr);
         vkDestroyImage(device.device(), shadowDepthImages[i], nullptr);
-        vkFreeMemory(device.device(), shadowDepthImageMemorys[i], nullptr);
+        
+        vkFreeMemory(device.device(), shadowImageMemorys[i], nullptr);
+    }
+
+    for (int i = 0; i < shadowDepthSampler.size(); i++) {
+        vkDestroySampler(device.device(), shadowDepthSampler[i], nullptr);
     }
 
     for (auto framebuffer : swapChainFramebuffers) {
@@ -198,7 +200,6 @@ VkResult Swap_chain::acquireNextImage(uint32_t* imageIndex) {
 //
 //    return result;
 //}
-
 
 void Swap_chain::createSwapChain() {
     SwapChainSupportDetails swapChainSupport = device.getSwapChainSupport();
@@ -360,8 +361,8 @@ void Swap_chain::createRenderDepthPass()
     depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE; // Store depth results
     depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    depthAttachment.initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    depthAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     VkAttachmentReference depthAttachmentRef{};
     depthAttachmentRef.attachment = 0;
@@ -369,15 +370,17 @@ void Swap_chain::createRenderDepthPass()
 
     VkSubpassDescription subpass{};
     subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpass.colorAttachmentCount = 0; 
     subpass.pDepthStencilAttachment = &depthAttachmentRef;
 
     VkSubpassDependency dependency{};
     dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-    dependency.dstSubpass = 0;
-    dependency.srcStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    dependency.srcAccessMask = 0;
-    dependency.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    dependency.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    dependency.dstSubpass = 0;  // The first subpass
+    dependency.srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;  // Fragment shader reads the image
+    dependency.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;  // Depth attachment write
+    dependency.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;  // The image is being read in the fragment shader 
+    dependency.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;  // Depth attachment write
+    dependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
     VkRenderPassCreateInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -418,7 +421,7 @@ void Swap_chain::createFramebuffers() {
     }
 }
 
-void Swap_chain::createRenderDepthFramebuffers() {
+void Swap_chain::createDepthbuffers() {
     depthFramebuffers.resize(imageCount());
     for (size_t i = 0; i < imageCount(); i++) {
         VkFramebufferCreateInfo framebufferInfo{};
@@ -430,12 +433,15 @@ void Swap_chain::createRenderDepthFramebuffers() {
         framebufferInfo.height = swapChainExtent.height;
         framebufferInfo.layers = 1;
 
-        if (vkCreateFramebuffer(device.device(), &framebufferInfo, nullptr, &depthFramebuffers[i]) != VK_SUCCESS) {
+        if (vkCreateFramebuffer(
+            device.device(), 
+            &framebufferInfo, 
+            nullptr, 
+            &depthFramebuffers[i]) != VK_SUCCESS) {
             throw std::runtime_error("failed to create pre-render depth framebuffer!");
         }
     }
 }
-
 
 void Swap_chain::createDepthResources(std::vector<VkImage>& image, std::vector<VkDeviceMemory>& imageMemory, std::vector<VkImageView>& imageView) {
     VkFormat depthFormat = findDepthFormat();
@@ -445,8 +451,7 @@ void Swap_chain::createDepthResources(std::vector<VkImage>& image, std::vector<V
     image.resize(imageCount());
     imageMemory.resize(imageCount());
     imageView.resize(imageCount());
-
-    std::cout << "image count = " << imageCount() << "\n";
+    shadowDepthSampler.resize(imageCount());
 
     for (int i = 0; i < image.size(); i++) {
         VkImageCreateInfo imageInfo{};
@@ -460,17 +465,18 @@ void Swap_chain::createDepthResources(std::vector<VkImage>& image, std::vector<V
         imageInfo.format = depthFormat;
         imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
         imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+        imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT; 
         imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
         imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
         imageInfo.flags = 0;
         imageInfo.pNext = NULL;
 
-        device.createImageWithInfo(
+        device.createImageWithInfo( 
             imageInfo,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             image[i],
             imageMemory[i]);
+       
 
         VkImageViewCreateInfo viewInfo{};
         viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -486,6 +492,32 @@ void Swap_chain::createDepthResources(std::vector<VkImage>& image, std::vector<V
         if (vkCreateImageView(device.device(), &viewInfo, nullptr, &imageView[i]) != VK_SUCCESS) {
             throw std::runtime_error("failed to create texture image view!");
         }
+
+        VkSamplerCreateInfo samplerInfo{};
+        samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        samplerInfo.magFilter = VK_FILTER_LINEAR;
+        samplerInfo.minFilter = VK_FILTER_LINEAR;
+        samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerInfo.anisotropyEnable = VK_FALSE;
+        samplerInfo.maxAnisotropy = device.properties.limits.maxSamplerAnisotropy;
+        samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+        samplerInfo.unnormalizedCoordinates = VK_FALSE;
+        samplerInfo.compareEnable = VK_TRUE;
+        samplerInfo.compareOp = VK_COMPARE_OP_LESS;
+
+        samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+        samplerInfo.mipLodBias = 0.0f;
+        samplerInfo.minLod = 0.0f;
+        samplerInfo.maxLod = 100.0f;
+
+        if (vkCreateSampler(device.device(), &samplerInfo, nullptr, &shadowDepthSampler[i]) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create texture sampler!");
+        }
+
+        device.transitionImageLayout(image[i], depthFormat,
+            VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1);
     }
 }
 
@@ -658,4 +690,9 @@ VkResult Swap_chain::submitDepthAndMainCommandBuffers(
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 
     return result;
+}
+
+void Swap_chain::transitionDepthImageLayout(VkCommandBuffer& depthCommandBuffer, int depthFrameIndex, VkImageLayout oldLayout, VkImageLayout newLayout)
+{
+    device.transitionImageLayout(shadowDepthImages[depthFrameIndex], swapChainDepthFormat, oldLayout, newLayout, 1);
 }

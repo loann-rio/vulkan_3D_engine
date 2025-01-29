@@ -19,6 +19,10 @@ layout(set = 0, binding = 0) uniform GlobalUbo {
 	mat4 projection;
 	mat4 view;
 	mat4 invView;
+
+	mat4 lightProjection;
+	mat4 lightView;
+
 	vec4 ambientLightColor;
 	PointLight pointLight[10];
 	vec4 globalLightDir;
@@ -33,6 +37,6 @@ layout(push_constant) uniform Push {
 
 
 void main() {
-	gl_Position = vec4(position.xy, 0.0, 1.0);
+	gl_Position = vec4(position.x, -1 * position.y, 0.0, 1.0);
 	texCoord = uv;
 }

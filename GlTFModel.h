@@ -296,7 +296,7 @@ class GlTFModel
 		void createVertexBuffers(LoaderInfo loaderInfo);
 		void createIndexBuffers(LoaderInfo loaderInfo);
 		static std::vector<VkDescriptorType> getDescriptorType();
-		static std::string getType() { return "gltf"; }
+		static int getModelType() { return 2; }
 
 		const uint16_t descriptorSetIndex = 1;
 

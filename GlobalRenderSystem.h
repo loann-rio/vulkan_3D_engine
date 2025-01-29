@@ -25,7 +25,7 @@ public:
 	GlobalRenderSystem(Device& device, VkRenderPass renderPass, 
 		VkDescriptorSetLayout globalSetLayout, std::vector<VkDescriptorType> bindings, 
 		const std::string& vertFilepath, const std::string& fragFilepath,
-		std::string modelType,
+		ModelType modelType,
 		std::vector<VkVertexInputBindingDescription> bindingDescription, std::vector<VkVertexInputAttributeDescription> attributeDescription,
 		bool isShadow = false
 	);
@@ -37,6 +37,7 @@ public:
 	GlobalRenderSystem& operator=(const GlobalRenderSystem&) = delete;
 
 	void renderGameObjects(FrameInfo& frameInfo);
+	void setType(ModelType type) { modelType = type; }
 
 private:
 
@@ -46,7 +47,7 @@ private:
 		std::vector<VkVertexInputBindingDescription> bindingDescription, 
 		std::vector<VkVertexInputAttributeDescription> attributeDescription);
 
-	void renderObjModel(FrameInfo& frameInfo, GameObject& obj);
+	void renderModel(FrameInfo& frameInfo, GameObject& obj);
 
 	Device& device;
 
@@ -56,10 +57,9 @@ private:
 	std::unique_ptr<Pipeline> GlTFPipeline;
 	VkPipelineLayout GlTFPipelineLayout;
 
-	const std::string modelType;
+	ModelType modelType = UNDEFINED_MODEL;
 	const bool isShadow = false;
-
-	
+		
 };
 
 template<class T>
@@ -68,7 +68,7 @@ inline GlobalRenderSystem GlobalRenderSystem::create(Device& device, VkRenderPas
 	std::vector<VkDescriptorType> bindings = T::getDescriptorType();
 	std::vector<VkVertexInputBindingDescription> bindingDescription = T::Vertex::getBindingDescriptions();
 	std::vector<VkVertexInputAttributeDescription> attributeDescription = T::Vertex::getAttributeDescriptions();
-	std::string modelType = T::getType();
+	ModelType modelType = static_cast<ModelType>(T::getModelType());
 
 	return GlobalRenderSystem(
 		device, renderPass, 
@@ -84,13 +84,13 @@ inline GlobalRenderSystem GlobalRenderSystem::createDepth(Device& device, VkRend
 {
 	std::vector<VkVertexInputBindingDescription> bindingDescription = T::Vertex::getBindingDescriptionsShadow();
 	std::vector<VkVertexInputAttributeDescription> attributeDescription = T::Vertex::getAttributeDescriptionsShadow(); 
-	std::string modelType = T::getType(); 
+	ModelType modelType = static_cast<ModelType>(T::getModelType());
 
 	return GlobalRenderSystem( 
 		device, renderPass,
 		globalSetLayout, {},
 		vertFilepath, fragFilepath,
-		modelType, 
+		modelType,
 		bindingDescription, attributeDescription , true
 	);
 }

@@ -47,20 +47,14 @@ void Renderer::recreateSwapChain()
 	}
 }
 
+
+/// <summary>
+/// create command buffer
+/// </summary>
+/// <returns></returns>
 VkCommandBuffer Renderer::beginFrame()
 {
 	assert(!isFrameStarted && "can't call beginframe while a frame is already in progress");
-
-	/*auto result = swapChain->acquireNextImage(&currentImageIndex);
-
-	if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-		recreateSwapChain();
-		return nullptr;
-	}
-
-	if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-		throw std::runtime_error("failed to acquire swap chain image");
-	}*/
 
 	isFrameStarted = true;
 
@@ -100,17 +94,6 @@ void Renderer::endFrame()
 
 VkCommandBuffer Renderer::beginDepthFrame()
 {
-	auto result = swapChain->acquireNextImage(&currentImageIndex);
-
-	if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-		recreateSwapChain();
-		return nullptr;
-	}
-
-	if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-		throw std::runtime_error("failed to acquire swap chain image");
-	}
-
 	assert(!isDepthStarted && "can't call beginframe while a frame is already in progress"); 
 
 	isDepthStarted = true;
@@ -251,6 +234,29 @@ void Renderer::submitCommandBuffers()
 	isFrameStarted = false;
 
 	currentFrameIndex = (currentFrameIndex + 1) % Swap_chain::MAX_FRAMES_IN_FLIGHT;
+	currentDepthIndex = (currentDepthIndex + 1) % Swap_chain::MAX_FRAMES_IN_FLIGHT;
+}
+
+bool Renderer::aquireNextImage()
+{
+	auto result = swapChain->acquireNextImage(&currentImageIndex);
+
+	if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+		recreateSwapChain();
+		return false;
+	}
+
+	if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+		throw std::runtime_error("failed to acquire swap chain image");
+	}
+
+	return true;
+}
+
+void Renderer::transitionDepthImageLayout(VkCommandBuffer& commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout)
+{
+	//auto depthCommandBuffer = getCurrentDepthCommandBuffer();
+	swapChain->transitionDepthImageLayout(commandBuffer, currentDepthIndex, oldLayout, newLayout);
 }
 
 void Renderer::createCommandBuffer()

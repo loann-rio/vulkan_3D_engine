@@ -42,8 +42,8 @@ public:
     VkFormat findDepthFormat();
 
     VkResult acquireNextImage(uint32_t* imageIndex);
-    VkResult submitCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex);
-    VkResult submitDepthCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex);
+    //VkResult submitCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex);
+    //VkResult submitDepthCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex);
     VkResult submitDepthAndMainCommandBuffers(
         const VkCommandBuffer* depthCommandBuffer,
         const VkCommandBuffer* mainCommandBuffer,
@@ -53,6 +53,10 @@ public:
         return swapChain.swapChainDepthFormat == swapChainDepthFormat && 
             swapChain.swapChainImageFormat == swapChainImageFormat;
     }
+
+    VkDescriptorImageInfo getShadowImageInfo(int i) { return { shadowDepthSampler[i], shadowDepthImageViews[i], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }; }
+
+    void transitionDepthImageLayout(VkCommandBuffer& depthCommandBuffer, int depthFrameIndex, VkImageLayout oldLayout, VkImageLayout newLayout);
 
 private:
     void init();
@@ -65,7 +69,7 @@ private:
 
     // depth pass
     void createRenderDepthPass();
-    void createRenderDepthFramebuffers();
+    void createDepthbuffers();
 
 
     // Helper functions
@@ -77,23 +81,29 @@ private:
 
     VkFormat swapChainImageFormat;
     VkFormat swapChainDepthFormat;
+
     VkExtent2D swapChainExtent;
 
     std::vector<VkFramebuffer> swapChainFramebuffers;
     std::vector<VkFramebuffer> depthFramebuffers;
+
     VkRenderPass renderPass;
     VkRenderPass renderDepthPass;
 
-    std::vector<VkImage> shadowDepthImages;
-    std::vector<VkDeviceMemory> shadowDepthImageMemorys;
-    std::vector<VkImageView> shadowDepthImageViews;
 
     std::vector<VkImage> depthImages;
     std::vector<VkDeviceMemory> depthImageMemorys;
-    std::vector<VkImageView> depthImageViews;
+    std::vector<VkImageView> depthImageViews; 
+
 
     std::vector<VkImage> swapChainImages;
     std::vector<VkImageView> swapChainImageViews;
+
+    std::vector<VkImage> shadowDepthImages;
+    std::vector<VkDeviceMemory> shadowImageMemorys;
+    std::vector<VkImageView> shadowDepthImageViews;
+    std::vector<VkSampler> shadowDepthSampler;
+
 
     Device& device;
     VkExtent2D windowExtent;
@@ -103,7 +113,9 @@ private:
 
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
+
     std::vector<VkFence> inFlightFences;
     std::vector<VkFence> imagesInFlight;
+
     size_t currentFrame = 0;
 };

@@ -17,9 +17,9 @@ struct SimplePushConstantData {
 GlobalRenderSystem::GlobalRenderSystem(Device& device, VkRenderPass renderPass, 
 	VkDescriptorSetLayout globalSetLayout, std::vector<VkDescriptorType> bindings, 
 	const std::string& vertFilepath, const std::string& fragFilepath,
-	std::string modelType,
+	ModelType modelType,
 	std::vector<VkVertexInputBindingDescription> bindingDescription, std::vector<VkVertexInputAttributeDescription> attributeDescription, bool isShadow)
-	: device{ device }, modelType{ modelType }, isShadow{ isShadow }
+	: device{ device }, modelType{ modelType }, isShadow{ isShadow }   
 {
 	auto builder = DescriptorSetLayout::Builder(device);
 
@@ -48,10 +48,11 @@ void GlobalRenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout>
 	VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT // For dynamic descriptor sets
 	};
 
-	VkDescriptorSetLayoutBindingFlagsCreateInfoEXT bindingFlagsInfo = {};
+
+	/*VkDescriptorSetLayoutBindingFlagsCreateInfoEXT bindingFlagsInfo = {};
 	bindingFlagsInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT;
 	bindingFlagsInfo.bindingCount = sizeof(descriptorBindingFlags) / sizeof(descriptorBindingFlags[0]);
-	bindingFlagsInfo.pBindingFlags = descriptorBindingFlags;
+	bindingFlagsInfo.pBindingFlags = descriptorBindingFlags;*/
 
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -59,7 +60,7 @@ void GlobalRenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout>
 	pipelineLayoutInfo.pSetLayouts = descriptorSetLayout.data();
 	pipelineLayoutInfo.pushConstantRangeCount = 1;
 	pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
-	pipelineLayoutInfo.pNext = &bindingFlagsInfo;
+	//pipelineLayoutInfo.pNext = &bindingFlagsInfo;
 
 	if (vkCreatePipelineLayout(device.device(), &pipelineLayoutInfo, nullptr, &objPipelineLayout) !=
 		VK_SUCCESS) {
@@ -95,7 +96,7 @@ void GlobalRenderSystem::createPipeline(VkRenderPass renderPass, const std::stri
 	);
 }
 
-void GlobalRenderSystem::renderObjModel(FrameInfo& frameInfo, GameObject& obj)
+void GlobalRenderSystem::renderModel(FrameInfo& frameInfo, GameObject& obj)
 {
 
 	if (!isShadow) {
@@ -145,8 +146,8 @@ void GlobalRenderSystem::renderGameObjects(FrameInfo& frameInfo)
 	for (auto& kv : frameInfo.gameObjects)
 	{
 		auto& obj = kv.second;
-		if (obj.hasModel && obj.modelType == modelType)
-			renderObjModel(frameInfo, obj);
+		if (obj.modelType == modelType)
+			renderModel(frameInfo, obj);
 	}
 }
 

@@ -63,6 +63,11 @@ public:
 
 	void submitCommandBuffers();
 
+	bool aquireNextImage();
+
+	VkDescriptorImageInfo getShadowImageInfo(int i) { return swapChain->getShadowImageInfo(i); }
+
+	void transitionDepthImageLayout(VkCommandBuffer& commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout);
 
 private:
 

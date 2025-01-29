@@ -66,17 +66,34 @@ void App::run()
         uboBuffers[i]->map();
     }
 
-    auto globalSetLayout = DescriptorSetLayout::Builder(device).addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS).build();
+    auto globalSetLayout = DescriptorSetLayout::Builder(device)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+        .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .build();
 
     std::vector<VkDescriptorSet> globalDescriptorSet(Swap_chain::MAX_FRAMES_IN_FLIGHT);
     for (int i = 0; i < globalDescriptorSet.size() && i < 2; i++)
     {
         auto bufferInfo = uboBuffers[i]->descriptorInfo();
+        auto shadowInfo = renderer.getShadowImageInfo(i);
 
         DescriptorWriter(*globalSetLayout, *globalPool)
             .writeBuffer(0, &bufferInfo)
+            .writeImage(1, &shadowInfo)
             .build(globalDescriptorSet[i]);
     }
+
+    /*auto shadowSetLayout = DescriptorSetLayout::Builder(device).addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_ALL_GRAPHICS).build();
+
+    std::vector<VkDescriptorSet> shadowDescriptorSet(Swap_chain::MAX_FRAMES_IN_FLIGHT);
+    for (int i = 0; i < shadowDescriptorSet.size() && i < 2; i++)
+    {
+        auto shadowInfo = renderer.getShadowImageInfo(i);
+
+        DescriptorWriter(*shadowSetLayout, *globalPool)
+            .writeImage(0, &shadowInfo)
+            .build(shadowDescriptorSet[i]); 
+    }*/
 
     for (auto& kv : gameObjects) {
         auto& obj = kv.second;
@@ -100,9 +117,10 @@ void App::run()
         device, renderer.getDepthRenderPass(), globalSetLayout->getDescriptorSetLayout(),
         "shadowmap.vert.spv", "");
 
-    /*GlobalRenderSystem depthVisualisation = GlobalRenderSystem::createDepth<Model>(
+    GlobalRenderSystem depthVisualisation = GlobalRenderSystem::create<Model>(
         device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout(),
-        "depthView.vert.spv", "depthView.frag.spv");*/
+        "depthView.vert.spv", "depthView.frag.spv");
+    depthVisualisation.setType(QUAD_MODEL);
 
     TextOverlay textOverlay{ device, renderer.getSwapChainRenderPass() };
     textOverlay.prepareResources(*globalPool);
@@ -123,6 +141,7 @@ void App::run()
     lightSourceObject.transform.rotation.y = pi<float> *1 / 3;
 
     lightSource.setPerspectiveProjection(glm::radians(50.f), aspec, .1f, 100.0f);
+    lightSource.setViewYXZ(lightSourceObject.transform.translation, lightSourceObject.transform.rotation); 
 
     // user inputs
     KeyboardMovementController cameraController{};
@@ -155,8 +174,9 @@ void App::run()
         cameraController.moveInPlaneXZ(window.getGLFWwindow(), frameTime, viewerObject);
         camera.setViewYXZ(viewerObject.transform.translation, viewerObject.transform.rotation);
 
-        lightSource.setViewYXZ(lightSourceObject.transform.translation, lightSourceObject.transform.rotation);
+        if (!renderer.aquireNextImage()) continue;
 
+        GlobalUbo ubo{};
 
         // render depthframe
         if (auto depthCommandBuffer = renderer.beginDepthFrame()) {
@@ -164,7 +184,6 @@ void App::run()
 
             FrameInfo frameinfo{
                 depthFrameIndex,
-
                 frameTime,
                 depthCommandBuffer,
                 lightSource,
@@ -172,13 +191,16 @@ void App::run()
                 gameObjects
             };
 
-            //todo create separate ubo for light to avoid updates every frames
-            GlobalUbo ubo{}; 
-            ubo.projection = lightSource.getProjection();
-            ubo.view = lightSource.getView();
-            ubo.inverseView = lightSource.getInverseView();
+
+            ubo.projection = camera.getProjection();
+            ubo.view = camera.getView();
+            ubo.inverseView = camera.getInverseView();
+            ubo.lightProjection = lightSource.getProjection();
+            ubo.lightView = lightSource.getView();
+
             uboBuffers[depthFrameIndex]->writeToBuffer(&ubo);
             uboBuffers[depthFrameIndex]->flush();
+             
             
             // render
             renderer.beginShadowRenderPass(depthCommandBuffer);
@@ -201,13 +223,6 @@ void App::run()
                 gameObjects
             };
             
-            // update ubo
-            GlobalUbo ubo{};
-            ubo.projection = camera.getProjection();
-            ubo.view = camera.getView();
-            ubo.inverseView = camera.getInverseView();
-            uboBuffers[frameIndex]->writeToBuffer(&ubo);
-            uboBuffers[frameIndex]->flush();
             
             // update objects
             pointLightSystem.update(frameInfo, ubo, frame);
@@ -222,8 +237,11 @@ void App::run()
             pointLightSystem.render(frameInfo);
             textOverlay.renderText(frameInfo);
 
+            depthVisualisation.renderGameObjects(frameInfo);
+
             renderer.endSwapChainRenderPass(commandBuffer);
             renderer.endFrame();
+
 		}
 
         renderer.submitCommandBuffers();
@@ -271,6 +289,26 @@ void App::loadGameObjects() {
     plane3.transform.translation.z = 10.f;
     plane3.transform.translation.y = 1.f;
     gameObjects.emplace(plane3.getId(), std::move(plane3));
+
+    Model::Builder modelBuilder{};
+    modelBuilder.vertices = {
+        {{-1.0f,  1.0f, 0.f}, {0, 0, 0}, {0, 0, 0}, { 0.0f, 1.0f }}, // Top-left
+        {{-0.6f,  1.0f, 0.f}, {0, 0, 0}, {0, 0, 0}, {1.0f, 1.0f}}, // Top-right
+        {{-1.0f,  0.6f, 0.f}, {0, 0, 0}, {0, 0, 0}, {0.0f, 0.0f}}, // Bottom-left
+        {{-0.6f,  0.6f, 0.f}, {0, 0, 0}, {0, 0, 0}, {1.0f, 0.0f}}  // Bottom-right
+    };
+
+    modelBuilder.indices = {
+        0, 1, 2, // First triangle
+        2, 1, 3  // Second triangle
+    };
+
+    std::shared_ptr<Model> quad = std::make_unique<Model>(device, modelBuilder, "textures/emptyTexture.jpg");
+    auto depthView = GameObject::createGameObject(device);
+    depthView.setModel(quad);
+    depthView.setModelType(QUAD_MODEL);
+    gameObjects.emplace(depthView.getId(), std::move(depthView));
+    
 
     /*std::vector<glm::vec3> lightColors{
       {1.f, .1f, .1f},

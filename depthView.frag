@@ -16,6 +16,10 @@ layout(set = 0, binding = 0) uniform GlobalUbo {
 	mat4 projection;
 	mat4 view;
 	mat4 invView;
+
+	mat4 lightProjection;
+	mat4 lightView;
+
 	vec4 ambientLightColor;
 	PointLight pointLight[10];
 	vec4 globalLightDir;
@@ -28,10 +32,10 @@ layout(push_constant) uniform Push {
 } push;
 
 // Define the texture sampler
-layout(set = 1, binding = 1) uniform sampler2D texSampler;
+layout(set = 0, binding = 1) uniform sampler2D texSampler;
 
 
 void main() {
-	float depth = texture(texSampler, fragTexCoord).x;
+	float depth = texture(texSampler,fragTexCoord).x;
 	outColor = vec4(1.0 - (1.0 - depth) * 100.0);
 }

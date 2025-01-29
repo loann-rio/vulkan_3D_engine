@@ -70,3 +70,50 @@ GameObject GameObject::makePointLight(Device& device, float intencity, float rad
     gameObj.pointLight->LightIntencity = intencity;
     return gameObj;
 }
+
+void GameObject::createDescriptorSet(DescriptorPool& pool) const
+{
+    std::visit([&pool, &device = this->device](const auto& modelInstance) {
+        if (modelInstance) {
+            modelInstance->createDescriptorSet(pool, device);
+        }
+    }, model);
+}
+
+std::vector<VkDescriptorSet> GameObject::getDescriptorSets() const
+{
+    return std::visit([](const auto& modelInstance) -> std::vector<VkDescriptorSet> {
+        if (modelInstance) {
+            return modelInstance->getDescriptorSets();
+        }
+        return {};
+    }, model);
+}
+
+uint16_t GameObject::getDescriptorSetIndex() const
+{
+    return std::visit([](const auto& modelInstance) -> uint16_t {
+        if (modelInstance) {
+            return modelInstance->descriptorSetIndex;
+        }
+        return 1;
+    }, model);
+}
+
+void GameObject::bindModel(VkCommandBuffer& commandBuffer) const
+{
+    std::visit([&](const auto& modelInstance) {
+        if (modelInstance) {
+            modelInstance->bind(commandBuffer);
+        }
+    }, model);
+}
+
+void GameObject::drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout) const
+{
+    std::visit([&](const auto& modelInstance) {
+        if (modelInstance) {
+            modelInstance->draw(commandBuffer, GlTFPipelineLayout);
+        }
+    }, model);
+}

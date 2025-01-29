@@ -56,6 +56,7 @@ public:
 
 	bool hasTexture = false;
 	std::unique_ptr<Texture> texture;
+	void setTexture(std::unique_ptr<Texture> newTexture) { texture = std::move(newTexture); }
 
 	std::vector<VkDescriptorSet> descriptorSet{ Swap_chain::MAX_FRAMES_IN_FLIGHT };
 	void createDescriptorSet(DescriptorPool& pool, Device& device);
@@ -65,7 +66,7 @@ public:
 	void update() {};
 
 	static std::vector<VkDescriptorType> getDescriptorType() { return { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER }; }
-	static std::string getType() { return "obj"; }
+	static int getModelType() { return 1; }
 
 	const uint16_t descriptorSetIndex = 2;
 

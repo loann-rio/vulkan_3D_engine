@@ -77,6 +77,8 @@ public:
         VkImage& image,
         VkDeviceMemory& imageMemory);
 
+    void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevel);
+
     VkPhysicalDeviceProperties properties;
 
 private:
@@ -96,6 +98,10 @@ private:
     void hasGflwRequiredInstanceExtensions();
     bool checkDeviceExtensionSupport(VkPhysicalDevice device);
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
+
+    bool hasStencilComponent(VkFormat format) {
+        return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
+    }
 
     VkInstance instance;
     VkDebugUtilsMessengerEXT debugMessenger;

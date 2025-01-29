@@ -9,6 +9,10 @@ layout(set = 0, binding = 0) uniform GlobalUbo {
 	mat4 projection;
 	mat4 view;
 	mat4 invView;
+
+	mat4 lightProjection;
+	mat4 lightView;
+
 	vec4 ambientLightColor;
 	PointLight pointLight[10];
 	vec4 globalLightDir;
@@ -25,5 +29,5 @@ layout(location = 0) in vec3 position;
 void main()
 {
 	vec4 positionWorld = push.modelMatrix * vec4(position, 1.0);
-	gl_Position = ubo.projection * ubo.view * positionWorld;
+	gl_Position = ubo.lightProjection * ubo.lightView * positionWorld;
 }

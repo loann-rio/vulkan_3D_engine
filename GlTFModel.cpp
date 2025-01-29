@@ -882,8 +882,6 @@ void GlTFModel::ModelGltf::createVertexBuffers(LoaderInfo loaderInfo)
 
 	VkDeviceSize bufferSize = vertexSize * loaderInfo.vertexCount;
 	
-	std::cout << vertexSize << "\n";
-
 	Buffer stagingBuffer{
 		device,
 		vertexSize,

@@ -15,6 +15,13 @@
 #include <variant>
 #include <unordered_map>
 
+typedef enum ModelType {
+	UNDEFINED_MODEL = 0,
+	OBJ_MODEL = 1,
+	GLTF_MODEL = 2,
+	QUAD_MODEL = 3 
+};
+
 using ModelVariant = std::variant<std::shared_ptr<Model>, 
 					std::shared_ptr<GlTFModel::ModelGltf>>;
 
@@ -56,67 +63,33 @@ public:
 	glm::vec3 color{};
 
 	bool hasModel = false;
-	std::string modelType;
-
+	ModelType modelType = UNDEFINED_MODEL;
 	ModelVariant model;
 
 	std::unique_ptr<PointLightComponent> pointLight = nullptr;
 
 	template <typename T>
-	void setModel(std::shared_ptr<T> newModel) {
-		model = std::move(newModel);
-		modelType = T::getType();
-		hasModel = true;
-	}
+	void setModel(std::shared_ptr<T> newModel);
+	void setModelType(ModelType type) { modelType = type; }
 
-	void createDescriptorSet(DescriptorPool& pool) const {
-		std::visit([&pool, &device = this->device](const auto& modelInstance) {
-			if (modelInstance) {
-				modelInstance->createDescriptorSet(pool, device);
-			}
-		}, model);
-	}
+	void createDescriptorSet(DescriptorPool& pool) const;
 
-	std::vector<VkDescriptorSet> getDescriptorSets() const {
-		return std::visit([](const auto& modelInstance) -> std::vector<VkDescriptorSet> {
-			if (modelInstance) {
-				return modelInstance->getDescriptorSets();
-			}
-			return {};
-		}, model);
-	}
+	std::vector<VkDescriptorSet> getDescriptorSets() const;
+	uint16_t getDescriptorSetIndex() const;
 
-	uint16_t getDescriptorSetIndex() const {
-		return std::visit([](const auto& modelInstance) -> uint16_t {
-			if (modelInstance) {
-				return modelInstance->descriptorSetIndex;
-			}
-			return 1;
-		}, model);
-	}
-
-	void bindModel(VkCommandBuffer& commandBuffer) const {
-		std::visit([&](const auto& modelInstance) {
-			if (modelInstance) {
-				modelInstance->bind(commandBuffer);
-			}
-		}, model);
-	}
-
-	void drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout) const {
-		std::visit([&](const auto& modelInstance) {
-			if (modelInstance) {
-				modelInstance->draw(commandBuffer, GlTFPipelineLayout);
-			}
-		}, model);
-	}
-
+	void bindModel(VkCommandBuffer& commandBuffer) const;
+	void drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout) const;
 
 private:
-
 	Device& device;
-
 	GameObject(id_t obId, Device& device) : id{obId} , device{device} {}
-
 	id_t id;
 };
+
+template<typename T>
+inline void GameObject::setModel(std::shared_ptr<T> newModel)
+{
+	model = std::move(newModel);
+	modelType = static_cast<ModelType>(T::getModelType());
+	hasModel = true;
+}
