@@ -89,13 +89,13 @@
       <PreprocessorDefinitions>
       </PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\riolo\Documents\Visual Studio 2022\library\glm-1.0.1;C:\Users\riolo\Documents\Visual Studio 2022\library\stb-master;C:\Users\riolo\Documents\Visual Studio 2022\library\basis_universal-master\transcoder;C:\Users\riolo\Documents\Visual Studio 2022\library\glfw-3.4.bin.WIN64\include;C:\Users\riolo\Documents\Visual Studio 2022\library\tinyobjloader-release;C:\VulkanSDK\1.3.290.0\Include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\riolo\Desktop\introVulkan\external\imgui-master\backends;C:\Users\riolo\Desktop\introVulkan\external\imgui-master;C:\Users\riolo\Documents\Visual Studio 2022\library\glm-1.0.1;C:\Users\riolo\Documents\Visual Studio 2022\library\stb-master;C:\Users\riolo\Documents\Visual Studio 2022\library\basis_universal-master\transcoder;C:\Users\riolo\Documents\Visual Studio 2022\library\glfw-3.4.bin.WIN64\include;C:\Users\riolo\Documents\Visual Studio 2022\library\tinyobjloader-release;C:\VulkanSDK\1.3.290.0\Include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\riolo\Documents\Visual Studio 2022\library\basis_universal-master\transcoder;C:\Users\riolo\Documents\Visual Studio 2022\library\tinyobjloader-release;C:\Users\riolo\Documents\Visual Studio 2022\library\glfw-3.4.bin.WIN64\lib-vc2022;C:\VulkanSDK\1.3.290.0\Lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\riolo\Desktop\introVulkan\external\imgui-master;C:\Users\riolo\Documents\Visual Studio 2022\library\basis_universal-master\transcoder;C:\Users\riolo\Documents\Visual Studio 2022\library\tinyobjloader-release;C:\Users\riolo\Documents\Visual Studio 2022\library\glfw-3.4.bin.WIN64\lib-vc2022;C:\VulkanSDK\1.3.290.0\Lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib; glfw3.lib;</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -127,13 +127,13 @@
       <PreprocessorDefinitions>
       </PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\riolo\Documents\Visual Studio 2022\library\glm-1.0.1;C:\Users\riolo\Documents\Visual Studio 2022\library\stb-master;C:\Users\riolo\Documents\Visual Studio 2022\library\basis_universal-master\transcoder;C:\Users\riolo\Documents\Visual Studio 2022\library\glfw-3.4.bin.WIN64\include;C:\Users\riolo\Documents\Visual Studio 2022\library\tinyobjloader-release;C:\VulkanSDK\1.3.290.0\Include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\riolo\Desktop\introVulkan\external\imgui-master\backends;C:\Users\riolo\Desktop\introVulkan\external\imgui-master;C:\Users\riolo\Documents\Visual Studio 2022\library\glm-1.0.1;C:\Users\riolo\Documents\Visual Studio 2022\library\stb-master;C:\Users\riolo\Documents\Visual Studio 2022\library\basis_universal-master\transcoder;C:\Users\riolo\Documents\Visual Studio 2022\library\glfw-3.4.bin.WIN64\include;C:\Users\riolo\Documents\Visual Studio 2022\library\tinyobjloader-release;C:\VulkanSDK\1.3.290.0\Include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\riolo\Documents\Visual Studio 2022\library\basis_universal-master\transcoder;C:\Users\riolo\Documents\Visual Studio 2022\library\tinyobjloader-release;C:\Users\riolo\Documents\Visual Studio 2022\library\glfw-3.4.bin.WIN64\lib-vc2022;C:\VulkanSDK\1.3.290.0\Lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\riolo\Desktop\introVulkan\external\imgui-master;C:\Users\riolo\Documents\Visual Studio 2022\library\basis_universal-master\transcoder;C:\Users\riolo\Documents\Visual Studio 2022\library\tinyobjloader-release;C:\Users\riolo\Documents\Visual Studio 2022\library\glfw-3.4.bin.WIN64\lib-vc2022;C:\VulkanSDK\1.3.290.0\Lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib; glfw3.lib;</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -162,10 +162,18 @@
     <ClCompile Include="App.cpp" />
     <ClCompile Include="Buffer.cpp" />
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="depthSwapChain.cpp" />
     <ClCompile Include="descriptors.cpp" />
     <ClCompile Include="Device.cpp" />
     <ClCompile Include="external\basisu\transcoder\basisu_transcoder.cpp" />
     <ClCompile Include="external\basisu\zstd\zstd.c" />
+    <ClCompile Include="external\imgui-master\backends\imgui_impl_glfw.cpp" />
+    <ClCompile Include="external\imgui-master\backends\imgui_impl_vulkan.cpp" />
+    <ClCompile Include="external\imgui-master\imgui.cpp" />
+    <ClCompile Include="external\imgui-master\imgui_demo.cpp" />
+    <ClCompile Include="external\imgui-master\imgui_draw.cpp" />
+    <ClCompile Include="external\imgui-master\imgui_tables.cpp" />
+    <ClCompile Include="external\imgui-master\imgui_widgets.cpp" />
     <ClCompile Include="Frame_info.cpp" />
     <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="GlobalRenderSystem.cpp" />
@@ -187,6 +195,7 @@
     <ClInclude Include="App.h" />
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="depthSwapChain.h" />
     <ClInclude Include="descriptors.h" />
     <ClInclude Include="Device.h" />
     <ClInclude Include="Frame_info.h" />

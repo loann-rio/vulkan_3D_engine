@@ -7,6 +7,9 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 
+// Im Gui
+#include "imgui_impl_vulkan.h"
+
 
 struct SwapChainSupportDetails {
     VkSurfaceCapabilitiesKHR capabilities;
@@ -21,6 +24,15 @@ struct QueueFamilyIndices {
     bool presentFamilyHasValue = false;
     bool isComplete() const { return graphicsFamilyHasValue && presentFamilyHasValue; }
 };
+
+static void check_vk_result(VkResult err)
+{
+    if (err == 0)
+        return;
+    fprintf(stderr, "[vulkan] Error: VkResult = %d\n", err);
+    if (err < 0)
+        abort();
+}
 
 class Device {
 
@@ -56,6 +68,8 @@ public:
     void getPhysicalFeatures(VkPhysicalDeviceFeatures* pFeatures) { vkGetPhysicalDeviceFeatures(physicalDevice, pFeatures); }
     bool isFormatSupported(const VkFormat candidate);
 
+    ImGui_ImplVulkan_InitInfo getImGuiInitInfo();
+
     // Buffer Helper Functions
     void createBuffer(
         VkDeviceSize size,
@@ -78,8 +92,11 @@ public:
         VkDeviceMemory& imageMemory);
 
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevel);
+    void transitionImageLayout(VkCommandBuffer& commandBuffer, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevel);
 
     VkPhysicalDeviceProperties properties;
+
+    Window& getWindow() { return window; }
 
 private:
     void createInstance();

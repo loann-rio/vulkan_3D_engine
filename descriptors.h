@@ -80,6 +80,8 @@ public:
 
     void resetPool();
 
+    VkDescriptorPool getPool() { return descriptorPool; }
+
 private:
     Device& device;
     VkDescriptorPool descriptorPool;

@@ -75,13 +75,40 @@
     <ClCompile Include="GlTFModel.cpp">
       <Filter>Fichiers sources</Filter>
     </ClCompile>
-    <ClCompile Include="external\basisu\transcoder\basisu_transcoder.cpp">
+    <ClCompile Include="GlobalRenderSystem.cpp">
       <Filter>Fichiers sources</Filter>
+    </ClCompile>
+    <ClCompile Include="shadowRenderer.cpp">
+      <Filter>Fichiers sources</Filter>
+    </ClCompile>
+    <ClCompile Include="external\basisu\transcoder\basisu_transcoder.cpp">
+      <Filter>Fichiers de ressources</Filter>
     </ClCompile>
     <ClCompile Include="external\basisu\zstd\zstd.c">
-      <Filter>Fichiers sources</Filter>
+      <Filter>Fichiers de ressources</Filter>
     </ClCompile>
-    <ClCompile Include="GlobalRenderSystem.cpp">
+    <ClCompile Include="external\imgui-master\backends\imgui_impl_vulkan.cpp">
+      <Filter>Fichiers de ressources</Filter>
+    </ClCompile>
+    <ClCompile Include="external\imgui-master\backends\imgui_impl_glfw.cpp">
+      <Filter>Fichiers de ressources</Filter>
+    </ClCompile>
+    <ClCompile Include="external\imgui-master\imgui.cpp">
+      <Filter>Fichiers de ressources</Filter>
+    </ClCompile>
+    <ClCompile Include="external\imgui-master\imgui_tables.cpp">
+      <Filter>Fichiers de ressources</Filter>
+    </ClCompile>
+    <ClCompile Include="external\imgui-master\imgui_demo.cpp">
+      <Filter>Fichiers de ressources</Filter>
+    </ClCompile>
+    <ClCompile Include="external\imgui-master\imgui_draw.cpp">
+      <Filter>Fichiers de ressources</Filter>
+    </ClCompile>
+    <ClCompile Include="external\imgui-master\imgui_widgets.cpp">
+      <Filter>Fichiers de ressources</Filter>
+    </ClCompile>
+    <ClCompile Include="depthSwapChain.cpp">
       <Filter>Fichiers sources</Filter>
     </ClCompile>
   </ItemGroup>
@@ -143,19 +170,25 @@
     <ClInclude Include="ObjModel.h">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
-    <ClInclude Include="stb_image.h">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
     <ClInclude Include="GlTFModel.h">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
-    <ClInclude Include="tiny_gltf.h">
+    <ClInclude Include="GlobalRenderSystem.h">
+      <Filter>Fichiers d%27en-tête</Filter>
+    </ClInclude>
+    <ClInclude Include="shadowRenderer.h">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
     <ClInclude Include="json.hpp">
-      <Filter>Fichiers d%27en-tête</Filter>
+      <Filter>Fichiers de ressources</Filter>
     </ClInclude>
-    <ClInclude Include="GlobalRenderSystem.h">
+    <ClInclude Include="tiny_gltf.h">
+      <Filter>Fichiers de ressources</Filter>
+    </ClInclude>
+    <ClInclude Include="stb_image.h">
+      <Filter>Fichiers de ressources</Filter>
+    </ClInclude>
+    <ClInclude Include="depthSwapChain.h">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
   </ItemGroup>
@@ -185,6 +218,15 @@
       <Filter>shaders</Filter>
     </None>
     <None Include="GlTFshader.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shadowmap.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="depthView.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="depthView.vert">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>

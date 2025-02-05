@@ -36,7 +36,7 @@ public:
 	
 	GlobalRenderSystem& operator=(const GlobalRenderSystem&) = delete;
 
-	void renderGameObjects(FrameInfo& frameInfo);
+	void renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo);
 	void setType(ModelType type) { modelType = type; }
 
 private:
@@ -47,7 +47,7 @@ private:
 		std::vector<VkVertexInputBindingDescription> bindingDescription, 
 		std::vector<VkVertexInputAttributeDescription> attributeDescription);
 
-	void renderModel(FrameInfo& frameInfo, GameObject& obj);
+	void renderModel(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, GameObject& obj);
 
 	Device& device;
 
@@ -82,7 +82,7 @@ inline GlobalRenderSystem GlobalRenderSystem::create(Device& device, VkRenderPas
 template<class T>
 inline GlobalRenderSystem GlobalRenderSystem::createDepth(Device& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout, const std::string& vertFilepath, const std::string& fragFilepath)
 {
-	std::vector<VkVertexInputBindingDescription> bindingDescription = T::Vertex::getBindingDescriptionsShadow();
+	std::vector<VkVertexInputBindingDescription> bindingDescription = T::Vertex::getBindingDescriptions();
 	std::vector<VkVertexInputAttributeDescription> attributeDescription = T::Vertex::getAttributeDescriptionsShadow(); 
 	ModelType modelType = static_cast<ModelType>(T::getModelType());
 

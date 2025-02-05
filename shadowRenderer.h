@@ -1,5 +1,9 @@
 #pragma once
-class shadowRenderer
+
+#include "Renderer.h"
+
+class shadowRenderer : Renderer
 {
+
 };
 

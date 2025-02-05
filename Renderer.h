@@ -4,15 +4,19 @@
 
 #include "device.h"
 #include "Swap_chain.h"
+#include "DepthSwapChain.h"
+#include "Frame_info.h"
+#include "GlobalRenderSystem.h"
 
 #include <memory>
 #include <vector>
 #include <cassert>
 
+
+
 class Renderer
 {
 public:
-
 
 	Renderer(Window& window, Device& device);
 	~Renderer();
@@ -21,7 +25,7 @@ public:
 	Renderer& operator=(const Renderer&) = delete;
 
 	VkRenderPass getSwapChainRenderPass() const { return swapChain->getRenderPass(); }
-	VkRenderPass getDepthRenderPass() const { return swapChain->getRenderDepthPass(); }
+	VkRenderPass getDepthRenderPass() const { return depthSwapChain->getDepthRenderPass(); }
 	float getAspectRatio() const { return swapChain->extentAspectRatio(); }
 
 	uint32_t getWidth() const { return swapChain->width(); }
@@ -40,7 +44,7 @@ public:
 	}
 
 	int getFrameIndex() const {
-		assert(isFrameStarted && "cannot get frame index when frame not in progress");
+		//assert(isFrameStarted && "cannot get frame index when frame not in progress");
 		return currentFrameIndex;
 	}
 
@@ -61,13 +65,14 @@ public:
 	void beginShadowRenderPass(VkCommandBuffer commandBuffer);
 	void endShadowRenderPass(VkCommandBuffer commandBuffer);
 
-	void submitCommandBuffers();
+	void submitCommandBuffers(bool renderDepth);
 
 	bool aquireNextImage();
 
-	VkDescriptorImageInfo getShadowImageInfo(int i) { return swapChain->getShadowImageInfo(i); }
+	VkDescriptorImageInfo getShadowImageInfo(int i) { return depthSwapChain->getShadowImageInfo(i); }
 
-	void transitionDepthImageLayout(VkCommandBuffer& commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout);
+	void renderDepthImage(FrameInfo& frameInfo, GlobalRenderSystem& renderSystems);
+	
 
 private:
 
@@ -76,10 +81,14 @@ private:
 	void freeCommandBuffers();
 	void recreateSwapChain();
 
+	void transitionDepthImageLayout(VkCommandBuffer& commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout);
+
 	Window& window;
 	Device& device;
 
 	std::unique_ptr<Swap_chain> swapChain;
+	std::unique_ptr<DepthSwapChain> depthSwapChain;
+
 	std::vector<VkCommandBuffer> commandBuffers;
 	std::vector<VkCommandBuffer> depthCommandBuffers;
 
@@ -88,6 +97,7 @@ private:
 
 	int currentFrameIndex;
 	int currentDepthIndex;
+
 	bool isFrameStarted = false;
 	bool isDepthStarted = false;
 };

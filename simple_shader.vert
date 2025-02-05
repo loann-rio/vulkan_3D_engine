@@ -16,18 +16,23 @@ struct PointLight {
 	vec4 color;
 };
 
+struct SpotLight {
+	vec4 position;
+	vec4 color;
+	vec4 orientation;
+	mat4 lightMatrix;
+};
+			
 layout(set = 0, binding = 0) uniform GlobalUbo {
 	mat4 projection;
 	mat4 view;
 	mat4 invView;
 
-	mat4 lightProjection;
-	mat4 lightView;
-
 	vec4 ambientLightColor;
 	PointLight pointLight[10];
+	SpotLight spotLight;
 	vec4 globalLightDir;
-	int numLights;
+	int numLights; 
 } ubo;
 
 
@@ -41,7 +46,7 @@ void main() {
 	vec4 positionWorld = push.modelMatrix * vec4(position, 1.0);
 
 	gl_Position = ubo.projection * ubo.view * positionWorld;
-	fragPosShadow = ubo.lightProjection * ubo.lightView * positionWorld;
+	fragPosShadow = ubo.spotLight.lightMatrix * positionWorld;
 
 	fragNormalWorld = normalize(mat3(push.normalMatrix)*normal);
 	fragPosWorld = positionWorld.xyz;

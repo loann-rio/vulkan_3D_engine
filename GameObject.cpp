@@ -73,6 +73,8 @@ GameObject GameObject::makePointLight(Device& device, float intencity, float rad
 
 void GameObject::createDescriptorSet(DescriptorPool& pool) const
 {
+    if (!hasModel) return;
+
     std::visit([&pool, &device = this->device](const auto& modelInstance) {
         if (modelInstance) {
             modelInstance->createDescriptorSet(pool, device);

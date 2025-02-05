@@ -1204,6 +1204,15 @@ std::vector<VkVertexInputAttributeDescription> GlTFModel::ModelGltf::Vertex::get
 	return attributeDescriptions;
 }
 
+std::vector<VkVertexInputAttributeDescription> GlTFModel::ModelGltf::Vertex::getAttributeDescriptionsShadow()
+{
+	std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
+
+	attributeDescriptions.push_back({ 0, 0, VK_FORMAT_R32G32B32_SFLOAT    , offsetof(Vertex, position) }); 
+
+	return attributeDescriptions;
+}
+
 void GlTFModel::TextureModel::TextFromglTfImage(Device& device, tinygltf::Image& gltfimage, std::string path)
 {
 	// KTX2 files need to be handled explicitly

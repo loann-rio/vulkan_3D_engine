@@ -236,6 +236,7 @@ class GlTFModel
 
 			static std::vector<VkVertexInputBindingDescription> getBindingDescriptions();
 			static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
+			static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptionsShadow();
 
 		};
 

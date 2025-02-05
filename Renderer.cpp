@@ -8,6 +8,8 @@
 Renderer::Renderer(Window& window, Device& device) : window{window} , device{device}
 {
 	recreateSwapChain();
+	depthSwapChain = std::make_unique<DepthSwapChain>(device, VkExtent2D{ 512, 512 });
+
 	createDepthCommandBuffer();
 	createCommandBuffer();
 }
@@ -21,6 +23,7 @@ Renderer::~Renderer() { freeCommandBuffers(); }
 */
 void Renderer::recreateSwapChain()
 {
+
 	// get size window
 	auto extent = window.getExtent();
 
@@ -173,11 +176,11 @@ void Renderer::beginShadowRenderPass(VkCommandBuffer commandBuffer)
 
 	VkRenderPassBeginInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	renderPassInfo.renderPass = swapChain->getRenderDepthPass();
-	renderPassInfo.framebuffer = swapChain->getDepthFramebuffers(currentImageIndex);
+	renderPassInfo.renderPass = depthSwapChain->getDepthRenderPass();
+	renderPassInfo.framebuffer = depthSwapChain->getDepthFramebuffers(0);
 
 	renderPassInfo.renderArea.offset = { 0, 0 };
-	renderPassInfo.renderArea.extent = swapChain->getSwapChainExtent();
+	renderPassInfo.renderArea.extent = depthSwapChain->getDepthSwapChainExtent();
 
 	std::array<VkClearValue, 1> clearValues{};
 	clearValues[0].depthStencil = { 1.0f, 0 };
@@ -190,11 +193,11 @@ void Renderer::beginShadowRenderPass(VkCommandBuffer commandBuffer)
 	VkViewport viewport{};
 	viewport.x = 0.0f;
 	viewport.y = 0.0f;
-	viewport.width = static_cast<float>(swapChain->getSwapChainExtent().width);
-	viewport.height = static_cast<float>(swapChain->getSwapChainExtent().height);
+	viewport.width = static_cast<float>(depthSwapChain->getDepthSwapChainExtent().width);
+	viewport.height = static_cast<float>(depthSwapChain->getDepthSwapChainExtent().height);
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
-	VkRect2D scissor{ {0, 0}, swapChain->getSwapChainExtent() };
+	VkRect2D scissor{ {0, 0}, depthSwapChain->getDepthSwapChainExtent() };
 	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 }
@@ -215,12 +218,25 @@ void Renderer::endShadowRenderPass(VkCommandBuffer commandBuffer)
 	vkCmdEndRenderPass(commandBuffer);
 }
 
-void Renderer::submitCommandBuffers()
+void Renderer::submitCommandBuffers(bool renderDepth)
 {
-	auto depthCommandBuffer = getCurrentDepthCommandBuffer();
-	auto commandBuffer = getCurrentCommandBuffer();
 
-	auto result = swapChain->submitDepthAndMainCommandBuffers(&depthCommandBuffer, &commandBuffer, &currentImageIndex);
+	VkResult result = VK_INCOMPLETE;
+
+	if (renderDepth)
+	{
+		auto depthCommandBuffer = getCurrentDepthCommandBuffer(); 
+		auto commandBuffer = getCurrentCommandBuffer(); 
+
+		result = swapChain->submitDepthAndMainCommandBuffers(&depthCommandBuffer, &commandBuffer, &currentImageIndex);
+	}
+	else
+	{
+		auto commandBuffer = getCurrentCommandBuffer();
+
+		result = swapChain->submitCommandBuffers(&commandBuffer, &currentImageIndex);
+	}
+	
 
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || window.wasWindowResized()) {
 		window.resetWindowResizedFlag();
@@ -234,7 +250,6 @@ void Renderer::submitCommandBuffers()
 	isFrameStarted = false;
 
 	currentFrameIndex = (currentFrameIndex + 1) % Swap_chain::MAX_FRAMES_IN_FLIGHT;
-	currentDepthIndex = (currentDepthIndex + 1) % Swap_chain::MAX_FRAMES_IN_FLIGHT;
 }
 
 bool Renderer::aquireNextImage()
@@ -253,10 +268,23 @@ bool Renderer::aquireNextImage()
 	return true;
 }
 
+void Renderer::renderDepthImage(FrameInfo& frameInfo, GlobalRenderSystem& renderSystems)
+{
+	if (auto depthCommandBuffer = beginDepthFrame()) {
+
+		// render
+		beginShadowRenderPass(depthCommandBuffer);
+
+		renderSystems.renderGameObjects(depthCommandBuffer, frameInfo);
+
+		endShadowRenderPass(depthCommandBuffer);
+		endDepthFrame();
+	}
+}
+
 void Renderer::transitionDepthImageLayout(VkCommandBuffer& commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout)
 {
-	//auto depthCommandBuffer = getCurrentDepthCommandBuffer();
-	swapChain->transitionDepthImageLayout(commandBuffer, currentDepthIndex, oldLayout, newLayout);
+	depthSwapChain->transitionDepthImageLayout(commandBuffer, 0, oldLayout, newLayout);
 }
 
 void Renderer::createCommandBuffer()
@@ -277,7 +305,7 @@ void Renderer::createCommandBuffer()
 
 void Renderer::createDepthCommandBuffer()
 {
-	depthCommandBuffers.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
+	depthCommandBuffers.resize(DepthSwapChain::DEPTH_RENDER_COUNT);
 
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;

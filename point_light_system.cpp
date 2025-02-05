@@ -90,14 +90,14 @@ void PointLightSystem::update(FrameInfo& frameInfo, GlobalUbo& ubo, int frameInd
 		//obj.pointLight->LightIntencity = sin(frameInd/64.0f + 24);
 
 		// copy light to ubo
-		ubo.pointLights[lightIndex].position = glm::vec4(obj.transform.translation, 1.f);
+		ubo.pointLights[lightIndex].position = glm::vec4(obj.transform.translation, 1.0);
 		ubo.pointLights[lightIndex].color = glm::vec4(obj.color, obj.pointLight->LightIntencity);
 		lightIndex++;
 	}
 	ubo.numLights = lightIndex;
 }
 
-void PointLightSystem::render(FrameInfo& frameInfo)
+void PointLightSystem::render(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo)
 {
 	// sort lights
 	std::map<float, GameObject::id_t> sorted;
@@ -111,10 +111,10 @@ void PointLightSystem::render(FrameInfo& frameInfo)
 		sorted[disSquared] = obj.getId();
 	}
 
-	pipeline->bind(frameInfo.commandBuffer);
+	pipeline->bind(commandBuffer);
 
 	vkCmdBindDescriptorSets(
-		frameInfo.commandBuffer,
+		commandBuffer,
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
 		pipelineLayout,
 		0, 1,
@@ -133,14 +133,15 @@ void PointLightSystem::render(FrameInfo& frameInfo)
 		push.radius = obj.transform.scale.x;
 
 		vkCmdPushConstants(
-			frameInfo.commandBuffer,
+			commandBuffer,
 			pipelineLayout,
 			VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 			0,
 			sizeof(PointLightPushConstants),
 			&push
 		);
-		vkCmdDraw(frameInfo.commandBuffer, 6, 1, 0, 0);
+
+		vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 	}
 
 	

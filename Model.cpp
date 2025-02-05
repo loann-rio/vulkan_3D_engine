@@ -167,15 +167,6 @@ std::vector<VkVertexInputAttributeDescription> Model::Vertex::getAttributeDescri
 	return attributeDescriptions;
 }
 
-std::vector<VkVertexInputBindingDescription> Model::Vertex::getBindingDescriptionsShadow()
-{
-	std::vector<VkVertexInputBindingDescription> bindingDescription(1);
-	bindingDescription[0].binding = 0;
-	bindingDescription[0].stride = sizeof(Vertex);
-	bindingDescription[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-	return bindingDescription;
-}
-
 std::vector<VkVertexInputAttributeDescription> Model::Vertex::getAttributeDescriptionsShadow()
 {
 	std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};

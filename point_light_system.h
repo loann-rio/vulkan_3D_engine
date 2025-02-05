@@ -19,7 +19,7 @@ public:
 	PointLightSystem& operator=(const PointLightSystem&) = delete;
 
 	void update(FrameInfo& frameInfo, GlobalUbo& ubo, int frameInd);
-	void render(FrameInfo& frameInfo);
+	void render(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo);
 
 
 private:

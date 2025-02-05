@@ -102,12 +102,12 @@ void GlobalRenderSystem::createPipeline(VkRenderPass renderPass, const std::stri
 	);
 }
 
-void GlobalRenderSystem::renderModel(FrameInfo& frameInfo, GameObject& obj)
+void GlobalRenderSystem::renderModel(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, GameObject& obj)
 {
 
 	if (!isShadow) {
 		vkCmdBindDescriptorSets(
-			frameInfo.commandBuffer,
+			commandBuffer,
 			VK_PIPELINE_BIND_POINT_GRAPHICS,
 			objPipelineLayout,
 			1, 1,
@@ -122,7 +122,7 @@ void GlobalRenderSystem::renderModel(FrameInfo& frameInfo, GameObject& obj)
 	push.normalMatrix = obj.transform.normalMatrix();
 
 	vkCmdPushConstants(
-		frameInfo.commandBuffer,
+		commandBuffer,
 		objPipelineLayout,
 		VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 		0,
@@ -130,21 +130,21 @@ void GlobalRenderSystem::renderModel(FrameInfo& frameInfo, GameObject& obj)
 		&push
 	);
 
-	obj.bindModel(frameInfo.commandBuffer);
-	obj.drawModel(frameInfo.commandBuffer, objPipelineLayout);
+	obj.bindModel(commandBuffer);
+	obj.drawModel(commandBuffer, objPipelineLayout);
 	
 }
 
-void GlobalRenderSystem::renderGameObjects(FrameInfo& frameInfo)
+void GlobalRenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo)
 {
-	objPipeline->bind(frameInfo.commandBuffer);
+	objPipeline->bind(commandBuffer);
 
 	vkCmdBindDescriptorSets(
-		frameInfo.commandBuffer,
+		commandBuffer,
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
-		objPipelineLayout,
+		objPipelineLayout, 
 		0, 1,
-		&frameInfo.globalDescriptorSet[frameInfo.frameIndex],
+		&frameInfo.globalDescriptorSet[frameInfo.frameIndex], 
 		0,
 		nullptr
 	);
@@ -153,7 +153,7 @@ void GlobalRenderSystem::renderGameObjects(FrameInfo& frameInfo)
 	{
 		auto& obj = kv.second;
 		if (obj.modelType == modelType)
-			renderModel(frameInfo, obj);
+			renderModel(commandBuffer, frameInfo, obj);
 	}
 }
 
