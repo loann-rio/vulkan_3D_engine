@@ -121,8 +121,10 @@ void main() {
 
 	
 	float isShadowed = compute_shadow_factor(fragPosShadow);
+	vec4 spotLightLight = (isShadowed * ubo.spotLight.color.w * vec4(ubo.spotLight.color.xyz, 0.0));
 	
 	// sum colors
-	vec4 colorWithoutShadow = ((vec4(diffuseLight, 1.0) + vec4(specularLight, 1.0) + cosAngOfIncidence * ubo.globalLightDir.w + (isShadowed * ubo.spotLight.color.w * vec4(ubo.spotLight.color.xyz, 0.0))) * color);
-	outColor = colorWithoutShadow;// * (isShadowed * 0.9 * ubo.spotLight.color.w * vec4(ubo.spotLight.color.xyz, 0.0) + 0.1) ;  
+	vec4 colorWithoutShadow = ((vec4(diffuseLight, 1.0) + vec4(specularLight, 1.0) + cosAngOfIncidence * ubo.globalLightDir.w + spotLightLight) * color);
+	outColor = colorWithoutShadow;
+
 }
