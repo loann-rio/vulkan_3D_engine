@@ -19,7 +19,7 @@ layout(set = 0, binding = 0) uniform GlobalUbo {
 
 	vec4 ambientLightColor;
 	PointLight pointLight[10];
-	SpotLight spotLight;
+	SpotLight spotLight[3];
 	vec4 globalLightDir;
 	int numLights; 
 } ubo;

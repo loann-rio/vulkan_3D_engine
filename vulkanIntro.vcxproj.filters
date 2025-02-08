@@ -185,9 +185,6 @@
     <ClInclude Include="tiny_gltf.h">
       <Filter>Fichiers de ressources</Filter>
     </ClInclude>
-    <ClInclude Include="stb_image.h">
-      <Filter>Fichiers de ressources</Filter>
-    </ClInclude>
     <ClInclude Include="depthSwapChain.h">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>

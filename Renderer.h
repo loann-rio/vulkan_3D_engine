@@ -38,9 +38,9 @@ public:
 		return commandBuffers[currentFrameIndex];
 	}
 	
-	VkCommandBuffer getCurrentDepthCommandBuffer() const {
-		assert(isDepthStarted && "cannot get command buffer when frame not in progress");
-		return depthCommandBuffers[currentDepthIndex];
+	VkCommandBuffer getCurrentDepthCommandBuffer(int depthCommandBufferIndex) const {
+		assert(isDepthStarted[depthCommandBufferIndex] && "cannot get command buffer when frame not in progress");
+		return depthCommandBuffers[depthCommandBufferIndex];
 	}
 
 	int getFrameIndex() const {
@@ -48,22 +48,17 @@ public:
 		return currentFrameIndex;
 	}
 
-	int getDepthIndex() const {
-		assert(isDepthStarted && "cannot get frame index when frame not in progress");
-		return currentDepthIndex;
-	}
-
 	VkCommandBuffer beginFrame();
 	void endFrame();
 
-	VkCommandBuffer beginDepthFrame();
-	void endDepthFrame();
+	VkCommandBuffer beginDepthFrame(int depthCommandBufferIndex);
+	void endDepthFrame(int depthCommandBufferIndex);
 
 	void beginSwapChainRenderPass(VkCommandBuffer commandBuffer);
 	void endSwapChainRenderPass(VkCommandBuffer commandBuffer);
 
-	void beginShadowRenderPass(VkCommandBuffer commandBuffer);
-	void endShadowRenderPass(VkCommandBuffer commandBuffer);
+	void beginShadowRenderPass(VkCommandBuffer commandBuffer, int depthCommandBufferIndex);
+	void endShadowRenderPass(VkCommandBuffer commandBuffer, int depthCommandBufferIndex);
 
 	void submitCommandBuffers(bool renderDepth);
 
@@ -71,7 +66,7 @@ public:
 
 	VkDescriptorImageInfo getShadowImageInfo(int i) { return depthSwapChain->getShadowImageInfo(i); }
 
-	void renderDepthImage(FrameInfo& frameInfo, GlobalRenderSystem& renderSystems);
+	void renderDepthImage(FrameInfo& frameInfo, std::shared_ptr<GlobalRenderSystem> renderSystems);
 	
 
 private:
@@ -96,9 +91,8 @@ private:
 	uint32_t currentDepthImageIndex;
 
 	int currentFrameIndex;
-	int currentDepthIndex;
 
-	bool isFrameStarted = false;
-	bool isDepthStarted = false;
+	bool isFrameStarted = false; 
+	std::vector<bool> isDepthStarted;
 };
 

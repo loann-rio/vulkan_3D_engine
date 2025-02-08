@@ -3,17 +3,16 @@
 // local
 #include "KeyboardMovementController.h"
 
-#include "GlobalRenderSystem.h"
+
 #include "Camera.h"
 #include "Buffer.h"
 #include "Frame_info.h"
 
 #include "GlTFModel.h"
-#include "point_light_system.h"
+
 #include "preBuild.h"
 
 #include "Texture.h"
-#include "TextOverlay.h"
 
 
 // glm
@@ -52,6 +51,7 @@ App::App() {
         .build();
 
     loadGameObjects(); 
+    createRenderSystems();
 
     frameTimeVector = std::vector<float>(300);
 
@@ -77,7 +77,7 @@ App::~App() { globalPool = nullptr;  }
 
 void App::run()
 {
-    std::vector<std::unique_ptr<Buffer>> uboBuffers(Swap_chain::MAX_FRAMES_IN_FLIGHT);
+    /*uboBuffers.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
     for (int i = 0; i < uboBuffers.size(); i++)
     {
         uboBuffers[i] = std::make_unique<Buffer>(
@@ -87,7 +87,7 @@ void App::run()
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
             device.properties.limits.minUniformBufferOffsetAlignment
-        );
+        ); 
 
         uboBuffers[i]->map();
     }
@@ -109,26 +109,25 @@ void App::run()
             .build(globalDescriptorSet[i]);
     }
 
-    GlobalRenderSystem gltfRenderSystem = GlobalRenderSystem::create<GlTFModel::ModelGltf>(
-        device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout(), 
-        "GlTFshader.vert.spv", "GlTFshader.frag.spv" );
 
-    GlobalRenderSystem objRenderSystem = GlobalRenderSystem::create<Model>(
-        device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout(),
+    gltfRenderSystem = GlobalRenderSystem::create<GlTFModel::ModelGltf>(
+        device, renderer.getSwapChainRenderPass(), { globalSetLayout->getDescriptorSetLayout() },
+        "GlTFshader.vert.spv", "GlTFshader.frag.spv");
+
+    objRenderSystem = GlobalRenderSystem::create<Model>(
+        device, renderer.getSwapChainRenderPass(), { globalSetLayout->getDescriptorSetLayout() },
         "simple_shader.vert.spv", "simple_shader.frag.spv");
 
-    GlobalRenderSystem DepthRenderSystem = GlobalRenderSystem::createDepth<Model>(
-        device, renderer.getDepthRenderPass(), globalSetLayout->getDescriptorSetLayout(),
-        "shadowmap.vert.spv", "");
+    DepthRenderSystem = GlobalRenderSystem::create<Model>(
+        device, renderer.getDepthRenderPass(), { globalSetLayout->getDescriptorSetLayout() },
+        "shadowmap.vert.spv");
 
-    GlobalRenderSystem depthVisualisation = GlobalRenderSystem::create<Model>(
-        device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout(),
-        "depthView.vert.spv", "depthView.frag.spv");
-    depthVisualisation.setType(QUAD_MODEL);
-
-    PointLightSystem pointLightSystem{ device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
+    pointLightSystem = std::make_unique<PointLightSystem>(device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() );
 
     TextOverlay textOverlay{ device, renderer.getSwapChainRenderPass() };
+    textOverlay.prepareResources(*globalPool);*/
+
+    TextOverlay textOverlay(device, renderer.getSwapChainRenderPass());
     textOverlay.prepareResources(*globalPool);
 
     // camera setting
@@ -143,8 +142,8 @@ void App::run()
 
     Camera lightSource{};
     auto lightSourceObject = GameObject::createGameObject(device);
-    lightSourceObject.transform.translation = { 2.0f, -1.0f, 2.5f };
-    lightSourceObject.transform.rotation.y = pi<float> *1 / 3; 
+    lightSourceObject.transform.translation = { -4.0f, -1.0f, 5.5f };
+    lightSourceObject.transform.rotation.y = pi<float> * 2/5; 
 
     lightSource.setPerspectiveProjection(glm::radians(50.f), 1.f, .1f, 100.0f);
     lightSource.setViewYXZ(lightSourceObject.transform.translation, lightSourceObject.transform.rotation); 
@@ -191,17 +190,17 @@ void App::run()
 
         bool renderDepth = (frame == 0);
 
-        FrameInfo frameInfo{ 
+        FrameInfo frameInfo{  
             frameIndex,
             frameTime,
-            camera,
+            camera, 
             globalDescriptorSet,
-            gameObjects
-        }; 
+            gameObjects 
+        };  
 
         /////// update objects ///////
 
-        pointLightSystem.update(frameInfo, ubo, frame);
+        pointLightSystem->update(frameInfo, ubo, frame);
 
         ubo.spotLight.color = {1.0, 1.0, 1.0, .9};
         ubo.spotLight.orientation = glm::vec4(lightSourceObject.transform.rotation, 1.0);
@@ -216,7 +215,7 @@ void App::run()
 
         /////// render depthframe ///////
         if (renderDepth) {
-            renderer.renderDepthImage(frameInfo, DepthRenderSystem);
+            renderer.renderDepthImage(frameInfo, DepthRenderSystem); 
         }
         
 		if (auto commandBuffer = renderer.beginFrame()) {           
@@ -225,19 +224,18 @@ void App::run()
 			renderer.beginSwapChainRenderPass(commandBuffer);
 
             //gltfRenderSystem.renderGameObjects(commandBuffer, frameInfo); 
-            objRenderSystem.renderGameObjects(commandBuffer, frameInfo); 
+            objRenderSystem->renderGameObjects(commandBuffer, frameInfo); 
 
-            pointLightSystem.render(commandBuffer, frameInfo);
+            //pointLightSystem->render(commandBuffer, frameInfo);
             textOverlay.renderText(commandBuffer, frameInfo);
 
             renderer.endSwapChainRenderPass(commandBuffer);
             renderer.endFrame();
-
 		}
 
         renderer.submitCommandBuffers(renderDepth);
 
-        frame = (frame + 1) % 1000; 
+        frame = (frame + 1) % 3; 
 	}
 
     vkQueueWaitIdle(device.presentQueue());
@@ -323,6 +321,96 @@ void App::loadGameObjects() {
         gameObjects.emplace(pointLight.getId(), std::move(pointLight));
     }*/
 
+}
+
+void App::createRenderSystems()
+{
+
+    /// global buffer
+    uboBuffers.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
+    for (int i = 0; i < uboBuffers.size(); i++)
+    {
+        uboBuffers[i] = std::make_unique<Buffer>(
+            device,
+            sizeof(GlobalUbo),
+            1,
+            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+            device.properties.limits.minUniformBufferOffsetAlignment
+        );
+
+        uboBuffers[i]->map();
+    }
+
+    auto globalSetLayout = DescriptorSetLayout::Builder(device)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+        .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .build();
+
+    globalDescriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
+    for (int i = 0; i < globalDescriptorSet.size() && i < 2; i++)
+    {
+        auto bufferInfo = uboBuffers[i]->descriptorInfo();
+        auto shadowInfo = renderer.getShadowImageInfo(0);
+
+        DescriptorWriter(*globalSetLayout, *globalPool)
+            .writeBuffer(0, &bufferInfo)
+            .writeImage(1, &shadowInfo)
+            .build(globalDescriptorSet[i]);
+    }
+
+    //// shadow buffer
+    shadowUboBuffer.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT); 
+    for (int i = 0; i < shadowUboBuffer.size(); i++)
+    {
+        shadowUboBuffer[i] = std::make_unique<Buffer>( 
+            device, 
+            sizeof(GlobalUbo), 
+            1,
+            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+            device.properties.limits.minUniformBufferOffsetAlignment 
+        ); 
+
+        shadowUboBuffer[i]->map(); 
+    }
+
+    auto shadowSetLayout = DescriptorSetLayout::Builder(device)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS) 
+        .build();
+
+    shadowDescriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
+    for (int i = 0; i < shadowDescriptorSet.size() && i < 2; i++)
+    {
+        auto bufferInfo = shadowUboBuffer[i]->descriptorInfo();
+
+        DescriptorWriter(*shadowSetLayout, *globalPool)
+            .writeBuffer(0, &bufferInfo)
+            .build(shadowDescriptorSet[i]);
+    }
+
+
+    /// render systems
+
+    auto ShadowSetLayout = DescriptorSetLayout::Builder(device)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS) 
+        .build();
+
+    gltfRenderSystem = GlobalRenderSystem::create<GlTFModel::ModelGltf>(
+        device, renderer.getSwapChainRenderPass(), { globalSetLayout->getDescriptorSetLayout() },
+        "GlTFshader.vert.spv", "GlTFshader.frag.spv");
+
+    objRenderSystem = GlobalRenderSystem::create<Model>(
+        device, renderer.getSwapChainRenderPass(), { globalSetLayout->getDescriptorSetLayout() },
+        "simple_shader.vert.spv", "simple_shader.frag.spv");
+
+    DepthRenderSystem = GlobalRenderSystem::create<Model>(
+        device, renderer.getDepthRenderPass(), { globalSetLayout->getDescriptorSetLayout() },
+        "shadowmap.vert.spv");
+
+    pointLightSystem = std::make_unique<PointLightSystem>(device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout());
+
+    
 }
 
 void App::getFrameRate(float lastFrameTime)

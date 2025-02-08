@@ -3,7 +3,7 @@
 #include "Buffer.h"
 
 #define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
+#include "external/stb/stb_image.h"
 
 #include <stdexcept>
 

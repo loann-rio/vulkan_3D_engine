@@ -15,7 +15,7 @@ struct SimplePushConstantData {
 };
 
 GlobalRenderSystem::GlobalRenderSystem(Device& device, VkRenderPass renderPass, 
-	VkDescriptorSetLayout globalSetLayout, std::vector<VkDescriptorType> bindings, 
+	std::vector<VkDescriptorSetLayout> globalSetLayout, std::vector<VkDescriptorType> bindings,
 	const std::string& vertFilepath, const std::string& fragFilepath,
 	ModelType modelType,
 	std::vector<VkVertexInputBindingDescription> bindingDescription, std::vector<VkVertexInputAttributeDescription> attributeDescription, bool isShadow)
@@ -27,7 +27,10 @@ GlobalRenderSystem::GlobalRenderSystem(Device& device, VkRenderPass renderPass,
 		builder.addBinding(i + 1, bindings[i], VK_SHADER_STAGE_FRAGMENT_BIT);
 	}
 
-	createPipelineLayout({ globalSetLayout, (*builder.build()).getDescriptorSetLayout() });
+	auto newLayout = builder.build(); 
+	globalSetLayout.push_back(newLayout->getDescriptorSetLayout());
+
+	createPipelineLayout(globalSetLayout);
 	createPipeline(renderPass, vertFilepath, fragFilepath, bindingDescription, attributeDescription);
 }
 
@@ -47,7 +50,6 @@ void GlobalRenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout>
 	0,  // For non-dynamic descriptor sets
 	VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT // For dynamic descriptor sets
 	};
-
 
 	/*VkDescriptorSetLayoutBindingFlagsCreateInfoEXT bindingFlagsInfo = {};
 	bindingFlagsInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT;

@@ -16,14 +16,14 @@ class GlobalRenderSystem
 
 public:
 
-	template <class T> static GlobalRenderSystem create(Device& device, VkRenderPass renderPass,
-		VkDescriptorSetLayout globalSetLayout, const std::string& vertFilepath, const std::string& fragFilepath);
+	template <class T> static std::shared_ptr<GlobalRenderSystem> create(Device& device, VkRenderPass renderPass,
+		std::vector<VkDescriptorSetLayout> globalSetLayout, const std::string& vertFilepath, const std::string& fragFilepath);
 
-	template <class T> static GlobalRenderSystem createDepth(Device& device, VkRenderPass renderPass, 
-		VkDescriptorSetLayout globalSetLayout, const std::string& vertFilepath, const std::string& fragFilepath); 
+	template <class T> static std::shared_ptr<GlobalRenderSystem> create(Device& device, VkRenderPass renderPass,
+		std::vector<VkDescriptorSetLayout> globalSetLayout, const std::string& vertFilepath);
 
 	GlobalRenderSystem(Device& device, VkRenderPass renderPass, 
-		VkDescriptorSetLayout globalSetLayout, std::vector<VkDescriptorType> bindings, 
+		std::vector<VkDescriptorSetLayout> globalSetLayout, std::vector<VkDescriptorType> bindings, 
 		const std::string& vertFilepath, const std::string& fragFilepath,
 		ModelType modelType,
 		std::vector<VkVertexInputBindingDescription> bindingDescription, std::vector<VkVertexInputAttributeDescription> attributeDescription,
@@ -33,8 +33,10 @@ public:
 	~GlobalRenderSystem();
 
 	GlobalRenderSystem(const GlobalRenderSystem&) = delete;
-	
 	GlobalRenderSystem& operator=(const GlobalRenderSystem&) = delete;
+
+	//GlobalRenderSystem(GlobalRenderSystem&&) noexcept = default; 
+	//GlobalRenderSystem& operator=(GlobalRenderSystem&&) noexcept = default; 
 
 	void renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo);
 	void setType(ModelType type) { modelType = type; }
@@ -63,34 +65,40 @@ private:
 };
 
 template<class T>
-inline GlobalRenderSystem GlobalRenderSystem::create(Device& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout, const std::string& vertFilepath, const std::string& fragFilepath)
+inline std::shared_ptr<GlobalRenderSystem> GlobalRenderSystem::create(Device& device, VkRenderPass renderPass, std::vector<VkDescriptorSetLayout>  globalSetLayout, const std::string& vertFilepath, const std::string& fragFilepath)
 {
 	std::vector<VkDescriptorType> bindings = T::getDescriptorType();
 	std::vector<VkVertexInputBindingDescription> bindingDescription = T::Vertex::getBindingDescriptions();
 	std::vector<VkVertexInputAttributeDescription> attributeDescription = T::Vertex::getAttributeDescriptions();
 	ModelType modelType = static_cast<ModelType>(T::getModelType());
 
-	return GlobalRenderSystem(
-		device, renderPass, 
-		globalSetLayout, bindings, 
-		vertFilepath, fragFilepath, 
+	auto renderSystem = new GlobalRenderSystem(
+		device, renderPass,
+		globalSetLayout, bindings,
+		vertFilepath, fragFilepath,
 		modelType,
-		bindingDescription, attributeDescription
+		bindingDescription, attributeDescription, false
 	);
-}
+
+	std::cout << "helllo \n";
+
+	return std::shared_ptr<GlobalRenderSystem>(renderSystem);
+} 
 
 template<class T>
-inline GlobalRenderSystem GlobalRenderSystem::createDepth(Device& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout, const std::string& vertFilepath, const std::string& fragFilepath)
+inline std::shared_ptr<GlobalRenderSystem> GlobalRenderSystem::create(Device& device, VkRenderPass renderPass, std::vector<VkDescriptorSetLayout> globalSetLayout, const std::string& vertFilepath)
 {
 	std::vector<VkVertexInputBindingDescription> bindingDescription = T::Vertex::getBindingDescriptions();
 	std::vector<VkVertexInputAttributeDescription> attributeDescription = T::Vertex::getAttributeDescriptionsShadow(); 
 	ModelType modelType = static_cast<ModelType>(T::getModelType());
 
-	return GlobalRenderSystem( 
+	auto renderSystem = new GlobalRenderSystem(
 		device, renderPass,
-		globalSetLayout, {},
-		vertFilepath, fragFilepath,
+		globalSetLayout, std::vector<VkDescriptorType>(),
+		vertFilepath, "",
 		modelType,
-		bindingDescription, attributeDescription , true
+		bindingDescription, attributeDescription, true
 	);
+
+	return std::shared_ptr<GlobalRenderSystem>(renderSystem);
 }

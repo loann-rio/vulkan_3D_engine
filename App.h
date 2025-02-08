@@ -3,8 +3,13 @@
 #include "Window.h"
 #include "device.h"
 #include "GameObject.h"
-#include "Renderer.h"
+
 #include "descriptors.h"
+
+#include "Renderer.h"
+#include "GlobalRenderSystem.h"
+#include "point_light_system.h"
+#include "TextOverlay.h"
 
 #include <memory>
 #include <vector>
@@ -28,10 +33,12 @@ public:
 	void run();
 
 private:
-	void loadGameObjects();
+	
 	void getFrameRate(float lastFrameTime);
+	void loadGameObjects();
+	void createRenderSystems();
 
-	Window window{ WIDTH, HEIGHT, "hello" };
+	Window window{ WIDTH, HEIGHT, "vulkan engine" };
 	Device device{ window };
 	Renderer renderer{ window, device };
 
@@ -40,5 +47,22 @@ private:
 
 	std::vector<float> frameTimeVector;
 	float frameTimeSum = 0;
+
+	// buffers
+	std::vector<std::unique_ptr<Buffer>> uboBuffers;
+	std::vector<std::unique_ptr<Buffer>> shadowUboBuffer;
+
+	// render systems
+	std::shared_ptr<GlobalRenderSystem> gltfRenderSystem;
+	std::shared_ptr<GlobalRenderSystem> objRenderSystem;
+	std::shared_ptr<GlobalRenderSystem> DepthRenderSystem;
+
+	std::unique_ptr<PointLightSystem> pointLightSystem;
+
+	//std::unique_ptr<TextOverlay> textOverlay;
+
+	// global descriptor sets
+	std::vector<VkDescriptorSet> globalDescriptorSet;
+	std::vector<VkDescriptorSet> shadowDescriptorSet;
 };
 

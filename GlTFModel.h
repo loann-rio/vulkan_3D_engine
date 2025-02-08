@@ -34,7 +34,7 @@
 #define TINYGLTF_USE_RAPIDJSON_CRTALLOCATOR
 
 #include "tiny_gltf.h"
-#include "basisu_transcoder.h"
+#include "external/basisu/transcoder/basisu_transcoder.h"
 
 #define MAX_NUM_JOINTS 128u
 

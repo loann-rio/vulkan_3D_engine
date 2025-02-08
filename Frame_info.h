@@ -22,6 +22,11 @@ struct SpotLight {
 	glm::mat4 lightMatrix{ 1.0f };
 };
 
+struct SpotLightUbo {
+	SpotLight spotLight[MAX_SPOTLIGHT];
+	int numLights;
+};
+
 struct GlobalUbo {
 	glm::mat4 projection{ 1.0f };
 	glm::mat4 view{ 1.0f };
