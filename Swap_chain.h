@@ -25,10 +25,6 @@ public:
     VkRenderPass getRenderPass() { return renderPass; }
     VkImageView getImageView(int index) { return swapChainImageViews[index]; }
 
-    VkFramebuffer getDepthFramebuffers(int index) { return depthFramebuffers[index]; }
-    VkRenderPass getRenderDepthPass() { return renderDepthPass; }
-    VkImageView getDepthImageView(int index) { return depthImageViews[index]; }
-
     size_t imageCount() { return swapChainImages.size(); }
     VkFormat getSwapChainImageFormat() { return swapChainImageFormat; }
     VkExtent2D getSwapChainExtent() { return swapChainExtent; }
@@ -42,10 +38,11 @@ public:
     VkFormat findDepthFormat();
 
     VkResult acquireNextImage(uint32_t* imageIndex);
-    VkResult submitCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex);
+    VkResult submitCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex, bool waitDepthRender = false);
+    void submitDepthCommandBuffer(const std::vector<VkCommandBuffer> depthCommandBuffer);
     //VkResult submitDepthCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex);
     VkResult submitDepthAndMainCommandBuffers(
-        const VkCommandBuffer* depthCommandBuffer,
+        const std::vector<VkCommandBuffer> depthCommandBuffer,
         const VkCommandBuffer* mainCommandBuffer,
         uint32_t* imageIndex);
 
@@ -53,10 +50,6 @@ public:
         return swapChain.swapChainDepthFormat == swapChainDepthFormat && 
             swapChain.swapChainImageFormat == swapChainImageFormat;
     }
-
-    VkDescriptorImageInfo getShadowImageInfo(int i) { return { shadowDepthSampler[i], shadowDepthImageViews[i], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }; }
-
-    void transitionDepthImageLayout(VkCommandBuffer& depthCommandBuffer, int depthFrameIndex, VkImageLayout oldLayout, VkImageLayout newLayout);
 
 private:
     void init();
@@ -66,11 +59,6 @@ private:
     void createRenderPass();
     void createFramebuffers();
     void createSyncObjects();
-
-    // depth pass
-    void createRenderDepthPass();
-    void createDepthbuffers();
-
 
     // Helper functions
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(
@@ -88,8 +76,6 @@ private:
     std::vector<VkFramebuffer> depthFramebuffers;
 
     VkRenderPass renderPass;
-    VkRenderPass renderDepthPass;
-
 
     std::vector<VkImage> depthImages;
     std::vector<VkDeviceMemory> depthImageMemorys;
@@ -98,11 +84,6 @@ private:
 
     std::vector<VkImage> swapChainImages;
     std::vector<VkImageView> swapChainImageViews;
-
-    std::vector<VkImage> shadowDepthImages;
-    std::vector<VkDeviceMemory> shadowImageMemorys;
-    std::vector<VkImageView> shadowDepthImageViews;
-    std::vector<VkSampler> shadowDepthSampler;
 
 
     Device& device;
@@ -113,6 +94,7 @@ private:
 
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
+    std::vector<VkSemaphore> depthFinishedSemaphores;
 
     std::vector<VkFence> inFlightFences;
     std::vector<VkFence> imagesInFlight;

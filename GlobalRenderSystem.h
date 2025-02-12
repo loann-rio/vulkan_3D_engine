@@ -27,18 +27,15 @@ public:
 		const std::string& vertFilepath, const std::string& fragFilepath,
 		ModelType modelType,
 		std::vector<VkVertexInputBindingDescription> bindingDescription, std::vector<VkVertexInputAttributeDescription> attributeDescription,
-		bool isShadow = false
+		bool isShadow = false 
 	);
 
 	~GlobalRenderSystem();
 
-	GlobalRenderSystem(const GlobalRenderSystem&) = delete;
-	GlobalRenderSystem& operator=(const GlobalRenderSystem&) = delete;
+	GlobalRenderSystem(const GlobalRenderSystem&) = delete; 
+	GlobalRenderSystem& operator=(const GlobalRenderSystem&) = delete; 
 
-	//GlobalRenderSystem(GlobalRenderSystem&&) noexcept = default; 
-	//GlobalRenderSystem& operator=(GlobalRenderSystem&&) noexcept = default; 
-
-	void renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo);
+	void renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, bool bindSpotLight = false, int lightIndex = 0);
 	void setType(ModelType type) { modelType = type; }
 
 private:
@@ -49,7 +46,7 @@ private:
 		std::vector<VkVertexInputBindingDescription> bindingDescription, 
 		std::vector<VkVertexInputAttributeDescription> attributeDescription);
 
-	void renderModel(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, GameObject& obj);
+	void renderModel(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, GameObject& obj, int lightIndex = 0);
 
 	Device& device;
 
@@ -79,8 +76,6 @@ inline std::shared_ptr<GlobalRenderSystem> GlobalRenderSystem::create(Device& de
 		modelType,
 		bindingDescription, attributeDescription, false
 	);
-
-	std::cout << "helllo \n";
 
 	return std::shared_ptr<GlobalRenderSystem>(renderSystem);
 } 

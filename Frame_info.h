@@ -6,7 +6,7 @@
 #include <vulkan/vulkan.h>
 
 #define MAX_LIGHT 10
-#define MAX_SPOTLIGHT 1
+#define MAX_SPOTLIGHT 4
 
 struct PointLight {
 	glm::vec4 position{};
@@ -33,15 +33,16 @@ struct GlobalUbo {
 	glm::mat4 inverseView{ 1.f };
 	glm::vec4 ambientLightColor{ 1.f, 1.f,  1.f, .05f };
 	PointLight pointLights[MAX_LIGHT];
-	SpotLight spotLight;
 	glm::vec4 globalLightDir{ 1.f, -3.f, 0.5f, 0.05f };
 	int numLights;
 };
 
 struct FrameInfo {
 	int frameIndex;
+	int depthIndex;
 	float frameTime;
 	Camera& camera;
 	std::vector<VkDescriptorSet> globalDescriptorSet;
+	std::vector<VkDescriptorSet> spotLightDescriptorSet;
 	GameObject::Map& gameObjects;
 };

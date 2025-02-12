@@ -7,7 +7,7 @@
 
 Renderer::Renderer(Window& window, Device& device) : window{window} , device{device}
 {
-	isDepthStarted.resize(DepthSwapChain::DEPTH_RENDER_COUNT);
+	isDepthStarted.resize(DepthSwapChain::MAX_DEPTH_RENDER_COUNT);
 	recreateSwapChain();
 	depthSwapChain = std::make_unique<DepthSwapChain>(device, VkExtent2D{ 2048, 2048 });
 
@@ -165,7 +165,7 @@ void Renderer::beginShadowRenderPass(VkCommandBuffer commandBuffer, int depthCom
 	VkRenderPassBeginInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	renderPassInfo.renderPass = depthSwapChain->getDepthRenderPass();
-	renderPassInfo.framebuffer = depthSwapChain->getDepthFramebuffers(depthCommandBufferIndex);
+	renderPassInfo.framebuffer = depthSwapChain->getDepthFramebuffers(depthCommandBufferIndex + currentDepthFrameIndex * Swap_chain::MAX_FRAMES_IN_FLIGHT);
 
 	renderPassInfo.renderArea.offset = { 0, 0 };
 	renderPassInfo.renderArea.extent = depthSwapChain->getDepthSwapChainExtent();
@@ -211,19 +211,19 @@ void Renderer::submitCommandBuffers(bool renderDepth)
 
 	VkResult result = VK_INCOMPLETE;
 
-	if (renderDepth)
+	/*if (renderDepth)
 	{
-		auto depthCommandBuffer = getCurrentDepthCommandBuffer(0); 
+		auto depthCommandBuffer = getCurrentDepthCommandBuffers(); 
 		auto commandBuffer = getCurrentCommandBuffer(); 
 
-		result = swapChain->submitDepthAndMainCommandBuffers(&depthCommandBuffer, &commandBuffer, &currentImageIndex);
+		result = swapChain->submitDepthAndMainCommandBuffers(depthCommandBuffer, &commandBuffer, &currentImageIndex);
 	}
 	else
-	{
+	{*/
 		auto commandBuffer = getCurrentCommandBuffer();
 
-		result = swapChain->submitCommandBuffers(&commandBuffer, &currentImageIndex);
-	}
+		result = swapChain->submitCommandBuffers(&commandBuffer, &currentImageIndex, renderDepth);
+	//}
 	
 
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || window.wasWindowResized()) {
@@ -234,11 +234,15 @@ void Renderer::submitCommandBuffers(bool renderDepth)
 		throw std::runtime_error("failed to present swap chain image");
 	}
 
-	isDepthStarted[0] = false;
+	for (uint32_t i = 0; i < isDepthStarted.size(); i++)
+		isDepthStarted[i] = false;
+
 	isFrameStarted = false;
 
 	currentFrameIndex = (currentFrameIndex + 1) % Swap_chain::MAX_FRAMES_IN_FLIGHT;
 }
+
+
 
 bool Renderer::aquireNextImage()
 {
@@ -259,22 +263,23 @@ bool Renderer::aquireNextImage()
 void Renderer::renderDepthImage(FrameInfo& frameInfo, std::shared_ptr<GlobalRenderSystem> renderSystems)
 {
 	int countDepthRender = 0;
-
-	for (int commandBufferIndex = 0; commandBufferIndex < DepthSwapChain::DEPTH_RENDER_COUNT; commandBufferIndex++)
+	for (int commandBufferIndex = 0; commandBufferIndex < DepthSwapChain::MAX_DEPTH_RENDER_COUNT; commandBufferIndex++)
 	{
 		if (auto depthCommandBuffer = beginDepthFrame(commandBufferIndex)) {
 			beginShadowRenderPass(depthCommandBuffer, commandBufferIndex); 
-			renderSystems->renderGameObjects(depthCommandBuffer, frameInfo); 
+			renderSystems->renderGameObjects(depthCommandBuffer, frameInfo, true, commandBufferIndex); 
 			endShadowRenderPass(depthCommandBuffer, commandBufferIndex);
 			endDepthFrame(commandBufferIndex);
 		}
 	}
+
+	
+	//depthSwapChain->submitDepthCommandBuffer(getCurrentDepthCommandBuffers());
+	swapChain->submitDepthCommandBuffer(getCurrentDepthCommandBuffers());
+
+	currentDepthFrameIndex = (currentDepthFrameIndex + 1) % Swap_chain::MAX_FRAMES_IN_FLIGHT;
 }
 
-void Renderer::transitionDepthImageLayout(VkCommandBuffer& commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout)
-{
-	depthSwapChain->transitionDepthImageLayout(commandBuffer, 0, oldLayout, newLayout);
-}
 
 void Renderer::createCommandBuffer()
 {
@@ -294,7 +299,7 @@ void Renderer::createCommandBuffer()
 
 void Renderer::createDepthCommandBuffer()
 {
-	depthCommandBuffers.resize(DepthSwapChain::DEPTH_RENDER_COUNT);
+	depthCommandBuffers.resize(DepthSwapChain::MAX_DEPTH_RENDER_COUNT * Swap_chain::MAX_FRAMES_IN_FLIGHT);
 
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;

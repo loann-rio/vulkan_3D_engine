@@ -45,32 +45,15 @@
 
 App::App() { 
     globalPool = DescriptorPool::Builder(device)
-        .setMaxSets(Swap_chain::MAX_FRAMES_IN_FLIGHT * 16)
-        .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Swap_chain::MAX_FRAMES_IN_FLIGHT * 10)
-        .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Swap_chain::MAX_FRAMES_IN_FLIGHT*16)
+        .setMaxSets(Swap_chain::MAX_FRAMES_IN_FLIGHT * 64)
+        .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Swap_chain::MAX_FRAMES_IN_FLIGHT * 64)
+        .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Swap_chain::MAX_FRAMES_IN_FLIGHT*64)
         .build();
 
     loadGameObjects(); 
     createRenderSystems();
 
     frameTimeVector = std::vector<float>(300);
-
-#ifdef ENABLE_IMGUI
-
-    IMGUI_CHECKVERSION();
-
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO();
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-
-    ImGui_ImplGlfw_InitForVulkan(device.getWindow().getGLFWwindow(), true);
-    ImGui_ImplVulkan_InitInfo init_info = device.getImGuiInitInfo();
-    init_info.DescriptorPool = globalPool->getPool();
-    ImGui_ImplVulkan_Init(&init_info);
-
-#endif
-
 }
 
 App::~App() { globalPool = nullptr;  }
@@ -140,19 +123,50 @@ void App::run()
     camera.setPerspectiveProjection(glm::radians(50.f), aspec, .1f, 100.0f);
 
 
-    Camera lightSource{};
+    
     auto lightSourceObject = GameObject::createGameObject(device);
     lightSourceObject.transform.translation = { -4.0f, -1.0f, 5.5f };
     lightSourceObject.transform.rotation.y = pi<float> * 2/5; 
 
+    auto lightSourceObject2 = GameObject::createGameObject(device); 
+    lightSourceObject2.transform.translation = { 2.0f, -1.0f, 2.5f };
+    lightSourceObject2.transform.rotation.y = pi<float> *2 / 5;
+
+    Camera lightSource{};
     lightSource.setPerspectiveProjection(glm::radians(50.f), 1.f, .1f, 100.0f);
     lightSource.setViewYXZ(lightSourceObject.transform.translation, lightSourceObject.transform.rotation); 
+
+    Camera lightSource2{}; 
+    lightSource2.setPerspectiveProjection(glm::radians(50.f), 1.f, .1f, 100.0f);
+    lightSource2.setViewYXZ(lightSourceObject2.transform.translation, lightSourceObject2.transform.rotation);
 
     // user inputs
     KeyboardMovementController cameraController{};
 
     // UBO
     GlobalUbo ubo{}; 
+    SpotLightUbo spotLightUbo{};
+    spotLightUbo.numLights = 2;
+    
+    spotLightUbo.spotLight[0] = {
+        glm::vec4(lightSourceObject.transform.translation, 1.0),
+        { 1.0, 1.0, 1.0, .9 },
+        glm::vec4(lightSourceObject.transform.rotation, 1.0),
+        lightSource.getProjection() * lightSource.getView()
+    };
+
+    spotLightUbo.spotLight[1] = {
+        glm::vec4(lightSourceObject2.transform.translation, 1.0),
+        { 0.0, 1.0, 0.0, .9 },
+        glm::vec4(lightSourceObject2.transform.rotation, 1.0),
+        lightSource2.getProjection() * lightSource2.getView()
+    };
+
+    shadowUboBuffer[0]->writeToBuffer(&spotLightUbo);
+    shadowUboBuffer[0]->flush();
+
+    shadowUboBuffer[1]->writeToBuffer(&spotLightUbo);
+    shadowUboBuffer[1]->flush();
 
     // start timer
     auto currentTime = std::chrono::high_resolution_clock::now();
@@ -187,14 +201,16 @@ void App::run()
 
         if (!renderer.aquireNextImage()) continue;
         int frameIndex = renderer.getFrameIndex();
-
+        int depthIndex = renderer.getDepthIndex();
         bool renderDepth = (frame == 0);
 
         FrameInfo frameInfo{  
             frameIndex,
+            depthIndex,
             frameTime,
             camera, 
             globalDescriptorSet,
+            shadowDescriptorSet,
             gameObjects 
         };  
 
@@ -202,16 +218,13 @@ void App::run()
 
         pointLightSystem->update(frameInfo, ubo, frame);
 
-        ubo.spotLight.color = {1.0, 1.0, 1.0, .9};
-        ubo.spotLight.orientation = glm::vec4(lightSourceObject.transform.rotation, 1.0);
-        ubo.spotLight.position = glm::vec4(lightSourceObject.transform.translation, 1.0);
-        ubo.spotLight.lightMatrix = lightSource.getProjection() * lightSource.getView();
         ubo.projection = camera.getProjection(); 
         ubo.view = camera.getView();
         ubo.inverseView = camera.getInverseView();
         
         uboBuffers[frameIndex]->writeToBuffer(&ubo);
         uboBuffers[frameIndex]->flush();
+
 
         /////// render depthframe ///////
         if (renderDepth) {
@@ -222,9 +235,8 @@ void App::run()
 
             // render
 			renderer.beginSwapChainRenderPass(commandBuffer);
-
             //gltfRenderSystem.renderGameObjects(commandBuffer, frameInfo); 
-            objRenderSystem->renderGameObjects(commandBuffer, frameInfo); 
+            objRenderSystem->renderGameObjects(commandBuffer, frameInfo, true); 
 
             //pointLightSystem->render(commandBuffer, frameInfo);
             textOverlay.renderText(commandBuffer, frameInfo);
@@ -344,20 +356,17 @@ void App::createRenderSystems()
 
     auto globalSetLayout = DescriptorSetLayout::Builder(device)
         .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
-        .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .build();
 
     globalDescriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
     for (int i = 0; i < globalDescriptorSet.size() && i < 2; i++)
     {
         auto bufferInfo = uboBuffers[i]->descriptorInfo();
-        auto shadowInfo = renderer.getShadowImageInfo(0);
 
         DescriptorWriter(*globalSetLayout, *globalPool)
             .writeBuffer(0, &bufferInfo)
-            .writeImage(1, &shadowInfo)
-            .build(globalDescriptorSet[i]);
-    }
+            .build(globalDescriptorSet[i]); 
+    } 
 
     //// shadow buffer
     shadowUboBuffer.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT); 
@@ -365,7 +374,7 @@ void App::createRenderSystems()
     {
         shadowUboBuffer[i] = std::make_unique<Buffer>( 
             device, 
-            sizeof(GlobalUbo), 
+            sizeof(SpotLightUbo),
             1,
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
@@ -373,39 +382,38 @@ void App::createRenderSystems()
         ); 
 
         shadowUboBuffer[i]->map(); 
-    }
-
+    } 
+     
     auto shadowSetLayout = DescriptorSetLayout::Builder(device)
         .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS) 
+        .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, DepthSwapChain::MAX_DEPTH_RENDER_COUNT)
         .build();
 
     shadowDescriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
     for (int i = 0; i < shadowDescriptorSet.size() && i < 2; i++)
     {
         auto bufferInfo = shadowUboBuffer[i]->descriptorInfo();
+        auto depthInfo = renderer.getShadowImageInfo(i);
 
         DescriptorWriter(*shadowSetLayout, *globalPool)
             .writeBuffer(0, &bufferInfo)
-            .build(shadowDescriptorSet[i]);
+            .writeImage(1, depthInfo, DepthSwapChain::MAX_DEPTH_RENDER_COUNT)
+            .build(shadowDescriptorSet[i]); 
     }
 
 
     /// render systems
-
-    auto ShadowSetLayout = DescriptorSetLayout::Builder(device)
-        .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS) 
-        .build();
 
     gltfRenderSystem = GlobalRenderSystem::create<GlTFModel::ModelGltf>(
         device, renderer.getSwapChainRenderPass(), { globalSetLayout->getDescriptorSetLayout() },
         "GlTFshader.vert.spv", "GlTFshader.frag.spv");
 
     objRenderSystem = GlobalRenderSystem::create<Model>(
-        device, renderer.getSwapChainRenderPass(), { globalSetLayout->getDescriptorSetLayout() },
+        device, renderer.getSwapChainRenderPass(), { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() },
         "simple_shader.vert.spv", "simple_shader.frag.spv");
 
     DepthRenderSystem = GlobalRenderSystem::create<Model>(
-        device, renderer.getDepthRenderPass(), { globalSetLayout->getDescriptorSetLayout() },
+        device, renderer.getDepthRenderPass(), { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() },
         "shadowmap.vert.spv");
 
     pointLightSystem = std::make_unique<PointLightSystem>(device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout());

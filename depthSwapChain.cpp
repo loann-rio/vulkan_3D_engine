@@ -19,6 +19,7 @@ DepthSwapChain::DepthSwapChain(Device& deviceRef, VkExtent2D depthImageExtent)
 
 DepthSwapChain::~DepthSwapChain()
 {
+
 	if (depthRenderPass != nullptr) {
 		vkDestroyRenderPass(device.device(), depthRenderPass, nullptr);
 	}
@@ -48,23 +49,61 @@ void DepthSwapChain::transitionDepthImageLayout(VkCommandBuffer& depthCommandBuf
     device.transitionImageLayout(depthCommandBuffer, depthImages[depthFrameIndex], swapChainDepthFormat, oldLayout, newLayout, 1);
 }
 
+void DepthSwapChain::submitDepthCommandBuffer(const std::vector<VkCommandBuffer> depthCommandBuffer)
+{
+    /*depthFinishedSemaphores.resize(depthCommandBuffer.size());
+
+    VkSemaphoreCreateInfo semaphoreInfo{};
+    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    for (size_t i = 0; i < depthCommandBuffer.size(); i++) {
+        if (depthFinishedSemaphores[i] == VK_NULL_HANDLE) {
+            if (vkCreateSemaphore(device.device(), &semaphoreInfo, nullptr, &depthFinishedSemaphores[i]) != VK_SUCCESS) {
+                throw std::runtime_error("failed to create depth semaphore!");
+            }
+        }
+    }*/
+
+    for (size_t i = 0; i < depthCommandBuffer.size(); i++) { 
+        if (depthCommandBuffer[i] == VK_NULL_HANDLE) { 
+            throw std::runtime_error("Error: Uninitialized command buffer in depthCommandBuffer!"); 
+        } 
+    } 
+
+    // Submit Depth Pass 
+    VkSubmitInfo depthSubmitInfo{};
+    depthSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    depthSubmitInfo.commandBufferCount = static_cast<uint32_t>(depthCommandBuffer.size()); 
+    depthSubmitInfo.pCommandBuffers = depthCommandBuffer.data();
+
+    // Signal semaphore after depth pass
+    //depthSubmitInfo.signalSemaphoreCount = static_cast<uint32_t>(depthFinishedSemaphores.size());
+    //depthSubmitInfo.pSignalSemaphores = depthFinishedSemaphores.data();
+
+    if (vkQueueSubmit(device.graphicsQueue(), 1, &depthSubmitInfo, VK_NULL_HANDLE) != VK_SUCCESS) { 
+        throw std::runtime_error("failed to submit depth command buffer!");
+    }
+}
+
 void DepthSwapChain::init()
 {
     createDepthRenderPass();
     createDepthResources();
     createDepthbuffers();
+    createDepthImageInfo();
+
 }
 
 void DepthSwapChain::createDepthResources()
 {
     swapChainDepthFormat = findDepthFormat(); 
 
-    depthImages         .resize(DEPTH_RENDER_COUNT);
-    depthImageMemorys   .resize(DEPTH_RENDER_COUNT);
-    depthImageViews     .resize(DEPTH_RENDER_COUNT);
-    depthSampler        .resize(DEPTH_RENDER_COUNT);
+    depthImages         .resize(MAX_DEPTH_RENDER_COUNT * Swap_chain::MAX_FRAMES_IN_FLIGHT); 
+    depthImageMemorys   .resize(MAX_DEPTH_RENDER_COUNT * Swap_chain::MAX_FRAMES_IN_FLIGHT); 
+    depthImageViews     .resize(MAX_DEPTH_RENDER_COUNT * Swap_chain::MAX_FRAMES_IN_FLIGHT); 
+    depthSampler        .resize(MAX_DEPTH_RENDER_COUNT * Swap_chain::MAX_FRAMES_IN_FLIGHT); 
 
-    for (int i = 0; i < DEPTH_RENDER_COUNT; i++) {
+    for (int i = 0; i < MAX_DEPTH_RENDER_COUNT * Swap_chain::MAX_FRAMES_IN_FLIGHT; i++) { 
         VkImageCreateInfo imageInfo{};
         imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
         imageInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -179,17 +218,17 @@ void DepthSwapChain::createDepthRenderPass()
 
 void DepthSwapChain::createDepthbuffers()
 {
-    depthFramebuffers.resize(DEPTH_RENDER_COUNT);
-    for (size_t i = 0; i < DEPTH_RENDER_COUNT; i++) {
+    depthFramebuffers.resize(MAX_DEPTH_RENDER_COUNT * Swap_chain::MAX_FRAMES_IN_FLIGHT); 
+    for (size_t i = 0; i < MAX_DEPTH_RENDER_COUNT * Swap_chain::MAX_FRAMES_IN_FLIGHT; i++) {
         VkFramebufferCreateInfo framebufferInfo{};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         framebufferInfo.renderPass = depthRenderPass;
-        framebufferInfo.attachmentCount = 1;
-        framebufferInfo.pAttachments = &depthImageViews[i]; // Depth only
-        framebufferInfo.width = depthExtent.width;
-        framebufferInfo.height = depthExtent.height;
-        framebufferInfo.layers = 1;
-
+        framebufferInfo.attachmentCount = 1; 
+        framebufferInfo.pAttachments = &depthImageViews[i]; // Depth only 
+        framebufferInfo.width = depthExtent.width; 
+        framebufferInfo.height = depthExtent.height;  
+        framebufferInfo.layers = 1; 
+         
         if (vkCreateFramebuffer(
             device.device(),
             &framebufferInfo,
@@ -197,5 +236,23 @@ void DepthSwapChain::createDepthbuffers()
             &depthFramebuffers[i]) != VK_SUCCESS) {
             throw std::runtime_error("failed to create pre-render depth framebuffer!");
         }
+    }
+}
+
+void DepthSwapChain::createDepthImageInfo()
+{
+
+    for (uint16_t i = 0; i < Swap_chain::MAX_FRAMES_IN_FLIGHT; ++i) 
+    {
+        std::array<VkDescriptorImageInfo, MAX_DEPTH_RENDER_COUNT> imageInfo;
+
+        for (uint16_t j = 0; j < MAX_DEPTH_RENDER_COUNT; ++j) 
+        { 
+            imageInfo[j].sampler = depthSampler[i * MAX_DEPTH_RENDER_COUNT + j];
+            imageInfo[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageInfo[j].imageView = depthImageViews[i * MAX_DEPTH_RENDER_COUNT + j];
+        }
+
+        descriptorImageInfo.push_back(imageInfo);
     }
 }

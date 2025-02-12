@@ -40,12 +40,23 @@ public:
 	
 	VkCommandBuffer getCurrentDepthCommandBuffer(int depthCommandBufferIndex) const {
 		assert(isDepthStarted[depthCommandBufferIndex] && "cannot get command buffer when frame not in progress");
-		return depthCommandBuffers[depthCommandBufferIndex];
+		//std::cout << "get depth command buffer index " << depthCommandBufferIndex + currentDepthFrameIndex * Swap_chain::MAX_FRAMES_IN_FLIGHT << "\n";
+		return depthCommandBuffers[depthCommandBufferIndex + currentDepthFrameIndex * Swap_chain::MAX_FRAMES_IN_FLIGHT];
+	}
+
+	std::vector<VkCommandBuffer> getCurrentDepthCommandBuffers() const {
+		//std::cout << "get depth command buffer index from" << currentDepthFrameIndex * Swap_chain::MAX_FRAMES_IN_FLIGHT << " to " << DepthSwapChain::MAX_DEPTH_RENDER_COUNT * (currentDepthFrameIndex + 1) << "\n";
+		//assert(std::all_of(isDepthStarted.begin(), isDepthStarted.end(), [](bool v) { return v; }) && "cannot get command buffer when frame not in progress");
+		return {depthCommandBuffers.begin() + DepthSwapChain::MAX_DEPTH_RENDER_COUNT * currentDepthFrameIndex, depthCommandBuffers.begin() + DepthSwapChain::MAX_DEPTH_RENDER_COUNT * (currentDepthFrameIndex + 1 )}; //depthCommandBuffers;
 	}
 
 	int getFrameIndex() const {
-		//assert(isFrameStarted && "cannot get frame index when frame not in progress");
+		//assert(isFrameStarted && "cannot get frame index when frame not in progress"); 
 		return currentFrameIndex;
+	}
+
+	int getDepthIndex() const {
+		return currentDepthFrameIndex;
 	}
 
 	VkCommandBuffer beginFrame();
@@ -61,22 +72,18 @@ public:
 	void endShadowRenderPass(VkCommandBuffer commandBuffer, int depthCommandBufferIndex);
 
 	void submitCommandBuffers(bool renderDepth);
-
 	bool aquireNextImage();
 
-	VkDescriptorImageInfo getShadowImageInfo(int i) { return depthSwapChain->getShadowImageInfo(i); }
+	VkDescriptorImageInfo* getShadowImageInfo(int i) { return depthSwapChain->getShadowImageInfo(i); } 
 
 	void renderDepthImage(FrameInfo& frameInfo, std::shared_ptr<GlobalRenderSystem> renderSystems);
 	
-
 private:
 
 	void createCommandBuffer();
 	void createDepthCommandBuffer();
 	void freeCommandBuffers();
 	void recreateSwapChain();
-
-	void transitionDepthImageLayout(VkCommandBuffer& commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout);
 
 	Window& window;
 	Device& device;
@@ -91,6 +98,7 @@ private:
 	uint32_t currentDepthImageIndex;
 
 	int currentFrameIndex;
+	int currentDepthFrameIndex;
 
 	bool isFrameStarted = false; 
 	std::vector<bool> isDepthStarted;

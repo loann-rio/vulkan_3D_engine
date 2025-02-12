@@ -3,6 +3,8 @@
 ///// https://blogs.igalia.com/itoral/2017/10/02/working-with-lights-and-shadows-part-iii-rendering-the-shadows/
 
 #include "Device.h"
+#include "Swap_chain.h"
+
 
 // vulkan headers
 #include <vulkan/vulkan.h>
@@ -11,11 +13,12 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <array>
 
 class DepthSwapChain
 {
 public:
-	static constexpr int DEPTH_RENDER_COUNT = 1; 
+	static constexpr int MAX_DEPTH_RENDER_COUNT = 2; 
 
 	DepthSwapChain(Device& deviceRef, VkExtent2D depthImageExtent);
 	~DepthSwapChain();
@@ -38,9 +41,11 @@ public:
 
 	VkFormat findDepthFormat();
 
-	VkDescriptorImageInfo getShadowImageInfo(int i) { return { depthSampler[i], depthImageViews[i], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL }; }
+	VkDescriptorImageInfo* getShadowImageInfo(int i) { return descriptorImageInfo[i].data(); }
 
 	void transitionDepthImageLayout(VkCommandBuffer& depthCommandBuffer, int depthFrameIndex, VkImageLayout oldLayout, VkImageLayout newLayout);
+
+	void submitDepthCommandBuffer(const std::vector<VkCommandBuffer> depthCommandBuffer);
 
 private:
 	void init();
@@ -48,13 +53,14 @@ private:
 
 	void createDepthRenderPass();
 	void createDepthbuffers();
+	void createDepthImageInfo();
 
 	VkFormat swapChainDepthFormat;
 
 	VkExtent2D depthExtent;
 
 	std::vector<VkFramebuffer> depthFramebuffers;
-
+	std::vector<VkSemaphore> depthFinishedSemaphores;
 	VkRenderPass depthRenderPass;
 
 	std::vector<VkImage> depthImages;
@@ -62,8 +68,8 @@ private:
 	std::vector<VkImageView> depthImageViews;
 	std::vector<VkSampler> depthSampler; 
 
-	Device& device;
+	std::vector<std::array<VkDescriptorImageInfo, MAX_DEPTH_RENDER_COUNT>> descriptorImageInfo; 
 
-	size_t currentFrame = 0;
+	Device& device;
 };
 

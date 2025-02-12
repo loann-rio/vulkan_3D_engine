@@ -1,10 +1,12 @@
 #version 450
 
+#define MAX_NUM_SPOT_LIGHT 4
+
 layout( location = 0 ) in vec3 fragColor;
 layout( location = 1 ) in vec3 fragPositionWorld;
 layout( location = 2 ) in vec3 fragNormalWorld;
 layout( location = 3 ) in vec2 fragTexCoord;
-layout( location = 4 ) in vec4 fragPosShadow;
+layout( location = 4 ) in vec4 fragPosShadow[MAX_NUM_SPOT_LIGHT]; 
 
 layout( location = 0 ) out vec4 outColor;
 
@@ -27,7 +29,6 @@ layout(set = 0, binding = 0) uniform GlobalUbo {
 
 	vec4 ambientLightColor;
 	PointLight pointLight[10];
-	SpotLight spotLight[3];
 	vec4 globalLightDir;
 	int numLights; 
 } ubo;
@@ -37,19 +38,23 @@ layout(push_constant) uniform Push {
 	mat4 normalMatrix;
 } push;
 
-// Define the texture sampler
+// Define the texture sampler 
 layout(set = 1, binding = 1) uniform sampler2D texSampler;
-layout(set = 0, binding = 1) uniform sampler2DShadow shadowMap;
+layout(set = 2, binding = 1) uniform sampler2DShadow shadowMap[MAX_NUM_SPOT_LIGHT];
 
-float compute_shadow_factor(vec4 light_space_pos)
+layout(set = 2, binding = 0) uniform SpotLightUbo {
+	SpotLight spotLight[MAX_NUM_SPOT_LIGHT];
+	int numLights;
+} spotLightUbo;
+
+
+vec4 compute_shadow_factor(vec4 light_space_pos, uint indexSpotLight, vec3 surfaceNormal)
 {
-
     vec3 shadowUV = light_space_pos.xyz / light_space_pos.w;
 
-	if (((shadowUV.x * shadowUV.x) + (shadowUV.y * shadowUV.y)) > 1.0) return 0.0;
+	if (((shadowUV.x * shadowUV.x) + (shadowUV.y * shadowUV.y)) > 1.0) return vec4(0.0);
 
 	float depth = shadowUV.z;
-
     shadowUV = shadowUV * 0.5 + 0.5;  // Convert to [0,1]
 
 	float shadow = 0.0;
@@ -58,14 +63,22 @@ float compute_shadow_factor(vec4 light_space_pos)
     // Sample a 3x3 grid of shadow values
     for (int x = -1; x <= 1; x++) {
        for (int y = -1; y <= 1; y++) {
-           shadow += texture(shadowMap, vec3(shadowUV.xy + vec2(x, y) * offset, depth));
+           shadow += texture(shadowMap[indexSpotLight], vec3(shadowUV.xy + vec2(x, y) * offset, depth));
        }
     }
     
-	
-    return shadow / 9;
+	if (shadow == 0) return vec4(0.0);
 
-}  
+
+	vec3 directionToLight = spotLightUbo.spotLight[indexSpotLight].position.xyz - fragPositionWorld;
+	//float attenuation = 1.0 / dot(directionToLight, directionToLight);
+	directionToLight = normalize(directionToLight);
+	float cosAngOfIncidence = max(dot(surfaceNormal, directionToLight), 0);
+
+	vec4 intencity = shadow * spotLightUbo.spotLight[indexSpotLight].color.w * vec4(spotLightUbo.spotLight[indexSpotLight].color.xyz, 0.0);// * attenuation;
+
+	return cosAngOfIncidence * intencity / 9 ;
+}
 
 
 void main() {
@@ -80,7 +93,6 @@ void main() {
 	// apply points light
 	for (int i = 0; i < ubo.numLights; i++) 
 	{
-
 		PointLight light = ubo.pointLight[i];
 
 		vec3 directionToLight = light.position.xyz - fragPositionWorld;
@@ -98,7 +110,6 @@ void main() {
 		blinnTerm = clamp(blinnTerm, 0, 1);
 		blinnTerm = pow(blinnTerm, 32.0);
 		specularLight += intencity * blinnTerm;
-
 	}
 
 	// global light
@@ -119,12 +130,14 @@ void main() {
 	// get texture color
 	vec4 color = texture(texSampler, fragTexCoord);
 
-	
-	float isShadowed = compute_shadow_factor(fragPosShadow);
-	vec4 spotLightLight = (isShadowed * ubo.spotLight.color.w * vec4(ubo.spotLight.color.xyz, 0.0));
+	// spot light mapping
+	vec4 spotLightLight = {0.0, 0.0, 0.0 , 0.0};
+
+	for (uint indexSpotLight = 0; indexSpotLight < spotLightUbo.numLights && indexSpotLight < MAX_NUM_SPOT_LIGHT; ++indexSpotLight) {
+		spotLightLight += compute_shadow_factor(fragPosShadow[indexSpotLight], indexSpotLight, surfaceNormal);
+	}
 	
 	// sum colors
-	vec4 colorWithoutShadow = ((vec4(diffuseLight, 1.0) + vec4(specularLight, 1.0) + cosAngOfIncidence * ubo.globalLightDir.w + spotLightLight) * color);
-	outColor = colorWithoutShadow;
+	outColor = ((vec4(diffuseLight, 1.0) + vec4(specularLight, 1.0) + cosAngOfIncidence * ubo.globalLightDir.w + spotLightLight) * color);
 
 }

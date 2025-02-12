@@ -14,6 +14,11 @@ struct SimplePushConstantData {
 	glm::mat4 normalMatrix{ 1.f };
 };
 
+struct DepthPushConstantData {
+	glm::mat4 modelMatrix{ 1.f };
+	int indexDepthCamera{ 0 };
+};
+
 GlobalRenderSystem::GlobalRenderSystem(Device& device, VkRenderPass renderPass, 
 	std::vector<VkDescriptorSetLayout> globalSetLayout, std::vector<VkDescriptorType> bindings,
 	const std::string& vertFilepath, const std::string& fragFilepath,
@@ -28,7 +33,7 @@ GlobalRenderSystem::GlobalRenderSystem(Device& device, VkRenderPass renderPass,
 	}
 
 	auto newLayout = builder.build(); 
-	globalSetLayout.push_back(newLayout->getDescriptorSetLayout());
+	globalSetLayout.insert(globalSetLayout.begin() + 1, newLayout->getDescriptorSetLayout());
 
 	createPipelineLayout(globalSetLayout);
 	createPipeline(renderPass, vertFilepath, fragFilepath, bindingDescription, attributeDescription);
@@ -41,10 +46,18 @@ GlobalRenderSystem::~GlobalRenderSystem()
 
 void GlobalRenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout> descriptorSetLayout)
 {
+
 	VkPushConstantRange pushConstantRange{};
-	pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 	pushConstantRange.offset = 0;
-	pushConstantRange.size = sizeof(SimplePushConstantData);
+
+	if (isShadow) {
+		pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		pushConstantRange.size = sizeof(DepthPushConstantData);
+	}
+	else {
+		pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT; 
+		pushConstantRange.size = sizeof(SimplePushConstantData); 
+	}
 
 	VkDescriptorBindingFlags descriptorBindingFlags[] = {
 	0,  // For non-dynamic descriptor sets
@@ -104,7 +117,7 @@ void GlobalRenderSystem::createPipeline(VkRenderPass renderPass, const std::stri
 	);
 }
 
-void GlobalRenderSystem::renderModel(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, GameObject& obj)
+void GlobalRenderSystem::renderModel(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, GameObject& obj, int lightIndex)
 {
 
 	if (!isShadow) {
@@ -117,27 +130,44 @@ void GlobalRenderSystem::renderModel(VkCommandBuffer& commandBuffer, FrameInfo& 
 			0,
 			nullptr
 		);
+
+		SimplePushConstantData push{};
+		push.modelMatrix = obj.transform.mat4();
+		push.normalMatrix = obj.transform.normalMatrix();
+
+		vkCmdPushConstants(
+			commandBuffer,
+			objPipelineLayout,
+			VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+			0,
+			sizeof(SimplePushConstantData),
+			&push
+		);
+	}
+	else
+	{
+		DepthPushConstantData push{}; 
+		push.modelMatrix = obj.transform.mat4(); 
+		push.indexDepthCamera = lightIndex;
+
+		vkCmdPushConstants( 
+			commandBuffer, 
+			objPipelineLayout, 
+			VK_SHADER_STAGE_VERTEX_BIT, 
+			0,
+			sizeof(DepthPushConstantData),
+			&push 
+		);
 	}
 
-	SimplePushConstantData push{};
-	push.modelMatrix = obj.transform.mat4();
-	push.normalMatrix = obj.transform.normalMatrix();
-
-	vkCmdPushConstants(
-		commandBuffer,
-		objPipelineLayout,
-		VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-		0,
-		sizeof(SimplePushConstantData),
-		&push
-	);
+	
 
 	obj.bindModel(commandBuffer);
 	obj.drawModel(commandBuffer, objPipelineLayout);
 	
 }
 
-void GlobalRenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo)
+void GlobalRenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, bool bindSpotLight, int lightIndex)
 {
 	objPipeline->bind(commandBuffer);
 
@@ -147,15 +177,28 @@ void GlobalRenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, Frame
 		objPipelineLayout, 
 		0, 1,
 		&frameInfo.globalDescriptorSet[frameInfo.frameIndex], 
-		0,
-		nullptr
+		0, nullptr
 	);
+
+	if (bindSpotLight) {
+
+		
+		vkCmdBindDescriptorSets(
+			commandBuffer,
+			VK_PIPELINE_BIND_POINT_GRAPHICS,
+			objPipelineLayout,
+			2, 1,
+			&frameInfo.spotLightDescriptorSet[frameInfo.depthIndex],
+			0, nullptr
+		);
+	}
 
 	for (auto& kv : frameInfo.gameObjects)
 	{
 		auto& obj = kv.second;
 		if (obj.modelType == modelType)
-			renderModel(commandBuffer, frameInfo, obj);
+			renderModel(commandBuffer, frameInfo, obj, lightIndex);
 	}
 }
 
+ 
