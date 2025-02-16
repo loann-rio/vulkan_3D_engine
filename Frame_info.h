@@ -41,6 +41,7 @@ struct FrameInfo {
 	int frameIndex;
 	int depthIndex;
 	float frameTime;
+	int spotLightCount;
 	Camera& camera;
 	std::vector<VkDescriptorSet> globalDescriptorSet;
 	std::vector<VkDescriptorSet> spotLightDescriptorSet;

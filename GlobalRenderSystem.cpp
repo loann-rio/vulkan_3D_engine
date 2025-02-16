@@ -10,8 +10,8 @@
 
 
 struct SimplePushConstantData {
-	glm::mat4 modelMatrix{ 1.f };
-	glm::mat4 normalMatrix{ 1.f };
+	alignas(16) glm::mat4 modelMatrix{ 1.f };
+	alignas(16) glm::mat4 normalMatrix{ 1.f };
 };
 
 struct DepthPushConstantData {
@@ -160,8 +160,6 @@ void GlobalRenderSystem::renderModel(VkCommandBuffer& commandBuffer, FrameInfo& 
 		);
 	}
 
-	
-
 	obj.bindModel(commandBuffer);
 	obj.drawModel(commandBuffer, objPipelineLayout);
 	
@@ -181,7 +179,6 @@ void GlobalRenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, Frame
 	);
 
 	if (bindSpotLight) {
-
 		
 		vkCmdBindDescriptorSets(
 			commandBuffer,
@@ -199,6 +196,4 @@ void GlobalRenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, Frame
 		if (obj.modelType == modelType)
 			renderModel(commandBuffer, frameInfo, obj, lightIndex);
 	}
-}
-
- 
+} 

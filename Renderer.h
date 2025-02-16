@@ -31,52 +31,34 @@ public:
 	uint32_t getWidth() const { return swapChain->width(); }
 	uint32_t getHeight() const { return swapChain->height(); }
 
-	bool isFrameInProgress() const { return isFrameStarted;	}
+	int getFrameIndex() const {	return currentFrameIndex; }
+	int getDepthIndex() const {	return currentDepthFrameIndex; }
+
+	VkDescriptorImageInfo* getShadowImageInfo(int i) { return depthSwapChain->getShadowImageInfo(i); }
+
+	VkCommandBuffer beginFrame();
+	void endFrame(bool renderDepth);
+	void beginSwapChainRenderPass(VkCommandBuffer commandBuffer);
+	void endSwapChainRenderPass(VkCommandBuffer commandBuffer);
+
+	bool aquireNextImage();
+
+	void renderDepthImage(FrameInfo& frameInfo, std::shared_ptr<GlobalRenderSystem> renderSystems);
 
 	VkCommandBuffer getCurrentCommandBuffer() const {
 		assert(isFrameStarted && "cannot get command buffer when frame not in progress");
 		return commandBuffers[currentFrameIndex];
 	}
-	
+
 	VkCommandBuffer getCurrentDepthCommandBuffer(int depthCommandBufferIndex) const {
 		assert(isDepthStarted[depthCommandBufferIndex] && "cannot get command buffer when frame not in progress");
-		//std::cout << "get depth command buffer index " << depthCommandBufferIndex + currentDepthFrameIndex * Swap_chain::MAX_FRAMES_IN_FLIGHT << "\n";
-		return depthCommandBuffers[depthCommandBufferIndex + currentDepthFrameIndex * Swap_chain::MAX_FRAMES_IN_FLIGHT];
+		return depthCommandBuffers[depthCommandBufferIndex + currentDepthFrameIndex * DepthSwapChain::MAX_DEPTH_RENDER_COUNT];
 	}
 
-	std::vector<VkCommandBuffer> getCurrentDepthCommandBuffers() const {
-		//std::cout << "get depth command buffer index from" << currentDepthFrameIndex * Swap_chain::MAX_FRAMES_IN_FLIGHT << " to " << DepthSwapChain::MAX_DEPTH_RENDER_COUNT * (currentDepthFrameIndex + 1) << "\n";
-		//assert(std::all_of(isDepthStarted.begin(), isDepthStarted.end(), [](bool v) { return v; }) && "cannot get command buffer when frame not in progress");
-		return {depthCommandBuffers.begin() + DepthSwapChain::MAX_DEPTH_RENDER_COUNT * currentDepthFrameIndex, depthCommandBuffers.begin() + DepthSwapChain::MAX_DEPTH_RENDER_COUNT * (currentDepthFrameIndex + 1 )}; //depthCommandBuffers;
-	}
-
-	int getFrameIndex() const {
-		//assert(isFrameStarted && "cannot get frame index when frame not in progress"); 
-		return currentFrameIndex;
-	}
-
-	int getDepthIndex() const {
-		return currentDepthFrameIndex;
-	}
-
-	VkCommandBuffer beginFrame();
-	void endFrame();
-
-	VkCommandBuffer beginDepthFrame(int depthCommandBufferIndex);
-	void endDepthFrame(int depthCommandBufferIndex);
-
-	void beginSwapChainRenderPass(VkCommandBuffer commandBuffer);
-	void endSwapChainRenderPass(VkCommandBuffer commandBuffer);
-
-	void beginShadowRenderPass(VkCommandBuffer commandBuffer, int depthCommandBufferIndex);
-	void endShadowRenderPass(VkCommandBuffer commandBuffer, int depthCommandBufferIndex);
-
-	void submitCommandBuffers(bool renderDepth);
-	bool aquireNextImage();
-
-	VkDescriptorImageInfo* getShadowImageInfo(int i) { return depthSwapChain->getShadowImageInfo(i); } 
-
-	void renderDepthImage(FrameInfo& frameInfo, std::shared_ptr<GlobalRenderSystem> renderSystems);
+	std::vector<VkCommandBuffer> getCurrentDepthCommandBuffers(size_t commandBufferCount) const {
+		assert(std::all_of(isDepthStarted.begin(), (isDepthStarted.begin() + commandBufferCount), [](bool v) { return v; }) && "cannot get command buffer when not all frames in progress");
+		return { depthCommandBuffers.begin() + DepthSwapChain::MAX_DEPTH_RENDER_COUNT * currentDepthFrameIndex, depthCommandBuffers.begin() + DepthSwapChain::MAX_DEPTH_RENDER_COUNT * currentDepthFrameIndex + commandBufferCount };
+	} 
 	
 private:
 
@@ -84,6 +66,11 @@ private:
 	void createDepthCommandBuffer();
 	void freeCommandBuffers();
 	void recreateSwapChain();
+
+	VkCommandBuffer beginDepthFrame(int depthCommandBufferIndex);
+	void endDepthFrame(int depthCommandBufferIndex);
+	void beginShadowRenderPass(VkCommandBuffer commandBuffer, int depthCommandBufferIndex);
+	void endShadowRenderPass(VkCommandBuffer commandBuffer, int depthCommandBufferIndex); 
 
 	Window& window;
 	Device& device;

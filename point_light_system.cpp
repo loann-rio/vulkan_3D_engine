@@ -75,7 +75,6 @@ void PointLightSystem::update(FrameInfo& frameInfo, GlobalUbo& ubo, int frameInd
 {
 	auto rotateLight = glm::rotate(glm::mat4(1.f), frameInfo.frameTime, { 0.f, -1.0f, 0.f });
 
-
 	int lightIndex = 0;
 	for (auto& kv : frameInfo.gameObjects) {
 		auto& obj = kv.second;

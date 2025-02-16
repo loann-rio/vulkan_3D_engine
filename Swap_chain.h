@@ -40,11 +40,6 @@ public:
     VkResult acquireNextImage(uint32_t* imageIndex);
     VkResult submitCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex, bool waitDepthRender = false);
     void submitDepthCommandBuffer(const std::vector<VkCommandBuffer> depthCommandBuffer);
-    //VkResult submitDepthCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex);
-    VkResult submitDepthAndMainCommandBuffers(
-        const std::vector<VkCommandBuffer> depthCommandBuffer,
-        const VkCommandBuffer* mainCommandBuffer,
-        uint32_t* imageIndex);
 
     bool compareSwapFormat(const Swap_chain& swapChain) const {
         return swapChain.swapChainDepthFormat == swapChainDepthFormat && 
@@ -55,7 +50,7 @@ private:
     void init();
     void createSwapChain();
     void createImageViews();
-    void createDepthResources(std::vector<VkImage>& image, std::vector<VkDeviceMemory>& imageMemory, std::vector<VkImageView>& imageView);
+    void createDepthResources();
     void createRenderPass();
     void createFramebuffers();
     void createSyncObjects();

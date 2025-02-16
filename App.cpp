@@ -2,16 +2,11 @@
 
 // local
 #include "KeyboardMovementController.h"
-
-
 #include "Camera.h"
 #include "Buffer.h"
 #include "Frame_info.h"
-
 #include "GlTFModel.h"
-
 #include "preBuild.h"
-
 #include "Texture.h"
 
 
@@ -30,7 +25,6 @@
 #include "backends/imgui_impl_vulkan.h"
 #endif // ENABLE_IMGUI
 
-
 // std
 #include <stdexcept>
 #include <array>
@@ -40,7 +34,6 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
-
 
 
 App::App() { 
@@ -60,56 +53,6 @@ App::~App() { globalPool = nullptr;  }
 
 void App::run()
 {
-    /*uboBuffers.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
-    for (int i = 0; i < uboBuffers.size(); i++)
-    {
-        uboBuffers[i] = std::make_unique<Buffer>(
-            device,
-            sizeof(GlobalUbo),
-            1,
-            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-            device.properties.limits.minUniformBufferOffsetAlignment
-        ); 
-
-        uboBuffers[i]->map();
-    }
-
-    auto globalSetLayout = DescriptorSetLayout::Builder(device)
-        .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
-        .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .build();
-
-    std::vector<VkDescriptorSet> globalDescriptorSet(Swap_chain::MAX_FRAMES_IN_FLIGHT);
-    for (int i = 0; i < globalDescriptorSet.size() && i < 2; i++)
-    {
-        auto bufferInfo = uboBuffers[i]->descriptorInfo();
-        auto shadowInfo = renderer.getShadowImageInfo(0);
-
-        DescriptorWriter(*globalSetLayout, *globalPool)
-            .writeBuffer(0, &bufferInfo)
-            .writeImage(1, &shadowInfo)
-            .build(globalDescriptorSet[i]);
-    }
-
-
-    gltfRenderSystem = GlobalRenderSystem::create<GlTFModel::ModelGltf>(
-        device, renderer.getSwapChainRenderPass(), { globalSetLayout->getDescriptorSetLayout() },
-        "GlTFshader.vert.spv", "GlTFshader.frag.spv");
-
-    objRenderSystem = GlobalRenderSystem::create<Model>(
-        device, renderer.getSwapChainRenderPass(), { globalSetLayout->getDescriptorSetLayout() },
-        "simple_shader.vert.spv", "simple_shader.frag.spv");
-
-    DepthRenderSystem = GlobalRenderSystem::create<Model>(
-        device, renderer.getDepthRenderPass(), { globalSetLayout->getDescriptorSetLayout() },
-        "shadowmap.vert.spv");
-
-    pointLightSystem = std::make_unique<PointLightSystem>(device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() );
-
-    TextOverlay textOverlay{ device, renderer.getSwapChainRenderPass() };
-    textOverlay.prepareResources(*globalPool);*/
-
     TextOverlay textOverlay(device, renderer.getSwapChainRenderPass());
     textOverlay.prepareResources(*globalPool);
 
@@ -132,6 +75,10 @@ void App::run()
     lightSourceObject2.transform.translation = { 2.0f, -1.0f, 2.5f };
     lightSourceObject2.transform.rotation.y = pi<float> *2 / 5;
 
+    auto lightSourceObject3 = GameObject::createGameObject(device); 
+    lightSourceObject3.transform.translation = { 7.f, -3.f, 7.f };
+    lightSourceObject3.transform.rotation.x = - pi<float> / 2; 
+
     Camera lightSource{};
     lightSource.setPerspectiveProjection(glm::radians(50.f), 1.f, .1f, 100.0f);
     lightSource.setViewYXZ(lightSourceObject.transform.translation, lightSourceObject.transform.rotation); 
@@ -140,13 +87,17 @@ void App::run()
     lightSource2.setPerspectiveProjection(glm::radians(50.f), 1.f, .1f, 100.0f);
     lightSource2.setViewYXZ(lightSourceObject2.transform.translation, lightSourceObject2.transform.rotation);
 
+    Camera lightSource3{};
+    lightSource3.setPerspectiveProjection(glm::radians(50.f), 1.f, .1f, 100.0f);
+    lightSource3.setViewYXZ(lightSourceObject3.transform.translation, lightSourceObject3.transform.rotation);
+
     // user inputs
     KeyboardMovementController cameraController{};
 
     // UBO
     GlobalUbo ubo{}; 
     SpotLightUbo spotLightUbo{};
-    spotLightUbo.numLights = 2;
+    spotLightUbo.numLights = 3;
     
     spotLightUbo.spotLight[0] = {
         glm::vec4(lightSourceObject.transform.translation, 1.0),
@@ -160,6 +111,13 @@ void App::run()
         { 0.0, 1.0, 0.0, .9 },
         glm::vec4(lightSourceObject2.transform.rotation, 1.0),
         lightSource2.getProjection() * lightSource2.getView()
+    };
+
+    spotLightUbo.spotLight[2] = {
+        glm::vec4(lightSourceObject3.transform.translation, 1.0),
+        { 1.0, 0.0, 0.0, .8 },
+        glm::vec4(lightSourceObject3.transform.rotation, 1.0),
+        lightSource3.getProjection() * lightSource3.getView()
     };
 
     shadowUboBuffer[0]->writeToBuffer(&spotLightUbo);
@@ -199,7 +157,7 @@ void App::run()
 
         /////// start frame ///////
 
-        if (!renderer.aquireNextImage()) continue;
+        if (!renderer.aquireNextImage()) continue;  // TODO change position closer to start of next frame
         int frameIndex = renderer.getFrameIndex();
         int depthIndex = renderer.getDepthIndex();
         bool renderDepth = (frame == 0);
@@ -208,6 +166,7 @@ void App::run()
             frameIndex,
             depthIndex,
             frameTime,
+            spotLightUbo.numLights,
             camera, 
             globalDescriptorSet,
             shadowDescriptorSet,
@@ -242,12 +201,10 @@ void App::run()
             textOverlay.renderText(commandBuffer, frameInfo);
 
             renderer.endSwapChainRenderPass(commandBuffer);
-            renderer.endFrame();
+            renderer.endFrame(renderDepth);
 		}
 
-        renderer.submitCommandBuffers(renderDepth);
-
-        frame = (frame + 1) % 3; 
+        frame = (frame + 1) % 1000; 
 	}
 
     vkQueueWaitIdle(device.presentQueue());
@@ -417,7 +374,6 @@ void App::createRenderSystems()
         "shadowmap.vert.spv");
 
     pointLightSystem = std::make_unique<PointLightSystem>(device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout());
-
     
 }
 
@@ -428,5 +384,5 @@ void App::getFrameRate(float lastFrameTime)
     frameTimeSum -= frameTimeVector[0];
 
     frameTimeVector.push_back(v);
-    frameTimeVector.erase(frameTimeVector.begin());
+    frameTimeVector.erase(frameTimeVector.begin()); 
 }

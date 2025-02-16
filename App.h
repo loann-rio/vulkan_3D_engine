@@ -59,8 +59,6 @@ private:
 
 	std::unique_ptr<PointLightSystem> pointLightSystem;
 
-	//std::unique_ptr<TextOverlay> textOverlay;
-
 	// global descriptor sets
 	std::vector<VkDescriptorSet> globalDescriptorSet;
 	std::vector<VkDescriptorSet> shadowDescriptorSet;

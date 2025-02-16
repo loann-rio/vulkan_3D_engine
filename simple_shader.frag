@@ -69,7 +69,6 @@ vec4 compute_shadow_factor(vec4 light_space_pos, uint indexSpotLight, vec3 surfa
     
 	if (shadow == 0) return vec4(0.0);
 
-
 	vec3 directionToLight = spotLightUbo.spotLight[indexSpotLight].position.xyz - fragPositionWorld;
 	//float attenuation = 1.0 / dot(directionToLight, directionToLight);
 	directionToLight = normalize(directionToLight);
@@ -79,7 +78,6 @@ vec4 compute_shadow_factor(vec4 light_space_pos, uint indexSpotLight, vec3 surfa
 
 	return cosAngOfIncidence * intencity / 9 ;
 }
-
 
 void main() {
 
@@ -136,6 +134,9 @@ void main() {
 	for (uint indexSpotLight = 0; indexSpotLight < spotLightUbo.numLights && indexSpotLight < MAX_NUM_SPOT_LIGHT; ++indexSpotLight) {
 		spotLightLight += compute_shadow_factor(fragPosShadow[indexSpotLight], indexSpotLight, surfaceNormal);
 	}
+
+	//spotLightLight += compute_shadow_factor(fragPosShadow[0], 0, surfaceNormal);
+	//spotLightLight += compute_shadow_factor(fragPosShadow[1], 1, surfaceNormal);
 	
 	// sum colors
 	outColor = ((vec4(diffuseLight, 1.0) + vec4(specularLight, 1.0) + cosAngOfIncidence * ubo.globalLightDir.w + spotLightLight) * color);

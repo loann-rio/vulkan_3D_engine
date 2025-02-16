@@ -34,55 +34,7 @@ DepthSwapChain::~DepthSwapChain()
 	for (auto framebuffer : depthFramebuffers) {
 		vkDestroyFramebuffer(device.device(), framebuffer, nullptr);
 	}
-}
 
-VkFormat DepthSwapChain::findDepthFormat()
-{
-    return device.findSupportedFormat(
-        { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
-        VK_IMAGE_TILING_OPTIMAL,
-        VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
-}
-
-void DepthSwapChain::transitionDepthImageLayout(VkCommandBuffer& depthCommandBuffer, int depthFrameIndex, VkImageLayout oldLayout, VkImageLayout newLayout)
-{
-    device.transitionImageLayout(depthCommandBuffer, depthImages[depthFrameIndex], swapChainDepthFormat, oldLayout, newLayout, 1);
-}
-
-void DepthSwapChain::submitDepthCommandBuffer(const std::vector<VkCommandBuffer> depthCommandBuffer)
-{
-    /*depthFinishedSemaphores.resize(depthCommandBuffer.size());
-
-    VkSemaphoreCreateInfo semaphoreInfo{};
-    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-    for (size_t i = 0; i < depthCommandBuffer.size(); i++) {
-        if (depthFinishedSemaphores[i] == VK_NULL_HANDLE) {
-            if (vkCreateSemaphore(device.device(), &semaphoreInfo, nullptr, &depthFinishedSemaphores[i]) != VK_SUCCESS) {
-                throw std::runtime_error("failed to create depth semaphore!");
-            }
-        }
-    }*/
-
-    for (size_t i = 0; i < depthCommandBuffer.size(); i++) { 
-        if (depthCommandBuffer[i] == VK_NULL_HANDLE) { 
-            throw std::runtime_error("Error: Uninitialized command buffer in depthCommandBuffer!"); 
-        } 
-    } 
-
-    // Submit Depth Pass 
-    VkSubmitInfo depthSubmitInfo{};
-    depthSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    depthSubmitInfo.commandBufferCount = static_cast<uint32_t>(depthCommandBuffer.size()); 
-    depthSubmitInfo.pCommandBuffers = depthCommandBuffer.data();
-
-    // Signal semaphore after depth pass
-    //depthSubmitInfo.signalSemaphoreCount = static_cast<uint32_t>(depthFinishedSemaphores.size());
-    //depthSubmitInfo.pSignalSemaphores = depthFinishedSemaphores.data();
-
-    if (vkQueueSubmit(device.graphicsQueue(), 1, &depthSubmitInfo, VK_NULL_HANDLE) != VK_SUCCESS) { 
-        throw std::runtime_error("failed to submit depth command buffer!");
-    }
 }
 
 void DepthSwapChain::init()
@@ -91,7 +43,15 @@ void DepthSwapChain::init()
     createDepthResources();
     createDepthbuffers();
     createDepthImageInfo();
+}
 
+
+VkFormat DepthSwapChain::findDepthFormat()
+{
+    return device.findSupportedFormat(
+        { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
 void DepthSwapChain::createDepthResources()
@@ -126,7 +86,6 @@ void DepthSwapChain::createDepthResources()
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             depthImages[i],
             depthImageMemorys[i]);
-
 
         VkImageViewCreateInfo viewInfo{};
         viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -241,7 +200,6 @@ void DepthSwapChain::createDepthbuffers()
 
 void DepthSwapChain::createDepthImageInfo()
 {
-
     for (uint16_t i = 0; i < Swap_chain::MAX_FRAMES_IN_FLIGHT; ++i) 
     {
         std::array<VkDescriptorImageInfo, MAX_DEPTH_RENDER_COUNT> imageInfo;
