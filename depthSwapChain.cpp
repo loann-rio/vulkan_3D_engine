@@ -126,8 +126,10 @@ void DepthSwapChain::createDepthResources()
             throw std::runtime_error("failed to create texture sampler!");
         }
 
-        device.transitionImageLayout(depthImages[i], swapChainDepthFormat,
-            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1);
+       
+       device.transitionImageLayout(depthImages[i], swapChainDepthFormat,
+            VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1);
+       
     }
 }
 

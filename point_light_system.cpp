@@ -85,12 +85,9 @@ void PointLightSystem::update(FrameInfo& frameInfo, GlobalUbo& ubo, int frameInd
 		// update light position:
 		obj.transform.translation = glm::vec3(rotateLight * glm::vec4(obj.transform.translation - glm::vec3{ 7, 0, 7 }, 1.f))+glm::vec3{ 7, 0, 7 };
 		
-		// update light intensity
-		//obj.pointLight->LightIntencity = sin(frameInd/64.0f + 24);
-
 		// copy light to ubo
 		ubo.pointLights[lightIndex].position = glm::vec4(obj.transform.translation, 1.0);
-		ubo.pointLights[lightIndex].color = glm::vec4(obj.color, obj.pointLight->LightIntencity);
+		ubo.pointLights[lightIndex].color = glm::vec4(glm::vec3(obj.transform.color), obj.pointLight->LightIntencity);
 		lightIndex++;
 	}
 	ubo.numLights = lightIndex;
@@ -105,7 +102,7 @@ void PointLightSystem::render(VkCommandBuffer& commandBuffer, FrameInfo& frameIn
 		if (obj.pointLight == nullptr) continue;
 
 		// get dist
-		auto offset = frameInfo.camera.getPosition() - obj.transform.translation;
+		auto offset = frameInfo.cameraPos - obj.transform.translation;
 		float disSquared = glm::dot(offset, offset);
 		sorted[disSquared] = obj.getId();
 	}
@@ -128,7 +125,7 @@ void PointLightSystem::render(VkCommandBuffer& commandBuffer, FrameInfo& frameIn
 
 		PointLightPushConstants push{};
 		push.position = glm::vec4(obj.transform.translation, 1.f);
-		push.color = glm::vec4(obj.color, obj.pointLight->LightIntencity);
+		push.color = glm::vec4(glm::vec3(obj.transform.color), obj.pointLight->LightIntencity);
 		push.radius = obj.transform.scale.x;
 
 		vkCmdPushConstants(

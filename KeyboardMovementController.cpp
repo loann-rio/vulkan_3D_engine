@@ -34,4 +34,6 @@ void KeyboardMovementController::moveInPlaneXZ(GLFWwindow* window, float dt, Gam
 	if (glm::dot(moveDir, moveDir) > std::numeric_limits<float>::epsilon()) {
 		gameObject.transform.translation += sensiMove * dt * glm::normalize(moveDir);
 	}
+
+	gameObject.updateCameraView();
 }

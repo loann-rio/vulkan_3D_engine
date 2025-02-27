@@ -4,7 +4,7 @@
 
 
 #include <glm/ext/quaternion_common.hpp>
-#include <iostream>
+#include <iostream> 
 
 #include "GlTFModel.h"
 
@@ -20,7 +20,7 @@ bool loadImageDataFunc(tinygltf::Image* image, const int imageIndex, std::string
 	return tinygltf::LoadImageData(image, imageIndex, error, warning, req_width, req_height, bytes, size, userData);
 }
 
-void GlTFModel::ModelGltf::destroy(VkDevice device)
+GlTFModel::ModelGltf::~ModelGltf()
 {
 	textures.resize(0);
 
@@ -28,9 +28,9 @@ void GlTFModel::ModelGltf::destroy(VkDevice device)
 		delete node;
 	}
 
-	for (auto node : linearNodes) {
+	/*for (auto node : linearNodes) {
 		delete node;
-	}
+	}*/
 
 	materials.resize(0);
 	animations.resize(0);
@@ -43,7 +43,6 @@ void GlTFModel::ModelGltf::destroy(VkDevice device)
 	}
 
 	skins.resize(0);
-
 }
 
 void GlTFModel::ModelGltf::loadNode(Node* parent, const tinygltf::Node& node, uint32_t nodeIndex, const tinygltf::Model& model, LoaderInfo& loaderInfo, float globalscale)
@@ -401,7 +400,7 @@ VkFilter GlTFModel::ModelGltf::getVkFilterMode(int32_t filterMode)
 
 }
 
-void GlTFModel::ModelGltf::loadTextures(tinygltf::Model& gltfModel, Device& device, VkQueue transferQueue)
+void GlTFModel::ModelGltf::loadTextures(tinygltf::Model& gltfModel, Device& device)
 {
 	for (tinygltf::Texture& tex : gltfModel.textures) 
 	{
@@ -700,7 +699,7 @@ void GlTFModel::ModelGltf::loadAnimations(tinygltf::Model& gltfModel)
 	}
 }
 
-void GlTFModel::ModelGltf::loadFromFile(std::string filename, VkQueue transferQueue, float scale)
+void GlTFModel::ModelGltf::loadFromFile(std::string filename, float scale)
 {
 
 	basist::basisu_transcoder_init();
@@ -747,7 +746,7 @@ void GlTFModel::ModelGltf::loadFromFile(std::string filename, VkQueue transferQu
 		/////// load textures
 
 		loadTextureSamplers(gltfModel);
-		loadTextures(gltfModel, device, transferQueue);
+		loadTextures(gltfModel, device);
 		loadMaterials(gltfModel);
 
 		const tinygltf::Scene& scene = gltfModel.scenes[gltfModel.defaultScene > -1 ? gltfModel.defaultScene : 0];
@@ -1028,6 +1027,8 @@ GlTFModel::Mesh::~Mesh()
 {
 	for (Primitive* p : primitives)
 		delete p;
+
+	primitives.clear();
 }
 
 void GlTFModel::Mesh::setBoundingBox(glm::vec3 min, glm::vec3 max)
@@ -1138,7 +1139,9 @@ void GlTFModel::Node::update()
 GlTFModel::Node::~Node()
 {
 	if (mesh) {
+
 		delete mesh;
+		mesh = nullptr;
 	}
 
 	for (auto& child : children) {
@@ -1175,8 +1178,9 @@ GlTFModel::BoundingBox GlTFModel::BoundingBox::getAABB(glm::mat4 m)
 
 std::unique_ptr<GlTFModel::ModelGltf> GlTFModel::createModelFromFile(Device& device, const std::string& filePath)
 {
+	std::cout << "start loading \n";
 	std::unique_ptr<GlTFModel::ModelGltf> model = std::make_unique<GlTFModel::ModelGltf>(device);
-	model->loadFromFile(filePath, device.graphicsQueue());
+	model->loadFromFile(filePath); 
 	return model;
 }
 
@@ -1365,11 +1369,10 @@ void GlTFModel::TextureModel::TextFromglTfImage(Device& device, tinygltf::Image&
 			image->textureImageMemory, 
 			mipLevels);
 
-		image->transitionImageLayout(image->textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
-
+		
+		device.transitionImageLayout(image->textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
 		device.copyBufferToImage(stagingBuffer, image->textureImage, static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1, mipLevels - 1);
-
-		image->transitionImageLayout(image->textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevels);
+		device.transitionImageLayout(image->textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevels);
 		
 
 		vkDestroyBuffer(device.device(), stagingBuffer, nullptr);

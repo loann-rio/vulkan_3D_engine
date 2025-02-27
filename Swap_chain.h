@@ -8,6 +8,7 @@
 // std lib headers
 #include <string>
 #include <vector>
+#include <mutex>
 #include <memory>
 
 class Swap_chain {

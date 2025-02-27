@@ -135,9 +135,6 @@ void main() {
 		spotLightLight += compute_shadow_factor(fragPosShadow[indexSpotLight], indexSpotLight, surfaceNormal);
 	}
 
-	//spotLightLight += compute_shadow_factor(fragPosShadow[0], 0, surfaceNormal);
-	//spotLightLight += compute_shadow_factor(fragPosShadow[1], 1, surfaceNormal);
-	
 	// sum colors
 	outColor = ((vec4(diffuseLight, 1.0) + vec4(specularLight, 1.0) + cosAngOfIncidence * ubo.globalLightDir.w + spotLightLight) * color);
 

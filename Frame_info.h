@@ -15,13 +15,6 @@ struct PointLight {
 	//float angle;
 };
 
-struct SpotLight {
-	glm::vec4 position{};
-	glm::vec4 color{ 1.0f };
-	glm::vec4 orientation{};
-	glm::mat4 lightMatrix{ 1.0f };
-};
-
 struct SpotLightUbo {
 	SpotLight spotLight[MAX_SPOTLIGHT];
 	int numLights;
@@ -42,8 +35,9 @@ struct FrameInfo {
 	int depthIndex;
 	float frameTime;
 	int spotLightCount;
-	Camera& camera;
+	glm::vec3 cameraPos;
 	std::vector<VkDescriptorSet> globalDescriptorSet;
 	std::vector<VkDescriptorSet> spotLightDescriptorSet;
 	GameObject::Map& gameObjects;
+	std::shared_ptr<GameObject::Map> asyncGameObjects;
 };

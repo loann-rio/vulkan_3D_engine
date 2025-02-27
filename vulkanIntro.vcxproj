@@ -181,6 +181,7 @@
     <ClCompile Include="KeyboardMovementController.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Model.cpp" />
+    <ClCompile Include="objectManager.cpp" />
     <ClCompile Include="ObjModel.cpp" />
     <ClCompile Include="Pipeline.cpp" />
     <ClCompile Include="point_light_system.cpp" />
@@ -205,6 +206,7 @@
     <ClInclude Include="json.hpp" />
     <ClInclude Include="KeyboardMovementController.h" />
     <ClInclude Include="Model.h" />
+    <ClInclude Include="objectManager.h" />
     <ClInclude Include="ObjModel.h" />
     <ClInclude Include="Pipeline.h" />
     <ClInclude Include="point_light_system.h" />

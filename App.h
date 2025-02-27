@@ -10,6 +10,7 @@
 #include "GlobalRenderSystem.h"
 #include "point_light_system.h"
 #include "TextOverlay.h"
+#include "objectManager.h"
 
 #include <memory>
 #include <vector>
@@ -62,5 +63,11 @@ private:
 	// global descriptor sets
 	std::vector<VkDescriptorSet> globalDescriptorSet;
 	std::vector<VkDescriptorSet> shadowDescriptorSet;
+
+	// spotlights
+	GameObject::Map listSpotLights;
+
+	// object management:
+	ObjectManager objectManager{ device };
 };
 

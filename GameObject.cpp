@@ -64,11 +64,38 @@ glm::mat3 TransformComponent::normalMatrix()
 GameObject GameObject::makePointLight(Device& device, float intencity, float radius, glm::vec3 color = glm::vec3{ 1.f })
 {
     GameObject gameObj = GameObject::createGameObject(device);
-    gameObj.color = color;
+    //gameObj.color = color;
+    gameObj.transform.color = glm::vec4(color, 1.f);
     gameObj.transform.scale.x = radius;
     gameObj.pointLight = std::make_unique<PointLightComponent>();
     gameObj.pointLight->LightIntencity = intencity;
     return gameObj;
+}
+
+GameObject GameObject::makeCamera(Device& device, float fov, float aspect_ratio, float nearClip, float farClip)
+{
+    GameObject viewerObject = GameObject::createGameObject(device);
+    viewerObject.camera = std::make_unique<Camera>();
+    viewerObject.camera->setPerspectiveProjection(fov, aspect_ratio, nearClip, farClip);
+    return viewerObject;
+}
+
+void GameObject::updateCameraView() 
+{ 
+    assert(camera != nullptr && "cannot update camera on non camera game object");
+    camera->setViewYXZ(transform.translation, transform.rotation);
+}
+
+SpotLight GameObject::getSpotLightInfo(bool _updateCameraView)
+{
+    if (_updateCameraView) updateCameraView();
+
+    return { 
+        glm::vec4(transform.translation, 1.0),
+        transform.color,
+        glm::vec4(transform.rotation, 1.0),
+        camera->getProjection() * camera->getView() 
+    };
 }
 
 void GameObject::createDescriptorSet(DescriptorPool& pool) const

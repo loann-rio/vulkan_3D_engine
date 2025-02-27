@@ -64,7 +64,9 @@ VkCommandBuffer Renderer::beginFrame()
 
 	auto commandBuffer = getCurrentCommandBuffer(); 
 
-	vkResetCommandBuffer(commandBuffer, 0); 
+	//std::lock_guard<std::mutex> lock(device.getGraphicMutex());
+
+	//vkResetCommandBuffer(commandBuffer, 0); 
 
 	VkCommandBufferBeginInfo beginInfo{};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -106,7 +108,8 @@ VkCommandBuffer Renderer::beginDepthFrame(int depthCommandBufferIndex)
 	isDepthStarted[depthCommandBufferIndex] = true;
 	auto commandBuffer = getCurrentDepthCommandBuffer(depthCommandBufferIndex);
 
-	vkResetCommandBuffer(commandBuffer, 0);
+	//std::lock_guard<std::mutex> lock(device.getGraphicMutex());
+	//vkResetCommandBuffer(commandBuffer, 0);
 
 	VkCommandBufferBeginInfo beginInfo{}; 
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO; 
@@ -259,6 +262,8 @@ void Renderer::createCommandBuffer()
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	allocInfo.commandPool = device.getCommandPool();
 	allocInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
+
+	//std::lock_guard<std::mutex> lock(device.getGraphicMutex());
 
 	if (vkAllocateCommandBuffers(device.device(), &allocInfo, commandBuffers.data()) !=
 		VK_SUCCESS) {

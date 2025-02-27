@@ -21,6 +21,7 @@ public:
 		vkDestroySampler(device.device(), textureSampler, nullptr);
 		vkDestroyImageView(device.device(), textureImageView, nullptr);
 		vkDestroyImage(device.device(), textureImage, nullptr);
+
 		vkFreeMemory(device.device(), textureImageMemory, nullptr);
 	}
 
@@ -28,10 +29,6 @@ public:
 
 	VkImageView getImageView() const { return textureImageView; }
 	VkSampler getSampler() const { return textureSampler; }
-	
-	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevel = 1) {
-		device.transitionImageLayout(image, format, oldLayout, newLayout, mipLevel);
-	}
 
 	void generateMipChain(VkImage image, uint32_t mipLevels, uint32_t width, uint32_t height);
 

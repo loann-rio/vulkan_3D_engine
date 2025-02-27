@@ -223,7 +223,6 @@ class GlTFModel
 
 		struct Vertex {
 			glm::vec3 position{};
-
 			glm::vec3 normal{};
 
 			glm::vec2 uv0{};
@@ -237,7 +236,6 @@ class GlTFModel
 			static std::vector<VkVertexInputBindingDescription> getBindingDescriptions();
 			static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
 			static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptionsShadow();
-
 		};
 
 		std::unique_ptr<Buffer> vertexBuffer;
@@ -278,38 +276,45 @@ class GlTFModel
 		};
 
 		ModelGltf(Device& device) : device{ device }{};
-		void destroy(VkDevice device);
+		~ModelGltf();
+
 		void loadNode(Node* parent, const tinygltf::Node& node, uint32_t nodeIndex, const tinygltf::Model& model, LoaderInfo& loaderInfo, float globalscale);
-		void getNodeProps(const tinygltf::Node& node, const tinygltf::Model& model, size_t& vertexCount, size_t& indexCount);
 		void loadSkins(tinygltf::Model& gltfModel);
-		void loadTextures(tinygltf::Model& gltfModel, Device& device, VkQueue transferQueue);
-		VkSamplerAddressMode getVkWrapMode(int32_t wrapMode);
-		VkFilter getVkFilterMode(int32_t filterMode);
+		void loadTextures(tinygltf::Model& gltfModel, Device& device);
 		void loadTextureSamplers(tinygltf::Model& gltfModel);
 		void loadMaterials(tinygltf::Model& gltfModel);
 		void loadAnimations(tinygltf::Model& gltfModel);
-		void loadFromFile(std::string filename, VkQueue transferQueue, float scale = 1.0f);
-		void drawNode(Node* node, VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout);
-		void draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout);
-		void calculateBoundingBox(Node* node, Node* parent);
+		void loadFromFile(std::string filename, float scale = 1.0f);
+		
+
+		VkSamplerAddressMode getVkWrapMode(int32_t wrapMode);
+		VkFilter getVkFilterMode(int32_t filterMode);
+		void getNodeProps(const tinygltf::Node& node, const tinygltf::Model& model, size_t& vertexCount, size_t& indexCount);
 		void getSceneDimensions();
-		void updateAnimation(uint32_t index, float time);
-		void createVertexBuffers(LoaderInfo loaderInfo);
-		void createIndexBuffers(LoaderInfo loaderInfo);
 		static std::vector<VkDescriptorType> getDescriptorType();
-		static int getModelType() { return 2; }
-
-		const uint16_t descriptorSetIndex = 1;
-
-		void createDescriptorSet(DescriptorPool& pool, Device& device);
+		std::vector<VkDescriptorSet>& getDescriptorSets() { return descriptorSet; }
 
 		void bind(VkCommandBuffer& commandBuffer);
+		void drawNode(Node* node, VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout);
+		void draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout);
+		
+		
+		void updateAnimation(uint32_t index, float time);
+		
+		void createVertexBuffers(LoaderInfo loaderInfo);
+		void createIndexBuffers(LoaderInfo loaderInfo);
+		void createDescriptorSet(DescriptorPool& pool, Device& device);
+
+		void calculateBoundingBox(Node* node, Node* parent);
+
+		static int getModelType() { return 2; }
+		const uint16_t descriptorSetIndex = 1;
+
 
 		GlTFModel::Node* findNode(Node* parent, uint32_t index);
 		GlTFModel::Node* nodeFromIndex(uint32_t index);
 
-		std::vector<VkDescriptorSet>& getDescriptorSets() { return descriptorSet; }
-
+		
 		Device& device;
 	};
 

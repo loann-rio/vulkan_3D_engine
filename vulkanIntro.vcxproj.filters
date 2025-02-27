@@ -111,6 +111,9 @@
     <ClCompile Include="depthSwapChain.cpp">
       <Filter>Fichiers sources</Filter>
     </ClCompile>
+    <ClCompile Include="objectManager.cpp">
+      <Filter>Fichiers sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Window.h">
@@ -186,6 +189,9 @@
       <Filter>Fichiers de ressources</Filter>
     </ClInclude>
     <ClInclude Include="depthSwapChain.h">
+      <Filter>Fichiers d%27en-tête</Filter>
+    </ClInclude>
+    <ClInclude Include="objectManager.h">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
   </ItemGroup>

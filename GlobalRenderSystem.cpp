@@ -196,4 +196,12 @@ void GlobalRenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, Frame
 		if (obj.modelType == modelType)
 			renderModel(commandBuffer, frameInfo, obj, lightIndex);
 	}
+
+	
+	for (auto& kv : *frameInfo.asyncGameObjects)
+	{
+		auto& obj = kv.second;
+		if (obj.modelType == modelType)
+			renderModel(commandBuffer, frameInfo, obj, lightIndex);
+	}
 } 

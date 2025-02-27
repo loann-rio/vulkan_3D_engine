@@ -57,69 +57,28 @@ void App::run()
     textOverlay.prepareResources(*globalPool);
 
     // camera setting
-    Camera camera{};
-    auto viewerObject = GameObject::createGameObject(device);
-    viewerObject.transform.translation = { 2.0f, -1.0f, 2.5f };
-    viewerObject.transform.rotation.y = pi<float> * 1/3;
-
-    float aspec = renderer.getAspectRatio();
-    camera.setPerspectiveProjection(glm::radians(50.f), aspec, .1f, 100.0f);
-
-
-    
-    auto lightSourceObject = GameObject::createGameObject(device);
-    lightSourceObject.transform.translation = { -4.0f, -1.0f, 5.5f };
-    lightSourceObject.transform.rotation.y = pi<float> * 2/5; 
-
-    auto lightSourceObject2 = GameObject::createGameObject(device); 
-    lightSourceObject2.transform.translation = { 2.0f, -1.0f, 2.5f };
-    lightSourceObject2.transform.rotation.y = pi<float> *2 / 5;
-
-    auto lightSourceObject3 = GameObject::createGameObject(device); 
-    lightSourceObject3.transform.translation = { 7.f, -3.f, 7.f };
-    lightSourceObject3.transform.rotation.x = - pi<float> / 2; 
-
-    Camera lightSource{};
-    lightSource.setPerspectiveProjection(glm::radians(50.f), 1.f, .1f, 100.0f);
-    lightSource.setViewYXZ(lightSourceObject.transform.translation, lightSourceObject.transform.rotation); 
-
-    Camera lightSource2{}; 
-    lightSource2.setPerspectiveProjection(glm::radians(50.f), 1.f, .1f, 100.0f);
-    lightSource2.setViewYXZ(lightSourceObject2.transform.translation, lightSourceObject2.transform.rotation);
-
-    Camera lightSource3{};
-    lightSource3.setPerspectiveProjection(glm::radians(50.f), 1.f, .1f, 100.0f);
-    lightSource3.setViewYXZ(lightSourceObject3.transform.translation, lightSourceObject3.transform.rotation);
+    auto cameraObject = GameObject::makeCamera(device, glm::radians(50.f), renderer.getAspectRatio());
+    cameraObject.transform.translation = { 2.0f, -1.0f, 2.5f }; 
+    cameraObject.transform.rotation.y = pi<float> * 1/3; 
 
     // user inputs
     KeyboardMovementController cameraController{};
 
     // UBO
-    GlobalUbo ubo{}; 
+    GlobalUbo ubo{};
+
     SpotLightUbo spotLightUbo{};
-    spotLightUbo.numLights = 3;
     
-    spotLightUbo.spotLight[0] = {
-        glm::vec4(lightSourceObject.transform.translation, 1.0),
-        { 1.0, 1.0, 1.0, .9 },
-        glm::vec4(lightSourceObject.transform.rotation, 1.0),
-        lightSource.getProjection() * lightSource.getView()
-    };
 
-    spotLightUbo.spotLight[1] = {
-        glm::vec4(lightSourceObject2.transform.translation, 1.0),
-        { 0.0, 1.0, 0.0, .9 },
-        glm::vec4(lightSourceObject2.transform.rotation, 1.0),
-        lightSource2.getProjection() * lightSource2.getView()
-    };
+    int i = 0;
+    for (auto& kv : listSpotLights) {
+        auto& spot = kv.second;
+        spotLightUbo.spotLight[i++] = spot.getSpotLightInfo(true);
+        if (i > DepthSwapChain::MAX_DEPTH_RENDER_COUNT) break;
+    }
 
-    spotLightUbo.spotLight[2] = {
-        glm::vec4(lightSourceObject3.transform.translation, 1.0),
-        { 1.0, 0.0, 0.0, .8 },
-        glm::vec4(lightSourceObject3.transform.rotation, 1.0),
-        lightSource3.getProjection() * lightSource3.getView()
-    };
-
+    spotLightUbo.numLights = i;
+    
     shadowUboBuffer[0]->writeToBuffer(&spotLightUbo);
     shadowUboBuffer[0]->flush();
 
@@ -133,6 +92,7 @@ void App::run()
 	while (!window.shouldClose())
 	{
 		glfwPollEvents();
+        objectManager.pushModel(*globalPool);
 
         // calculate frame time
         auto newTime = std::chrono::high_resolution_clock::now();
@@ -152,12 +112,11 @@ void App::run()
         }
         
         // move camera on event 
-        cameraController.moveInPlaneXZ(window.getGLFWwindow(), frameTime, viewerObject);
-        camera.setViewYXZ(viewerObject.transform.translation, viewerObject.transform.rotation);
+        cameraController.moveInPlaneXZ(window.getGLFWwindow(), frameTime, cameraObject);
 
         /////// start frame ///////
-
-        if (!renderer.aquireNextImage()) continue;  // TODO change position closer to start of next frame
+        if (!renderer.aquireNextImage()) continue;
+        
         int frameIndex = renderer.getFrameIndex();
         int depthIndex = renderer.getDepthIndex();
         bool renderDepth = (frame == 0);
@@ -167,51 +126,57 @@ void App::run()
             depthIndex,
             frameTime,
             spotLightUbo.numLights,
-            camera, 
+            cameraObject.transform.translation, 
             globalDescriptorSet,
             shadowDescriptorSet,
-            gameObjects 
+            gameObjects,
+            objectManager.getGameObject()
         };  
 
         /////// update objects ///////
 
         pointLightSystem->update(frameInfo, ubo, frame);
 
-        ubo.projection = camera.getProjection(); 
-        ubo.view = camera.getView();
-        ubo.inverseView = camera.getInverseView();
+        ubo.projection = cameraObject.camera->getProjection(); 
+        ubo.view = cameraObject.camera->getView(); 
+        ubo.inverseView = cameraObject.camera->getInverseView(); 
         
         uboBuffers[frameIndex]->writeToBuffer(&ubo);
         uboBuffers[frameIndex]->flush();
 
-
         /////// render depthframe ///////
-        if (renderDepth) {
-            renderer.renderDepthImage(frameInfo, DepthRenderSystem); 
+        {
+            std::lock_guard<std::mutex> lock(device.getGraphicMutex());
+
+            if (renderDepth) {
+                renderer.renderDepthImage(frameInfo, DepthRenderSystem);
+            }
+
+            if (auto commandBuffer = renderer.beginFrame()) {
+
+                // render
+                renderer.beginSwapChainRenderPass(commandBuffer);
+
+                gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo);
+                objRenderSystem->renderGameObjects(commandBuffer, frameInfo, true);
+
+                //pointLightSystem->render(commandBuffer, frameInfo);
+                textOverlay.renderText(commandBuffer, frameInfo);
+
+                renderer.endSwapChainRenderPass(commandBuffer);
+                renderer.endFrame(renderDepth);
+            }
         }
-        
-		if (auto commandBuffer = renderer.beginFrame()) {           
 
-            // render
-			renderer.beginSwapChainRenderPass(commandBuffer);
-            //gltfRenderSystem.renderGameObjects(commandBuffer, frameInfo); 
-            objRenderSystem->renderGameObjects(commandBuffer, frameInfo, true); 
-
-            //pointLightSystem->render(commandBuffer, frameInfo);
-            textOverlay.renderText(commandBuffer, frameInfo);
-
-            renderer.endSwapChainRenderPass(commandBuffer);
-            renderer.endFrame(renderDepth);
-		}
-
-        frame = (frame + 1) % 1000; 
+        frame = (frame + 1) % 100; 
+        //vkQueueWaitIdle(device.presentQueue());
 	}
 
     vkQueueWaitIdle(device.presentQueue());
 }
-
-void App::loadGameObjects() {
-    
+ 
+void App::loadGameObjects() { 
+     
     std::shared_ptr<Model> viking_room = Model::createModelFromFile(device, "model/viking_room.obj", "textures/viking_room.png");
     auto Lowpoly_City = GameObject::createGameObject(device);
     Lowpoly_City.transform.rotation = { pi<float> / 2, pi<float>, 0 };
@@ -220,14 +185,16 @@ void App::loadGameObjects() {
     Lowpoly_City.createDescriptorSet(*globalPool);
     gameObjects.emplace(Lowpoly_City.getId(), std::move(Lowpoly_City));
 
-    std::shared_ptr<GlTFModel::ModelGltf> damagedHelmet = GlTFModel::createModelFromFile(device, "model/2.0/damagedhelmet/gltf/damagedhelmet.gltf");
+    /*std::shared_ptr<GlTFModel::ModelGltf> damagedHelmet = GlTFModel::createModelFromFile(device, "model/2.0/damagedhelmet/gltf/damagedhelmet.gltf");
     auto godh = GameObject::createGameObject(device);
     godh.transform.rotation = { pi<float> / 2, pi<float>, 0 };
     godh.transform.translation = { 7, 1, 7 };
     godh.transform.scale = { 0.5f, 0.5f, 0.5f };
     godh.setModel(damagedHelmet);
     godh.createDescriptorSet(*globalPool);
-    gameObjects.emplace(godh.getId(), std::move(godh));
+    gameObjects.emplace(godh.getId(), std::move(godh));*/
+
+    objectManager.startLoadModel();
 
     std::shared_ptr<Model> plane = createPlane(device, 10, 10, {0, 0, 0});
     auto plane1 = GameObject::createGameObject(device);
@@ -253,25 +220,25 @@ void App::loadGameObjects() {
     plane3.createDescriptorSet(*globalPool);
     gameObjects.emplace(plane3.getId(), std::move(plane3));
 
-    Model::Builder modelBuilder{};
-    modelBuilder.vertices = {
-        {{-1.0f,  1.0f, 0.f}, {0, 0, 0}, {0, 0, 0}, { 0.0f, 1.0f }}, // Top-left
-        {{-0.6f,  1.0f, 0.f}, {0, 0, 0}, {0, 0, 0}, {1.0f, 1.0f}}, // Top-right
-        {{-1.0f,  0.6f, 0.f}, {0, 0, 0}, {0, 0, 0}, {0.0f, 0.0f}}, // Bottom-left
-        {{-0.6f,  0.6f, 0.f}, {0, 0, 0}, {0, 0, 0}, {1.0f, 0.0f}}  // Bottom-right
-    };
+    //Model::Builder modelBuilder{};
+    //modelBuilder.vertices = {
+    //    {{-1.0f,  1.0f, 0.f}, {0, 0, 0}, {0, 0, 0}, { 0.0f, 1.0f }}, // Top-left
+    //    {{-0.6f,  1.0f, 0.f}, {0, 0, 0}, {0, 0, 0}, {1.0f, 1.0f}}, // Top-right
+    //    {{-1.0f,  0.6f, 0.f}, {0, 0, 0}, {0, 0, 0}, {0.0f, 0.0f}}, // Bottom-left
+    //    {{-0.6f,  0.6f, 0.f}, {0, 0, 0}, {0, 0, 0}, {1.0f, 0.0f}}  // Bottom-right
+    //};
 
-    modelBuilder.indices = {
-        0, 1, 2, // First triangle
-        2, 1, 3  // Second triangle
-    };
+    //modelBuilder.indices = {
+    //    0, 1, 2, // First triangle
+    //    2, 1, 3  // Second triangle
+    //};
 
-    std::shared_ptr<Model> quad = std::make_unique<Model>(device, modelBuilder, "textures/emptyTexture.jpg");
-    auto depthView = GameObject::createGameObject(device);
-    depthView.setModel(quad);
-    depthView.setModelType(QUAD_MODEL);
-    depthView.createDescriptorSet(*globalPool);
-    gameObjects.emplace(depthView.getId(), std::move(depthView));
+    //std::shared_ptr<Model> quad = std::make_unique<Model>(device, modelBuilder, "textures/emptyTexture.jpg");
+    //auto depthView = GameObject::createGameObject(device);
+    //depthView.setModel(quad);
+    //depthView.setModelType(QUAD_MODEL);
+    //depthView.createDescriptorSet(*globalPool);
+    //gameObjects.emplace(depthView.getId(), std::move(depthView));
     
 
     /*std::vector<glm::vec3> lightColors{
@@ -290,6 +257,18 @@ void App::loadGameObjects() {
         gameObjects.emplace(pointLight.getId(), std::move(pointLight));
     }*/
 
+    auto spotLight1 = GameObject::makeCamera(device, glm::radians(50.f), 1.f);
+    spotLight1.transform.translation = { -4.0f, -1.0f, 5.5f };
+    spotLight1.transform.rotation.y = pi<float> *2 / 5;
+    spotLight1.transform.color = { 1.0, 1.0, 1.0, .9 };
+
+    auto spotLight2 = GameObject::makeCamera(device, glm::radians(50.f), 1.f);
+    spotLight2.transform.translation = { 1.0f, -2.0f, 2.5f };
+    spotLight2.transform.rotation.y = pi<float> *2 / 5;
+    spotLight2.transform.color = { 0.0, 1.0, 0.0, .9 };
+
+    listSpotLights.emplace(spotLight1.getId(), std::move(spotLight1));
+    listSpotLights.emplace(spotLight2.getId(), std::move(spotLight2));
 }
 
 void App::createRenderSystems()

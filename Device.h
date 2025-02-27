@@ -5,6 +5,7 @@
 // std lib headers
 #include <string>
 #include <vector>
+#include <mutex>
 #include <vulkan/vulkan.h>
 
 // Im Gui
@@ -20,9 +21,11 @@ struct SwapChainSupportDetails {
 struct QueueFamilyIndices {
     uint32_t graphicsFamily;
     uint32_t presentFamily;
+    uint32_t transferFamily;
+    bool transferFamilyHasValue = false;
     bool graphicsFamilyHasValue = false;
     bool presentFamilyHasValue = false;
-    bool isComplete() const { return graphicsFamilyHasValue && presentFamilyHasValue; }
+    bool isComplete() const { return graphicsFamilyHasValue && presentFamilyHasValue && transferFamilyHasValue; }
 };
 
 static void check_vk_result(VkResult err)
@@ -68,6 +71,11 @@ public:
     void getPhysicalFeatures(VkPhysicalDeviceFeatures* pFeatures) { vkGetPhysicalDeviceFeatures(physicalDevice, pFeatures); }
     bool isFormatSupported(const VkFormat candidate);
 
+    void submitToGraphicQueue(VkSubmitInfo& submitInfo, VkFence fence);
+
+    std::mutex& getTransferMutex() { return transferQueueMutex; }
+    std::mutex& getGraphicMutex()  { return graphicQueueMutex;  }
+
     ImGui_ImplVulkan_InitInfo getImGuiInitInfo();
 
     // Buffer Helper Functions
@@ -79,8 +87,11 @@ public:
         VkDeviceMemory& bufferMemory);
 
     VkCommandBuffer beginSingleTimeCommands();
-
     void endSingleTimeCommands(VkCommandBuffer commandBuffer);
+
+    VkCommandBuffer beginSingleTimeTransferCommands();
+    void endSingleTimeTransferCommands(VkCommandBuffer commandBuffer);
+
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
     
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount, uint32_t mipLevel = 0, uint32_t bufferOffset = 0);
@@ -105,6 +116,7 @@ private:
     void pickPhysicalDevice();
     void createLogicalDevice();
     void createCommandPool();
+    void createTransferPool();
 
     // helper functions
     bool isDeviceSuitable(VkPhysicalDevice device);
@@ -125,11 +137,16 @@ private:
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     Window& window;
     VkCommandPool commandPool;
+    VkCommandPool transferPool;
 
     VkDevice device_;
     VkSurfaceKHR surface_;
     VkQueue graphicsQueue_;
     VkQueue presentQueue_;
+    VkQueue transferQueue_;
+
+    std::mutex graphicQueueMutex;
+    std::mutex transferQueueMutex;
 
     const std::vector<const char*> validationLayers = { "VK_LAYER_KHRONOS_validation"};
     const std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };

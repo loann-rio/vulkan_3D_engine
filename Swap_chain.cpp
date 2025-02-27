@@ -129,10 +129,8 @@ VkResult Swap_chain::submitCommandBuffers(
     submitInfo.pSignalSemaphores = signalSemaphores;
 
     vkResetFences(device.device(), 1, &inFlightFences[currentFrame]);
-    if (vkQueueSubmit(device.graphicsQueue(), 1, &submitInfo, inFlightFences[currentFrame]) !=
-        VK_SUCCESS) {
-        throw std::runtime_error("failed to submit draw command buffer!");
-    }
+
+    device.submitToGraphicQueue(submitInfo, inFlightFences[currentFrame]);
      
     VkPresentInfoKHR presentInfo = {};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -185,9 +183,7 @@ void Swap_chain::submitDepthCommandBuffer(const std::vector<VkCommandBuffer> dep
     depthSubmitInfo.signalSemaphoreCount = static_cast<uint32_t>(depthFinishedSemaphores.size());
     depthSubmitInfo.pSignalSemaphores = depthFinishedSemaphores.data();
 
-    if (vkQueueSubmit(device.graphicsQueue(), 1, &depthSubmitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
-        throw std::runtime_error("failed to submit depth command buffer!");
-    }
+    device.submitToGraphicQueue(depthSubmitInfo, VK_NULL_HANDLE);
 }
 
 void Swap_chain::createSwapChain() {
@@ -374,6 +370,8 @@ void Swap_chain::createDepthResources() {
     depthImages.resize(imageCount());
     depthImageMemorys.resize(imageCount());
     depthImageViews.resize(imageCount());
+
+    std::cout << "image count = " << imageCount() << "\n";
 
     for (int i = 0; i < depthImages.size(); i++) {
         VkImageCreateInfo imageInfo{};
