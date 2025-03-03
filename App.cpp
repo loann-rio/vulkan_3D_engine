@@ -129,7 +129,6 @@ void App::run()
             cameraObject.transform.translation, 
             globalDescriptorSet,
             shadowDescriptorSet,
-            gameObjects,
             objectManager.getGameObject()
         };  
 
@@ -148,8 +147,9 @@ void App::run()
         {
             std::lock_guard<std::mutex> lock(device.getGraphicMutex());
 
+            vkQueueWaitIdle(device.presentQueue());
             if (renderDepth) {
-                renderer.renderDepthImage(frameInfo, DepthRenderSystem);
+                renderer.renderDepthImage(frameInfo, { depthRenderSystemGltf, depthRenderSystem });
             }
 
             if (auto commandBuffer = renderer.beginFrame()) {
@@ -157,11 +157,11 @@ void App::run()
                 // render
                 renderer.beginSwapChainRenderPass(commandBuffer);
 
-                gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo);
+                gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo, true);
                 objRenderSystem->renderGameObjects(commandBuffer, frameInfo, true);
 
                 //pointLightSystem->render(commandBuffer, frameInfo);
-                textOverlay.renderText(commandBuffer, frameInfo);
+                textOverlay.renderText(commandBuffer, frameInfo); 
 
                 renderer.endSwapChainRenderPass(commandBuffer);
                 renderer.endFrame(renderDepth);
@@ -169,39 +169,22 @@ void App::run()
         }
 
         frame = (frame + 1) % 100; 
-        //vkQueueWaitIdle(device.presentQueue());
+        
 	}
 
     vkQueueWaitIdle(device.presentQueue());
 }
  
-void App::loadGameObjects() { 
-     
-    std::shared_ptr<Model> viking_room = Model::createModelFromFile(device, "model/viking_room.obj", "textures/viking_room.png");
-    auto Lowpoly_City = GameObject::createGameObject(device);
-    Lowpoly_City.transform.rotation = { pi<float> / 2, pi<float>, 0 };
-    Lowpoly_City.transform.translation = { 7, 0, 7 };
-    Lowpoly_City.setModel(viking_room);
-    Lowpoly_City.createDescriptorSet(*globalPool);
-    gameObjects.emplace(Lowpoly_City.getId(), std::move(Lowpoly_City));
-
-    /*std::shared_ptr<GlTFModel::ModelGltf> damagedHelmet = GlTFModel::createModelFromFile(device, "model/2.0/damagedhelmet/gltf/damagedhelmet.gltf");
-    auto godh = GameObject::createGameObject(device);
-    godh.transform.rotation = { pi<float> / 2, pi<float>, 0 };
-    godh.transform.translation = { 7, 1, 7 };
-    godh.transform.scale = { 0.5f, 0.5f, 0.5f };
-    godh.setModel(damagedHelmet);
-    godh.createDescriptorSet(*globalPool);
-    gameObjects.emplace(godh.getId(), std::move(godh));*/
+void App::loadGameObjects() {
 
     objectManager.startLoadModel();
 
-    std::shared_ptr<Model> plane = createPlane(device, 10, 10, {0, 0, 0});
+    std::shared_ptr<Model> plane = createPlane(device, 10, 10, { 0, 0, 0 });
     auto plane1 = GameObject::createGameObject(device);
     plane1.setModel(plane);
     plane1.transform.translation.y = 0.1f;
     plane1.createDescriptorSet(*globalPool);
-    gameObjects.emplace(plane1.getId(), std::move(plane1));
+    objectManager.pushSyncGameObject(std::move(plane1));
 
     std::shared_ptr<Model> planeModel = createPlane(device, 2, 10, { 0, 0, 0 }, "textures/emptyTexture.jpg");
     auto plane2 = GameObject::createGameObject(device);
@@ -210,7 +193,7 @@ void App::loadGameObjects() {
     plane2.transform.translation.x = 10.f;
     plane2.transform.translation.y = 1.f;
     plane2.createDescriptorSet(*globalPool);
-    gameObjects.emplace(plane2.getId(), std::move(plane2));
+    objectManager.pushSyncGameObject(std::move(plane2));
 
     auto plane3 = GameObject::createGameObject(device);
     plane3.setModel(planeModel);
@@ -218,58 +201,22 @@ void App::loadGameObjects() {
     plane3.transform.translation.z = 10.f;
     plane3.transform.translation.y = 1.f;
     plane3.createDescriptorSet(*globalPool);
-    gameObjects.emplace(plane3.getId(), std::move(plane3));
-
-    //Model::Builder modelBuilder{};
-    //modelBuilder.vertices = {
-    //    {{-1.0f,  1.0f, 0.f}, {0, 0, 0}, {0, 0, 0}, { 0.0f, 1.0f }}, // Top-left
-    //    {{-0.6f,  1.0f, 0.f}, {0, 0, 0}, {0, 0, 0}, {1.0f, 1.0f}}, // Top-right
-    //    {{-1.0f,  0.6f, 0.f}, {0, 0, 0}, {0, 0, 0}, {0.0f, 0.0f}}, // Bottom-left
-    //    {{-0.6f,  0.6f, 0.f}, {0, 0, 0}, {0, 0, 0}, {1.0f, 0.0f}}  // Bottom-right
-    //};
-
-    //modelBuilder.indices = {
-    //    0, 1, 2, // First triangle
-    //    2, 1, 3  // Second triangle
-    //};
-
-    //std::shared_ptr<Model> quad = std::make_unique<Model>(device, modelBuilder, "textures/emptyTexture.jpg");
-    //auto depthView = GameObject::createGameObject(device);
-    //depthView.setModel(quad);
-    //depthView.setModelType(QUAD_MODEL);
-    //depthView.createDescriptorSet(*globalPool);
-    //gameObjects.emplace(depthView.getId(), std::move(depthView));
-    
-
-    /*std::vector<glm::vec3> lightColors{
-      {1.f, .1f, .1f},
-      {.1f, 1.f, .1f},
-      {1.f, 1.f, .1f},
-      {.1f, 1.f, 1.f},
-      {.1f, .1f, 1.f},
-      {1.f, 1.f, 1.f}
-    };
-
-    for (int i = 0; i < lightColors.size(); i++) {
-        auto pointLight = GameObject::makePointLight(device, 1.f, 0.05f, lightColors[i]);
-        auto rotateLight = glm::rotate(glm::mat4(1.f), (i * glm::two_pi<float>()) / lightColors.size(), { 0.f, -1.0f, 0.f });
-        pointLight.transform.translation = glm::vec3(rotateLight * glm::vec4(-1.f, -1.f, -1.f, 4.f)) + glm::vec3{ 7, 0, 7 };
-        gameObjects.emplace(pointLight.getId(), std::move(pointLight));
-    }*/
+    objectManager.pushSyncGameObject(std::move(plane3));
 
     auto spotLight1 = GameObject::makeCamera(device, glm::radians(50.f), 1.f);
     spotLight1.transform.translation = { -4.0f, -1.0f, 5.5f };
     spotLight1.transform.rotation.y = pi<float> *2 / 5;
-    spotLight1.transform.color = { 1.0, 1.0, 1.0, .9 };
+    spotLight1.transform.color = { 1.0, 1.0, 1.0, .7 };
 
     auto spotLight2 = GameObject::makeCamera(device, glm::radians(50.f), 1.f);
     spotLight2.transform.translation = { 1.0f, -2.0f, 2.5f };
     spotLight2.transform.rotation.y = pi<float> *2 / 5;
-    spotLight2.transform.color = { 0.0, 1.0, 0.0, .9 };
+    spotLight2.transform.color = { 0.0, 1.0, 0.0, .7 };
 
     listSpotLights.emplace(spotLight1.getId(), std::move(spotLight1));
     listSpotLights.emplace(spotLight2.getId(), std::move(spotLight2));
 }
+
 
 void App::createRenderSystems()
 {
@@ -341,14 +288,18 @@ void App::createRenderSystems()
     /// render systems
 
     gltfRenderSystem = GlobalRenderSystem::create<GlTFModel::ModelGltf>(
-        device, renderer.getSwapChainRenderPass(), { globalSetLayout->getDescriptorSetLayout() },
+        device, renderer.getSwapChainRenderPass(), { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() },
         "GlTFshader.vert.spv", "GlTFshader.frag.spv");
 
     objRenderSystem = GlobalRenderSystem::create<Model>(
         device, renderer.getSwapChainRenderPass(), { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() },
         "simple_shader.vert.spv", "simple_shader.frag.spv");
 
-    DepthRenderSystem = GlobalRenderSystem::create<Model>(
+    depthRenderSystem = GlobalRenderSystem::create<Model>(
+        device, renderer.getDepthRenderPass(), { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() },
+        "shadowmap.vert.spv");
+
+    depthRenderSystemGltf = GlobalRenderSystem::create<GlTFModel::ModelGltf>(
         device, renderer.getDepthRenderPass(), { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() },
         "shadowmap.vert.spv");
 

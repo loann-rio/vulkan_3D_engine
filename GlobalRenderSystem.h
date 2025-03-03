@@ -17,12 +17,9 @@ class GlobalRenderSystem
 public:
 
 	template <class T> static std::shared_ptr<GlobalRenderSystem> create(Device& device, VkRenderPass renderPass,
-		std::vector<VkDescriptorSetLayout> globalSetLayout, const std::string& vertFilepath, const std::string& fragFilepath);
+		std::vector<VkDescriptorSetLayout> globalSetLayout, const std::string& vertFilepath, const std::string& fragFilepath = "");
 
-	template <class T> static std::shared_ptr<GlobalRenderSystem> create(Device& device, VkRenderPass renderPass,
-		std::vector<VkDescriptorSetLayout> globalSetLayout, const std::string& vertFilepath);
-
-	GlobalRenderSystem(Device& device, VkRenderPass renderPass, 
+	GlobalRenderSystem(Device& device, VkRenderPass renderPass,  
 		std::vector<VkDescriptorSetLayout> globalSetLayout, std::vector<VkDescriptorType> bindings, 
 		const std::string& vertFilepath, const std::string& fragFilepath,
 		ModelType modelType,
@@ -64,36 +61,29 @@ private:
 template<class T>
 inline std::shared_ptr<GlobalRenderSystem> GlobalRenderSystem::create(Device& device, VkRenderPass renderPass, std::vector<VkDescriptorSetLayout>  globalSetLayout, const std::string& vertFilepath, const std::string& fragFilepath)
 {
-	std::vector<VkDescriptorType> bindings = T::getDescriptorType();
+	std::vector<VkDescriptorType> bindings;
+	std::vector<VkVertexInputAttributeDescription> attributeDescription;
 	std::vector<VkVertexInputBindingDescription> bindingDescription = T::Vertex::getBindingDescriptions();
-	std::vector<VkVertexInputAttributeDescription> attributeDescription = T::Vertex::getAttributeDescriptions();
-	ModelType modelType = static_cast<ModelType>(T::getModelType());
+	ModelType modelType = static_cast<ModelType>(T::getModelType()); 
+
+	bool isShadow = (fragFilepath == "");
+	if (isShadow) {
+		bindings = std::vector<VkDescriptorType>();
+		attributeDescription = T::Vertex::getAttributeDescriptionsShadow();
+	}
+	else {
+		bindings = T::getDescriptorType();  
+		attributeDescription = T::Vertex::getAttributeDescriptions();
+	}
 
 	auto renderSystem = new GlobalRenderSystem(
 		device, renderPass,
 		globalSetLayout, bindings,
 		vertFilepath, fragFilepath,
 		modelType,
-		bindingDescription, attributeDescription, false
+		bindingDescription, attributeDescription, isShadow
 	);
 
 	return std::shared_ptr<GlobalRenderSystem>(renderSystem);
 } 
 
-template<class T>
-inline std::shared_ptr<GlobalRenderSystem> GlobalRenderSystem::create(Device& device, VkRenderPass renderPass, std::vector<VkDescriptorSetLayout> globalSetLayout, const std::string& vertFilepath)
-{
-	std::vector<VkVertexInputBindingDescription> bindingDescription = T::Vertex::getBindingDescriptions();
-	std::vector<VkVertexInputAttributeDescription> attributeDescription = T::Vertex::getAttributeDescriptionsShadow(); 
-	ModelType modelType = static_cast<ModelType>(T::getModelType());
-
-	auto renderSystem = new GlobalRenderSystem(
-		device, renderPass,
-		globalSetLayout, std::vector<VkDescriptorType>(),
-		vertFilepath, "",
-		modelType,
-		bindingDescription, attributeDescription, true
-	);
-
-	return std::shared_ptr<GlobalRenderSystem>(renderSystem);
-}

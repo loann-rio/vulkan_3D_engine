@@ -38,6 +38,5 @@ struct FrameInfo {
 	glm::vec3 cameraPos;
 	std::vector<VkDescriptorSet> globalDescriptorSet;
 	std::vector<VkDescriptorSet> spotLightDescriptorSet;
-	GameObject::Map& gameObjects;
 	std::shared_ptr<GameObject::Map> asyncGameObjects;
 };

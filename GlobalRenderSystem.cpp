@@ -158,6 +158,7 @@ void GlobalRenderSystem::renderModel(VkCommandBuffer& commandBuffer, FrameInfo& 
 			sizeof(DepthPushConstantData),
 			&push 
 		);
+
 	}
 
 	obj.bindModel(commandBuffer);
@@ -189,14 +190,6 @@ void GlobalRenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, Frame
 			0, nullptr
 		);
 	}
-
-	for (auto& kv : frameInfo.gameObjects)
-	{
-		auto& obj = kv.second;
-		if (obj.modelType == modelType)
-			renderModel(commandBuffer, frameInfo, obj, lightIndex);
-	}
-
 	
 	for (auto& kv : *frameInfo.asyncGameObjects)
 	{

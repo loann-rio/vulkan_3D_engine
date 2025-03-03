@@ -21,6 +21,7 @@ layout(set = 2, binding = 0) uniform SpotLightUbo {
 
 layout(location = 0) in vec3 position;
  
+
 void main()
 {
 	vec4 positionWorld = push.modelMatrix * vec4(position, 1.0);

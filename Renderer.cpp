@@ -64,9 +64,7 @@ VkCommandBuffer Renderer::beginFrame()
 
 	auto commandBuffer = getCurrentCommandBuffer(); 
 
-	//std::lock_guard<std::mutex> lock(device.getGraphicMutex());
-
-	//vkResetCommandBuffer(commandBuffer, 0); 
+	vkResetCommandBuffer(commandBuffer, 0); 
 
 	VkCommandBufferBeginInfo beginInfo{};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -108,8 +106,7 @@ VkCommandBuffer Renderer::beginDepthFrame(int depthCommandBufferIndex)
 	isDepthStarted[depthCommandBufferIndex] = true;
 	auto commandBuffer = getCurrentDepthCommandBuffer(depthCommandBufferIndex);
 
-	//std::lock_guard<std::mutex> lock(device.getGraphicMutex());
-	//vkResetCommandBuffer(commandBuffer, 0);
+	vkResetCommandBuffer(commandBuffer, 0);
 
 	VkCommandBufferBeginInfo beginInfo{}; 
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO; 
@@ -230,14 +227,17 @@ bool Renderer::aquireNextImage()
 	return true;
 }
 
-void Renderer::renderDepthImage(FrameInfo& frameInfo, std::shared_ptr<GlobalRenderSystem> renderSystems)
+void Renderer::renderDepthImage(FrameInfo& frameInfo, std::vector<std::shared_ptr<GlobalRenderSystem>> renderSystems)
 {
 	size_t countDepthRender = 0; 
 	for (int commandBufferIndex = 0; commandBufferIndex < DepthSwapChain::MAX_DEPTH_RENDER_COUNT && commandBufferIndex < frameInfo.spotLightCount; commandBufferIndex++)
 	{
 		if (auto depthCommandBuffer = beginDepthFrame(commandBufferIndex)) {
 			beginShadowRenderPass(depthCommandBuffer, commandBufferIndex); 
-			renderSystems->renderGameObjects(depthCommandBuffer, frameInfo, true, commandBufferIndex); 
+
+			for (auto renderSystem : renderSystems)
+				renderSystem->renderGameObjects(depthCommandBuffer, frameInfo, true, commandBufferIndex); 
+
 			endShadowRenderPass(depthCommandBuffer, commandBufferIndex);
 			endDepthFrame(commandBufferIndex);
 			countDepthRender++;

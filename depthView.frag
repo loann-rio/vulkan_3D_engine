@@ -1,5 +1,7 @@
 #version 450
 
+#define MAX_NUM_SPOT_LIGHT 4
+
 layout( location = 0 ) in vec3 fragColor;
 layout( location = 1 ) in vec3 fragPositionWorld;
 layout( location = 2 ) in vec3 fragNormalWorld;
@@ -10,13 +12,6 @@ layout( location = 0 ) out vec4 outColor;
 struct PointLight {
 	vec4 position;
 	vec4 color;
-};
-
-struct SpotLight {
-	vec4 position;
-	vec4 color;
-	vec4 orientation;
-	mat4 lightMatrix;
 };
 			
 layout(set = 0, binding = 0) uniform GlobalUbo {
@@ -31,10 +26,10 @@ layout(set = 0, binding = 0) uniform GlobalUbo {
 } ubo;
 
 // Define the texture sampler
-layout(set = 0, binding = 1) uniform sampler2D texSampler;
+layout(set = 2, binding = 1) uniform sampler2D shadowMap[MAX_NUM_SPOT_LIGHT]; 
 
 
 void main() {
-	float depth = texture(texSampler,fragTexCoord).x;
+	float depth = texture(shadowMap[0], fragTexCoord).x;
 	outColor = vec4(1.0 - (1.0 - depth) * 100.0);
 }

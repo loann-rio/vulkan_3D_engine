@@ -76,7 +76,7 @@ void PointLightSystem::update(FrameInfo& frameInfo, GlobalUbo& ubo, int frameInd
 	auto rotateLight = glm::rotate(glm::mat4(1.f), frameInfo.frameTime, { 0.f, -1.0f, 0.f });
 
 	int lightIndex = 0;
-	for (auto& kv : frameInfo.gameObjects) {
+	for (auto& kv : *frameInfo.asyncGameObjects) {
 		auto& obj = kv.second;
 		if (obj.pointLight == nullptr) continue;
 
@@ -97,7 +97,7 @@ void PointLightSystem::render(VkCommandBuffer& commandBuffer, FrameInfo& frameIn
 {
 	// sort lights
 	std::map<float, GameObject::id_t> sorted;
-	for (auto& kv : frameInfo.gameObjects) {
+	for (auto& kv : *frameInfo.asyncGameObjects) {
 		auto& obj = kv.second;
 		if (obj.pointLight == nullptr) continue;
 
@@ -121,7 +121,7 @@ void PointLightSystem::render(VkCommandBuffer& commandBuffer, FrameInfo& frameIn
 
 	// iterate through sorted map in inverse order:
 	for (auto it = sorted.rbegin(); it != sorted.rend(); it++) {
-		auto& obj = frameInfo.gameObjects.at(it->second);
+		auto& obj = frameInfo.asyncGameObjects->at(it->second);
 
 		PointLightPushConstants push{};
 		push.position = glm::vec4(obj.transform.translation, 1.f);

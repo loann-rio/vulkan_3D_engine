@@ -1,5 +1,7 @@
 #version 450
 
+#define MAX_NUM_SPOT_LIGHT 4
+
 layout (location = 0) in vec3 inPos;
 layout (location = 1) in vec3 inNormal;
 layout (location = 2) in vec2 inUV0;
@@ -14,15 +16,10 @@ layout (location = 1) out vec3 outNormal;
 layout (location = 2) out vec2 outUV0;
 layout (location = 3) out vec2 outUV1;
 layout (location = 4) out vec4 outColor0;
+layout (location = 5) out vec4 outPosShadow[MAX_NUM_SPOT_LIGHT];
 
 #define MAX_NUM_JOINTS 128
 
-
-layout (set = 0, binding = 6) uniform UBONode {
-	mat4 matrix;
-	mat4 jointMatrix[MAX_NUM_JOINTS];
-	uint jointCount;
-} node;
 
 struct PointLight {
 	vec4 position;
@@ -47,6 +44,16 @@ layout(set = 0, binding = 0) uniform GlobalUbo {
 	int numLights; 
 } ubo;
 
+/*layout (set = 0, binding = 6) uniform UBONode {
+	mat4 matrix;
+	mat4 jointMatrix[MAX_NUM_JOINTS];
+	uint jointCount;
+} node;*/
+
+layout(set = 2, binding = 0) uniform SpotLightUbo {
+	SpotLight spotLight[MAX_NUM_SPOT_LIGHT];
+	int numLights;
+} spotLightUbo;
 
 layout(push_constant) uniform Push {
 	mat4 modelMatrix;
@@ -56,14 +63,18 @@ layout(push_constant) uniform Push {
 
 void main() 
 {
-	outColor0 = inColor0;
+	
+	vec4 positionWorld = push.modelMatrix * vec4(inPos, 1.0);
 
-	vec4 locPos = push.modelMatrix * vec4(inPos, 1.0);
-	outNormal = normalize(vec3(1.0));
+	for (uint indexSpotLight = 0; indexSpotLight < spotLightUbo.numLights; ++indexSpotLight) {
+		outPosShadow[indexSpotLight] = spotLightUbo.spotLight[indexSpotLight].lightMatrix * positionWorld;
+	}
 
-	locPos.y = -locPos.y;
-	outWorldPos = locPos.xyz / locPos.w;
+	outNormal = normalize(mat3(push.normalMatrix) * inNormal);
+	outWorldPos = positionWorld.xyz;
 	outUV0 = inUV0;
 	outUV1 = inUV1;
-	gl_Position =  ubo.projection * ubo.view * vec4(outWorldPos, 1.0);
+	outColor0 = inColor0;
+
+	gl_Position =  ubo.projection * ubo.view * positionWorld;
 }

@@ -702,8 +702,6 @@ void GlTFModel::ModelGltf::loadAnimations(tinygltf::Model& gltfModel)
 void GlTFModel::ModelGltf::loadFromFile(std::string filename, float scale)
 {
 
-	basist::basisu_transcoder_init();
-
 	tinygltf::Model gltfModel;
 	tinygltf::TinyGLTF gltfContext;
 
@@ -724,9 +722,9 @@ void GlTFModel::ModelGltf::loadFromFile(std::string filename, float scale)
 
 	std::string filePath = filename.substr(0, pos);
 
-	// @todo
 	gltfContext.SetImageLoader(loadImageDataFunc, nullptr);
 
+	// 643 ms
 	bool fileLoaded = binary ? gltfContext.LoadBinaryFromFile(&gltfModel, &error, &warning, filename.c_str()) : gltfContext.LoadASCIIFromFile(&gltfModel, &error, &warning, filename.c_str());
 
 	LoaderInfo loaderInfo{};
@@ -1212,7 +1210,7 @@ std::vector<VkVertexInputAttributeDescription> GlTFModel::ModelGltf::Vertex::get
 {
 	std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
 
-	attributeDescriptions.push_back({ 0, 0, VK_FORMAT_R32G32B32_SFLOAT    , offsetof(Vertex, position) }); 
+	attributeDescriptions.push_back({ 0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0 }); 
 
 	return attributeDescriptions;
 }

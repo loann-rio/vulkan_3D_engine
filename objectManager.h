@@ -10,6 +10,9 @@
 
 #include "GameObject.h"
 
+template<class T>
+constexpr T pi = T(3.1415926535897932385L);
+
 struct futureObject {
     ModelVariant model;
     TransformComponent transform;
@@ -33,6 +36,7 @@ public:
 
 	void startLoadModel();
 	void pushModel(DescriptorPool& pool); 
+    void pushSyncGameObject(GameObject&& gameObject) { gameObjects->emplace(gameObject.getId(), std::move(gameObject)); }
 
 private:
     Device& device;

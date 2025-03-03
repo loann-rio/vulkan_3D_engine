@@ -16,8 +16,7 @@
 #include <vector>
 #include <deque>
 
-template<class T>
-constexpr T pi = T(3.1415926535897932385L);
+
 
 class App
 {
@@ -44,7 +43,6 @@ private:
 	Renderer renderer{ window, device };
 
 	std::unique_ptr<DescriptorPool> globalPool{};
-	GameObject::Map gameObjects;
 
 	std::vector<float> frameTimeVector;
 	float frameTimeSum = 0;
@@ -56,7 +54,9 @@ private:
 	// render systems
 	std::shared_ptr<GlobalRenderSystem> gltfRenderSystem;
 	std::shared_ptr<GlobalRenderSystem> objRenderSystem;
-	std::shared_ptr<GlobalRenderSystem> DepthRenderSystem;
+	std::shared_ptr<GlobalRenderSystem> depthRenderSystem;
+	std::shared_ptr<GlobalRenderSystem> depthRenderSystemGltf;
+	std::shared_ptr<GlobalRenderSystem> depthVisualisation;
 
 	std::unique_ptr<PointLightSystem> pointLightSystem;
 

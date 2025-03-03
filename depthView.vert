@@ -14,13 +14,6 @@ struct PointLight {
 	vec4 position;
 	vec4 color;
 };
-
-struct SpotLight {
-	vec4 position;
-	vec4 color;
-	vec4 orientation;
-	mat4 lightMatrix;
-};
 			
 layout(set = 0, binding = 0) uniform GlobalUbo {
 	mat4 projection;
