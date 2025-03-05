@@ -9,6 +9,15 @@
 #include <vector>
 
 
+class PrebuiltModel {
+public:
+    static std::shared_ptr<Model> createPlane(Device& device, float width, float depth, uint16_t widthDetail, uint16_t depthDetail, float UVfactor = 1);
+
+    static std::shared_ptr<Model> createIcoSphere(Device& device, float radius, uint16_t detail);
+
+    static std::shared_ptr<Model> createCube(Device& device, float size);
+};
+
 
 
 /// <summary>

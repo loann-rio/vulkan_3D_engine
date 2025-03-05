@@ -41,7 +41,7 @@ public:
 		void loadOBJModel(const std::string& filepath);
 	};
 
-	Model(Device& device, const Model::Builder &builder, const char* filePathTexture); 
+	Model(Device& device, const Model::Builder &builder, const char* filePathTexture = "");
 	~Model(); 
 
 	Model(const Model&) = delete;

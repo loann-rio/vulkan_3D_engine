@@ -184,6 +184,7 @@
     <ClCompile Include="objectManager.cpp" />
     <ClCompile Include="Pipeline.cpp" />
     <ClCompile Include="point_light_system.cpp" />
+    <ClCompile Include="preBuild.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="shadowRenderer.cpp" />
     <ClCompile Include="Swap_chain.cpp" />

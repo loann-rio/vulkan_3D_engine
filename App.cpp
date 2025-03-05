@@ -203,6 +203,12 @@ void App::loadGameObjects() {
     plane3.createDescriptorSet(*globalPool);
     objectManager.pushSyncGameObject(std::move(plane3));
 
+    /*std::shared_ptr<Model> icoSphere = PrebuiltModel::createIcoSphere(device, 1, 1);
+    auto plane1 = GameObject::createGameObject(device);
+    plane1.setModel(icoSphere);
+    plane1.createDescriptorSet(*globalPool);
+    objectManager.pushSyncGameObject(std::move(plane1));*/
+
     auto spotLight1 = GameObject::makeCamera(device, glm::radians(50.f), 1.f);
     spotLight1.transform.translation = { -4.0f, -1.0f, 5.5f };
     spotLight1.transform.rotation.y = pi<float> *2 / 5;

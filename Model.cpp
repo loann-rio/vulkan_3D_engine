@@ -30,8 +30,10 @@ Model::Model(Device& device, const Model::Builder& builder, const char* filePath
 	createVertexBuffers(builder.vertices);
 	createIndexBuffers(builder.indices);
 
-	texture = std::make_unique<Texture>( device, filePathTexture );
-
+	if (filePathTexture) {
+		texture = std::make_unique<Texture>(device, filePathTexture);
+		hasTexture = true;
+	}
 }
 
 Model::~Model() {}
