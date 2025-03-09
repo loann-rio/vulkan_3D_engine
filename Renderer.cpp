@@ -233,6 +233,7 @@ void Renderer::renderDepthImage(FrameInfo& frameInfo, std::vector<std::shared_pt
 	for (int commandBufferIndex = 0; commandBufferIndex < DepthSwapChain::MAX_DEPTH_RENDER_COUNT && commandBufferIndex < frameInfo.spotLightCount; commandBufferIndex++)
 	{
 		if (auto depthCommandBuffer = beginDepthFrame(commandBufferIndex)) {
+
 			beginShadowRenderPass(depthCommandBuffer, commandBufferIndex); 
 
 			for (auto renderSystem : renderSystems)

@@ -15,8 +15,8 @@ struct SimplePushConstantData {
 };
 
 struct DepthPushConstantData {
-	glm::mat4 modelMatrix{ 1.f };
-	int indexDepthCamera{ 0 };
+	alignas(16) glm::mat4 modelMatrix{ 1.f };
+	alignas(16) int indexDepthCamera{ 0 };
 };
 
 GlobalRenderSystem::GlobalRenderSystem(Device& device, VkRenderPass renderPass, 
@@ -50,7 +50,7 @@ void GlobalRenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout>
 	VkPushConstantRange pushConstantRange{};
 	pushConstantRange.offset = 0;
 
-	if (isShadow) {
+	if (isShadow) { 
 		pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 		pushConstantRange.size = sizeof(DepthPushConstantData);
 	}
@@ -170,14 +170,14 @@ void GlobalRenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, Frame
 {
 	objPipeline->bind(commandBuffer);
 
-	vkCmdBindDescriptorSets(
+	/*vkCmdBindDescriptorSets(
 		commandBuffer,
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
 		objPipelineLayout, 
 		0, 1,
 		&frameInfo.globalDescriptorSet[frameInfo.frameIndex], 
 		0, nullptr
-	);
+	);*/
 
 	if (bindSpotLight) {
 		
