@@ -37,7 +37,7 @@ public:
 	VkDescriptorImageInfo* getShadowImageInfo(int i) { return depthSwapChain->getShadowImageInfo(i); }
 
 	VkCommandBuffer beginFrame();
-	void endFrame(bool renderDepth);
+	void endFrame();
 	void beginSwapChainRenderPass(VkCommandBuffer commandBuffer);
 	void endSwapChainRenderPass(VkCommandBuffer commandBuffer);
 

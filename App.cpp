@@ -91,6 +91,8 @@ void App::run()
 	while (!window.shouldClose())
 	{
 		glfwPollEvents();
+
+        // add loaded async model to gameObjectmap
         objectManager.pushModel(*globalPool);
 
         // calculate frame time
@@ -117,8 +119,7 @@ void App::run()
         if (!renderer.aquireNextImage()) continue;
         
         int frameIndex = renderer.getFrameIndex();
-        int depthIndex = renderer.getDepthIndex();
-        bool renderDepth = (frame == 0);
+
 
         FrameInfo frameInfo{  
             frameIndex,
@@ -132,8 +133,6 @@ void App::run()
 
         /////// update objects ///////
 
-        pointLightSystem->update(frameInfo, ubo, frame);
-
         ubo.projection = cameraObject.camera->getProjection(); 
         ubo.view = cameraObject.camera->getView(); 
         ubo.inverseView = cameraObject.camera->getInverseView(); 
@@ -146,7 +145,7 @@ void App::run()
             std::lock_guard<std::mutex> lock(device.getGraphicMutex());
 
             vkQueueWaitIdle(device.presentQueue());
-            if (renderDepth) {
+            if (frame == 0) {
                 renderer.renderDepthImage(frameInfo, { depthRenderSystemGltf, depthRenderSystem }, descriptorSets);
             }
 
@@ -162,7 +161,7 @@ void App::run()
                 textOverlay.renderText(commandBuffer, frameInfo); 
 
                 renderer.endSwapChainRenderPass(commandBuffer);
-                renderer.endFrame(renderDepth);
+                renderer.endFrame();
             }
         }
 

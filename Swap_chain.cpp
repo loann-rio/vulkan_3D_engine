@@ -95,7 +95,7 @@ VkResult Swap_chain::acquireNextImage(uint32_t* imageIndex) {
 }
 
 VkResult Swap_chain::submitCommandBuffers(
-    const VkCommandBuffer* buffers, uint32_t* imageIndex, bool waitDepthRender) {
+    const VkCommandBuffer* buffers, uint32_t* imageIndex) {
 
     if (imagesInFlight[*imageIndex] != VK_NULL_HANDLE) {
         vkWaitForFences(device.device(), 1, &imagesInFlight[*imageIndex], VK_TRUE, UINT64_MAX);
@@ -109,10 +109,11 @@ VkResult Swap_chain::submitCommandBuffers(
     
     std::vector<VkSemaphore> tempWaitSemaphore{}; 
 
-    if (waitDepthRender) {
+    if (renderingDepthDuringFrame) {
         tempWaitSemaphore = { depthFinishedSemaphores };
+        renderingDepthDuringFrame = false;
     }
-
+        
     tempWaitSemaphore.push_back(imageAvailableSemaphores[currentFrame]); 
     std::vector<VkPipelineStageFlags> waitStage(tempWaitSemaphore.size(), VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT); 
 
@@ -184,6 +185,8 @@ void Swap_chain::submitDepthCommandBuffer(const std::vector<VkCommandBuffer> dep
     depthSubmitInfo.pSignalSemaphores = depthFinishedSemaphores.data();
 
     device.submitToGraphicQueue(depthSubmitInfo, VK_NULL_HANDLE);
+
+    renderingDepthDuringFrame = true;
 }
 
 void Swap_chain::createSwapChain() {

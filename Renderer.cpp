@@ -76,7 +76,7 @@ VkCommandBuffer Renderer::beginFrame()
 	return commandBuffer;
 }
 
-void Renderer::endFrame(bool renderDepth)
+void Renderer::endFrame()
 {
 	assert(isFrameStarted && "cant call endFrame while the frame is not in progress");
 	auto commandBuffer = getCurrentCommandBuffer();
@@ -85,7 +85,8 @@ void Renderer::endFrame(bool renderDepth)
 		throw std::runtime_error("failed to record command buffer");
 	}
 
-	VkResult result = swapChain->submitCommandBuffers(&commandBuffer, &currentImageIndex, renderDepth);
+	VkResult result = swapChain->submitCommandBuffers(&commandBuffer, &currentImageIndex);
+
 
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || window.wasWindowResized()) {
 		window.resetWindowResizedFlag();
@@ -245,6 +246,7 @@ void Renderer::renderDepthImage(FrameInfo& frameInfo, std::vector<std::shared_pt
 			countDepthRender++;
 		}
 	}
+
 
 	swapChain->submitDepthCommandBuffer(getCurrentDepthCommandBuffers(countDepthRender));
 

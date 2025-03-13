@@ -39,7 +39,7 @@ public:
     VkFormat findDepthFormat();
 
     VkResult acquireNextImage(uint32_t* imageIndex);
-    VkResult submitCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex, bool waitDepthRender = false);
+    VkResult submitCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex);
     void submitDepthCommandBuffer(const std::vector<VkCommandBuffer> depthCommandBuffer);
 
     bool compareSwapFormat(const Swap_chain& swapChain) const {
@@ -96,4 +96,6 @@ private:
     std::vector<VkFence> imagesInFlight;
 
     size_t currentFrame = 0;
+
+    bool renderingDepthDuringFrame = false;
 };
