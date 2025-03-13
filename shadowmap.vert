@@ -14,7 +14,7 @@ layout(push_constant) uniform Push {
 	int lightIndex;
 } push;
 
-layout(set = 2, binding = 0) uniform SpotLightUbo {
+layout(set = 1, binding = 0) uniform SpotLightUbo {
 	SpotLight spotLight[MAX_NUM_SPOT_LIGHT];
 	int numLights;
 } spotLightUbo;

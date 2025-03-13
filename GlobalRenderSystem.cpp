@@ -15,9 +15,10 @@ struct SimplePushConstantData {
 };
 
 struct DepthPushConstantData {
-	alignas(16) glm::mat4 modelMatrix{ 1.f };
-	alignas(16) int indexDepthCamera{ 0 };
+	glm::mat4 modelMatrix{ 1.f };
+	int indexDepthCamera{ 0 };
 };
+
 
 GlobalRenderSystem::GlobalRenderSystem(Device& device, VkRenderPass renderPass, 
 	std::vector<VkDescriptorSetLayout> globalSetLayout, std::vector<VkDescriptorType> bindings,
@@ -33,7 +34,8 @@ GlobalRenderSystem::GlobalRenderSystem(Device& device, VkRenderPass renderPass,
 	}
 
 	auto newLayout = builder.build(); 
-	globalSetLayout.insert(globalSetLayout.begin() + 1, newLayout->getDescriptorSetLayout());
+	//globalSetLayout.insert(globalSetLayout.begin() + 1, newLayout->getDescriptorSetLayout());
+	globalSetLayout.push_back(newLayout->getDescriptorSetLayout());
 
 	createPipelineLayout(globalSetLayout);
 	createPipeline(renderPass, vertFilepath, fragFilepath, bindingDescription, attributeDescription);
@@ -117,84 +119,100 @@ void GlobalRenderSystem::createPipeline(VkRenderPass renderPass, const std::stri
 	);
 }
 
-void GlobalRenderSystem::renderModel(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, GameObject& obj, int lightIndex)
+void GlobalRenderSystem::renderModel(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, GameObject& obj)
 {
 
-	if (!isShadow) {
-		vkCmdBindDescriptorSets(
-			commandBuffer,
-			VK_PIPELINE_BIND_POINT_GRAPHICS,
-			objPipelineLayout,
-			1, 1,
-			&obj.getDescriptorSets()[frameInfo.frameIndex],
-			0,
-			nullptr
-		);
+	vkCmdBindDescriptorSets(
+		commandBuffer,
+		VK_PIPELINE_BIND_POINT_GRAPHICS,
+		objPipelineLayout,
+		2, 1,
+		&obj.getDescriptorSets()[frameInfo.frameIndex],
+		0,
+		nullptr
+	);
 
-		SimplePushConstantData push{};
-		push.modelMatrix = obj.transform.mat4();
-		push.normalMatrix = obj.transform.normalMatrix();
+	SimplePushConstantData push{};
+	push.modelMatrix = obj.transform.mat4();
+	push.normalMatrix = obj.transform.normalMatrix();
 
-		vkCmdPushConstants(
-			commandBuffer,
-			objPipelineLayout,
-			VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-			0,
-			sizeof(SimplePushConstantData),
-			&push
-		);
-	}
-	else
-	{
-		DepthPushConstantData push{}; 
-		push.modelMatrix = obj.transform.mat4(); 
-		push.indexDepthCamera = lightIndex;
+	vkCmdPushConstants(
+		commandBuffer,
+		objPipelineLayout,
+		VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+		0,
+		sizeof(push),
+		&push
+	);
 
-		vkCmdPushConstants( 
-			commandBuffer, 
-			objPipelineLayout, 
-			VK_SHADER_STAGE_VERTEX_BIT, 
-			0,
-			sizeof(DepthPushConstantData),
-			&push 
-		);
-
-	}
 
 	obj.bindModel(commandBuffer);
 	obj.drawModel(commandBuffer, objPipelineLayout);
 	
 }
 
-void GlobalRenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, bool bindSpotLight, int lightIndex)
+void GlobalRenderSystem::renderModelDepth(VkCommandBuffer& commandBuffer, GameObject& obj, int lightIndex)
 {
-	objPipeline->bind(commandBuffer);
+	DepthPushConstantData push{}; 
+	push.modelMatrix = obj.transform.mat4(); 
+	push.indexDepthCamera = lightIndex; 
 
-	/*vkCmdBindDescriptorSets(
+	vkCmdPushConstants(
 		commandBuffer,
-		VK_PIPELINE_BIND_POINT_GRAPHICS,
-		objPipelineLayout, 
-		0, 1,
-		&frameInfo.globalDescriptorSet[frameInfo.frameIndex], 
-		0, nullptr
-	);*/
+		objPipelineLayout,
+		VK_SHADER_STAGE_VERTEX_BIT,
+		0,
+		sizeof(push),
+		&push
+	); 
 
-	if (bindSpotLight) {
-		
+	obj.bindModel(commandBuffer); 
+	obj.drawModel(commandBuffer, objPipelineLayout); 
+}
+
+void GlobalRenderSystem::bind(VkCommandBuffer& commandBuffer, std::vector<VkDescriptorSet> globalDescriptorSets)
+{
+
+	objPipeline->bind(commandBuffer); 
+
+	for (uint16_t setIndex = 0; setIndex < 2; setIndex++)
+	{
 		vkCmdBindDescriptorSets(
 			commandBuffer,
 			VK_PIPELINE_BIND_POINT_GRAPHICS,
 			objPipelineLayout,
-			2, 1,
-			&frameInfo.spotLightDescriptorSet[frameInfo.depthIndex],
-			0, nullptr
+			setIndex, 1,
+			&globalDescriptorSets[setIndex],
+			0, nullptr 
 		);
 	}
+}
+
+void GlobalRenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, std::vector<VkDescriptorSet> globalDescriptorSets)
+{
+	bind(commandBuffer, globalDescriptorSets);
 	
 	for (auto& kv : *frameInfo.asyncGameObjects)
 	{
 		auto& obj = kv.second;
 		if (obj.modelType == modelType)
-			renderModel(commandBuffer, frameInfo, obj, lightIndex);
+			renderModel(commandBuffer, frameInfo, obj);
 	}
-} 
+}
+
+
+void GlobalRenderSystem::renderGameObjectsDepth(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, std::vector<VkDescriptorSet> globalDescriptorSets, int lightIndex)
+{ 
+
+	// bind pipeline and global descriptor sets
+	bind(commandBuffer, globalDescriptorSets);
+
+	// render each model with the corresponding type
+	for (auto& kv : *frameInfo.asyncGameObjects) 
+	{
+		auto& obj = kv.second; 
+		if (obj.modelType == modelType) 
+			renderModelDepth(commandBuffer, obj, lightIndex);
+	}
+
+}

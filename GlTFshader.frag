@@ -41,19 +41,19 @@ layout(push_constant) uniform Push {
 } push;
 
 // shadow layout
-layout(set = 2, binding = 1) uniform sampler2DShadow shadowMap[MAX_NUM_SPOT_LIGHT];
+layout(set = 1, binding = 1) uniform sampler2DShadow shadowMap[MAX_NUM_SPOT_LIGHT];
 
-layout(set = 2, binding = 0) uniform SpotLightUbo {
+layout(set = 1, binding = 0) uniform SpotLightUbo {
 	SpotLight spotLight[MAX_NUM_SPOT_LIGHT];
 	int numLights;
 } spotLightUbo;
 
 // Define the texture sampler
-layout(set = 1, binding = 1) uniform sampler2D colorMap;
-layout(set = 1, binding = 2) uniform sampler2D physicalDescriptorMap;
-layout(set = 1, binding = 3) uniform sampler2D emissiveMap;
-layout(set = 1, binding = 4) uniform sampler2D aoMap;
-layout(set = 1, binding = 5) uniform sampler2D normalMap;
+layout(set = 2, binding = 1) uniform sampler2D colorMap;
+layout(set = 2, binding = 2) uniform sampler2D physicalDescriptorMap;
+layout(set = 2, binding = 3) uniform sampler2D emissiveMap;
+layout(set = 2, binding = 4) uniform sampler2D aoMap;
+layout(set = 2, binding = 5) uniform sampler2D normalMap;
 
 
 

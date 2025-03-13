@@ -71,6 +71,23 @@ void PointLightSystem::createPipeline(VkRenderPass renderPass)
 	);
 }
 
+void PointLightSystem::bind(VkCommandBuffer& commandBuffer, std::vector<VkDescriptorSet> globalDescriptorSets)
+{
+	pipeline->bind(commandBuffer);
+
+	for (uint16_t setIndex = 0; setIndex < 2; setIndex++)
+	{
+		vkCmdBindDescriptorSets(
+			commandBuffer,
+			VK_PIPELINE_BIND_POINT_GRAPHICS,
+			pipelineLayout,
+			setIndex, 1,
+			&globalDescriptorSets[setIndex],
+			0, nullptr
+		);
+	}
+}
+
 void PointLightSystem::update(FrameInfo& frameInfo, GlobalUbo& ubo, int frameInd)
 {
 	auto rotateLight = glm::rotate(glm::mat4(1.f), frameInfo.frameTime, { 0.f, -1.0f, 0.f });
@@ -93,7 +110,7 @@ void PointLightSystem::update(FrameInfo& frameInfo, GlobalUbo& ubo, int frameInd
 	ubo.numLights = lightIndex;
 }
 
-void PointLightSystem::render(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo)
+void PointLightSystem::render(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, std::vector<VkDescriptorSet> globalDescriptorSets)
 {
 	// sort lights
 	std::map<float, GameObject::id_t> sorted;
@@ -107,17 +124,7 @@ void PointLightSystem::render(VkCommandBuffer& commandBuffer, FrameInfo& frameIn
 		sorted[disSquared] = obj.getId();
 	}
 
-	pipeline->bind(commandBuffer);
-
-	vkCmdBindDescriptorSets(
-		commandBuffer,
-		VK_PIPELINE_BIND_POINT_GRAPHICS,
-		pipelineLayout,
-		0, 1,
-		&frameInfo.globalDescriptorSet[frameInfo.frameIndex],
-		0,
-		nullptr
-	);
+	bind(commandBuffer, globalDescriptorSets);
 
 	// iterate through sorted map in inverse order:
 	for (auto it = sorted.rbegin(); it != sorted.rend(); it++) {

@@ -43,7 +43,7 @@ public:
 
 	bool aquireNextImage();
 
-	void renderDepthImage(FrameInfo& frameInfo, std::vector<std::shared_ptr<GlobalRenderSystem>> renderSystems);
+	void renderDepthImage(FrameInfo& frameInfo, std::vector<std::shared_ptr<GlobalRenderSystem>> renderSystems, std::vector<VkDescriptorSet> globalDescriptorSets);
 
 	VkCommandBuffer getCurrentCommandBuffer() const {
 		assert(isFrameStarted && "cannot get command buffer when frame not in progress");

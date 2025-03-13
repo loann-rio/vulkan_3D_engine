@@ -19,12 +19,14 @@ public:
 	PointLightSystem& operator=(const PointLightSystem&) = delete;
 
 	void update(FrameInfo& frameInfo, GlobalUbo& ubo, int frameInd);
-	void render(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo);
+	void render(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, std::vector<VkDescriptorSet> globalDescriptorSets);
 
 
 private:
 	void createPipelineLayout(VkDescriptorSetLayout globalSetLayout);
 	void createPipeline(VkRenderPass renderPass);
+
+	void bind(VkCommandBuffer& commandBuffer, std::vector<VkDescriptorSet> globalDescriptorSets);
 
 	Device& device;
 

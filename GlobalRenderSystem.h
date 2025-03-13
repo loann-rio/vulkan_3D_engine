@@ -32,7 +32,9 @@ public:
 	GlobalRenderSystem(const GlobalRenderSystem&) = delete; 
 	GlobalRenderSystem& operator=(const GlobalRenderSystem&) = delete; 
 
-	void renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, bool bindSpotLight = false, int lightIndex = 0);
+	void renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, std::vector<VkDescriptorSet> globalDescriptorSets); 
+	void renderGameObjectsDepth(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, std::vector<VkDescriptorSet> globalDescriptorSets, int lightIndex);
+	
 	void setType(ModelType type) { modelType = type; }
 
 private:
@@ -43,7 +45,10 @@ private:
 		std::vector<VkVertexInputBindingDescription> bindingDescription, 
 		std::vector<VkVertexInputAttributeDescription> attributeDescription);
 
-	void renderModel(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, GameObject& obj, int lightIndex = 0);
+	void renderModel(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, GameObject& obj);
+	void renderModelDepth(VkCommandBuffer& commandBuffer, GameObject& obj, int lightIndex); 
+	
+	void bind(VkCommandBuffer& commandBuffer, std::vector<VkDescriptorSet> globalDescriptorSets); 
 
 	Device& device;
 

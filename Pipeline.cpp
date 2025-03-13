@@ -235,4 +235,4 @@ void Pipeline::enableAlphaBlending(PipelineConfigInfo& configInfo)
 	configInfo.colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
 	configInfo.colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
 	configInfo.colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
-}
+} 

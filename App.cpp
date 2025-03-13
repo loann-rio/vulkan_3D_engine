@@ -66,7 +66,6 @@ void App::run()
 
     // UBO
     GlobalUbo ubo{};
-
     SpotLightUbo spotLightUbo{};
     
 
@@ -123,14 +122,13 @@ void App::run()
 
         FrameInfo frameInfo{  
             frameIndex,
-            depthIndex,
             frameTime,
             spotLightUbo.numLights,
             cameraObject.transform.translation, 
-            globalDescriptorSet,
-            shadowDescriptorSet,
             objectManager.getGameObject()
         };  
+
+        std::vector<VkDescriptorSet> descriptorSets{ globalDescriptorSet[frameIndex], shadowDescriptorSet[frameIndex] };
 
         /////// update objects ///////
 
@@ -149,7 +147,7 @@ void App::run()
 
             vkQueueWaitIdle(device.presentQueue());
             if (renderDepth) {
-                renderer.renderDepthImage(frameInfo, { depthRenderSystemGltf, depthRenderSystem });
+                renderer.renderDepthImage(frameInfo, { depthRenderSystemGltf, depthRenderSystem }, descriptorSets);
             }
 
             if (auto commandBuffer = renderer.beginFrame()) {
@@ -157,10 +155,10 @@ void App::run()
                 // render
                 renderer.beginSwapChainRenderPass(commandBuffer);
 
-                gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo, true);
-                objRenderSystem->renderGameObjects(commandBuffer, frameInfo, true);
+                gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo, descriptorSets); 
+                objRenderSystem->renderGameObjects(commandBuffer, frameInfo, descriptorSets);
 
-                //pointLightSystem->render(commandBuffer, frameInfo);
+                //pointLightSystem->render(commandBuffer, frameInfo, { globalDescriptorSet[frameIndex] } );
                 textOverlay.renderText(commandBuffer, frameInfo); 
 
                 renderer.endSwapChainRenderPass(commandBuffer);
