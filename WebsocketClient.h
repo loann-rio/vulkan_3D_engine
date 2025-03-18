@@ -25,7 +25,7 @@ public:
 
 private:
 
-
+     
     ix::WebSocket webSocket;
     std::string uri;
     std::queue<std::string> msgQueue;

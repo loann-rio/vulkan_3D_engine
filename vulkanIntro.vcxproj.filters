@@ -54,9 +54,6 @@
     <ClCompile Include="Buffer.cpp">
       <Filter>Fichiers sources</Filter>
     </ClCompile>
-    <ClCompile Include="Frame_info.cpp">
-      <Filter>Fichiers sources</Filter>
-    </ClCompile>
     <ClCompile Include="descriptors.cpp">
       <Filter>Fichiers sources</Filter>
     </ClCompile>
