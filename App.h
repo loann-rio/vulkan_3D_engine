@@ -16,7 +16,7 @@
 #include <vector>
 #include <deque>
 
-
+#include "ArmControl.h"
 
 class App
 {
@@ -34,6 +34,8 @@ public:
 
 private:
 	
+	
+
 	void getFrameRate(float lastFrameTime);
 	void loadGameObjects();
 	void createRenderSystems();
@@ -69,5 +71,7 @@ private:
 
 	// object management:
 	ObjectManager objectManager{ device };
+
+	ArmControl armControler{ "ws://localhost:8765" };
 };
 

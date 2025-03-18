@@ -21,7 +21,6 @@ public:
 
     void moveInPlaneXZ(GLFWwindow* window, float dt, GameObject& gameObject);
 
-
     KeyMappings keys{};
     float sensiMove{ 3.f };
     float sensiLook{ 1.5f };

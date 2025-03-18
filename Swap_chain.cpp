@@ -274,7 +274,6 @@ void Swap_chain::createImageViews() {
 
 void Swap_chain::createRenderPass() {
 
-    std::cout << "render path creation \n";
     VkAttachmentDescription depthAttachment{};
     depthAttachment.format = findDepthFormat();
     depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -373,8 +372,6 @@ void Swap_chain::createDepthResources() {
     depthImages.resize(imageCount());
     depthImageMemorys.resize(imageCount());
     depthImageViews.resize(imageCount());
-
-    std::cout << "image count = " << imageCount() << "\n";
 
     for (int i = 0; i < depthImages.size(); i++) {
         VkImageCreateInfo imageInfo{};

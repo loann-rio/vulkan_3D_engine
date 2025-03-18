@@ -4,6 +4,8 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include <glm/gtc/matrix_transform.hpp>
+
 #include <string>
 
 #pragma comment (lib, "User32.lib")
@@ -34,6 +36,8 @@ public:
 
 	bool shouldClose() { return glfwWindowShouldClose(window); }
 	VkExtent2D getExtent() { return { static_cast<uint32_t>(width),  static_cast<uint32_t>(height) }; }
+	
+	glm::vec2 getMousePos();
 
 	void createWindowSurface(VkInstance instance, VkSurfaceKHR* surface);
 

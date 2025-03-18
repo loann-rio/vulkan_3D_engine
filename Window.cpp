@@ -36,6 +36,13 @@ void Window::frameBufferResizeCallBack(GLFWwindow* window1, int width, int heigh
 	window->height = height;
 }
 
+glm::vec2 Window::getMousePos()
+{
+	double xpos, ypos;
+	glfwGetCursorPos(window, &xpos, &ypos);
+	return { 2 * xpos / width - 1 , 1 - 2 * ypos / height };
+}
+
 void Window::createWindowSurface(VkInstance instance, VkSurfaceKHR* surface) {
 	if (glfwCreateWindowSurface(instance, window, nullptr, surface) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create window surface");

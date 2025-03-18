@@ -9,7 +9,6 @@
 #include "preBuild.h"
 #include "Texture.h"
 
-
 // glm
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -67,7 +66,7 @@ void App::run()
     // UBO
     GlobalUbo ubo{};
     SpotLightUbo spotLightUbo{};
-    
+
 
     int i = 0;
     for (auto& kv : listSpotLights) {
@@ -91,6 +90,9 @@ void App::run()
 	while (!window.shouldClose())
 	{
 		glfwPollEvents();
+
+        armControler.updateAnglesOnMsg(objectManager.getGameObject()); 
+        armControler.sendMousePosition(window.getMousePos(), cameraObject.camera->getView(), cameraObject.camera->getProjection());
 
         // add loaded async model to gameObjectmap
         objectManager.pushModel(*globalPool);
@@ -165,7 +167,7 @@ void App::run()
             }
         }
 
-        frame = (frame + 1) % 100; 
+        frame = (frame + 1) % 3; 
         
 	}
 
@@ -176,14 +178,67 @@ void App::loadGameObjects() {
 
     objectManager.startLoadModel();
 
-    std::shared_ptr<Model> plane = createPlane(device, 10, 10, { 0, 0, 0 });
+    TransformComponent base{};
+    base.translation = { 7, 0, 7 };
+    base.scale = { 0.1f, 0.1f, 0.1f };
+
+    TransformComponent link1{};
+    link1.translation = { 7, -0.3, 7 };
+    link1.rotation = { pi<float> , 0, 0 };
+    link1.scale = { 0.1f, 0.1f, 0.1f };
+
+    TransformComponent link2{};
+    link2.translation = { 7, -0.55, 7 };
+    link2.rotation = { -pi<float> / 2, pi<float> / 2, 0 };
+    link2.scale = { 0.1f, 0.1f, 0.1f };
+
+    TransformComponent link3{};
+    link3.translation = { 7, -0.55 - 1.8, 7 };
+    link3.rotation = { 0, 0, pi<float> / 2 };
+    link3.scale = { 0.1f, 0.1f, 0.1f };
+
+    std::shared_ptr<Model> modelBase  = Model::createModelFromFile(device, "roboticArm/base.obj"  , "textures/viking_room.png" );
+    std::shared_ptr<Model> modelLink1 = Model::createModelFromFile(device, "roboticArm/link1.obj" , "textures/emptyTexture.jpg");
+    std::shared_ptr<Model> modelLink2 = Model::createModelFromFile(device, "roboticArm/link2.obj" , "textures/viking_room.png" );
+    std::shared_ptr<Model> modelLink3 = Model::createModelFromFile(device, "roboticArm/link3b.obj", "textures/emptyTexture.jpg");
+
+    auto baseGO = GameObject::createGameObject(device); 
+    baseGO.setModel(modelBase); 
+    baseGO.transform = base; 
+    baseGO.createDescriptorSet(*globalPool); 
+    
+    auto link1GO = GameObject::createGameObject(device); 
+    link1GO.setModel(modelLink1); 
+    link1GO.transform = link1;
+    link1GO.createDescriptorSet(*globalPool); 
+
+    auto link2GO = GameObject::createGameObject(device); 
+    link2GO.setModel(modelLink2); 
+    link2GO.transform = link2;
+    link2GO.createDescriptorSet(*globalPool); 
+    
+    auto link3GO = GameObject::createGameObject(device); 
+    link3GO.setModel(modelLink3); 
+    link3GO.transform = link3;
+    link3GO.createDescriptorSet(*globalPool); 
+
+    armControler.setIDObjects(link1GO.getId(), link2GO.getId(), link3GO.getId());
+
+    objectManager.pushSyncGameObject(std::move(baseGO));
+    objectManager.pushSyncGameObject(std::move(link1GO));
+    objectManager.pushSyncGameObject(std::move(link2GO)); 
+    objectManager.pushSyncGameObject(std::move(link3GO));
+
+
+
+    std::shared_ptr<Model> plane = createPlane(device, 10, 50, { 0, 0, 0 }, "textures/emptyTexture.jpg");
     auto plane1 = GameObject::createGameObject(device);
     plane1.setModel(plane);
-    plane1.transform.translation.y = 0.1f;
+    //plane1.transform.translation.y = 0.1f;
     plane1.createDescriptorSet(*globalPool);
     objectManager.pushSyncGameObject(std::move(plane1));
 
-    std::shared_ptr<Model> planeModel = createPlane(device, 2, 10, { 0, 0, 0 }, "textures/emptyTexture.jpg");
+    /*std::shared_ptr<Model> planeModel = createPlane(device, 2, 10, { 0, 0, 0 }, "textures/emptyTexture.jpg");
     auto plane2 = GameObject::createGameObject(device);
     plane2.setModel(planeModel);
     plane2.transform.rotation.z = -pi<float> / 2;
@@ -198,7 +253,7 @@ void App::loadGameObjects() {
     plane3.transform.translation.z = 10.f;
     plane3.transform.translation.y = 1.f;
     plane3.createDescriptorSet(*globalPool);
-    objectManager.pushSyncGameObject(std::move(plane3));
+    objectManager.pushSyncGameObject(std::move(plane3));*/
 
     /*std::shared_ptr<Model> icoSphere = PrebuiltModel::createIcoSphere(device, 1, 1);
     auto plane1 = GameObject::createGameObject(device);
@@ -217,7 +272,7 @@ void App::loadGameObjects() {
     spotLight2.transform.color = { 0.0, 1.0, 0.0, .7 };
 
     listSpotLights.emplace(spotLight1.getId(), std::move(spotLight1));
-    listSpotLights.emplace(spotLight2.getId(), std::move(spotLight2));
+    //listSpotLights.emplace(spotLight2.getId(), std::move(spotLight2));
 }
 
 

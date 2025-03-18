@@ -29,6 +29,8 @@ glm::mat4 TransformComponent::mat4()
             0.0f,
         },
         {translation.x, translation.y, translation.z, 1.0f} };
+
+    
 }
 
 glm::mat3 TransformComponent::normalMatrix()
