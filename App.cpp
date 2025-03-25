@@ -2,12 +2,8 @@
 
 // local
 #include "KeyboardMovementController.h"
-#include "Camera.h"
-#include "Buffer.h"
 #include "Frame_info.h"
-#include "GlTFModel.h"
 #include "preBuild.h"
-#include "Texture.h"
 
 // glm
 #define GLM_FORCE_RADIANS
@@ -16,21 +12,18 @@
 #include <glm/gtc/constants.hpp>
 
 // imgui
-//#define ENABLE_IMGUI
+/*#define ENABLE_IMGUI
 
 #ifdef ENABLE_IMGUI
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_vulkan.h"
-#endif // ENABLE_IMGUI
+#endif // ENABLE_IMGUI*/
 
 // std
-#include <stdexcept>
-#include <array>
-#include <cassert>
-#include <iostream>
 #include <chrono>
-#include <string>
+
+#include <iostream>
 #include <sstream>
 #include <iomanip>
 
@@ -70,8 +63,7 @@ void App::run()
 
     int i = 0;
     for (auto& kv : listSpotLights) {
-        auto& spot = kv.second;
-        spotLightUbo.spotLight[i++] = spot.getSpotLightInfo(true);
+        spotLightUbo.spotLight[i++] = kv.second.getSpotLightInfo(true);
         if (i > DepthSwapChain::MAX_DEPTH_RENDER_COUNT) break;
     }
 
@@ -79,9 +71,6 @@ void App::run()
     
     shadowUboBuffer[0]->writeToBuffer(&spotLightUbo);
     shadowUboBuffer[0]->flush();
-
-    shadowUboBuffer[1]->writeToBuffer(&spotLightUbo);
-    shadowUboBuffer[1]->flush();
 
     // start timer
     auto currentTime = std::chrono::high_resolution_clock::now();
@@ -92,7 +81,7 @@ void App::run()
 		glfwPollEvents();
 
         armControler.updateAnglesOnMsg(objectManager.getGameObject()); 
-        armControler.sendMousePosition(window.getMousePos(), cameraObject.camera->getView(), cameraObject.camera->getProjection());
+        armControler.sendMousePosition(window.getMousePos(), cameraObject.camera->getView(), cameraObject.camera->getProjection(), cameraController.isSpacePressed);
 
         // add loaded async model to gameObjectmap
         objectManager.pushModel(*globalPool);
@@ -121,7 +110,6 @@ void App::run()
         if (!renderer.aquireNextImage()) continue;
         
         int frameIndex = renderer.getFrameIndex();
-
 
         FrameInfo frameInfo{  
             frameIndex,
@@ -167,7 +155,7 @@ void App::run()
             }
         }
 
-        frame = (frame + 1) % 3; 
+        frame = (frame + 1) % 1; 
         
 	}
 
@@ -197,10 +185,16 @@ void App::loadGameObjects() {
     link3.rotation = { 0, 0, pi<float> / 2 };
     link3.scale = { 0.1f, 0.1f, 0.1f };
 
-    std::shared_ptr<Model> modelBase  = Model::createModelFromFile(device, "roboticArm/base.obj"  , "textures/viking_room.png" );
-    std::shared_ptr<Model> modelLink1 = Model::createModelFromFile(device, "roboticArm/link1.obj" , "textures/emptyTexture.jpg");
-    std::shared_ptr<Model> modelLink2 = Model::createModelFromFile(device, "roboticArm/link2.obj" , "textures/viking_room.png" );
-    std::shared_ptr<Model> modelLink3 = Model::createModelFromFile(device, "roboticArm/link3b.obj", "textures/emptyTexture.jpg");
+    TransformComponent gripper{};
+    gripper.translation = { 7, -0.55 - 1.8, 7 - 1.6 };
+    gripper.rotation = { pi<float>, 0, 0 };
+    gripper.scale = { 0.1f, 0.1f, 0.1f };
+
+    std::shared_ptr<Model> modelBase    = Model::createModelFromFile(device, "roboticArm/base.obj"   , "textures/viking_room.png" );
+    std::shared_ptr<Model> modelLink1   = Model::createModelFromFile(device, "roboticArm/link1.obj"  , "textures/emptyTexture.jpg");
+    std::shared_ptr<Model> modelLink2   = Model::createModelFromFile(device, "roboticArm/link2.obj"  , "textures/viking_room.png" );
+    std::shared_ptr<Model> modelLink3   = Model::createModelFromFile(device, "roboticArm/link3b.obj" , "textures/emptyTexture.jpg");
+    std::shared_ptr<Model> modelGripper = Model::createModelFromFile(device, "roboticArm/gripper.obj", "textures/viking_room.png" );
 
     auto baseGO = GameObject::createGameObject(device); 
     baseGO.setModel(modelBase); 
@@ -222,12 +216,18 @@ void App::loadGameObjects() {
     link3GO.transform = link3;
     link3GO.createDescriptorSet(*globalPool); 
 
-    armControler.setIDObjects(link1GO.getId(), link2GO.getId(), link3GO.getId());
+    auto gripperGO = GameObject::createGameObject(device);
+    gripperGO.setModel(modelGripper);
+    gripperGO.transform = gripper;
+    gripperGO.createDescriptorSet(*globalPool);
+
+    armControler.setIDObjects(link1GO.getId(), link2GO.getId(), link3GO.getId(), gripperGO.getId());
 
     objectManager.pushSyncGameObject(std::move(baseGO));
     objectManager.pushSyncGameObject(std::move(link1GO));
     objectManager.pushSyncGameObject(std::move(link2GO)); 
     objectManager.pushSyncGameObject(std::move(link3GO));
+    objectManager.pushSyncGameObject(std::move(gripperGO)); 
 
 
 
@@ -267,12 +267,13 @@ void App::loadGameObjects() {
     spotLight1.transform.color = { 1.0, 1.0, 1.0, .7 };
 
     auto spotLight2 = GameObject::makeCamera(device, glm::radians(50.f), 1.f);
-    spotLight2.transform.translation = { 1.0f, -2.0f, 2.5f };
-    spotLight2.transform.rotation.y = pi<float> *2 / 5;
-    spotLight2.transform.color = { 0.0, 1.0, 0.0, .7 };
+    spotLight2.transform.translation = { 6.0f, -8.0f, 6.0f };
+    spotLight2.transform.rotation.x = - pi<float> / 2;
+    spotLight1.transform.rotation.y = pi<float> *2 / 5;
+    spotLight2.transform.color = { 1.0, 1.0, 0.0, .2 };
 
     listSpotLights.emplace(spotLight1.getId(), std::move(spotLight1));
-    //listSpotLights.emplace(spotLight2.getId(), std::move(spotLight2));
+    listSpotLights.emplace(spotLight2.getId(), std::move(spotLight2));
 }
 
 
@@ -310,7 +311,7 @@ void App::createRenderSystems()
     } 
 
     //// shadow buffer
-    shadowUboBuffer.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT); 
+    shadowUboBuffer.resize(1); 
     for (int i = 0; i < shadowUboBuffer.size(); i++)
     {
         shadowUboBuffer[i] = std::make_unique<Buffer>( 
@@ -333,7 +334,7 @@ void App::createRenderSystems()
     shadowDescriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
     for (int i = 0; i < shadowDescriptorSet.size() && i < 2; i++)
     {
-        auto bufferInfo = shadowUboBuffer[i]->descriptorInfo();
+        auto bufferInfo = shadowUboBuffer[0]->descriptorInfo();
         auto depthInfo = renderer.getShadowImageInfo(i);
 
         DescriptorWriter(*shadowSetLayout, *globalPool)

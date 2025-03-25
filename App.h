@@ -2,7 +2,6 @@
 
 #include "Window.h"
 #include "device.h"
-#include "GameObject.h"
 
 #include "descriptors.h"
 
@@ -10,11 +9,10 @@
 #include "GlobalRenderSystem.h"
 #include "point_light_system.h"
 #include "TextOverlay.h"
+
 #include "objectManager.h"
 
-#include <memory>
 #include <vector>
-#include <deque>
 
 #include "ArmControl.h"
 

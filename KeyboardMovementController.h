@@ -17,6 +17,7 @@ public:
         int lookRight = GLFW_KEY_RIGHT;
         int lookUp = GLFW_KEY_UP;
         int lookDown = GLFW_KEY_DOWN;
+        int space = GLFW_KEY_SPACE;
     };
 
     void moveInPlaneXZ(GLFWwindow* window, float dt, GameObject& gameObject);
@@ -24,6 +25,8 @@ public:
     KeyMappings keys{};
     float sensiMove{ 3.f };
     float sensiLook{ 1.5f };
+
+    bool isSpacePressed = false;
 
 };
 
