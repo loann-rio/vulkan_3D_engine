@@ -346,6 +346,8 @@ QueueFamilyIndices Device::findQueueFamilies(VkPhysicalDevice device) {
     std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
 
+    int transferQueueIndex = -1;
+
     int i = 0;
     for (const auto& queueFamily : queueFamilies) {
         if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
@@ -353,14 +355,17 @@ QueueFamilyIndices Device::findQueueFamilies(VkPhysicalDevice device) {
             indices.graphicsFamilyHasValue = true;
         }
 
-        if ((queueFamily.queueFlags & VK_QUEUE_TRANSFER_BIT) && 
-            !(queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) && 
-            !(queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT)) { 
-
-            indices.transferFamily = i;
-            indices.transferFamilyHasValue = true;
-
-            break; 
+        if (queueFamily.queueFlags & VK_QUEUE_TRANSFER_BIT) {
+            if (!(queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) && !(queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT)) {
+                // Dedicated transfer queue found, use it
+                indices.transferFamily = i;
+                indices.transferFamilyHasValue = true;
+                break; // Prefer dedicated queue
+            }
+            else if (transferQueueIndex == -1) {
+                // Store the first general-purpose transfer queue as a fallback
+                transferQueueIndex = i;
+            }
         }
 
         VkBool32 presentSupport = false;
@@ -378,8 +383,14 @@ QueueFamilyIndices Device::findQueueFamilies(VkPhysicalDevice device) {
         i++;
     }
 
+    if (!indices.transferFamilyHasValue && transferQueueIndex != -1) {
+        indices.transferFamily = transferQueueIndex;
+        indices.transferFamilyHasValue = true;
+    }
+
     return indices;
 }
+
 
 SwapChainSupportDetails Device::querySwapChainSupport(VkPhysicalDevice device) {
     SwapChainSupportDetails details;
