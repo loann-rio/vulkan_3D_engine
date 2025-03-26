@@ -6,7 +6,6 @@
 #include "Buffer.h"
 #include "Frame_info.h"
 #include "GlTFModel.h"
-#include "preBuild.h"
 #include "Texture.h"
 
 
@@ -17,13 +16,8 @@
 #include <glm/gtc/constants.hpp>
 
 // imgui
-//#define ENABLE_IMGUI
-
-#ifdef ENABLE_IMGUI
-#include "imgui.h"
-#include "backends/imgui_impl_glfw.h"
-#include "backends/imgui_impl_vulkan.h"
-#endif // ENABLE_IMGUI
+#define ENABLE_IMGUI
+#include "BasicUI.h"
 
 // std
 #include <stdexcept>
@@ -43,16 +37,21 @@ App::App() {
         .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Swap_chain::MAX_FRAMES_IN_FLIGHT*64)
         .build();
 
-    loadGameObjects(); 
+    objectManager.startLoadModel(*globalPool); 
     createRenderSystems();
 
     frameTimeVector = std::vector<float>(300);
 }
 
-App::~App() { globalPool = nullptr;  }
+App::~App() {
+    globalPool = nullptr; 
+}
 
 void App::run()
 {
+    // ui
+    BasicUI imgui{ device, window.getGLFWwindow(), renderer.getSwapChainRenderPass() };
+
     TextOverlay textOverlay(device, renderer.getSwapChainRenderPass());
     textOverlay.prepareResources(*globalPool);
 
@@ -70,7 +69,7 @@ void App::run()
     
 
     int i = 0;
-    for (auto& kv : listSpotLights) {
+    for (auto& kv : *objectManager.getSpotLights()) {
         auto& spot = kv.second;
         spotLightUbo.spotLight[i++] = spot.getSpotLightInfo(true);
         if (i > DepthSwapChain::MAX_DEPTH_RENDER_COUNT) break;
@@ -138,7 +137,7 @@ void App::run()
         ubo.inverseView = cameraObject.camera->getInverseView(); 
         
         uboBuffers[frameIndex]->writeToBuffer(&ubo);
-        uboBuffers[frameIndex]->flush();
+        uboBuffers[frameIndex]->flush();       
 
         /////// render depthframe ///////
         {
@@ -160,66 +159,20 @@ void App::run()
                 //pointLightSystem->render(commandBuffer, frameInfo, { globalDescriptorSet[frameIndex] } );
                 textOverlay.renderText(commandBuffer, frameInfo); 
 
+                imgui.drawUI(commandBuffer, &(objectManager.getGameObject()->begin())->second);
+
                 renderer.endSwapChainRenderPass(commandBuffer);
                 renderer.endFrame();
             }
         }
 
-        frame = (frame + 1) % 100; 
-        
+        frame = (frame + 1) % 10;
+
 	}
 
     vkQueueWaitIdle(device.presentQueue());
 }
  
-void App::loadGameObjects() {
-
-    objectManager.startLoadModel();
-
-    std::shared_ptr<Model> plane = createPlane(device, 10, 10, { 0, 0, 0 });
-    auto plane1 = GameObject::createGameObject(device);
-    plane1.setModel(plane);
-    plane1.transform.translation.y = 0.1f;
-    plane1.createDescriptorSet(*globalPool);
-    objectManager.pushSyncGameObject(std::move(plane1));
-
-    std::shared_ptr<Model> planeModel = createPlane(device, 2, 10, { 0, 0, 0 }, "textures/emptyTexture.jpg");
-    auto plane2 = GameObject::createGameObject(device);
-    plane2.setModel(planeModel);
-    plane2.transform.rotation.z = -pi<float> / 2;
-    plane2.transform.translation.x = 10.f;
-    plane2.transform.translation.y = 1.f;
-    plane2.createDescriptorSet(*globalPool);
-    objectManager.pushSyncGameObject(std::move(plane2));
-
-    auto plane3 = GameObject::createGameObject(device);
-    plane3.setModel(planeModel);
-    plane3.transform.rotation.x = pi<float> / 2;
-    plane3.transform.translation.z = 10.f;
-    plane3.transform.translation.y = 1.f;
-    plane3.createDescriptorSet(*globalPool);
-    objectManager.pushSyncGameObject(std::move(plane3));
-
-    /*std::shared_ptr<Model> icoSphere = PrebuiltModel::createIcoSphere(device, 1, 1);
-    auto plane1 = GameObject::createGameObject(device);
-    plane1.setModel(icoSphere);
-    plane1.createDescriptorSet(*globalPool);
-    objectManager.pushSyncGameObject(std::move(plane1));*/
-
-    auto spotLight1 = GameObject::makeCamera(device, glm::radians(50.f), 1.f);
-    spotLight1.transform.translation = { -4.0f, -1.0f, 5.5f };
-    spotLight1.transform.rotation.y = pi<float> *2 / 5;
-    spotLight1.transform.color = { 1.0, 1.0, 1.0, .7 };
-
-    auto spotLight2 = GameObject::makeCamera(device, glm::radians(50.f), 1.f);
-    spotLight2.transform.translation = { 1.0f, -2.0f, 2.5f };
-    spotLight2.transform.rotation.y = pi<float> *2 / 5;
-    spotLight2.transform.color = { 0.0, 1.0, 0.0, .7 };
-
-    listSpotLights.emplace(spotLight1.getId(), std::move(spotLight1));
-    listSpotLights.emplace(spotLight2.getId(), std::move(spotLight2));
-}
-
 
 void App::createRenderSystems()
 {

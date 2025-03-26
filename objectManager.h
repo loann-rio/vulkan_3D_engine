@@ -17,6 +17,7 @@ struct futureObject {
     ModelVariant model;
     TransformComponent transform;
     ModelType type;
+    std::string name;
 };
 
 class ObjectManager
@@ -28,13 +29,14 @@ public:
 
     ObjectManager(Device& device) : device{ device } {
         gameObjects = std::make_shared<GameObject::Map>();
+        spotLights = std::make_shared<GameObject::Map>(); 
     };
 
 
 	std::shared_ptr<GameObject::Map> getGameObject() const { return gameObjects; }
 	std::shared_ptr<GameObject::Map> getSpotLights() const { return spotLights;  }
 
-	void startLoadModel();
+	void startLoadModel(DescriptorPool& pool); 
 	void pushModel(DescriptorPool& pool); 
     void pushSyncGameObject(GameObject&& gameObject) { gameObjects->emplace(gameObject.getId(), std::move(gameObject)); }
 

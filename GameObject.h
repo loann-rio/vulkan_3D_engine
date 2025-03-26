@@ -76,6 +76,8 @@ public:
 	ModelType modelType = UNDEFINED_MODEL;
 	ModelVariant model;
 
+	std::string name;
+
 	std::unique_ptr<PointLightComponent> pointLight = nullptr;
 	std::unique_ptr<Camera> camera = nullptr;
 
@@ -83,6 +85,7 @@ public:
 	void setModel(std::shared_ptr<T> newModel);
 	void setModel(ModelVariant newModel);
 	void setModelType(ModelType type) { modelType = type; }
+	void setName(std::string newName) { name = newName; }
 
 	void updateCameraView();
 	SpotLight getSpotLightInfo(bool _updateCameraView = false);

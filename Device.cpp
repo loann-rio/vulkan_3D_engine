@@ -462,8 +462,8 @@ ImGui_ImplVulkan_InitInfo Device::getImGuiInitInfo()
     //init_info.PipelineCache = YOUR_PIPELINE_CACHE;
     //init_info.DescriptorPool = YOUR_DESCRIPTOR_POOL;
     init_info.Subpass = 0;
-    init_info.MinImageCount = 2;
-    init_info.ImageCount = 2;
+    init_info.MinImageCount = 3;
+    init_info.ImageCount = 3;
     init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
     //init_info.Allocator = YOUR_ALLOCATOR;
     init_info.CheckVkResultFn = check_vk_result;

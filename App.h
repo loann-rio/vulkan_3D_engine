@@ -35,7 +35,6 @@ public:
 private:
 	
 	void getFrameRate(float lastFrameTime);
-	void loadGameObjects();
 	void createRenderSystems();
 
 	Window window{ WIDTH, HEIGHT, "vulkan engine" };
@@ -63,9 +62,6 @@ private:
 	// global descriptor sets
 	std::vector<VkDescriptorSet> globalDescriptorSet;
 	std::vector<VkDescriptorSet> shadowDescriptorSet;
-
-	// spotlights
-	GameObject::Map listSpotLights;
 
 	// object management:
 	ObjectManager objectManager{ device };
