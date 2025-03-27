@@ -119,7 +119,7 @@ void GlobalRenderSystem::createPipeline(VkRenderPass renderPass, const std::stri
 	);
 }
 
-void GlobalRenderSystem::renderModel(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, GameObject& obj)
+void GlobalRenderSystem::renderModel(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, GameObjectModel* obj)
 {
 
 	vkCmdBindDescriptorSets(
@@ -127,14 +127,14 @@ void GlobalRenderSystem::renderModel(VkCommandBuffer& commandBuffer, FrameInfo& 
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
 		objPipelineLayout,
 		2, 1,
-		&obj.getDescriptorSets()[frameInfo.frameIndex],
+		&obj->getDescriptorSets()[frameInfo.frameIndex],
 		0,
 		nullptr
 	);
 
 	SimplePushConstantData push{};
-	push.modelMatrix = obj.transform.mat4();
-	push.normalMatrix = obj.transform.normalMatrix();
+	push.modelMatrix = obj->transform.mat4();
+	push.normalMatrix = obj->transform.normalMatrix();
 
 	vkCmdPushConstants(
 		commandBuffer,
@@ -146,15 +146,15 @@ void GlobalRenderSystem::renderModel(VkCommandBuffer& commandBuffer, FrameInfo& 
 	);
 
 
-	obj.bindModel(commandBuffer);
-	obj.drawModel(commandBuffer, objPipelineLayout);
+	obj->bindModel(commandBuffer);
+	obj->drawModel(commandBuffer, objPipelineLayout);
 	
 }
 
-void GlobalRenderSystem::renderModelDepth(VkCommandBuffer& commandBuffer, GameObject& obj, int lightIndex)
+void GlobalRenderSystem::renderModelDepth(VkCommandBuffer& commandBuffer, GameObjectModel* obj, int lightIndex)
 {
 	DepthPushConstantData push{}; 
-	push.modelMatrix = obj.transform.mat4(); 
+	push.modelMatrix = obj->transform.mat4(); 
 	push.indexDepthCamera = lightIndex; 
 
 	vkCmdPushConstants(
@@ -166,8 +166,8 @@ void GlobalRenderSystem::renderModelDepth(VkCommandBuffer& commandBuffer, GameOb
 		&push
 	); 
 
-	obj.bindModel(commandBuffer); 
-	obj.drawModel(commandBuffer, objPipelineLayout); 
+	obj->bindModel(commandBuffer); 
+	obj->drawModel(commandBuffer, objPipelineLayout); 
 }
 
 void GlobalRenderSystem::bind(VkCommandBuffer& commandBuffer, std::vector<VkDescriptorSet> globalDescriptorSets)
@@ -195,8 +195,11 @@ void GlobalRenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, Frame
 	for (auto& kv : *frameInfo.asyncGameObjects)
 	{
 		auto& obj = kv.second;
-		if (obj.modelType == modelType)
-			renderModel(commandBuffer, frameInfo, obj);
+
+		if (auto* modelObj = dynamic_cast<GameObjectModel*>(obj.get())) {
+			if (modelObj->getModelType() == modelType)
+				renderModel(commandBuffer, frameInfo, modelObj);
+		}
 	}
 }
 
@@ -211,8 +214,10 @@ void GlobalRenderSystem::renderGameObjectsDepth(VkCommandBuffer& commandBuffer, 
 	for (auto& kv : *frameInfo.asyncGameObjects) 
 	{
 		auto& obj = kv.second; 
-		if (obj.modelType == modelType) 
-			renderModelDepth(commandBuffer, obj, lightIndex);
+		if (auto* modelObj = dynamic_cast<GameObjectModel*>(obj.get())) {
+			if (modelObj->getModelType() == modelType)
+				renderModelDepth(commandBuffer, modelObj, lightIndex);
+		}
 	}
 
 }

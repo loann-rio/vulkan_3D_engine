@@ -51,16 +51,18 @@ class GameObject
 public:
 
 	using id_t = unsigned int;
-	using Map = std::unordered_map<id_t, GameObject>;
+	using Map = std::unordered_map<id_t, std::unique_ptr<GameObject>>;
 
-	static GameObject createGameObject(Device& device) {
+	static std::unique_ptr<GameObject> createGameObject(Device& device) {
 		static id_t currentId = 0;
-		return GameObject{ currentId++, device};
+		return std::make_unique<GameObject>(currentId++, device);
 	}
 
 
-	static GameObject makePointLight(Device& device, float intencity, float radius, glm::vec3 color);
-	static GameObject makeCamera(Device& device, float fov, float aspect_ratio, float nearClip = .1f, float farClip = 100.f);
+	static std::unique_ptr<GameObject> makePointLight(Device& device, float intencity, float radius, glm::vec3 color);
+	//static std::unique_ptr<GameObject> makeCamera(Device& device, float fov, float aspect_ratio, float nearClip = .1f, float farClip = 100.f);
+
+	virtual ~GameObject() = default; 
 
 	GameObject(const GameObject&) = delete;
 	GameObject& operator=(const GameObject&) = delete;
@@ -72,49 +74,120 @@ public:
 
 	TransformComponent transform{};
 
-	bool hasModel = false;
-	ModelType modelType = UNDEFINED_MODEL;
-	ModelVariant model;
+	//bool hasModel = false;
+	//ModelType modelType = UNDEFINED_MODEL;
+	//ModelVariant model;
 
 	std::string name;
 
 	std::unique_ptr<PointLightComponent> pointLight = nullptr;
 	std::unique_ptr<Camera> camera = nullptr;
 
-	template <typename T>
-	void setModel(std::shared_ptr<T> newModel);
-	void setModel(ModelVariant newModel);
-	void setModelType(ModelType type) { modelType = type; }
+	//template <typename T>
+	//void setModel(std::shared_ptr<T> newModel);
+	//void setModel(ModelVariant newModel);
+	//void setModelType(ModelType type) { modelType = type; }
 	void setName(std::string newName) { name = newName; }
 
 	void updateCameraView();
 	SpotLight getSpotLightInfo(bool _updateCameraView = false);
 
-	void createDescriptorSet(DescriptorPool& pool) const;
+	//void createDescriptorSet(DescriptorPool& pool) const;
+
+	//std::vector<VkDescriptorSet> getDescriptorSets() const;
+	//uint16_t getDescriptorSetIndex() const;
+
+	//void bindModel(VkCommandBuffer& commandBuffer) const;
+	//void drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout) const;
+
+//private:
+	//GameObject(id_t obId, Device& device) : id{ obId }, device{ device } {}
+	
+
+protected:
+	GameObject(id_t id, Device& device) : id(id), device(device) {}
+
+	Device& device;
+	id_t id;
+
+};
+
+//template<typename T>
+//inline void GameObject::setModel(std::shared_ptr<T> newModel)
+//{
+//	model = std::move(newModel);
+//	modelType = static_cast<ModelType>(T::getModelType());
+//	hasModel = true;
+//}
+//
+//inline void GameObject::setModel(ModelVariant newModel)
+//{
+//	model = std::move(newModel);
+//	hasModel = true;
+//}
+
+
+class GameObjectCamera : public GameObject { 
+
+public:
+	static std::unique_ptr<GameObjectCamera> create(Device& device, float fov, float aspect_ratio, float nearClip = .1f, float farClip = 100.f) {
+		static id_t currentId = 0;
+		//return std::make_unique<GameObjectCamera>(currentId++, device, fov, aspect_ratio, nearClip, farClip);
+		auto viewerObject = std::make_unique<GameObjectCamera>(currentId++, device);  
+		viewerObject->camera = std::make_unique<Camera>(); 
+		viewerObject->camera->setPerspectiveProjection(fov, aspect_ratio, nearClip, farClip); 
+		return viewerObject; 
+	}
+
+	GameObjectCamera(id_t id, Device& device, float fov, float aspect_ratio, float nearClip, float farClip)
+		: GameObject(id, device) {
+		
+	} 
+
+	friend class GameObjectFactory;
+};
+
+class GameObjectModel : public GameObject 
+{
+public:
+
+	static std::unique_ptr<GameObjectModel> create(Device& device) {
+		static id_t currentId = 0;
+		return std::make_unique<GameObjectModel>(currentId++, device);
+	}
+
+	template <typename T>
+	void setModel(std::shared_ptr<T> newModel);
+	void setModel(ModelVariant newModel); 
+	void setModelType(ModelType type) { modelType = type; } 
+
+	ModelType getModelType() const { return modelType; }
+
+	void createDescriptorSet(DescriptorPool& pool) const; 
 
 	std::vector<VkDescriptorSet> getDescriptorSets() const;
-	uint16_t getDescriptorSetIndex() const;
+	uint16_t getDescriptorSetIndex() const; 
 
 	void bindModel(VkCommandBuffer& commandBuffer) const;
 	void drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout) const;
 
+	GameObjectModel(id_t id, Device& device) : GameObject(id, device) {}
 private:
-	Device& device;
-	GameObject(id_t obId, Device& device) : id{obId} , device{device} {}
-	id_t id;
+	
+
+	bool hasModel = false;
+	ModelType modelType = UNDEFINED_MODEL;
+	ModelVariant model;
+
+	friend class GameObjectFactory;
 };
 
-template<typename T>
-inline void GameObject::setModel(std::shared_ptr<T> newModel)
-{
-	model = std::move(newModel);
-	modelType = static_cast<ModelType>(T::getModelType());
-	hasModel = true;
-}
 
-inline void GameObject::setModel(ModelVariant newModel)
-{
-	model = std::move(newModel);
-	//modelType = static_cast<ModelType>(newModel.);
-	hasModel = true;
-}
+class GameObjectFactory {
+public:
+	template <typename T, typename... Args>
+	static std::unique_ptr<T> createGameObject(Device& device, Args&&... args) {
+		static GameObject::id_t currentId = 0;
+		return std::make_unique<T>(currentId++, device, std::forward<Args>(args)...);
+	}
+};

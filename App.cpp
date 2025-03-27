@@ -32,7 +32,7 @@
 
 App::App() { 
     globalPool = DescriptorPool::Builder(device)
-        .setMaxSets(Swap_chain::MAX_FRAMES_IN_FLIGHT * 64)
+        .setMaxSets(Swap_chain::MAX_FRAMES_IN_FLIGHT * 64 * 2)
         .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Swap_chain::MAX_FRAMES_IN_FLIGHT * 64)
         .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Swap_chain::MAX_FRAMES_IN_FLIGHT*64)
         .build();
@@ -56,9 +56,10 @@ void App::run()
     textOverlay.prepareResources(*globalPool);
 
     // camera setting
-    auto cameraObject = GameObject::makeCamera(device, glm::radians(50.f), renderer.getAspectRatio());
-    cameraObject.transform.translation = { 2.0f, -1.0f, 2.5f }; 
-    cameraObject.transform.rotation.y = pi<float> * 1/3; 
+    //auto cameraObject = GameObject::makeCamera(device, glm::radians(50.f), renderer.getAspectRatio());
+    auto cameraObject = GameObjectCamera::create(device, glm::radians(50.f), renderer.getAspectRatio());
+    cameraObject->transform.translation = { 2.0f, -1.0f, 2.5f };  
+    cameraObject->transform.rotation.y = pi<float> * 1/3; 
 
     // user inputs
     KeyboardMovementController cameraController{};
@@ -71,7 +72,7 @@ void App::run()
     int i = 0;
     for (auto& kv : *objectManager.getSpotLights()) {
         auto& spot = kv.second;
-        spotLightUbo.spotLight[i++] = spot.getSpotLightInfo(true);
+        spotLightUbo.spotLight[i++] = spot->getSpotLightInfo(true);
         if (i > DepthSwapChain::MAX_DEPTH_RENDER_COUNT) break;
     }
 
@@ -112,7 +113,7 @@ void App::run()
         }
         
         // move camera on event 
-        cameraController.moveInPlaneXZ(window.getGLFWwindow(), frameTime, cameraObject);
+        cameraController.moveInPlaneXZ(window.getGLFWwindow(), frameTime, cameraObject.get());
 
         /////// start frame ///////
         if (!renderer.aquireNextImage()) continue;
@@ -124,7 +125,7 @@ void App::run()
             frameIndex,
             frameTime,
             spotLightUbo.numLights,
-            cameraObject.transform.translation, 
+            cameraObject->transform.translation, 
             objectManager.getGameObject()
         };  
 
@@ -132,9 +133,9 @@ void App::run()
 
         /////// update objects ///////
 
-        ubo.projection = cameraObject.camera->getProjection(); 
-        ubo.view = cameraObject.camera->getView(); 
-        ubo.inverseView = cameraObject.camera->getInverseView(); 
+        ubo.projection = cameraObject->camera->getProjection(); 
+        ubo.view = cameraObject->camera->getView(); 
+        ubo.inverseView = cameraObject->camera->getInverseView(); 
         
         uboBuffers[frameIndex]->writeToBuffer(&ubo);
         uboBuffers[frameIndex]->flush();       
@@ -159,7 +160,7 @@ void App::run()
                 //pointLightSystem->render(commandBuffer, frameInfo, { globalDescriptorSet[frameIndex] } );
                 textOverlay.renderText(commandBuffer, frameInfo); 
 
-                imgui.drawUI(commandBuffer, &(objectManager.getGameObject()->begin())->second);
+                imgui.drawUI(commandBuffer, (objectManager.getGameObject()->at(0).get()));
 
                 renderer.endSwapChainRenderPass(commandBuffer);
                 renderer.endFrame();

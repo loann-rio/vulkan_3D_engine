@@ -17,7 +17,6 @@
 #include <deque>
 
 
-
 class App
 {
 public:

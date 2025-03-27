@@ -95,16 +95,16 @@ void PointLightSystem::update(FrameInfo& frameInfo, GlobalUbo& ubo, int frameInd
 	int lightIndex = 0;
 	for (auto& kv : *frameInfo.asyncGameObjects) {
 		auto& obj = kv.second;
-		if (obj.pointLight == nullptr) continue;
+		if (obj->pointLight == nullptr) continue;
 
 		assert(lightIndex < MAX_LIGHT && "point lights exceed maximum");
 
 		// update light position:
-		obj.transform.translation = glm::vec3(rotateLight * glm::vec4(obj.transform.translation - glm::vec3{ 7, 0, 7 }, 1.f))+glm::vec3{ 7, 0, 7 };
+		obj->transform.translation = glm::vec3(rotateLight * glm::vec4(obj->transform.translation - glm::vec3{ 7, 0, 7 }, 1.f))+glm::vec3{ 7, 0, 7 };
 		
 		// copy light to ubo
-		ubo.pointLights[lightIndex].position = glm::vec4(obj.transform.translation, 1.0);
-		ubo.pointLights[lightIndex].color = glm::vec4(glm::vec3(obj.transform.color), obj.pointLight->LightIntencity);
+		ubo.pointLights[lightIndex].position = glm::vec4(obj->transform.translation, 1.0);
+		ubo.pointLights[lightIndex].color = glm::vec4(glm::vec3(obj->transform.color), obj->pointLight->LightIntencity);
 		lightIndex++;
 	}
 	ubo.numLights = lightIndex;
@@ -116,12 +116,12 @@ void PointLightSystem::render(VkCommandBuffer& commandBuffer, FrameInfo& frameIn
 	std::map<float, GameObject::id_t> sorted;
 	for (auto& kv : *frameInfo.asyncGameObjects) {
 		auto& obj = kv.second;
-		if (obj.pointLight == nullptr) continue;
+		if (obj->pointLight == nullptr) continue;
 
 		// get dist
-		auto offset = frameInfo.cameraPos - obj.transform.translation;
+		auto offset = frameInfo.cameraPos - obj->transform.translation;
 		float disSquared = glm::dot(offset, offset);
-		sorted[disSquared] = obj.getId();
+		sorted[disSquared] = obj->getId();
 	}
 
 	bind(commandBuffer, globalDescriptorSets);
@@ -131,9 +131,9 @@ void PointLightSystem::render(VkCommandBuffer& commandBuffer, FrameInfo& frameIn
 		auto& obj = frameInfo.asyncGameObjects->at(it->second);
 
 		PointLightPushConstants push{};
-		push.position = glm::vec4(obj.transform.translation, 1.f);
-		push.color = glm::vec4(glm::vec3(obj.transform.color), obj.pointLight->LightIntencity);
-		push.radius = obj.transform.scale.x;
+		push.position = glm::vec4(obj->transform.translation, 1.f);
+		push.color = glm::vec4(glm::vec3(obj->transform.color), obj->pointLight->LightIntencity);
+		push.radius = obj->transform.scale.x;
 
 		vkCmdPushConstants(
 			commandBuffer,

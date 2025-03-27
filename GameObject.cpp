@@ -61,24 +61,24 @@ glm::mat3 TransformComponent::normalMatrix()
     };
 }
 
-GameObject GameObject::makePointLight(Device& device, float intencity, float radius, glm::vec3 color = glm::vec3{ 1.f })
+std::unique_ptr<GameObject> GameObject::makePointLight(Device& device, float intencity, float radius, glm::vec3 color = glm::vec3{ 1.f })
 {
-    GameObject gameObj = GameObject::createGameObject(device);
+    auto gameObj = GameObject::createGameObject(device);
     //gameObj.color = color;
-    gameObj.transform.color = glm::vec4(color, 1.f);
-    gameObj.transform.scale.x = radius;
-    gameObj.pointLight = std::make_unique<PointLightComponent>();
-    gameObj.pointLight->LightIntencity = intencity;
+    gameObj->transform.color = glm::vec4(color, 1.f);
+    gameObj->transform.scale.x = radius;
+    gameObj->pointLight = std::make_unique<PointLightComponent>();
+    gameObj->pointLight->LightIntencity = intencity;
     return gameObj;
 }
 
-GameObject GameObject::makeCamera(Device& device, float fov, float aspect_ratio, float nearClip, float farClip)
-{
-    GameObject viewerObject = GameObject::createGameObject(device);
-    viewerObject.camera = std::make_unique<Camera>();
-    viewerObject.camera->setPerspectiveProjection(fov, aspect_ratio, nearClip, farClip);
-    return viewerObject;
-}
+//std::unique_ptr<GameObject>  GameObject::makeCamera(Device& device, float fov, float aspect_ratio, float nearClip, float farClip)
+//{
+//    auto viewerObject = GameObject::createGameObject(device);
+//    viewerObject->camera = std::make_unique<Camera>();
+//    viewerObject->camera->setPerspectiveProjection(fov, aspect_ratio, nearClip, farClip);
+//    return viewerObject;
+//}
 
 void GameObject::updateCameraView() 
 { 
@@ -89,7 +89,7 @@ void GameObject::updateCameraView()
 SpotLight GameObject::getSpotLightInfo(bool _updateCameraView)
 {
     if (_updateCameraView) updateCameraView();
-
+     
     return { 
         glm::vec4(transform.translation, 1.0),
         transform.color,
@@ -98,7 +98,70 @@ SpotLight GameObject::getSpotLightInfo(bool _updateCameraView)
     };
 }
 
-void GameObject::createDescriptorSet(DescriptorPool& pool) const
+//void GameObject::createDescriptorSet(DescriptorPool& pool) const
+//{
+//    if (!hasModel) return;
+//
+//    std::visit([&pool, &device = this->device](const auto& modelInstance) {
+//        if (modelInstance) {
+//            modelInstance->createDescriptorSet(pool, device);
+//        }
+//    }, model);
+//}
+//
+//std::vector<VkDescriptorSet> GameObject::getDescriptorSets() const
+//{
+//    return std::visit([](const auto& modelInstance) -> std::vector<VkDescriptorSet> {
+//        if (modelInstance) {
+//            return modelInstance->getDescriptorSets();
+//        }
+//        return {};
+//    }, model);
+//}
+//
+//uint16_t GameObject::getDescriptorSetIndex() const
+//{
+//    return std::visit([](const auto& modelInstance) -> uint16_t {
+//        if (modelInstance) {
+//            return modelInstance->descriptorSetIndex;
+//        }
+//        return 1;
+//    }, model);
+//}
+//
+//void GameObject::bindModel(VkCommandBuffer& commandBuffer) const
+//{
+//    std::visit([&](const auto& modelInstance) {
+//        if (modelInstance) {
+//            modelInstance->bind(commandBuffer);
+//        }
+//    }, model);
+//}
+//
+//void GameObject::drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout) const
+//{
+//    std::visit([&](const auto& modelInstance) {
+//        if (modelInstance) {
+//            modelInstance->draw(commandBuffer, GlTFPipelineLayout);
+//        }
+//    }, model);
+//}
+
+template<typename T>
+void GameObjectModel::setModel(std::shared_ptr<T> newModel)
+{
+    model = std::move(newModel); 
+    modelType = static_cast<ModelType>(T::getModelType());
+    hasModel = true; 
+}
+
+void GameObjectModel::setModel(ModelVariant newModel)
+{
+    model = std::move(newModel);
+    hasModel = true;
+}
+
+void GameObjectModel::createDescriptorSet(DescriptorPool& pool) const
 {
     if (!hasModel) return;
 
@@ -106,43 +169,43 @@ void GameObject::createDescriptorSet(DescriptorPool& pool) const
         if (modelInstance) {
             modelInstance->createDescriptorSet(pool, device);
         }
-    }, model);
+        }, model);
 }
 
-std::vector<VkDescriptorSet> GameObject::getDescriptorSets() const
+std::vector<VkDescriptorSet> GameObjectModel::getDescriptorSets() const
 {
     return std::visit([](const auto& modelInstance) -> std::vector<VkDescriptorSet> {
         if (modelInstance) {
             return modelInstance->getDescriptorSets();
         }
         return {};
-    }, model);
+        }, model);
 }
 
-uint16_t GameObject::getDescriptorSetIndex() const
+uint16_t GameObjectModel::getDescriptorSetIndex() const
 {
     return std::visit([](const auto& modelInstance) -> uint16_t {
         if (modelInstance) {
             return modelInstance->descriptorSetIndex;
         }
         return 1;
-    }, model);
+        }, model);
 }
 
-void GameObject::bindModel(VkCommandBuffer& commandBuffer) const
+void GameObjectModel::bindModel(VkCommandBuffer& commandBuffer) const
 {
     std::visit([&](const auto& modelInstance) {
         if (modelInstance) {
             modelInstance->bind(commandBuffer);
         }
-    }, model);
+        }, model);
 }
 
-void GameObject::drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout) const
+void GameObjectModel::drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout) const
 {
     std::visit([&](const auto& modelInstance) {
         if (modelInstance) {
             modelInstance->draw(commandBuffer, GlTFPipelineLayout);
         }
-    }, model);
+        }, model);
 }

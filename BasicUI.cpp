@@ -55,7 +55,7 @@ BasicUI::BasicUI(Device& device, GLFWwindow* window, VkRenderPass renderPass) : 
 BasicUI::~BasicUI()
 {
     ImGui_ImplVulkan_Shutdown();
-    imguiPool = nullptr;
+    vkDestroyDescriptorPool(device.device(), imguiPool, nullptr);
 }
 
 void BasicUI::drawUI(VkCommandBuffer commandBuffer, GameObject* gameObject)

@@ -38,7 +38,7 @@ public:
 
 	void startLoadModel(DescriptorPool& pool); 
 	void pushModel(DescriptorPool& pool); 
-    void pushSyncGameObject(GameObject&& gameObject) { gameObjects->emplace(gameObject.getId(), std::move(gameObject)); }
+    void pushSyncGameObject(std::unique_ptr<GameObject> gameObject) { gameObjects->emplace(gameObject->getId(), std::move(gameObject)); } 
 
 private:
     Device& device;

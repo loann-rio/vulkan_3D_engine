@@ -45,8 +45,8 @@ private:
 		std::vector<VkVertexInputBindingDescription> bindingDescription, 
 		std::vector<VkVertexInputAttributeDescription> attributeDescription);
 
-	void renderModel(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, GameObject& obj);
-	void renderModelDepth(VkCommandBuffer& commandBuffer, GameObject& obj, int lightIndex); 
+	void renderModel(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, GameObjectModel* obj);
+	void renderModelDepth(VkCommandBuffer& commandBuffer, GameObjectModel* obj, int lightIndex);
 	
 	void bind(VkCommandBuffer& commandBuffer, std::vector<VkDescriptorSet> globalDescriptorSets); 
 
