@@ -35,5 +35,6 @@ void KeyboardMovementController::moveInPlaneXZ(GLFWwindow* window, float dt, Gam
 		gameObject->transform.translation += sensiMove * dt * glm::normalize(moveDir);
 	}
 
-	gameObject->updateCameraView();
+	//if (auto* camObj = dynamic_cast<GameObjectCamera*>(gameObject.get()))
+	//	gameObject->updateCameraView();
 }

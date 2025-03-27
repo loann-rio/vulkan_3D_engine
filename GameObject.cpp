@@ -72,89 +72,6 @@ std::unique_ptr<GameObject> GameObject::makePointLight(Device& device, float int
     return gameObj;
 }
 
-//std::unique_ptr<GameObject>  GameObject::makeCamera(Device& device, float fov, float aspect_ratio, float nearClip, float farClip)
-//{
-//    auto viewerObject = GameObject::createGameObject(device);
-//    viewerObject->camera = std::make_unique<Camera>();
-//    viewerObject->camera->setPerspectiveProjection(fov, aspect_ratio, nearClip, farClip);
-//    return viewerObject;
-//}
-
-void GameObject::updateCameraView() 
-{ 
-    assert(camera != nullptr && "cannot update camera on non camera game object");
-    camera->setViewYXZ(transform.translation, transform.rotation);
-}
-
-SpotLight GameObject::getSpotLightInfo(bool _updateCameraView)
-{
-    if (_updateCameraView) updateCameraView();
-     
-    return { 
-        glm::vec4(transform.translation, 1.0),
-        transform.color,
-        glm::vec4(transform.rotation, 1.0),
-        camera->getProjection() * camera->getView() 
-    };
-}
-
-//void GameObject::createDescriptorSet(DescriptorPool& pool) const
-//{
-//    if (!hasModel) return;
-//
-//    std::visit([&pool, &device = this->device](const auto& modelInstance) {
-//        if (modelInstance) {
-//            modelInstance->createDescriptorSet(pool, device);
-//        }
-//    }, model);
-//}
-//
-//std::vector<VkDescriptorSet> GameObject::getDescriptorSets() const
-//{
-//    return std::visit([](const auto& modelInstance) -> std::vector<VkDescriptorSet> {
-//        if (modelInstance) {
-//            return modelInstance->getDescriptorSets();
-//        }
-//        return {};
-//    }, model);
-//}
-//
-//uint16_t GameObject::getDescriptorSetIndex() const
-//{
-//    return std::visit([](const auto& modelInstance) -> uint16_t {
-//        if (modelInstance) {
-//            return modelInstance->descriptorSetIndex;
-//        }
-//        return 1;
-//    }, model);
-//}
-//
-//void GameObject::bindModel(VkCommandBuffer& commandBuffer) const
-//{
-//    std::visit([&](const auto& modelInstance) {
-//        if (modelInstance) {
-//            modelInstance->bind(commandBuffer);
-//        }
-//    }, model);
-//}
-//
-//void GameObject::drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout) const
-//{
-//    std::visit([&](const auto& modelInstance) {
-//        if (modelInstance) {
-//            modelInstance->draw(commandBuffer, GlTFPipelineLayout);
-//        }
-//    }, model);
-//}
-
-template<typename T>
-void GameObjectModel::setModel(std::shared_ptr<T> newModel)
-{
-    model = std::move(newModel); 
-    modelType = static_cast<ModelType>(T::getModelType());
-    hasModel = true; 
-}
-
 void GameObjectModel::setModel(ModelVariant newModel)
 {
     model = std::move(newModel);
@@ -182,16 +99,6 @@ std::vector<VkDescriptorSet> GameObjectModel::getDescriptorSets() const
         }, model);
 }
 
-uint16_t GameObjectModel::getDescriptorSetIndex() const
-{
-    return std::visit([](const auto& modelInstance) -> uint16_t {
-        if (modelInstance) {
-            return modelInstance->descriptorSetIndex;
-        }
-        return 1;
-        }, model);
-}
-
 void GameObjectModel::bindModel(VkCommandBuffer& commandBuffer) const
 {
     std::visit([&](const auto& modelInstance) {
@@ -208,4 +115,22 @@ void GameObjectModel::drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout
             modelInstance->draw(commandBuffer, GlTFPipelineLayout);
         }
         }, model);
+}
+
+void GameObjectCamera::updateCameraView()
+{
+    assert(camera != nullptr && "cannot update camera on non camera game object");
+    camera->setViewYXZ(transform.translation, transform.rotation);
+}
+
+SpotLight GameObjectCamera::getSpotLightInfo(bool _updateCameraView)
+{
+    if (_updateCameraView) updateCameraView(); 
+
+    return {
+        glm::vec4(transform.translation, 1.0), 
+        transform.color, 
+        glm::vec4(transform.rotation, 1.0), 
+        camera->getProjection() * camera->getView() 
+    }; 
 }

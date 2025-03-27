@@ -42,13 +42,15 @@ void ObjectManager::startLoadModel(DescriptorPool& pool)
     plane3->createDescriptorSet(pool);
     pushSyncGameObject(std::move(plane3));
 
-    auto spotLight1 = GameObjectCamera::create(device, glm::radians(50.f), 1.f);
+    //auto spotLight1 = GameObjectCamera::create(device, glm::radians(50.f), 1.f);
+    auto spotLight1 = GameObjectFactory::createGameObject<GameObjectCamera>(device, glm::radians(50.f), 1.f, .1f, 100.f);
     //auto spotLight1 = GameObject::makeCamera(device, glm::radians(50.f), 1.f); 
     spotLight1->transform.translation = { -4.0f, -1.0f, 5.5f }; 
     spotLight1->transform.rotation.y = pi<float> *2 / 5; 
     spotLight1->transform.color = { 1.0, 1.0, 1.0, .7 }; 
 
-    auto spotLight2 = GameObjectCamera::create(device, glm::radians(50.f), 1.f);
+    //auto spotLight2 = GameObjectCamera::create(device, glm::radians(50.f), 1.f);
+    auto spotLight2 = GameObjectFactory::createGameObject<GameObjectCamera>(device, glm::radians(50.f), 1.f, .1f, 100.f);
     //auto spotLight2 = GameObject::makeCamera(device, glm::radians(50.f), 1.f); 
     spotLight2->transform.translation = { 1.0f, -2.0f, 2.5f }; 
     spotLight2->transform.rotation.y = pi<float> *2 / 5; 

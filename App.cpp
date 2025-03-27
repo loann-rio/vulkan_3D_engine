@@ -57,7 +57,8 @@ void App::run()
 
     // camera setting
     //auto cameraObject = GameObject::makeCamera(device, glm::radians(50.f), renderer.getAspectRatio());
-    auto cameraObject = GameObjectCamera::create(device, glm::radians(50.f), renderer.getAspectRatio());
+    //auto cameraObject = GameObjectCamera::create(device, glm::radians(50.f), renderer.getAspectRatio());
+    auto cameraObject = GameObjectFactory::createGameObject<GameObjectCamera>(device, glm::radians(50.f), renderer.getAspectRatio(), .1f, 100.f);
     cameraObject->transform.translation = { 2.0f, -1.0f, 2.5f };  
     cameraObject->transform.rotation.y = pi<float> * 1/3; 
 
@@ -72,8 +73,10 @@ void App::run()
     int i = 0;
     for (auto& kv : *objectManager.getSpotLights()) {
         auto& spot = kv.second;
-        spotLightUbo.spotLight[i++] = spot->getSpotLightInfo(true);
-        if (i > DepthSwapChain::MAX_DEPTH_RENDER_COUNT) break;
+        if (auto* lightObj = dynamic_cast<GameObjectCamera*>(spot.get())) {
+            spotLightUbo.spotLight[i++] = lightObj->getSpotLightInfo(true);  
+            if (i > DepthSwapChain::MAX_DEPTH_RENDER_COUNT) break;
+        }
     }
 
     spotLightUbo.numLights = i;
@@ -114,6 +117,7 @@ void App::run()
         
         // move camera on event 
         cameraController.moveInPlaneXZ(window.getGLFWwindow(), frameTime, cameraObject.get());
+        cameraObject->updateCameraView();
 
         /////// start frame ///////
         if (!renderer.aquireNextImage()) continue;
@@ -132,10 +136,11 @@ void App::run()
         std::vector<VkDescriptorSet> descriptorSets{ globalDescriptorSet[frameIndex], shadowDescriptorSet[frameIndex] };
 
         /////// update objects ///////
-
-        ubo.projection = cameraObject->camera->getProjection(); 
-        ubo.view = cameraObject->camera->getView(); 
-        ubo.inverseView = cameraObject->camera->getInverseView(); 
+        if (auto* lightObj = dynamic_cast<GameObjectCamera*>(cameraObject.get())) {
+            ubo.projection = lightObj->camera->getProjection(); 
+            ubo.view = lightObj->camera->getView(); 
+            ubo.inverseView = lightObj->camera->getInverseView(); 
+        }
         
         uboBuffers[frameIndex]->writeToBuffer(&ubo);
         uboBuffers[frameIndex]->flush();       
