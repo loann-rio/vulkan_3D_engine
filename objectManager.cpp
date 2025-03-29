@@ -16,48 +16,44 @@ void ObjectManager::startLoadModel(DescriptorPool& pool)
     loadObjectAsyncObj(device, "model/viking_room.obj", "textures/viking_room.png", vikingRoomTransform);
 
     std::shared_ptr<Model> plane = createPlane(device, 10, 10, { 0, 0, 0 });
-    //auto plane1 = GameObject::createGameObject(device);
     auto plane1 = GameObjectFactory::createGameObject<GameObjectModel>(device);
     plane1->setModel(plane);
     plane1->transform.translation.y = 0.1f;
     plane1->createDescriptorSet(pool);
-    pushSyncGameObject(std::move(plane1));
+    pushGameObject(std::move(plane1));
 
     std::shared_ptr<Model> planeModel = createPlane(device, 2, 10, { 0, 0, 0 }, "textures/emptyTexture.jpg");
-    //auto plane2 = GameObject::createGameObject(device);
     auto plane2 = GameObjectFactory::createGameObject<GameObjectModel>(device);
     plane2->setModel(planeModel);
     plane2->transform.rotation.z = -pi<float> / 2;
     plane2->transform.translation.x = 10.f;
     plane2->transform.translation.y = 1.f;
     plane2->createDescriptorSet(pool);
-    pushSyncGameObject(std::move(plane2));
+    pushGameObject(std::move(plane2));
 
     auto plane3 = GameObjectFactory::createGameObject<GameObjectModel>(device);
-    //auto plane3 = GameObject::createGameObject(device);
     plane3->setModel(planeModel);
     plane3->transform.rotation.x = pi<float> / 2;
     plane3->transform.translation.z = 10.f;
     plane3->transform.translation.y = 1.f;
     plane3->createDescriptorSet(pool);
-    pushSyncGameObject(std::move(plane3));
+    pushGameObject(std::move(plane3));
 
-    //auto spotLight1 = GameObjectCamera::create(device, glm::radians(50.f), 1.f);
-    auto spotLight1 = GameObjectFactory::createGameObject<GameObjectCamera>(device, glm::radians(50.f), 1.f, .1f, 100.f);
-    //auto spotLight1 = GameObject::makeCamera(device, glm::radians(50.f), 1.f); 
+    auto spotLight1 = GameObjectFactory::createGameObject<GameObjectSpotLight>(device, glm::radians(50.f), 1.f, .1f, 100.f); 
     spotLight1->transform.translation = { -4.0f, -1.0f, 5.5f }; 
     spotLight1->transform.rotation.y = pi<float> *2 / 5; 
     spotLight1->transform.color = { 1.0, 1.0, 1.0, .7 }; 
+    spotLight1->setName("spotLight1");
 
-    //auto spotLight2 = GameObjectCamera::create(device, glm::radians(50.f), 1.f);
-    auto spotLight2 = GameObjectFactory::createGameObject<GameObjectCamera>(device, glm::radians(50.f), 1.f, .1f, 100.f);
-    //auto spotLight2 = GameObject::makeCamera(device, glm::radians(50.f), 1.f); 
+    auto spotLight2 = GameObjectFactory::createGameObject<GameObjectSpotLight>(device, glm::radians(50.f), 1.f, .1f, 100.f);
     spotLight2->transform.translation = { 1.0f, -2.0f, 2.5f }; 
     spotLight2->transform.rotation.y = pi<float> *2 / 5; 
     spotLight2->transform.color = { 0.0, 1.0, 0.0, .7 }; 
-     
-    spotLights->emplace(spotLight1->getId(), std::move(spotLight1)); 
-    spotLights->emplace(spotLight2->getId(), std::move(spotLight2));  
+    spotLight2->setName("spotLight2");
+
+    pushGameObject(std::move(spotLight1));
+    pushGameObject(std::move(spotLight2)); 
+
 }
 
 
@@ -72,7 +68,6 @@ void ObjectManager::pushModel(DescriptorPool& pool)
         if (it->wait_for(std::chrono::seconds(0)) == std::future_status::ready) { // check if future is ready
             futureObject object = it->get();  // get loaded model from future
 
-            //auto gameObject = GameObject::createGameObject(device);  
             auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
             gameObject->transform = object.transform; 
             gameObject->setModel(object.model);
@@ -80,7 +75,7 @@ void ObjectManager::pushModel(DescriptorPool& pool)
             gameObject->setName(object.name);
             gameObject->createDescriptorSet(pool);
 
-            gameObjects->emplace(gameObject->getId(), std::move(gameObject));
+            pushGameObject(std::move(gameObject));
 
             it = futureGameObjects.erase(it); // remove from futures
         }
@@ -88,6 +83,35 @@ void ObjectManager::pushModel(DescriptorPool& pool)
             ++it; 
         }
     }
+}
+
+void ObjectManager::pushGameObject(std::unique_ptr<GameObject> gameObject)
+{
+    GameObject::id_t id = gameObject->getId(); 
+    std::string name = gameObject->getName();
+    std::type_index type = typeid(*gameObject);
+
+    gameObjects->emplace(id, std::move(gameObject));
+
+    // Store pointer in name map
+    if (!name.empty()) {
+        gameObjectsByName[name] = gameObjects->at(id).get();
+    }
+
+    // Store in type-indexed list
+    gameObjectsByType[type].push_back(gameObjects->at(id).get()); 
+}
+
+GameObject* ObjectManager::get(GameObject::id_t id)
+{
+    auto it = gameObjects->find(id);
+    return (it != gameObjects->end()) ? it->second.get() : nullptr;
+}
+
+GameObject* ObjectManager::get(const std::string& name)
+{
+    auto it = gameObjectsByName.find(name);
+    return (it != gameObjectsByName.end()) ? it->second : nullptr;
 }
 
 void ObjectManager::loadObjectAsync(Device& device, const std::string& filePath, TransformComponent transform)

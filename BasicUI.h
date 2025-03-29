@@ -2,14 +2,16 @@
 
 #include "Device.h"
 #include "Window.h"
+#include "objectManager.h"
 #include "GameObject.h"
 
 #define ENABLE_IMGUI
+
 #ifdef ENABLE_IMGUI
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_vulkan.h"
-#endif // ENABLE_IMGUI
+
 
 #include <glm/glm.hpp>
 
@@ -20,11 +22,17 @@ public:
 	BasicUI(Device& device, GLFWwindow* window, VkRenderPass renderPass);
 	~BasicUI();
 
-	void drawUI(VkCommandBuffer commandBuffer, GameObject* gameObject);
-	void gameObjectWindow(GameObject* gameObject);
+	void drawUI(VkCommandBuffer commandBuffer, ObjectManager* manager);
 
 private:
+
+	void gameObjectWindow(GameObject* gameObject);
+	void objectSelectionWindow(std::vector<std::string> listObjectsName); 
+
 	VkDescriptorPool imguiPool;
 	Device& device;
+
+	std::string selected_object = "";
 };
 
+#endif // ENABLE_IMGUI

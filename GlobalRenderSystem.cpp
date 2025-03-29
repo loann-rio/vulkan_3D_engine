@@ -34,7 +34,6 @@ GlobalRenderSystem::GlobalRenderSystem(Device& device, VkRenderPass renderPass,
 	}
 
 	auto newLayout = builder.build(); 
-	//globalSetLayout.insert(globalSetLayout.begin() + 1, newLayout->getDescriptorSetLayout());
 	globalSetLayout.push_back(newLayout->getDescriptorSetLayout());
 
 	createPipelineLayout(globalSetLayout);
@@ -192,32 +191,23 @@ void GlobalRenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, Frame
 {
 	bind(commandBuffer, globalDescriptorSets);
 	
-	for (auto& kv : *frameInfo.asyncGameObjects)
+	for (auto obj : frameInfo.listGameObjects)
 	{
-		auto& obj = kv.second;
-
-		if (auto* modelObj = dynamic_cast<GameObjectModel*>(obj.get())) {
-			if (modelObj->getModelType() == modelType)
-				renderModel(commandBuffer, frameInfo, modelObj);
-		}
+		if (obj->getModelType() == modelType)
+			renderModel(commandBuffer, frameInfo, obj);	
 	}
 }
 
 
 void GlobalRenderSystem::renderGameObjectsDepth(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, std::vector<VkDescriptorSet> globalDescriptorSets, int lightIndex)
 { 
-
 	// bind pipeline and global descriptor sets
 	bind(commandBuffer, globalDescriptorSets);
 
 	// render each model with the corresponding type
-	for (auto& kv : *frameInfo.asyncGameObjects) 
+	for (auto obj : frameInfo.listGameObjects)
 	{
-		auto& obj = kv.second; 
-		if (auto* modelObj = dynamic_cast<GameObjectModel*>(obj.get())) {
-			if (modelObj->getModelType() == modelType)
-				renderModelDepth(commandBuffer, modelObj, lightIndex);
-		}
+		if (obj->getModelType() == modelType)
+			renderModelDepth(commandBuffer, obj, lightIndex);
 	}
-
 }

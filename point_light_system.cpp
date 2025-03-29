@@ -90,62 +90,62 @@ void PointLightSystem::bind(VkCommandBuffer& commandBuffer, std::vector<VkDescri
 
 void PointLightSystem::update(FrameInfo& frameInfo, GlobalUbo& ubo, int frameInd)
 {
-	auto rotateLight = glm::rotate(glm::mat4(1.f), frameInfo.frameTime, { 0.f, -1.0f, 0.f });
+	//auto rotateLight = glm::rotate(glm::mat4(1.f), frameInfo.frameTime, { 0.f, -1.0f, 0.f });
 
-	int lightIndex = 0;
-	for (auto& kv : *frameInfo.asyncGameObjects) {
-		auto& obj = kv.second;
-		if (obj->pointLight == nullptr) continue;
+	//int lightIndex = 0;
+	//for (auto obj : frameInfo.listGameObjects)
+	//{
+	//	if (obj->pointLight == nullptr) continue;
 
-		assert(lightIndex < MAX_LIGHT && "point lights exceed maximum");
+	//	assert(lightIndex < MAX_LIGHT && "point lights exceed maximum");
 
-		// update light position:
-		obj->transform.translation = glm::vec3(rotateLight * glm::vec4(obj->transform.translation - glm::vec3{ 7, 0, 7 }, 1.f))+glm::vec3{ 7, 0, 7 };
-		
-		// copy light to ubo
-		ubo.pointLights[lightIndex].position = glm::vec4(obj->transform.translation, 1.0);
-		ubo.pointLights[lightIndex].color = glm::vec4(glm::vec3(obj->transform.color), obj->pointLight->LightIntencity);
-		lightIndex++;
-	}
-	ubo.numLights = lightIndex;
+	//	// update light position:
+	//	obj->transform.translation = glm::vec3(rotateLight * glm::vec4(obj->transform.translation - glm::vec3{ 7, 0, 7 }, 1.f))+glm::vec3{ 7, 0, 7 };
+	//	
+	//	// copy light to ubo
+	//	ubo.pointLights[lightIndex].position = glm::vec4(obj->transform.translation, 1.0);
+	//	ubo.pointLights[lightIndex].color = glm::vec4(glm::vec3(obj->transform.color), obj->pointLight->LightIntencity);
+	//	lightIndex++;
+	//}
+	//ubo.numLights = lightIndex;
 }
 
 void PointLightSystem::render(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, std::vector<VkDescriptorSet> globalDescriptorSets)
 {
 	// sort lights
-	std::map<float, GameObject::id_t> sorted;
-	for (auto& kv : *frameInfo.asyncGameObjects) {
-		auto& obj = kv.second;
-		if (obj->pointLight == nullptr) continue;
+	//std::map<float, GameObject::id_t> sorted;
+	//for (auto& kv : *frameInfo.asyncGameObjects) {
+	//	auto& obj = kv.second;
+	//	if (obj->pointLight == nullptr) continue;
 
-		// get dist
-		auto offset = frameInfo.cameraPos - obj->transform.translation;
-		float disSquared = glm::dot(offset, offset);
-		sorted[disSquared] = obj->getId();
-	}
+	//	// get dist
+	//	auto offset = frameInfo.cameraPos - obj->transform.translation;
+	//	float disSquared = glm::dot(offset, offset);
+	//	sorted[disSquared] = obj->getId();
+	//}
 
-	bind(commandBuffer, globalDescriptorSets);
+	//bind(commandBuffer, globalDescriptorSets);
 
-	// iterate through sorted map in inverse order:
-	for (auto it = sorted.rbegin(); it != sorted.rend(); it++) {
-		auto& obj = frameInfo.asyncGameObjects->at(it->second);
+	//// iterate through sorted map in inverse order:
+	//for (auto it = sorted.rbegin(); it != sorted.rend(); it++) {
+	//	auto& obj = frameInfo.asyncGameObjects->at(it->second);
 
-		PointLightPushConstants push{};
-		push.position = glm::vec4(obj->transform.translation, 1.f);
-		push.color = glm::vec4(glm::vec3(obj->transform.color), obj->pointLight->LightIntencity);
-		push.radius = obj->transform.scale.x;
+	//	PointLightPushConstants push{};
+	//	push.position = glm::vec4(obj->transform.translation, 1.f);
+	//	push.color = glm::vec4(glm::vec3(obj->transform.color), obj->pointLight->LightIntencity);
+	//	push.radius = obj->transform.scale.x;
 
-		vkCmdPushConstants(
-			commandBuffer,
-			pipelineLayout,
-			VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-			0,
-			sizeof(PointLightPushConstants),
-			&push
-		);
+	//	vkCmdPushConstants(
+	//		commandBuffer,
+	//		pipelineLayout,
+	//		VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+	//		0,
+	//		sizeof(PointLightPushConstants),
+	//		&push
+	//	);
 
-		vkCmdDraw(commandBuffer, 6, 1, 0, 0);
-	}
+	//	vkCmdDraw(commandBuffer, 6, 1, 0, 0);
+	//}
 
 	
 }

@@ -33,5 +33,5 @@ struct FrameInfo {
 	float frameTime;
 	int spotLightCount;
 	glm::vec3 cameraPos;
-	std::shared_ptr<GameObject::Map> asyncGameObjects;
+	std::vector<GameObjectModel*> listGameObjects; 
 };

@@ -6,7 +6,8 @@
 #include <queue>
 #include <mutex>
 #include <thread>
-#include <chrono>
+#include <typeindex>
+
 
 #include "GameObject.h"
 
@@ -29,16 +30,22 @@ public:
 
     ObjectManager(Device& device) : device{ device } {
         gameObjects = std::make_shared<GameObject::Map>();
-        spotLights = std::make_shared<GameObject::Map>(); 
+        
     };
 
 
-	std::shared_ptr<GameObject::Map> getGameObject() const { return gameObjects; }
-	std::shared_ptr<GameObject::Map> getSpotLights() const { return spotLights;  }
-
+	
 	void startLoadModel(DescriptorPool& pool); 
 	void pushModel(DescriptorPool& pool); 
-    void pushSyncGameObject(std::unique_ptr<GameObject> gameObject) { gameObjects->emplace(gameObject->getId(), std::move(gameObject)); } 
+    void pushGameObject(std::unique_ptr<GameObject> gameObject);
+
+    template <typename T>
+    std::vector<T*> getByType();
+
+    GameObject* get(GameObject::id_t id);
+    GameObject* get(const std::string& name);
+
+    std::shared_ptr<GameObject::Map> getGameObjects() const { return gameObjects; } 
 
 private:
     Device& device;
@@ -47,11 +54,30 @@ private:
 
     std::vector<std::future<futureObject>> futureGameObjects;
 
-    std::shared_ptr<GameObject::Map> spotLights{};
     std::shared_ptr<GameObject::Map> gameObjects{};
+    std::unordered_map<std::string, GameObject*> gameObjectsByName;
+    std::unordered_map<std::type_index, std::vector<GameObject*>> gameObjectsByType; 
+
+    std::shared_ptr<GameObject::Map> spotLights{};
     std::shared_ptr<GameObject::Map> cameras{};
 
     void loadObjectAsync(Device& device, const std::string& filePath, TransformComponent transform);
     void loadObjectAsyncObj(Device& device, const std::string& filePath, const char* filePathTexture, TransformComponent transform);
 };
- 
+
+template<typename T>
+inline std::vector<T*> ObjectManager::getByType()
+{
+    std::vector<T*> result; 
+    auto it = gameObjectsByType.find(typeid(T));  
+
+    if (it != gameObjectsByType.end()) { 
+        for (auto obj : it->second) { 
+            if (T* casted = dynamic_cast<T*>(obj)) { 
+                result.push_back(casted);
+            }
+        }
+    }
+  
+    return result;
+}

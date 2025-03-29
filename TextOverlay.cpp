@@ -94,7 +94,7 @@ void TextOverlay::renderText(VkCommandBuffer& commandBuffer, FrameInfo& frameInf
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
 		pipelineLayout,
 		0, 1,
-		&descriptorSet[frameInfo.frameIndex],
+		&descriptorSet[frameInfo.frameIndex], 
 		0,
 		nullptr
 	);

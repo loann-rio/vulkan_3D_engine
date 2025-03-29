@@ -55,25 +55,41 @@ BasicUI::BasicUI(Device& device, GLFWwindow* window, VkRenderPass renderPass) : 
 BasicUI::~BasicUI()
 {
     ImGui_ImplVulkan_Shutdown();
-    vkDestroyDescriptorPool(device.device(), imguiPool, nullptr);
+    vkDestroyDescriptorPool(device.device(), imguiPool, nullptr); 
 }
 
-void BasicUI::drawUI(VkCommandBuffer commandBuffer, GameObject* gameObject)
+void BasicUI::drawUI(VkCommandBuffer commandBuffer, ObjectManager* manager)
 {
+    
     ImGui_ImplVulkan_NewFrame(); 
     ImGui_ImplGlfw_NewFrame(); 
     ImGui::NewFrame(); 
 
-    // Example UI
-    gameObjectWindow(gameObject);
+    auto objects = manager->getGameObjects();
+
+    std::vector<std::string> listObjectsName;
+    for (auto i = objects->begin(); i != objects->end(); i++) {
+        auto name = i->second->getName();
+        if (name.size()) 
+            listObjectsName.push_back(name);
+    }   
+
+    objectSelectionWindow(listObjectsName); 
+
+    auto gameObject = manager->get(selected_object);
+    if (gameObject != nullptr) {
+        gameObjectWindow(gameObject); 
+    }
 
     ImGui::Render(); 
-    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer); 
+    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);  
 }
+
+
 
 void BasicUI::gameObjectWindow(GameObject* gameObject)
 {
-    ImGui::Begin("Debug Info");
+    ImGui::Begin("Object debug");
 
     ImGui::Text("Position:");
     ImGui::DragFloat3("pos", glm::value_ptr(gameObject->transform.translation), 0.01f, -10.0f, 10.0f);
@@ -86,3 +102,21 @@ void BasicUI::gameObjectWindow(GameObject* gameObject)
 
     ImGui::End();
 }
+
+void BasicUI::objectSelectionWindow(std::vector<std::string> listObjectsName)
+{
+    ImGui::Begin("selector");
+    static int item_current = 0;
+
+    std::vector<const char*> listObjectsNameCStr;
+    for (const auto& str : listObjectsName) {
+        listObjectsNameCStr.push_back(str.c_str());
+    }
+
+    ImGui::ListBox("listbox", &item_current, listObjectsNameCStr.data(), listObjectsNameCStr.size());
+
+    selected_object = listObjectsName[item_current];
+
+    ImGui::End();
+}
+

@@ -1,5 +1,7 @@
 #include "GameObject.h"
 
+ 
+GameObject::id_t GameObjectFactory::nextId = 0;
 
 glm::mat4 TransformComponent::mat4() 
 {
@@ -63,13 +65,14 @@ glm::mat3 TransformComponent::normalMatrix()
 
 std::unique_ptr<GameObject> GameObject::makePointLight(Device& device, float intencity, float radius, glm::vec3 color = glm::vec3{ 1.f })
 {
-    auto gameObj = GameObject::createGameObject(device);
+    /*auto gameObj = GameObject::createGameObject(device);
     //gameObj.color = color;
     gameObj->transform.color = glm::vec4(color, 1.f);
     gameObj->transform.scale.x = radius;
     gameObj->pointLight = std::make_unique<PointLightComponent>();
     gameObj->pointLight->LightIntencity = intencity;
-    return gameObj;
+    return gameObj;*/
+    return nullptr;
 }
 
 void GameObjectModel::setModel(ModelVariant newModel)
@@ -117,13 +120,11 @@ void GameObjectModel::drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout
         }, model);
 }
 
-void GameObjectCamera::updateCameraView()
-{
-    assert(camera != nullptr && "cannot update camera on non camera game object");
-    camera->setViewYXZ(transform.translation, transform.rotation);
-}
+void GameObjectSpotLight::updateCameraView() { camera->setViewYXZ(transform.translation, transform.rotation); }
 
-SpotLight GameObjectCamera::getSpotLightInfo(bool _updateCameraView)
+void GameObjectCamera::updateCameraView() { camera->setViewYXZ(transform.translation, transform.rotation); }
+
+SpotLight GameObjectSpotLight::getSpotLightInfo(bool _updateCameraView)
 {
     if (_updateCameraView) updateCameraView(); 
 
@@ -134,3 +135,5 @@ SpotLight GameObjectCamera::getSpotLightInfo(bool _updateCameraView)
         camera->getProjection() * camera->getView() 
     }; 
 }
+
+

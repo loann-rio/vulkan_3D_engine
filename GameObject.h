@@ -53,10 +53,6 @@ public:
 	using id_t = unsigned int;
 	using Map = std::unordered_map<id_t, std::unique_ptr<GameObject>>;
 
-	static std::unique_ptr<GameObject> createGameObject(Device& device) {
-		static id_t currentId = 0;
-		return std::make_unique<GameObject>(currentId++, device);
-	}
 
 	id_t getId() { return id; } 
 	
@@ -71,17 +67,14 @@ public:
 
 	virtual ~GameObject() = default;
 
-	
 
 	TransformComponent transform{};
 
-	std::unique_ptr<PointLightComponent> pointLight = nullptr;
-
 	void setName(std::string newName) { name = newName; }
-	std::string getName() { return name; }
+	std::string getName() const { return name; }
 
 	static std::unique_ptr<GameObject> makePointLight(Device& device, float intencity, float radius, glm::vec3 color); 
-
+	std::unique_ptr<PointLightComponent> pointLight = nullptr;
 	
 protected:
 
@@ -93,10 +86,7 @@ protected:
 class GameObjectCamera : public GameObject { 
 
 public:
-	static std::unique_ptr<GameObjectCamera> create(Device& device, float fov, float aspect_ratio, float nearClip = .1f, float farClip = 100.f) {
-		static id_t currentId = 0;
-		return std::make_unique<GameObjectCamera>(currentId++, device, fov, aspect_ratio, nearClip, farClip);
-	}
+	virtual void ensurePolymorphism() {}
 
 	GameObjectCamera(id_t id, Device& device, float fov, float aspect_ratio, float nearClip, float farClip)
 		: GameObject(id, device) {
@@ -108,20 +98,40 @@ public:
 	std::unique_ptr<Camera> camera = nullptr;
 
 	void updateCameraView(); 
-	SpotLight getSpotLightInfo(bool _updateCameraView = false);  
-
 
 	friend class GameObjectFactory;
 };
+
+
+class GameObjectSpotLight : public GameObject {
+
+public:
+	virtual void ensurePolymorphism() {}
+
+	GameObjectSpotLight(id_t id, Device& device, float fov, float aspect_ratio, float nearClip, float farClip)
+		: GameObject(id, device) {
+
+		camera = std::make_unique<Camera>();
+		camera->setPerspectiveProjection(fov, aspect_ratio, nearClip, farClip);
+	}
+
+	std::unique_ptr<Camera> camera = nullptr;
+
+	SpotLight getSpotLightInfo(bool _updateCameraView = false);
+
+private:
+	void updateCameraView();
+
+	friend class GameObjectFactory;
+};
+
+
 
 class GameObjectModel : public GameObject 
 {
 public:
 
-	static std::unique_ptr<GameObjectModel> create(Device& device) {
-		static id_t currentId = 0;
-		return std::make_unique<GameObjectModel>(currentId++, device);
-	}
+	virtual void ensurePolymorphism() {}
 
 	template <typename T>
 	void setModel(std::shared_ptr<T> newModel)
@@ -156,10 +166,13 @@ private:
 
 
 class GameObjectFactory {
+
 public:
+
+	static GameObject::id_t nextId;
+
 	template <typename T, typename... Args>
 	static std::unique_ptr<T> createGameObject(Device& device, Args&&... args) {
-		static GameObject::id_t currentId = 0;
-		return std::make_unique<T>(currentId++, device, std::forward<Args>(args)...);
+		return std::make_unique<T>(nextId++, device, std::forward<Args>(args)...);
 	}
 };

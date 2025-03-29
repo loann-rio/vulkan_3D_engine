@@ -16,7 +16,7 @@
 #include <glm/gtc/constants.hpp>
 
 // imgui
-#define ENABLE_IMGUI
+//#define ENABLE_IMGUI
 #include "BasicUI.h"
 
 // std
@@ -56,11 +56,11 @@ void App::run()
     textOverlay.prepareResources(*globalPool);
 
     // camera setting
-    //auto cameraObject = GameObject::makeCamera(device, glm::radians(50.f), renderer.getAspectRatio());
-    //auto cameraObject = GameObjectCamera::create(device, glm::radians(50.f), renderer.getAspectRatio());
-    auto cameraObject = GameObjectFactory::createGameObject<GameObjectCamera>(device, glm::radians(50.f), renderer.getAspectRatio(), .1f, 100.f);
-    cameraObject->transform.translation = { 2.0f, -1.0f, 2.5f };  
-    cameraObject->transform.rotation.y = pi<float> * 1/3; 
+    auto cameraObject = GameObjectFactory::createGameObject<GameObjectCamera>(device, glm::radians(50.f), renderer.getAspectRatio(), .1f, 100.f); 
+    cameraObject->transform.translation = { 2.0f, -1.0f, 2.5f }; 
+    cameraObject->transform.rotation.y = pi<float> *1 / 3;  
+    cameraObject->setName("mainCamera");
+    objectManager.pushGameObject(std::move(cameraObject));
 
     // user inputs
     KeyboardMovementController cameraController{};
@@ -69,24 +69,6 @@ void App::run()
     GlobalUbo ubo{};
     SpotLightUbo spotLightUbo{};
     
-
-    int i = 0;
-    for (auto& kv : *objectManager.getSpotLights()) {
-        auto& spot = kv.second;
-        if (auto* lightObj = dynamic_cast<GameObjectCamera*>(spot.get())) {
-            spotLightUbo.spotLight[i++] = lightObj->getSpotLightInfo(true);  
-            if (i > DepthSwapChain::MAX_DEPTH_RENDER_COUNT) break;
-        }
-    }
-
-    spotLightUbo.numLights = i;
-    
-    shadowUboBuffer[0]->writeToBuffer(&spotLightUbo);
-    shadowUboBuffer[0]->flush();
-
-    shadowUboBuffer[1]->writeToBuffer(&spotLightUbo);
-    shadowUboBuffer[1]->flush();
-
     // start timer
     auto currentTime = std::chrono::high_resolution_clock::now();
 
@@ -116,8 +98,8 @@ void App::run()
         }
         
         // move camera on event 
-        cameraController.moveInPlaneXZ(window.getGLFWwindow(), frameTime, cameraObject.get());
-        cameraObject->updateCameraView();
+        cameraController.moveInPlaneXZ(window.getGLFWwindow(), frameTime, objectManager.get("mainCamera"));
+        dynamic_cast<GameObjectCamera*>(objectManager.get("mainCamera"))->updateCameraView(); 
 
         /////// start frame ///////
         if (!renderer.aquireNextImage()) continue;
@@ -129,21 +111,34 @@ void App::run()
             frameIndex,
             frameTime,
             spotLightUbo.numLights,
-            cameraObject->transform.translation, 
-            objectManager.getGameObject()
+            objectManager.get("mainCamera")->transform.translation, 
+            objectManager.getByType<GameObjectModel>()
         };  
 
         std::vector<VkDescriptorSet> descriptorSets{ globalDescriptorSet[frameIndex], shadowDescriptorSet[frameIndex] };
 
         /////// update objects ///////
-        if (auto* lightObj = dynamic_cast<GameObjectCamera*>(cameraObject.get())) {
-            ubo.projection = lightObj->camera->getProjection(); 
-            ubo.view = lightObj->camera->getView(); 
-            ubo.inverseView = lightObj->camera->getInverseView(); 
-        }
+
+        // update camera
+        auto* camObj = dynamic_cast<GameObjectCamera*>(objectManager.get("mainCamera"));
+        ubo.projection = camObj->camera->getProjection(); 
+        ubo.view = camObj->camera->getView(); 
+        ubo.inverseView = camObj->camera->getInverseView();
         
-        uboBuffers[frameIndex]->writeToBuffer(&ubo);
-        uboBuffers[frameIndex]->flush();       
+        uboBuffers[frameIndex]->writeToBuffer(&ubo); 
+        uboBuffers[frameIndex]->flush();
+
+        // update spotLight
+        int i = 0;
+        std::vector<GameObjectSpotLight*> spotLigths = objectManager.getByType<GameObjectSpotLight>();
+        for (auto lightObj : spotLigths) {
+            spotLightUbo.spotLight[i++] = lightObj->getSpotLightInfo(true);
+            if (i > DepthSwapChain::MAX_DEPTH_RENDER_COUNT) break;
+        }
+        spotLightUbo.numLights = i;
+
+        shadowUboBuffer[frameIndex]->writeToBuffer(&spotLightUbo);
+        shadowUboBuffer[frameIndex]->flush();
 
         /////// render depthframe ///////
         {
@@ -165,15 +160,15 @@ void App::run()
                 //pointLightSystem->render(commandBuffer, frameInfo, { globalDescriptorSet[frameIndex] } );
                 textOverlay.renderText(commandBuffer, frameInfo); 
 
-                imgui.drawUI(commandBuffer, (objectManager.getGameObject()->at(0).get()));
+                imgui.drawUI(commandBuffer, &objectManager);
 
                 renderer.endSwapChainRenderPass(commandBuffer);
                 renderer.endFrame();
             }
         }
 
-        frame = (frame + 1) % 10;
-
+        frame = (frame + 1) % 1;
+        
 	}
 
     vkQueueWaitIdle(device.presentQueue());
