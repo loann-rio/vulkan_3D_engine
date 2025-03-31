@@ -122,6 +122,39 @@ void GameObjectModel::drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout
 
 void GameObjectSpotLight::updateCameraView() { camera->setViewYXZ(transform.translation, transform.rotation); }
 
+void GameObjectSpotLight::debugUI()
+{
+    ImGui::Text("Position:");
+    ImGui::DragFloat3("##pos", glm::value_ptr(transform.translation), 0.01f, -10.0f, 10.0f);
+
+    ImGui::Text("Rotation:");
+    ImGui::DragFloat3("##rot", glm::value_ptr(transform.rotation), 0.01f, -10.0f, 10.0f);
+
+    ImGui::Text("fov");
+    if (ImGui::DragFloat("##fov", &_fov, 0.01, 0.1, glm::half_pi<float>())) {
+        camera->setPerspectiveProjection(_fov, _aspect_ratio, _nearClip, _farClip);
+    }
+
+    ImGui::Text("Color:"); 
+    ImGui::ColorEdit4("##clr", glm::value_ptr(transform.color)); 
+     
+
+}
+
+void GameObjectCamera::debugUI()
+{
+    ImGui::Text("Position:"); 
+    ImGui::DragFloat3("##pos", glm::value_ptr(transform.translation), 0.01f, -10.0f, 10.0f);  
+
+    ImGui::Text("Rotation:"); 
+    ImGui::DragFloat3("##rot", glm::value_ptr(transform.rotation), 0.01f, -10.0f, 10.0f); 
+
+    ImGui::Text("fov");
+    if (ImGui::DragFloat("##fov", &_fov, 0.01, 0.1, glm::half_pi<float>())) { 
+        camera->setPerspectiveProjection(_fov, _aspect_ratio, _nearClip, _farClip); 
+    }
+}
+
 void GameObjectCamera::updateCameraView() { camera->setViewYXZ(transform.translation, transform.rotation); }
 
 SpotLight GameObjectSpotLight::getSpotLightInfo(bool _updateCameraView)
@@ -136,4 +169,14 @@ SpotLight GameObjectSpotLight::getSpotLightInfo(bool _updateCameraView)
     }; 
 }
 
+void GameObjectModel::debugUI()
+{
+    ImGui::Text("Position:"); 
+    ImGui::DragFloat3("##pos", glm::value_ptr(transform.translation), 0.01f, -10.0f, 10.0f); 
 
+    ImGui::Text("Rotation:"); 
+    ImGui::DragFloat3("##rot", glm::value_ptr(transform.rotation), 0.01f, -10.0f, 10.0f);
+
+    ImGui::Text("Scale:");
+    ImGui::DragFloat3("##scl", glm::value_ptr(transform.scale), 0.01f, -10.0f, 10.0f);
+}

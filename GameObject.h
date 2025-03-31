@@ -7,6 +7,10 @@
 #include "Model.h"
 #include "Camera.h"
 
+
+#include "imgui.h"
+#include "backends/imgui_impl_glfw.h"
+
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <memory>
@@ -60,13 +64,14 @@ public:
 	GameObject(const GameObject&) = delete;
 	GameObject& operator=(const GameObject&) = delete;
 
-	GameObject(GameObject&&) = default;
+	GameObject(GameObject&&) = default; 
 	GameObject& operator=(GameObject&&) = default;
 
 	GameObject(id_t id, Device& device) : id(id), device(device) {}
 
 	virtual ~GameObject() = default;
 
+	virtual void debugUI() {}
 
 	TransformComponent transform{};
 
@@ -86,18 +91,23 @@ protected:
 class GameObjectCamera : public GameObject { 
 
 public:
-	virtual void ensurePolymorphism() {}
-
 	GameObjectCamera(id_t id, Device& device, float fov, float aspect_ratio, float nearClip, float farClip)
-		: GameObject(id, device) {
-
+		: GameObject(id, device), _fov(fov), _aspect_ratio(aspect_ratio), _nearClip(nearClip), _farClip(farClip) { 
 		camera = std::make_unique<Camera>();
 		camera->setPerspectiveProjection(fov, aspect_ratio, nearClip, farClip);
 	} 
 
 	std::unique_ptr<Camera> camera = nullptr;
 
-	void updateCameraView(); 
+	void debugUI(); 
+	void updateCameraView();
+
+private:
+
+	float _fov;
+	const float _aspect_ratio;
+	const float _nearClip;
+	const float _farClip;
 
 	friend class GameObjectFactory;
 };
@@ -106,10 +116,8 @@ public:
 class GameObjectSpotLight : public GameObject {
 
 public:
-	virtual void ensurePolymorphism() {}
-
 	GameObjectSpotLight(id_t id, Device& device, float fov, float aspect_ratio, float nearClip, float farClip)
-		: GameObject(id, device) {
+		: GameObject(id, device), _fov(fov), _aspect_ratio(aspect_ratio), _nearClip(nearClip), _farClip(farClip) {
 
 		camera = std::make_unique<Camera>();
 		camera->setPerspectiveProjection(fov, aspect_ratio, nearClip, farClip);
@@ -117,10 +125,17 @@ public:
 
 	std::unique_ptr<Camera> camera = nullptr;
 
+	void debugUI();
+
 	SpotLight getSpotLightInfo(bool _updateCameraView = false);
 
 private:
 	void updateCameraView();
+
+	float _fov;
+	const float _aspect_ratio;
+	const float _nearClip; 
+	const float _farClip;
 
 	friend class GameObjectFactory;
 };
@@ -130,9 +145,6 @@ private:
 class GameObjectModel : public GameObject 
 {
 public:
-
-	virtual void ensurePolymorphism() {}
-
 	template <typename T>
 	void setModel(std::shared_ptr<T> newModel)
 	{
@@ -153,6 +165,8 @@ public:
 	void bindModel(VkCommandBuffer& commandBuffer) const;
 	void drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout) const;
 
+	void debugUI(); 
+
 	GameObjectModel(id_t id, Device& device) : GameObject(id, device) {}
 private:
 	
@@ -168,7 +182,6 @@ private:
 class GameObjectFactory {
 
 public:
-
 	static GameObject::id_t nextId;
 
 	template <typename T, typename... Args>

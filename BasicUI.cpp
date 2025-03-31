@@ -60,10 +60,11 @@ BasicUI::~BasicUI()
 
 void BasicUI::drawUI(VkCommandBuffer commandBuffer, ObjectManager* manager)
 {
-    
+    isWindowSelected = false;
+
     ImGui_ImplVulkan_NewFrame(); 
     ImGui_ImplGlfw_NewFrame(); 
-    ImGui::NewFrame(); 
+    ImGui::NewFrame();  
 
     auto objects = manager->getGameObjects();
 
@@ -74,7 +75,7 @@ void BasicUI::drawUI(VkCommandBuffer commandBuffer, ObjectManager* manager)
             listObjectsName.push_back(name);
     }   
 
-    objectSelectionWindow(listObjectsName); 
+    objectSelectionWindow(listObjectsName,  manager);
 
     auto gameObject = manager->get(selected_object);
     if (gameObject != nullptr) {
@@ -91,31 +92,108 @@ void BasicUI::gameObjectWindow(GameObject* gameObject)
 {
     ImGui::Begin("Object debug");
 
-    ImGui::Text("Position:");
-    ImGui::DragFloat3("pos", glm::value_ptr(gameObject->transform.translation), 0.01f, -10.0f, 10.0f);
+    isWindowSelected = (isWindowSelected || ImGui::IsWindowFocused()); 
 
-    ImGui::Text("Rotation:");
-    ImGui::DragFloat3("rot", glm::value_ptr(gameObject->transform.rotation), 0.01f, -10.0f, 10.0f);
-    
-    ImGui::Text("Scale:");
-    ImGui::DragFloat3("scale", glm::value_ptr(gameObject->transform.scale), 0.01f, -10.0f, 10.0f);
+    gameObject->debugUI();
 
-    ImGui::End();
+    ImGui::End(); 
 }
 
-void BasicUI::objectSelectionWindow(std::vector<std::string> listObjectsName)
+void BasicUI::objectSelectionWindow(std::vector<std::string> listObjectsName, ObjectManager* manager)
 {
     ImGui::Begin("selector");
+
+    isWindowSelected = (isWindowSelected || ImGui::IsWindowFocused());
+
+    static int sub_selected = -1;  // Store sub-selection
+    static bool open_sub_popup = false;
+
+    ImGui::SeparatorText("create new game object");
+    if (ImGui::Button("Select obj type"))
+        ImGui::OpenPopup("gameObjectPopup");     
+
+    if (ImGui::BeginPopup("gameObjectPopup"))
+    {
+        ImGui::SeparatorText("object type");
+
+        if (ImGui::Selectable("Model")) { open_sub_popup = true; }
+        if (ImGui::Selectable("Camera")) {}
+        if (ImGui::Selectable("SpotLight")) {}
+
+        ImGui::EndPopup(); 
+    }
+
+    if (open_sub_popup) 
+    {
+        ImGui::OpenPopup("modelSelection");
+        open_sub_popup = false;
+    }
+
+    if (ImGui::BeginPopup("modelSelection"))
+    {
+        ImGui::SeparatorText("Model type");
+
+        if (ImGui::Selectable("OBJ")) sub_selected = 0;
+        if (ImGui::Selectable("GLTF")) sub_selected = 1; 
+
+
+        ImGui::EndPopup(); 
+    }
+
+    ImGui::SeparatorText("loaded game objects"); 
+
     static int item_current = 0;
 
     std::vector<const char*> listObjectsNameCStr;
     for (const auto& str : listObjectsName) {
         listObjectsNameCStr.push_back(str.c_str());
-    }
+    } 
 
-    ImGui::ListBox("listbox", &item_current, listObjectsNameCStr.data(), listObjectsNameCStr.size());
+    
+    ImGui::ListBox("##go", &item_current, listObjectsNameCStr.data(), listObjectsNameCStr.size());
 
     selected_object = listObjectsName[item_current];
+
+    ImGui::End();
+}
+
+void BasicUI::createObjWindow()
+{
+    ImGui::Begin("createObject");
+
+    ImGui::SeparatorText("create obj model");
+
+    ImGui::Text("model path");
+    static char path[128] = "";
+    ImGui::InputTextWithHint("##path", "enter model path", path, IM_ARRAYSIZE(path));
+
+    ImGui::Text("texture path");
+    static char pathTexture[128] = "";
+    ImGui::InputTextWithHint("##pathTexture", "enter texture path", pathTexture, IM_ARRAYSIZE(pathTexture)); 
+
+    if (ImGui::Button("create"))
+    {
+        std::memset(path, 0, sizeof(path));
+        std::memset(pathTexture, 0, sizeof(pathTexture));
+    }
+
+    ImGui::End(); 
+}
+
+void BasicUI::createGLTFWindow()
+{
+    ImGui::Begin("createObject");
+
+    ImGui::SeparatorText("create obj model");
+
+    ImGui::Text("model path");
+    static char path[128] = "";
+    ImGui::InputTextWithHint("##path", "enter model path", path, IM_ARRAYSIZE(path));
+
+    if (ImGui::Button("create"))
+    {
+        std::memset(path, 0, sizeof(path));
+    }
 
     ImGui::End();
 }

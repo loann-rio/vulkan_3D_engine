@@ -98,8 +98,10 @@ void App::run()
         }
         
         // move camera on event 
-        cameraController.moveInPlaneXZ(window.getGLFWwindow(), frameTime, objectManager.get("mainCamera"));
-        dynamic_cast<GameObjectCamera*>(objectManager.get("mainCamera"))->updateCameraView(); 
+        if (!imgui.isWindowSelected) {
+            cameraController.moveInPlaneXZ(window.getGLFWwindow(), frameTime, objectManager.get("mainCamera"));
+            dynamic_cast<GameObjectCamera*>(objectManager.get("mainCamera"))->updateCameraView();
+        } 
 
         /////// start frame ///////
         if (!renderer.aquireNextImage()) continue;
@@ -132,7 +134,8 @@ void App::run()
         int i = 0;
         std::vector<GameObjectSpotLight*> spotLigths = objectManager.getByType<GameObjectSpotLight>();
         for (auto lightObj : spotLigths) {
-            spotLightUbo.spotLight[i++] = lightObj->getSpotLightInfo(true);
+            if (lightObj->transform.color.w != 0)
+                spotLightUbo.spotLight[i++] = lightObj->getSpotLightInfo(true);
             if (i > DepthSwapChain::MAX_DEPTH_RENDER_COUNT) break;
         }
         spotLightUbo.numLights = i;
@@ -167,7 +170,7 @@ void App::run()
             }
         }
 
-        frame = (frame + 1) % 1;
+        frame = (frame + 1) % 2 ;
         
 	}
 

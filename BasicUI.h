@@ -12,9 +12,7 @@
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_vulkan.h"
 
-
 #include <glm/glm.hpp>
-
 
 class BasicUI
 {
@@ -24,10 +22,13 @@ public:
 
 	void drawUI(VkCommandBuffer commandBuffer, ObjectManager* manager);
 
+	bool isWindowSelected = false;
 private:
 
 	void gameObjectWindow(GameObject* gameObject);
-	void objectSelectionWindow(std::vector<std::string> listObjectsName); 
+	void objectSelectionWindow(std::vector<std::string> listObjectsName, ObjectManager* manager);
+	void createObjWindow(); 
+	void createGLTFWindow();
 
 	VkDescriptorPool imguiPool;
 	Device& device;
