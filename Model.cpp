@@ -31,8 +31,9 @@ Model::Model(Device& device, const Model::Builder& builder, const char* filePath
 	createIndexBuffers(builder.indices);
 
 	if (filePathTexture) {
-		texture = std::make_unique<Texture>(device, filePathTexture);
-		hasTexture = true;
+		texture = Texture::create(device, filePathTexture); 
+		if (texture!= nullptr)
+			hasTexture = true;
 	}
 }
 

@@ -11,6 +11,13 @@
 class Texture
 {
 public:
+	static std::unique_ptr<Texture> create(Device& device, const char* path) {
+		auto tex = std::unique_ptr<Texture>(new Texture(device,  path)); 
+		if (!tex->isLoaded) {
+			return nullptr;
+		}
+		return tex;
+	}
 
 	Texture(Device& device, const char* filePathTexture);
 	Texture(Device& device, unsigned char* rgbaPixels, const uint32_t fontWidth, const uint32_t fontHeight, VkDeviceSize imageSize = 0, uint32_t mipLevel = 1);
@@ -21,7 +28,6 @@ public:
 		vkDestroySampler(device.device(), textureSampler, nullptr);
 		vkDestroyImageView(device.device(), textureImageView, nullptr);
 		vkDestroyImage(device.device(), textureImage, nullptr);
-
 		vkFreeMemory(device.device(), textureImageMemory, nullptr);
 	}
 
@@ -40,6 +46,8 @@ public:
 
 	VkImage textureImage;
 	VkDeviceMemory textureImageMemory;
+
+	bool isLoaded = false; 
 
 private:
 

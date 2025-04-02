@@ -11,8 +11,12 @@
 Texture::Texture(Device& device, const char* filePathTexture) : device{device}
 {
     uint32_t mipLevel = createTextureImage(filePathTexture);
+    if (mipLevel == 0)
+        return;
     createTextureImageView(mipLevel);
     createTextureSampler(mipLevel);
+
+    isLoaded = true;
 }
 
 Texture::Texture(Device& device, unsigned char* rgbaPixels, const uint32_t fontWidth, const uint32_t fontHeight, VkDeviceSize imageSize, uint32_t mipLevel) : device{ device }
@@ -70,8 +74,9 @@ uint32_t Texture::createTextureImage(const char* path)
     
 
     if (!pixels) {
-        std::cout << "wtf??\n";
-        throw std::runtime_error("failed to load texture image!");
+        //throw std::runtime_error("failed to load texture image!");
+        std::cerr << "failed to load texture image! \n";
+        return 0;
     }
 
     //std::lock_guard<std::mutex> lock(device.getGraphicMutex());

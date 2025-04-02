@@ -1180,8 +1180,9 @@ std::unique_ptr<GlTFModel::ModelGltf> GlTFModel::createModelFromFile(Device& dev
 {
 	std::cout << "start loading \n";
 	std::unique_ptr<GlTFModel::ModelGltf> model = std::make_unique<GlTFModel::ModelGltf>(device);
-	model->loadFromFile(filePath); 
-	return model;
+	if (model->loadFromFile(filePath)) 
+		return model;
+	return nullptr;
 }
 
 std::vector<VkVertexInputBindingDescription> GlTFModel::ModelGltf::Vertex::getBindingDescriptions()

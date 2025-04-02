@@ -75,14 +75,16 @@ void ObjectManager::pushModel(DescriptorPool& pool)
         if (it->wait_for(std::chrono::seconds(0)) == std::future_status::ready) { // check if future is ready
             futureObject object = it->get();  // get loaded model from future
 
-            auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
-            gameObject->transform = object.transform; 
-            gameObject->setModel(object.model);
-            gameObject->setModelType(object.type);
-            gameObject->setName(object.name);
-            gameObject->createDescriptorSet(pool);
+            if (object.type != UNDEFINED_MODEL) {
+                auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
+                gameObject->transform = object.transform; 
+                gameObject->setModel(object.model); 
+                gameObject->setModelType(object.type); 
+                gameObject->setName(object.name); 
+                gameObject->createDescriptorSet(pool); 
 
-            pushGameObject(std::move(gameObject));
+                pushGameObject(std::move(gameObject)); 
+            }
 
             it = futureGameObjects.erase(it); // remove from futures
         }
@@ -94,7 +96,7 @@ void ObjectManager::pushModel(DescriptorPool& pool)
 
 void ObjectManager::pushGameObject(std::unique_ptr<GameObject> gameObject)
 {
-    GameObject::id_t id = gameObject->getId(); 
+    GameObject::id_t id = gameObject->getId();
     std::string name = gameObject->getName();
     std::type_index type = typeid(*gameObject);
 
@@ -125,16 +127,16 @@ void ObjectManager::loadObjectAsync(Device& device, const std::string& filePath,
 {
     futureGameObjects.push_back(std::async(std::launch::async, [filePath, transform, &device, name]() {
         std::shared_ptr<GlTFModel::ModelGltf> model = GlTFModel::createModelFromFile(device, filePath);
-        return futureObject{ model, transform, GLTF_MODEL, name.empty() ? filePath : name };
+        return futureObject{ model, transform, model ? GLTF_MODEL : UNDEFINED_MODEL, name.empty() ? filePath : name };
         })
     );
 }
 
 void ObjectManager::loadObjectAsyncObj(Device& device, const std::string& filePath, const char* filePathTexture, TransformComponent transform, const std::string& name)
 {
-    futureGameObjects.push_back(std::async(std::launch::async, [filePath, filePathTexture, transform, &device, name]() {  
+    futureGameObjects.push_back(std::async(std::launch::async, [filePath, filePathTexture, transform, &device, name]() {
         std::shared_ptr<Model> model = Model::createModelFromFile(device, filePath, filePathTexture);
-        return futureObject{ model, transform, OBJ_MODEL, name.empty() ? filePath : name }; 
+        return futureObject{ model, transform, model ? OBJ_MODEL : UNDEFINED_MODEL, name.empty() ? filePath : name };
         })
     );
 }
