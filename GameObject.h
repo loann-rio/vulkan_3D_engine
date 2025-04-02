@@ -29,6 +29,13 @@ typedef enum ModelType {
 	QUAD_MODEL = 3 
 };
 
+enum class GameObjectType { 
+	UNKNOWN,
+	CAMERA,
+	MODEL,
+	SPOT_LIGHT 
+};
+
 struct SpotLight { 
 	glm::vec4 position{};
 	glm::vec4 color{ 1.0f };  
@@ -72,6 +79,7 @@ public:
 	virtual ~GameObject() = default;
 
 	virtual void debugUI() {}
+	virtual GameObjectType getType() const { return GameObjectType::UNKNOWN; } 
 
 	TransformComponent transform{};
 
@@ -93,7 +101,7 @@ class GameObjectCamera : public GameObject {
 public:
 	GameObjectCamera(id_t id, Device& device, float fov, float aspect_ratio, float nearClip, float farClip)
 		: GameObject(id, device), _fov(fov), _aspect_ratio(aspect_ratio), _nearClip(nearClip), _farClip(farClip) { 
-		camera = std::make_unique<Camera>();
+		camera = std::make_unique<Camera>(aspect_ratio);
 		camera->setPerspectiveProjection(fov, aspect_ratio, nearClip, farClip);
 	} 
 
@@ -101,6 +109,7 @@ public:
 
 	void debugUI(); 
 	void updateCameraView();
+	GameObjectType getType() const override { return GameObjectType::CAMERA; } 
 
 private:
 
@@ -128,6 +137,8 @@ public:
 	void debugUI();
 
 	SpotLight getSpotLightInfo(bool _updateCameraView = false);
+
+	GameObjectType getType() const override { return GameObjectType::SPOT_LIGHT; }
 
 private:
 	void updateCameraView();
@@ -166,6 +177,8 @@ public:
 	void drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout) const;
 
 	void debugUI(); 
+
+	GameObjectType getType() const override { return GameObjectType::MODEL; }
 
 	GameObjectModel(id_t id, Device& device) : GameObject(id, device) {}
 private:

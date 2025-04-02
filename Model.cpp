@@ -40,11 +40,14 @@ Model::~Model() {}
 
 std::unique_ptr<Model> Model::createModelFromFile(Device& device, const std::string& filePath, const char* filePathTexture)
 {
-	Builder builder{};
-	builder.loadOBJModel(filePath);
-	std::cout << "vertex count: " << builder.vertices.size() << "\n";
-	std::unique_ptr<Model> m = std::make_unique<Model>(device, builder, filePathTexture);
-	return m;
+	Builder builder{}; 
+	if (builder.loadOBJModel(filePath)) { 
+		std::cout << "vertex count: " << builder.vertices.size() << "\n"; 
+		std::unique_ptr<Model> m = std::make_unique<Model>(device, builder, filePathTexture); 
+		return m;
+	}
+
+	return nullptr;
 }
 
 void Model::bind(VkCommandBuffer& commandBuffer)
@@ -178,7 +181,7 @@ std::vector<VkVertexInputAttributeDescription> Model::Vertex::getAttributeDescri
 	return attributeDescriptions;
 }
 
-void Model::Builder::loadOBJModel(const std::string& filepath)
+bool Model::Builder::loadOBJModel(const std::string& filepath)
 {
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
@@ -186,7 +189,9 @@ void Model::Builder::loadOBJModel(const std::string& filepath)
 	std::string warn, err;
 
 	if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filepath.c_str())) {
-		throw std::runtime_error(warn + err);
+		//throw std::runtime_error(warn + err);
+		std::cerr << warn + err << "\n";
+		return false;
 	}
 
 	vertices.clear();
@@ -234,4 +239,6 @@ void Model::Builder::loadOBJModel(const std::string& filepath)
 			indices.push_back(uniqueVertices[vertex]);
 		}
 	}
+
+	return true;
 }

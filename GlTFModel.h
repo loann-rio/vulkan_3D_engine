@@ -284,7 +284,7 @@ class GlTFModel
 		void loadTextureSamplers(tinygltf::Model& gltfModel);
 		void loadMaterials(tinygltf::Model& gltfModel);
 		void loadAnimations(tinygltf::Model& gltfModel);
-		void loadFromFile(std::string filename, float scale = 1.0f);
+		bool loadFromFile(std::string filename, float scale = 1.0f);
 		
 
 		VkSamplerAddressMode getVkWrapMode(int32_t wrapMode);

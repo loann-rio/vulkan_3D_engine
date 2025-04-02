@@ -79,7 +79,7 @@ void BasicUI::drawUI(VkCommandBuffer commandBuffer, ObjectManager* manager)
 
     auto gameObject = manager->get(selected_object);
     if (gameObject != nullptr) {
-        gameObjectWindow(gameObject); 
+        gameObjectWindow(gameObject, manager); 
     }
 
     ImGui::Render(); 
@@ -88,11 +88,18 @@ void BasicUI::drawUI(VkCommandBuffer commandBuffer, ObjectManager* manager)
 
 
 
-void BasicUI::gameObjectWindow(GameObject* gameObject)
+void BasicUI::gameObjectWindow(GameObject* gameObject, ObjectManager* manager)
 {
     ImGui::Begin("Object debug");
 
     isWindowSelected = (isWindowSelected || ImGui::IsWindowFocused()); 
+
+    if (gameObject->getType() == GameObjectType::CAMERA) {
+        bool check = (gameObject->getName() == manager->mainCamera);
+        
+        if (ImGui::Checkbox("main camera", &check) && check)
+            manager->mainCamera = gameObject->getName();
+    }
 
     gameObject->debugUI();
 
@@ -105,7 +112,6 @@ void BasicUI::objectSelectionWindow(std::vector<std::string> listObjectsName, Ob
 
     isWindowSelected = (isWindowSelected || ImGui::IsWindowFocused());
 
-    static int sub_selected = -1;  // Store sub-selection
     static bool open_sub_popup = false;
 
     ImGui::SeparatorText("create new game object");
@@ -117,28 +123,49 @@ void BasicUI::objectSelectionWindow(std::vector<std::string> listObjectsName, Ob
         ImGui::SeparatorText("object type");
 
         if (ImGui::Selectable("Model")) { open_sub_popup = true; }
-        if (ImGui::Selectable("Camera")) {}
-        if (ImGui::Selectable("SpotLight")) {}
+        if (ImGui::Selectable("Camera")) { selected = 2; }
+        if (ImGui::Selectable("SpotLight")) { selected = 3; }
 
         ImGui::EndPopup(); 
     }
-
+     
     if (open_sub_popup) 
     {
         ImGui::OpenPopup("modelSelection");
         open_sub_popup = false;
     }
 
-    if (ImGui::BeginPopup("modelSelection"))
+    
+    if (ImGui::BeginPopup("modelSelection")) 
     {
-        ImGui::SeparatorText("Model type");
+        ImGui::SeparatorText("Model type"); 
 
-        if (ImGui::Selectable("OBJ")) sub_selected = 0;
-        if (ImGui::Selectable("GLTF")) sub_selected = 1; 
+        if (ImGui::Selectable("OBJ")) selected = 0;  
+        if (ImGui::Selectable("GLTF")) selected = 1;  
 
 
         ImGui::EndPopup(); 
     }
+
+    show_create_go_window = true;
+    switch (selected) 
+    {
+    case 0:
+        createObjWindow(manager);
+        break;
+    case 1:
+        createGLTFWindow(manager); 
+        break;
+    case 2:
+        createCameraWindow(manager, false);
+        break;
+    case 3:
+        createCameraWindow(manager, true);
+        break;
+    default:
+        show_create_go_window = false; 
+    }
+
 
     ImGui::SeparatorText("loaded game objects"); 
 
@@ -157,11 +184,18 @@ void BasicUI::objectSelectionWindow(std::vector<std::string> listObjectsName, Ob
     ImGui::End();
 }
 
-void BasicUI::createObjWindow()
+void BasicUI::createObjWindow(ObjectManager* manager)
 {
-    ImGui::Begin("createObject");
+    ImGui::Begin("createObject", &show_create_go_window);
+
+    isWindowSelected = (isWindowSelected || ImGui::IsWindowFocused());
 
     ImGui::SeparatorText("create obj model");
+
+
+    ImGui::Text("name");
+    static char name[128] = "";
+    ImGui::InputTextWithHint("##name", "enter name", name, IM_ARRAYSIZE(name));
 
     ImGui::Text("model path");
     static char path[128] = "";
@@ -173,18 +207,29 @@ void BasicUI::createObjWindow()
 
     if (ImGui::Button("create"))
     {
-        std::memset(path, 0, sizeof(path));
-        std::memset(pathTexture, 0, sizeof(pathTexture));
+        manager->loadObjectAsyncObj(device, path, pathTexture, TransformComponent{}, name);
+        show_create_go_window = false; 
+        //std::memset(path, 0, sizeof(path));
+        //std::memset(pathTexture, 0, sizeof(pathTexture));
     }
 
     ImGui::End(); 
+
+    if (!show_create_go_window) selected = -1; 
+
 }
 
-void BasicUI::createGLTFWindow()
+void BasicUI::createGLTFWindow(ObjectManager* manager)
 {
-    ImGui::Begin("createObject");
+    ImGui::Begin("createObject", &show_create_go_window); 
+
+    isWindowSelected = (isWindowSelected || ImGui::IsWindowFocused());
 
     ImGui::SeparatorText("create obj model");
+
+    ImGui::Text("name");
+    static char name[128] = "";
+    ImGui::InputTextWithHint("##name", "enter name", name, IM_ARRAYSIZE(name)); 
 
     ImGui::Text("model path");
     static char path[128] = "";
@@ -192,9 +237,71 @@ void BasicUI::createGLTFWindow()
 
     if (ImGui::Button("create"))
     {
-        std::memset(path, 0, sizeof(path));
+        manager->loadObjectAsync(device, path, TransformComponent{}, name);
+        show_create_go_window = false;
+        //std::memset(path, 0, sizeof(path));
     }
 
     ImGui::End();
+
+    if (!show_create_go_window) selected = -1;
+}
+
+void BasicUI::createCameraWindow(ObjectManager* manager, bool isSpotLight = false)
+{
+    ImGui::Begin("createObject", &show_create_go_window);
+
+    isWindowSelected = (isWindowSelected || ImGui::IsWindowFocused());
+
+    ImGui::SeparatorText("create obj model");
+
+    ImGui::Text("name");
+    static char name[128] = "";
+    ImGui::InputTextWithHint("##name", "enter name", name, IM_ARRAYSIZE(name));
+
+    ImGui::Text("fov");
+    static float fov = 1.0f;
+    ImGui::DragFloat("##fov", &fov, 0.01, 0.1, glm::half_pi<float>());
+
+    static glm::vec4 color{ 1.0f };
+    static float ar = 1.0f;
+
+    if (isSpotLight)
+    {
+        ImGui::Text("Aspect Ratio");
+        
+        ImGui::DragFloat("##aspectRatio", &ar, 0.1, 1 / 20, 20);
+
+        ImGui::Text("Color:");
+        ImGui::ColorEdit4("##clr", glm::value_ptr(color));
+    }
+
+    if (ImGui::Button("create"))
+    {
+        show_create_go_window = false; 
+
+        if (isSpotLight)
+        {
+            auto spotLight = GameObjectFactory::createGameObject<GameObjectSpotLight>(device, fov, ar, .1f, 100.f);
+
+            spotLight->transform.color = color;
+            spotLight->setName(name);
+
+            manager->pushGameObject(std::move(spotLight));
+        }
+        else {
+            auto camera = GameObjectFactory::createGameObject<GameObjectCamera>(device, fov, ar, .1f, 100.f); 
+
+            camera->setName(name);
+
+            manager->pushGameObject(std::move(camera));
+        }
+
+        //std::memset(path, 0, sizeof(path));
+    }
+
+    ImGui::End();
+
+    if (!show_create_go_window) selected = -1;
 }
 

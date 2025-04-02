@@ -22,18 +22,22 @@ public:
 
 	void drawUI(VkCommandBuffer commandBuffer, ObjectManager* manager);
 
-	bool isWindowSelected = false;
+	bool isWindowSelected = false; 
 private:
 
-	void gameObjectWindow(GameObject* gameObject);
+	void gameObjectWindow(GameObject* gameObject, ObjectManager* manager); 
 	void objectSelectionWindow(std::vector<std::string> listObjectsName, ObjectManager* manager);
-	void createObjWindow(); 
-	void createGLTFWindow();
+	void createObjWindow(ObjectManager* manager);
+	void createGLTFWindow(ObjectManager* manager);
+	void createCameraWindow(ObjectManager* manager, bool isSpotLight);
 
-	VkDescriptorPool imguiPool;
+	VkDescriptorPool imguiPool; 
 	Device& device;
 
 	std::string selected_object = "";
+
+	bool show_create_go_window = true; 
+	int selected = -1;
 };
 
 #endif // ENABLE_IMGUI

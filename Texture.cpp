@@ -70,8 +70,11 @@ uint32_t Texture::createTextureImage(const char* path)
     
 
     if (!pixels) {
+        std::cout << "wtf??\n";
         throw std::runtime_error("failed to load texture image!");
     }
+
+    //std::lock_guard<std::mutex> lock(device.getGraphicMutex());
 
     //uint32_t mipLevel = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
     uint32_t mipLevel = 1;

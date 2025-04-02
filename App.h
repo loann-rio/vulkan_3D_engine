@@ -45,9 +45,6 @@ private:
 	std::vector<float> frameTimeVector;
 	float frameTimeSum = 0;
 
-	// camera
-	std::string mainCamera = "mainCamera";
-	
 	// buffers
 	std::vector<std::unique_ptr<Buffer>> uboBuffers;
 	std::vector<std::unique_ptr<Buffer>> shadowUboBuffer;

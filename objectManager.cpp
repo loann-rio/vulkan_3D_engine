@@ -4,6 +4,13 @@
 
 void ObjectManager::startLoadModel(DescriptorPool& pool)
 {
+
+    auto cameraObject = GameObjectFactory::createGameObject<GameObjectCamera>(device, glm::radians(50.f), 1.f , .1f, 100.f);
+    cameraObject->transform.translation = { 2.0f, -1.0f, 2.5f };
+    cameraObject->transform.rotation.y = pi<float> * 1 / 3;
+    cameraObject->setName("mainCamera");
+    pushGameObject(std::move(cameraObject)); 
+
     /*TransformComponent helmetTransform{};
     helmetTransform.rotation = { 3 * pi<float> / 2, pi<float>, 0 };
     helmetTransform.translation = { 8, -0.5, 9 };
@@ -114,20 +121,20 @@ GameObject* ObjectManager::get(const std::string& name)
     return (it != gameObjectsByName.end()) ? it->second : nullptr;
 }
 
-void ObjectManager::loadObjectAsync(Device& device, const std::string& filePath, TransformComponent transform)
+void ObjectManager::loadObjectAsync(Device& device, const std::string& filePath, TransformComponent transform, const std::string& name)
 {
-    futureGameObjects.push_back(std::async(std::launch::async, [filePath, transform, &device]() {
+    futureGameObjects.push_back(std::async(std::launch::async, [filePath, transform, &device, name]() {
         std::shared_ptr<GlTFModel::ModelGltf> model = GlTFModel::createModelFromFile(device, filePath);
-        return futureObject{ model, transform, GLTF_MODEL, filePath };
+        return futureObject{ model, transform, GLTF_MODEL, name.empty() ? filePath : name };
         })
     );
 }
 
-void ObjectManager::loadObjectAsyncObj(Device& device, const std::string& filePath, const char* filePathTexture, TransformComponent transform)
+void ObjectManager::loadObjectAsyncObj(Device& device, const std::string& filePath, const char* filePathTexture, TransformComponent transform, const std::string& name)
 {
-    futureGameObjects.push_back(std::async(std::launch::async, [filePath, filePathTexture, transform, &device]() { 
+    futureGameObjects.push_back(std::async(std::launch::async, [filePath, filePathTexture, transform, &device, name]() {  
         std::shared_ptr<Model> model = Model::createModelFromFile(device, filePath, filePathTexture);
-        return futureObject{ model, transform, OBJ_MODEL, filePath }; 
+        return futureObject{ model, transform, OBJ_MODEL, name.empty() ? filePath : name }; 
         })
     );
 }

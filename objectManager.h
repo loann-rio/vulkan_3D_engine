@@ -30,9 +30,7 @@ public:
 
     ObjectManager(Device& device) : device{ device } {
         gameObjects = std::make_shared<GameObject::Map>();
-        
     };
-
 
 	
 	void startLoadModel(DescriptorPool& pool); 
@@ -47,6 +45,14 @@ public:
 
     std::shared_ptr<GameObject::Map> getGameObjects() const { return gameObjects; } 
 
+    void loadObjectAsync(Device& device, const std::string& filePath, TransformComponent transform, const std::string& name = "");
+    void loadObjectAsyncObj(Device& device, const std::string& filePath, const char* filePathTexture, TransformComponent transform, const std::string& name = "");
+
+
+    // camera
+    std::string mainCamera = "mainCamera"; 
+
+
 private:
     Device& device;
 
@@ -60,9 +66,6 @@ private:
 
     std::shared_ptr<GameObject::Map> spotLights{};
     std::shared_ptr<GameObject::Map> cameras{};
-
-    void loadObjectAsync(Device& device, const std::string& filePath, TransformComponent transform);
-    void loadObjectAsyncObj(Device& device, const std::string& filePath, const char* filePathTexture, TransformComponent transform);
 };
 
 template<typename T>
@@ -79,5 +82,5 @@ inline std::vector<T*> ObjectManager::getByType()
         }
     }
   
-    return result;
+    return result;  
 }

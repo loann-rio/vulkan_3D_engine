@@ -699,7 +699,7 @@ void GlTFModel::ModelGltf::loadAnimations(tinygltf::Model& gltfModel)
 	}
 }
 
-void GlTFModel::ModelGltf::loadFromFile(std::string filename, float scale)
+bool GlTFModel::ModelGltf::loadFromFile(std::string filename, float scale)
 {
 
 	tinygltf::Model gltfModel;
@@ -788,16 +788,18 @@ void GlTFModel::ModelGltf::loadFromFile(std::string filename, float scale)
 	else {
 		// TODO: throw
 		std::cerr << "Could not load gltf file: " << error << std::endl;
-		return;
+		return false;
 	}
 
-	createVertexBuffers(loaderInfo);
+	createVertexBuffers(loaderInfo);	
 	createIndexBuffers(loaderInfo);
 
 	delete[] loaderInfo.vertexBuffer;
 	delete[] loaderInfo.indexBuffer;
 
 	getSceneDimensions();
+
+	return true;
 }
 
 void GlTFModel::ModelGltf::drawNode(Node* node, VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout)
@@ -1171,7 +1173,7 @@ GlTFModel::BoundingBox GlTFModel::BoundingBox::getAABB(glm::mat4 m)
 	min += glm::min(v0, v1);
 	max += glm::max(v0, v1);
 
-	return BoundingBox(min, max);
+	return BoundingBox(min, max); 
 }
 
 std::unique_ptr<GlTFModel::ModelGltf> GlTFModel::createModelFromFile(Device& device, const std::string& filePath)
