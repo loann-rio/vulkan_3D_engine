@@ -101,14 +101,6 @@ void App::run()
         
         int frameIndex = renderer.getFrameIndex();
 
-        FrameInfo frameInfo{  
-            frameIndex,
-            frameTime,
-            spotLightUbo.numLights,
-            objectManager.get(objectManager.mainCamera)->transform.translation, 
-            objectManager.getByType<GameObjectModel>()
-        };  
-
         /////// update objects ///////
 
         // update camera
@@ -119,16 +111,25 @@ void App::run()
             }
 
             ubo.projection = camObj->camera->getProjection();
-            ubo.view = camObj->camera->getView();
+            ubo.view = camObj->camera->getView(); 
             ubo.inverseView = camObj->camera->getInverseView();
+        }
 
-            uboBuffers[frameIndex]->writeToBuffer(&ubo);
-            uboBuffers[frameIndex]->flush();
+        // update pointLight 
+        {
+            std::vector<GameObjectPointLight*> pointLigths = objectManager.getByType<GameObjectPointLight>();
+            uint16_t i = 0;
+            for (auto lightObj : pointLigths) {
+                if (lightObj->transform.color.w)
+                    ubo.pointLights[i++] = PointLight{ glm::vec4(lightObj->transform.translation, lightObj->transform.scale.x), lightObj->transform.color };
+                if (i >= MAX_LIGHT) break;
+            }
+            ubo.numLights = i;
         }
 
         // update spotLight
         {
-            int i = 0;
+            uint16_t i = 0; 
             std::vector<GameObjectSpotLight*> spotLigths = objectManager.getByType<GameObjectSpotLight>();
             for (auto lightObj : spotLigths) {
                 if (lightObj->transform.color.w != 0)
@@ -140,6 +141,17 @@ void App::run()
             shadowUboBuffer[frameIndex]->writeToBuffer(&spotLightUbo);
             shadowUboBuffer[frameIndex]->flush();
         }
+
+        uboBuffers[frameIndex]->writeToBuffer(&ubo); 
+        uboBuffers[frameIndex]->flush(); 
+
+        FrameInfo frameInfo{
+            frameIndex,
+            frameTime,
+            spotLightUbo.numLights,
+            objectManager.get(objectManager.mainCamera)->transform.translation,
+            objectManager.getByType<GameObjectModel>()
+        };
 
         /////// render frame ///////
         {
@@ -153,7 +165,7 @@ void App::run()
             }
 
             if (auto commandBuffer = renderer.beginFrame()) {
-
+                 
                 // render
                 renderer.beginSwapChainRenderPass(commandBuffer);
 

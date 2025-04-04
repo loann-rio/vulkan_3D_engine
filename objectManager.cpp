@@ -20,7 +20,7 @@ void ObjectManager::startLoadModel(DescriptorPool& pool)
     TransformComponent vikingRoomTransform{};
     vikingRoomTransform.rotation = { pi<float> / 2, pi<float>, 0 };
     vikingRoomTransform.translation = { 7, 0, 7 };
-    loadObjectAsyncObj(device, "model/viking_room.obj", "textures/viking_room.png", vikingRoomTransform);
+    loadObjectAsyncObj(device, "model/viking_room.obj", "textures/viking_room.png", vikingRoomTransform, "viking");
 
     std::shared_ptr<Model> plane = createPlane(device, 10, 10, { 0, 0, 0 });
     auto plane1 = GameObjectFactory::createGameObject<GameObjectModel>(device);
@@ -60,6 +60,8 @@ void ObjectManager::startLoadModel(DescriptorPool& pool)
 
     pushGameObject(std::move(spotLight1));
     pushGameObject(std::move(spotLight2)); 
+
+
 
 }
 

@@ -63,16 +63,11 @@ glm::mat3 TransformComponent::normalMatrix()
     };
 }
 
-std::unique_ptr<GameObject> GameObject::makePointLight(Device& device, float intencity, float radius, glm::vec3 color = glm::vec3{ 1.f })
+glm::mat4 GameObject::getTransformMat() 
 {
-    /*auto gameObj = GameObject::createGameObject(device);
-    //gameObj.color = color;
-    gameObj->transform.color = glm::vec4(color, 1.f);
-    gameObj->transform.scale.x = radius;
-    gameObj->pointLight = std::make_unique<PointLightComponent>();
-    gameObj->pointLight->LightIntencity = intencity;
-    return gameObj;*/
-    return nullptr;
+    if (parentObject != nullptr) 
+        return parentObject->getTransformMat() * transform.mat4();
+    return transform.mat4(); 
 }
 
 void GameObjectModel::setModel(ModelVariant newModel)
@@ -131,9 +126,12 @@ void GameObjectSpotLight::debugUI()
     ImGui::DragFloat3("##rot", glm::value_ptr(transform.rotation), 0.01f, -10.0f, 10.0f);
 
     ImGui::Text("fov");
-    if (ImGui::DragFloat("##fov", &_fov, 0.01, 0.1, glm::half_pi<float>())) {
-        camera->setPerspectiveProjection(_fov, _aspect_ratio, _nearClip, _farClip);
-    }
+    bool recreateMat = ImGui::DragFloat("##fov", &_fov, 0.01, 0.1, glm::half_pi<float>());
+
+    ImGui::Text("Aspect Ratio");
+    recreateMat = recreateMat || ImGui::DragFloat("##aspectRatio", &_aspect_ratio, 0.01, 0.01f, 20.f); 
+
+    if (recreateMat) camera->setPerspectiveProjection(_fov, _aspect_ratio, _nearClip, _farClip);
 
     ImGui::Text("Color:"); 
     ImGui::ColorEdit4("##clr", glm::value_ptr(transform.color)); 
@@ -169,6 +167,13 @@ SpotLight GameObjectSpotLight::getSpotLightInfo(bool _updateCameraView)
     }; 
 }
 
+//void GameObject::removeChild(id_t child)
+//{
+//    std::vector<id_t>::iterator position = std::find(children.begin(), children.end(), child);
+//    if (position != children.end()) 
+//        children.erase(position); 
+//}
+
 void GameObjectModel::debugUI()
 {
     ImGui::Text("Position:"); 
@@ -179,4 +184,16 @@ void GameObjectModel::debugUI()
 
     ImGui::Text("Scale:");
     ImGui::DragFloat3("##scl", glm::value_ptr(transform.scale), 0.01f, -10.0f, 10.0f);
+}
+
+void GameObjectPointLight::debugUI()
+{
+    ImGui::Text("Position:");
+    ImGui::DragFloat3("##pos", glm::value_ptr(transform.translation), 0.01f, -10.0f, 10.0f);
+
+    ImGui::Text("radius:");
+    ImGui::DragFloat3("##rds", &transform.scale.x, 0.01f, 0.0f, 10.0f);
+
+    ImGui::Text("Color:"); 
+    ImGui::ColorEdit4("##clr", glm::value_ptr(transform.color)); 
 }

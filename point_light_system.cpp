@@ -88,28 +88,6 @@ void PointLightSystem::bind(VkCommandBuffer& commandBuffer, std::vector<VkDescri
 	}
 }
 
-void PointLightSystem::update(FrameInfo& frameInfo, GlobalUbo& ubo, int frameInd)
-{
-	//auto rotateLight = glm::rotate(glm::mat4(1.f), frameInfo.frameTime, { 0.f, -1.0f, 0.f });
-
-	//int lightIndex = 0;
-	//for (auto obj : frameInfo.listGameObjects)
-	//{
-	//	if (obj->pointLight == nullptr) continue;
-
-	//	assert(lightIndex < MAX_LIGHT && "point lights exceed maximum");
-
-	//	// update light position:
-	//	obj->transform.translation = glm::vec3(rotateLight * glm::vec4(obj->transform.translation - glm::vec3{ 7, 0, 7 }, 1.f))+glm::vec3{ 7, 0, 7 };
-	//	
-	//	// copy light to ubo
-	//	ubo.pointLights[lightIndex].position = glm::vec4(obj->transform.translation, 1.0);
-	//	ubo.pointLights[lightIndex].color = glm::vec4(glm::vec3(obj->transform.color), obj->pointLight->LightIntencity);
-	//	lightIndex++;
-	//}
-	//ubo.numLights = lightIndex;
-}
-
 void PointLightSystem::render(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, std::vector<VkDescriptorSet> globalDescriptorSets)
 {
 	// sort lights

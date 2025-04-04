@@ -120,7 +120,6 @@ void GlobalRenderSystem::createPipeline(VkRenderPass renderPass, const std::stri
 
 void GlobalRenderSystem::renderModel(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, GameObjectModel* obj)
 {
-
 	vkCmdBindDescriptorSets(
 		commandBuffer,
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -132,7 +131,7 @@ void GlobalRenderSystem::renderModel(VkCommandBuffer& commandBuffer, FrameInfo& 
 	);
 
 	SimplePushConstantData push{};
-	push.modelMatrix = obj->transform.mat4();
+	push.modelMatrix = obj->getTransformMat(); //transform.mat4(); 
 	push.normalMatrix = obj->transform.normalMatrix();
 
 	vkCmdPushConstants(
@@ -153,7 +152,7 @@ void GlobalRenderSystem::renderModel(VkCommandBuffer& commandBuffer, FrameInfo& 
 void GlobalRenderSystem::renderModelDepth(VkCommandBuffer& commandBuffer, GameObjectModel* obj, int lightIndex)
 {
 	DepthPushConstantData push{}; 
-	push.modelMatrix = obj->transform.mat4(); 
+	push.modelMatrix = obj->getTransformMat();//transform.mat4(); 
 	push.indexDepthCamera = lightIndex; 
 
 	vkCmdPushConstants(
@@ -174,7 +173,7 @@ void GlobalRenderSystem::bind(VkCommandBuffer& commandBuffer, std::vector<VkDesc
 
 	objPipeline->bind(commandBuffer); 
 
-	for (uint16_t setIndex = 0; setIndex < 2; setIndex++)
+	for (uint16_t setIndex = 0; setIndex < globalDescriptorSets.size(); setIndex++)
 	{
 		vkCmdBindDescriptorSets(
 			commandBuffer,
@@ -197,7 +196,6 @@ void GlobalRenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, Frame
 			renderModel(commandBuffer, frameInfo, obj);	
 	}
 }
-
 
 void GlobalRenderSystem::renderGameObjectsDepth(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, std::vector<VkDescriptorSet> globalDescriptorSets, int lightIndex)
 { 

@@ -33,7 +33,8 @@ enum class GameObjectType {
 	UNKNOWN,
 	CAMERA,
 	MODEL,
-	SPOT_LIGHT 
+	SPOT_LIGHT,
+	POINT_LIGHT 
 };
 
 struct SpotLight { 
@@ -53,10 +54,6 @@ struct TransformComponent {
 	glm::mat3 normalMatrix();
 };
 
-struct PointLightComponent {
-	float LightIntencity = 1.0f;
-};
-
 class GameObject
 {
 public:
@@ -64,9 +61,7 @@ public:
 	using id_t = unsigned int;
 	using Map = std::unordered_map<id_t, std::unique_ptr<GameObject>>;
 
-
 	id_t getId() { return id; } 
-	
 
 	GameObject(const GameObject&) = delete;
 	GameObject& operator=(const GameObject&) = delete;
@@ -75,7 +70,6 @@ public:
 	GameObject& operator=(GameObject&&) = default;
 
 	GameObject(id_t id, Device& device) : id(id), device(device) {}
-
 	virtual ~GameObject() = default;
 
 	virtual void debugUI() {}
@@ -86,15 +80,26 @@ public:
 	void setName(std::string newName) { name = newName; }
 	std::string getName() const { return name; }
 
-	static std::unique_ptr<GameObject> makePointLight(Device& device, float intencity, float radius, glm::vec3 color); 
-	std::unique_ptr<PointLightComponent> pointLight = nullptr;
+	//std::vector<id_t> getChildren() const { return children; } 
+	//void addChild(id_t child) { children.push_back(child); } 
+	//void removeChild(id_t child); 
+
+	void setParent(GameObject* parent) { parentObject = parent; }
+	void setChild(GameObject* child) { assert(this != child); child->setParent(this); } 
+
+	glm::mat4 getTransformMat();
 	
 protected:
+
+	//std::vector<id_t> children{};
+	//id_t parent;
+	GameObject* parentObject = nullptr;
 
 	std::string name;
 	Device& device;
 	id_t id;
 };
+
 
 class GameObjectCamera : public GameObject { 
 
@@ -117,6 +122,21 @@ private:
 	const float _aspect_ratio;
 	const float _nearClip;
 	const float _farClip;
+
+	friend class GameObjectFactory;
+};
+
+class GameObjectPointLight : public GameObject {
+
+public:
+	GameObjectPointLight(id_t id, Device& device, float intencity, float radius, glm::vec3 color = glm::vec3{ 1.f })
+		: GameObject(id, device) {
+		transform.color = glm::vec4(color, intencity); 
+		transform.scale.x = radius; 
+	}
+
+	void debugUI();
+	GameObjectType getType() const override { return GameObjectType::POINT_LIGHT; }     
 
 	friend class GameObjectFactory;
 };
@@ -144,7 +164,7 @@ private:
 	void updateCameraView();
 
 	float _fov;
-	const float _aspect_ratio;
+	float _aspect_ratio;
 	const float _nearClip; 
 	const float _farClip;
 
@@ -182,7 +202,6 @@ public:
 
 	GameObjectModel(id_t id, Device& device) : GameObject(id, device) {}
 private:
-	
 
 	bool hasModel = false;
 	ModelType modelType = UNDEFINED_MODEL;

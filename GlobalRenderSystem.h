@@ -81,14 +81,10 @@ inline std::shared_ptr<GlobalRenderSystem> GlobalRenderSystem::create(Device& de
 		attributeDescription = T::Vertex::getAttributeDescriptions();
 	}
 
-	auto renderSystem = new GlobalRenderSystem(
-		device, renderPass,
+	return std::make_shared<GlobalRenderSystem>(device, renderPass,
 		globalSetLayout, bindings,
 		vertFilepath, fragFilepath,
-		modelType,
-		bindingDescription, attributeDescription, isShadow
-	);
-
-	return std::shared_ptr<GlobalRenderSystem>(renderSystem);
+		modelType,  
+		bindingDescription, attributeDescription, isShadow);
 } 
 
