@@ -155,7 +155,7 @@ void App::run()
 
         /////// render frame ///////
         {
-            std::vector<VkDescriptorSet> descriptorSets{ globalDescriptorSet[frameIndex], shadowDescriptorSet[frameIndex] };
+            std::vector<VkDescriptorSet> descriptorSets{ globalDescriptorSet[frameIndex], shadowDescriptorSet[renderer.getDepthIndex()]};
 
             std::lock_guard<std::mutex> lock(device.getGraphicMutex());
 
@@ -167,12 +167,11 @@ void App::run()
             if (auto commandBuffer = renderer.beginFrame()) {
                  
                 // render
-                renderer.beginSwapChainRenderPass(commandBuffer);
-
+                renderer.beginSwapChainRenderPass(commandBuffer); 
+                 
                 gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo, descriptorSets); 
-                objRenderSystem->renderGameObjects(commandBuffer, frameInfo, descriptorSets);
+                objRenderSystem->renderGameObjects(commandBuffer, frameInfo, descriptorSets); 
 
-                //pointLightSystem->render(commandBuffer, frameInfo, { globalDescriptorSet[frameIndex] } );
                 textOverlay.renderText(commandBuffer, frameInfo); 
 
                 imgui.drawUI(commandBuffer, &objectManager);
@@ -182,14 +181,14 @@ void App::run()
             }
         }
 
-        frame = (frame + 1) % 1 ;
+        frame = (frame + 1) % 100;
         
 	}
 
     vkQueueWaitIdle(device.presentQueue());
 }
  
-
+ 
 void App::createRenderSystems()
 {
 
@@ -274,9 +273,6 @@ void App::createRenderSystems()
     depthRenderSystemGltf = GlobalRenderSystem::create<GlTFModel::ModelGltf>(
         device, renderer.getDepthRenderPass(), { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() },
         "shadowmap.vert.spv");
-
-    pointLightSystem = std::make_unique<PointLightSystem>(device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout());
-    
 }
 
 void App::getFrameRate(float lastFrameTime)

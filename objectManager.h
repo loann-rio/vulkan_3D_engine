@@ -16,10 +16,9 @@ constexpr T pi = T(3.1415926535897932385L);
 
 struct futureObject {
     ModelVariant model;
-    TransformComponent transform;
     ModelType type;
-    std::string name;
-};
+    GameObject::id_t id; 
+}; 
 
 class ObjectManager
 {

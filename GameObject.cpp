@@ -191,9 +191,9 @@ void GameObjectPointLight::debugUI()
     ImGui::Text("Position:");
     ImGui::DragFloat3("##pos", glm::value_ptr(transform.translation), 0.01f, -10.0f, 10.0f);
 
-    ImGui::Text("radius:");
-    ImGui::DragFloat3("##rds", &transform.scale.x, 0.01f, 0.0f, 10.0f);
-
     ImGui::Text("Color:"); 
-    ImGui::ColorEdit4("##clr", glm::value_ptr(transform.color)); 
+    ImGui::ColorEdit3("##clr", glm::value_ptr(transform.color)); 
+
+    ImGui::Text("intensity:");
+    ImGui::DragFloat("##intensity", &transform.color.w, 0.1f, 0, 100);
 }

@@ -8,7 +8,6 @@
 
 #include "Renderer.h"
 #include "GlobalRenderSystem.h"
-#include "point_light_system.h"
 #include "TextOverlay.h"
 #include "objectManager.h"
 
@@ -55,8 +54,6 @@ private:
 	std::shared_ptr<GlobalRenderSystem> depthRenderSystem;
 	std::shared_ptr<GlobalRenderSystem> depthRenderSystemGltf;
 	std::shared_ptr<GlobalRenderSystem> depthVisualisation;
-
-	std::unique_ptr<PointLightSystem> pointLightSystem;
 
 	// global descriptor sets
 	std::vector<VkDescriptorSet> globalDescriptorSet;

@@ -36,7 +36,9 @@ void ObjectManager::startLoadModel(DescriptorPool& pool)
     plane2->transform.translation.x = 10.f;
     plane2->transform.translation.y = 1.f;
     plane2->createDescriptorSet(pool);
-    pushGameObject(std::move(plane2));
+    plane2->setChild(get("viking"));
+    plane2->setName("plane");
+    pushGameObject(std::move(plane2)); 
 
     auto plane3 = GameObjectFactory::createGameObject<GameObjectModel>(device);
     plane3->setModel(planeModel);
@@ -61,39 +63,11 @@ void ObjectManager::startLoadModel(DescriptorPool& pool)
     pushGameObject(std::move(spotLight1));
     pushGameObject(std::move(spotLight2)); 
 
+    auto pointLight = GameObjectFactory::createGameObject<GameObjectPointLight>(device, 3, 3, glm::vec3{ 1.f, 0.f, 0.f });
+    pointLight->setName("pointLight");
 
-
-}
-
-
-/// <summary>
-/// take the loaded model from the future and put it in a game object
-/// </summary>
-/// <param name="pool">global model pool</param>
-void ObjectManager::pushModel(DescriptorPool& pool)
-{
-    auto it = futureGameObjects.begin(); 
-    while (it != futureGameObjects.end()) { // iter over futures
-        if (it->wait_for(std::chrono::seconds(0)) == std::future_status::ready) { // check if future is ready
-            futureObject object = it->get();  // get loaded model from future
-
-            if (object.type != UNDEFINED_MODEL) {
-                auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
-                gameObject->transform = object.transform; 
-                gameObject->setModel(object.model); 
-                gameObject->setModelType(object.type); 
-                gameObject->setName(object.name); 
-                gameObject->createDescriptorSet(pool); 
-
-                pushGameObject(std::move(gameObject)); 
-            }
-
-            it = futureGameObjects.erase(it); // remove from futures
-        }
-        else {
-            ++it; 
-        }
-    }
+    pushGameObject(std::move(pointLight)); 
+     
 }
 
 void ObjectManager::pushGameObject(std::unique_ptr<GameObject> gameObject)
@@ -127,18 +101,58 @@ GameObject* ObjectManager::get(const std::string& name)
 
 void ObjectManager::loadObjectAsync(Device& device, const std::string& filePath, TransformComponent transform, const std::string& name)
 {
-    futureGameObjects.push_back(std::async(std::launch::async, [filePath, transform, &device, name]() {
+    auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device); 
+    gameObject->transform = transform; 
+    gameObject->setName(name.empty() ? filePath : name); 
+
+    futureGameObjects.push_back(std::async(std::launch::async, [filePath, &device]() { 
         std::shared_ptr<GlTFModel::ModelGltf> model = GlTFModel::createModelFromFile(device, filePath);
-        return futureObject{ model, transform, model ? GLTF_MODEL : UNDEFINED_MODEL, name.empty() ? filePath : name };
+        return futureObject{ model, model ? GLTF_MODEL : UNDEFINED_MODEL}; 
         })
     );
+
+    pushGameObject(std::move(gameObject));
 }
 
 void ObjectManager::loadObjectAsyncObj(Device& device, const std::string& filePath, const char* filePathTexture, TransformComponent transform, const std::string& name)
 {
-    futureGameObjects.push_back(std::async(std::launch::async, [filePath, filePathTexture, transform, &device, name]() {
+    auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device); 
+    gameObject->transform = transform;  
+    gameObject->setName(name.empty() ? filePath : name); 
+    GameObject::id_t id = gameObject->getId();
+
+    futureGameObjects.push_back(std::async(std::launch::async, [filePath, filePathTexture, &device, id]() { 
         std::shared_ptr<Model> model = Model::createModelFromFile(device, filePath, filePathTexture);
-        return futureObject{ model, transform, model ? OBJ_MODEL : UNDEFINED_MODEL, name.empty() ? filePath : name };
+        return futureObject{ model, model ? OBJ_MODEL : UNDEFINED_MODEL, id };
         })
     );
+
+    pushGameObject(std::move(gameObject)); 
 }
+
+/// <summary>
+/// take the loaded model from the future and put it in a game object
+/// </summary>
+/// <param name="pool">global model pool</param>
+void ObjectManager::pushModel(DescriptorPool& pool)
+{
+    auto it = futureGameObjects.begin();
+    while (it != futureGameObjects.end()) { // iter over futures
+        if (it->wait_for(std::chrono::seconds(0)) == std::future_status::ready) { // check if future is ready
+            futureObject object = it->get();  // get loaded model from future
+
+            if (object.type != UNDEFINED_MODEL) {
+                auto* gameObject = dynamic_cast<GameObjectModel*>(get(object.id)); 
+                gameObject->setModel(object.model); 
+                gameObject->setModelType(object.type);
+                gameObject->createDescriptorSet(pool); 
+            }
+
+            it = futureGameObjects.erase(it); // remove from futures
+        }
+        else {
+            ++it;
+        }
+    }
+}
+

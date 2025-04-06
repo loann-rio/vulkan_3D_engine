@@ -797,6 +797,7 @@ bool GlTFModel::ModelGltf::loadFromFile(std::string filename, float scale)
 	delete[] loaderInfo.vertexBuffer;
 	delete[] loaderInfo.indexBuffer;
 
+
 	getSceneDimensions();
 
 	return true;
