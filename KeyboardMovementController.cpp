@@ -1,6 +1,6 @@
 #include "KeyboardMovementController.h"
 
-void KeyboardMovementController::moveInPlaneXZ(GLFWwindow* window, float dt, GameObject& gameObject)
+void KeyboardMovementController::moveInPlaneXZ(GLFWwindow* window, float dt, GameObject* gameObject)
 {
 	glm::vec3 rotate{ 0 };
 	if (glfwGetKey(window, keys.lookRight) == GLFW_PRESS) rotate.y += 1.f;
@@ -10,13 +10,13 @@ void KeyboardMovementController::moveInPlaneXZ(GLFWwindow* window, float dt, Gam
 	if (glfwGetKey(window, keys.lookDown) == GLFW_PRESS) rotate.x -= 1.f;
 
 	if (glm::dot(rotate, rotate) > std::numeric_limits<float>::epsilon()) {
-		gameObject.transform.rotation += sensiLook * dt * glm::normalize(rotate);
+		gameObject->transform.rotation += sensiLook * dt * glm::normalize(rotate);
 	}
 
-	gameObject.transform.rotation.x = glm::clamp(gameObject.transform.rotation.x, -1.5f, 1.5f);
-	gameObject.transform.rotation.y = glm::mod(gameObject.transform.rotation.y, glm::two_pi<float>());
+	gameObject->transform.rotation.x = glm::clamp(gameObject->transform.rotation.x, -1.5f, 1.5f);
+	gameObject->transform.rotation.y = glm::mod(gameObject->transform.rotation.y, glm::two_pi<float>());
 
-	float yaw = gameObject.transform.rotation.y;
+	float yaw = gameObject->transform.rotation.y;
 	const glm::vec3 forwardDir{ sin(yaw), 0.f, cos(yaw) };
 	const glm::vec3 rightDir{ forwardDir.z, 0.f, -forwardDir.x };
 	const glm::vec3 upDir{ 0.f, -1.f, 0.f };
@@ -32,6 +32,9 @@ void KeyboardMovementController::moveInPlaneXZ(GLFWwindow* window, float dt, Gam
 	if (glfwGetKey(window, keys.moveDown) == GLFW_PRESS) moveDir -= upDir;
 
 	if (glm::dot(moveDir, moveDir) > std::numeric_limits<float>::epsilon()) {
-		gameObject.transform.translation += sensiMove * dt * glm::normalize(moveDir);
+		gameObject->transform.translation += sensiMove * dt * glm::normalize(moveDir);
 	}
+
+	//if (auto* camObj = dynamic_cast<GameObjectCamera*>(gameObject.get()))
+	//	gameObject->updateCameraView();
 }

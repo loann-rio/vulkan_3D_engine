@@ -11,6 +11,7 @@
  // std
 #include <cassert>
 #include <cstring>
+#include <iostream>
 
 
 /**
@@ -34,6 +35,7 @@ Buffer::Buffer(Device& device, VkDeviceSize instanceSize, uint32_t instanceCount
 {
     alignmentSize = getAlignment(instanceSize, minOffsetAlignment);
     bufferSize = alignmentSize * instanceCount;
+    
     device.createBuffer(bufferSize, usageFlags, memoryPropertyFlags, buffer, memory);
 }
 

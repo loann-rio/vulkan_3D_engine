@@ -1,29 +1,57 @@
 #pragma once
 
-#include "model.h"
 #include "Swap_chain.h"
 #include "descriptors.h"
 #include "Device.h"
-#include "Texture.h"
+#include "GlTFModel.h"
+#include "Model.h"
+#include "Camera.h"
+
+
+#include "imgui.h"
+#include "backends/imgui_impl_glfw.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <memory>
 #include <iostream>
+#include <type_traits>
+#include <variant>
 #include <unordered_map>
+
+using ModelVariant = std::variant<std::shared_ptr<Model>,
+	std::shared_ptr<GlTFModel::ModelGltf>>;
+
+typedef enum ModelType {
+	UNDEFINED_MODEL = 0,
+	OBJ_MODEL = 1,
+	GLTF_MODEL = 2,
+	QUAD_MODEL = 3 
+};
+
+enum class GameObjectType { 
+	UNKNOWN,
+	CAMERA,
+	MODEL,
+	SPOT_LIGHT,
+	POINT_LIGHT 
+};
+
+struct SpotLight { 
+	glm::vec4 position{};
+	glm::vec4 color{ 1.0f };  
+	glm::vec4 orientation{}; 
+	glm::mat4 lightMatrix{ 1.0f }; 
+}; 
 
 struct TransformComponent {
 	glm::vec3 translation{};
 	glm::vec3 scale{ 1.f, 1.f , 1.f};
 	glm::vec3 rotation{};
+	glm::vec4 color{};
 
 	glm::mat4 mat4();
 	glm::mat3 normalMatrix();
-};
-
-struct PointLightComponent {
-	float LightIntencity = 1.0f;
-
 };
 
 class GameObject
@@ -31,38 +59,165 @@ class GameObject
 public:
 
 	using id_t = unsigned int;
-	using Map = std::unordered_map<id_t, GameObject>;
+	using Map = std::unordered_map<id_t, std::unique_ptr<GameObject>>;
 
-	static GameObject createGameObject(Device& device) {
-		static id_t currentId = 0;
-		return GameObject{ currentId++, device};
-	}
-
-	static GameObject makePointLight(Device& device, float intencity, float radius, glm::vec3 color);
+	id_t getId() { return id; } 
 
 	GameObject(const GameObject&) = delete;
 	GameObject& operator=(const GameObject&) = delete;
-	GameObject(GameObject&&) = default;
+
+	GameObject(GameObject&&) = default; 
 	GameObject& operator=(GameObject&&) = default;
 
-	id_t getId() { return id; }
+	GameObject(id_t id, Device& device) : id(id), device(device) {}
+	virtual ~GameObject() = default;
+
+	virtual void debugUI() {}
+	virtual GameObjectType getType() const { return GameObjectType::UNKNOWN; } 
 
 	TransformComponent transform{};
-	glm::vec3 color{};
 
-	std::shared_ptr<Model> model{};
-	std::unique_ptr<PointLightComponent> pointLight = nullptr;
+	void setName(std::string newName) { name = newName; }
+	std::string getName() const { return name; }
 
-	std::vector<VkDescriptorSet> descriptorSet{ Swap_chain::MAX_FRAMES_IN_FLIGHT };
+	//std::vector<id_t> getChildren() const { return children; } 
+	//void addChild(id_t child) { children.push_back(child); } 
+	//void removeChild(id_t child); 
 
-	void createDescriptorSet(DescriptorPool& pool, Device& device);
+	void setParent(GameObject* parent) { parentObject = parent; }
+	void setChild(GameObject* child) { assert(this != child); child->setParent(this); } 
 
+	glm::mat4 getTransformMat();
+	
+protected:
+
+	//std::vector<id_t> children{};
+	//id_t parent;
+	GameObject* parentObject = nullptr;
+
+	std::string name;
+	Device& device;
+	id_t id;
+};
+
+
+class GameObjectCamera : public GameObject { 
+
+public:
+	GameObjectCamera(id_t id, Device& device, float fov, float aspect_ratio, float nearClip, float farClip)
+		: GameObject(id, device), _fov(fov), _aspect_ratio(aspect_ratio), _nearClip(nearClip), _farClip(farClip) { 
+		camera = std::make_unique<Camera>(aspect_ratio);
+		camera->setPerspectiveProjection(fov, aspect_ratio, nearClip, farClip);
+	} 
+
+	std::unique_ptr<Camera> camera = nullptr;
+
+	void debugUI(); 
+	void updateCameraView();
+	GameObjectType getType() const override { return GameObjectType::CAMERA; } 
 
 private:
 
-	Device& device;
+	float _fov;
+	const float _aspect_ratio;
+	const float _nearClip;
+	const float _farClip;
 
-	GameObject(id_t obId, Device& device) : id{obId} , device{device} {}
+	friend class GameObjectFactory;
+};
 
-	id_t id;
+class GameObjectPointLight : public GameObject {
+
+public:
+	GameObjectPointLight(id_t id, Device& device, float intencity, float radius, glm::vec3 color = glm::vec3{ 1.f })
+		: GameObject(id, device) {
+		transform.color = glm::vec4(color, intencity); 
+		transform.scale.x = radius; 
+	}
+
+	void debugUI();
+	GameObjectType getType() const override { return GameObjectType::POINT_LIGHT; }     
+
+	friend class GameObjectFactory;
+};
+
+
+class GameObjectSpotLight : public GameObject {
+
+public:
+	GameObjectSpotLight(id_t id, Device& device, float fov, float aspect_ratio, float nearClip, float farClip)
+		: GameObject(id, device), _fov(fov), _aspect_ratio(aspect_ratio), _nearClip(nearClip), _farClip(farClip) {
+
+		camera = std::make_unique<Camera>();
+		camera->setPerspectiveProjection(fov, aspect_ratio, nearClip, farClip);
+	}
+
+	std::unique_ptr<Camera> camera = nullptr;
+
+	void debugUI();
+
+	SpotLight getSpotLightInfo(bool _updateCameraView = false);
+
+	GameObjectType getType() const override { return GameObjectType::SPOT_LIGHT; }
+
+private:
+	void updateCameraView();
+
+	float _fov;
+	float _aspect_ratio;
+	const float _nearClip; 
+	const float _farClip;
+
+	friend class GameObjectFactory;
+};
+
+
+
+class GameObjectModel : public GameObject 
+{
+public:
+	template <typename T>
+	void setModel(std::shared_ptr<T> newModel)
+	{
+		model = std::move(newModel); 
+		modelType = static_cast<ModelType>(T::getModelType()); 
+		hasModel = true; 
+	}
+
+	void setModel(ModelVariant newModel); 
+	void setModelType(ModelType type) { modelType = type; } 
+
+	ModelType getModelType() const { return modelType; }
+
+	void createDescriptorSet(DescriptorPool& pool) const; 
+
+	std::vector<VkDescriptorSet> getDescriptorSets() const;
+
+	void bindModel(VkCommandBuffer& commandBuffer) const;
+	void drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout) const;
+
+	void debugUI(); 
+
+	GameObjectType getType() const override { return GameObjectType::MODEL; }
+
+	GameObjectModel(id_t id, Device& device) : GameObject(id, device) {}
+private:
+
+	bool hasModel = false;
+	ModelType modelType = UNDEFINED_MODEL;
+	ModelVariant model;
+
+	friend class GameObjectFactory;
+};
+
+
+class GameObjectFactory {
+
+public:
+	static GameObject::id_t nextId;
+
+	template <typename T, typename... Args>
+	static std::unique_ptr<T> createGameObject(Device& device, Args&&... args) {
+		return std::make_unique<T>(nextId++, device, std::forward<Args>(args)...);
+	}
 };

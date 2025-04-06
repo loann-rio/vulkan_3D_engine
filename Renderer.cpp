@@ -7,11 +7,15 @@
 
 Renderer::Renderer(Window& window, Device& device) : window{window} , device{device}
 {
+	isDepthStarted.resize(DepthSwapChain::MAX_DEPTH_RENDER_COUNT);
 	recreateSwapChain();
+	depthSwapChain = std::make_unique<DepthSwapChain>(device, VkExtent2D{ 2048, 2048 });
+
+	createDepthCommandBuffer();
 	createCommandBuffer();
 }
 
-Renderer::~Renderer() { freeCommandBuffer(); }
+Renderer::~Renderer() { freeCommandBuffers(); }
 
 /*
 
@@ -20,6 +24,7 @@ Renderer::~Renderer() { freeCommandBuffer(); }
 */
 void Renderer::recreateSwapChain()
 {
+
 	// get size window
 	auto extent = window.getExtent();
 
@@ -46,24 +51,20 @@ void Renderer::recreateSwapChain()
 	}
 }
 
+
+/// <summary>
+/// create command buffer
+/// </summary>
+/// <returns></returns>
 VkCommandBuffer Renderer::beginFrame()
 {
-	assert(!isFrameStarted && "can't call beginframe while a frame is already in progress");
+	assert(!isFrameStarted && "can't call beginframe while a frame is already in progress"); 
+	 
+	isFrameStarted = true; 
 
-	auto result = swapChain->acquireNextImage(&currentImageIndex);
+	auto commandBuffer = getCurrentCommandBuffer(); 
 
-	if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-		recreateSwapChain();
-		return nullptr;
-	}
-
-	if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-		throw std::runtime_error("failed to acquire swap chain image");
-	}
-
-	isFrameStarted = true;
-
-	auto commandBuffer = getCurrentCommandBuffer();
+	vkResetCommandBuffer(commandBuffer, 0); 
 
 	VkCommandBufferBeginInfo beginInfo{};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -84,17 +85,48 @@ void Renderer::endFrame()
 		throw std::runtime_error("failed to record command buffer");
 	}
 
-	auto result = swapChain->submitCommandBuffers(&commandBuffer, &currentImageIndex);
+	VkResult result = swapChain->submitCommandBuffers(&commandBuffer, &currentImageIndex);
+
 
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || window.wasWindowResized()) {
 		window.resetWindowResizedFlag();
 		recreateSwapChain();
-	} else if (result != VK_SUCCESS) {
+	}
+	else if (result != VK_SUCCESS) {
 		throw std::runtime_error("failed to present swap chain image");
 	}
 
-	isFrameStarted = false;
+	isFrameStarted = false; 
 	currentFrameIndex = (currentFrameIndex + 1) % Swap_chain::MAX_FRAMES_IN_FLIGHT;
+}
+
+VkCommandBuffer Renderer::beginDepthFrame(int depthCommandBufferIndex)
+{
+	assert(!isDepthStarted[depthCommandBufferIndex] && "can't call beginframe while a frame is already in progress");
+
+	isDepthStarted[depthCommandBufferIndex] = true;
+	auto commandBuffer = getCurrentDepthCommandBuffer(depthCommandBufferIndex);
+
+	vkResetCommandBuffer(commandBuffer, 0);
+
+	VkCommandBufferBeginInfo beginInfo{}; 
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO; 
+
+	if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) { 
+		throw std::runtime_error("failed to begin recording command buffer"); 
+	}
+
+	return commandBuffer; 
+}
+
+void Renderer::endDepthFrame(int depthCommandBufferIndex)
+{
+	assert(isDepthStarted[depthCommandBufferIndex] && "cant call endFrame while the frame is not in progress");
+	auto commandBuffer = getCurrentDepthCommandBuffer(depthCommandBufferIndex);
+
+	if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
+		throw std::runtime_error("failed to record command buffer");
+	}
 }
 
 void Renderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer)
@@ -131,6 +163,39 @@ void Renderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer)
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 }
 
+void Renderer::beginShadowRenderPass(VkCommandBuffer commandBuffer, int depthCommandBufferIndex)
+{
+	assert(isDepthStarted[depthCommandBufferIndex] && "cant call beginSwapChainRenderPass while frame not in progress");
+	assert(commandBuffer == getCurrentDepthCommandBuffer(depthCommandBufferIndex) && "cant begin render pass on command buffer from a different frame");
+
+	VkRenderPassBeginInfo renderPassInfo{};
+	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	renderPassInfo.renderPass = depthSwapChain->getDepthRenderPass();
+	renderPassInfo.framebuffer = depthSwapChain->getDepthFramebuffers(depthCommandBufferIndex + currentDepthFrameIndex * DepthSwapChain::MAX_DEPTH_RENDER_COUNT);
+
+	renderPassInfo.renderArea.offset = { 0, 0 };
+	renderPassInfo.renderArea.extent = depthSwapChain->getDepthSwapChainExtent();
+
+	std::array<VkClearValue, 1> clearValues{};
+	clearValues[0].depthStencil = { 1.0f, 0 };
+
+	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+	renderPassInfo.pClearValues = clearValues.data();
+
+	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+	VkViewport viewport{};
+	viewport.x = 0.0f;
+	viewport.y = 0.0f;
+	viewport.width = static_cast<float>(depthSwapChain->getDepthSwapChainExtent().width);
+	viewport.height = static_cast<float>(depthSwapChain->getDepthSwapChainExtent().height);
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+	VkRect2D scissor{ {0, 0}, depthSwapChain->getDepthSwapChainExtent() };
+	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+}
+
 void Renderer::endSwapChainRenderPass(VkCommandBuffer commandBuffer)
 {
 	assert(isFrameStarted && "cant call endSwapChainRenderPass while frame not in progress");
@@ -138,6 +203,59 @@ void Renderer::endSwapChainRenderPass(VkCommandBuffer commandBuffer)
 
 	vkCmdEndRenderPass(commandBuffer);
 }
+
+void Renderer::endShadowRenderPass(VkCommandBuffer commandBuffer, int depthCommandBufferIndex)
+{
+	assert(isDepthStarted[depthCommandBufferIndex] && "cant call endSwapChainRenderPass while frame not in progress");
+	assert(commandBuffer == getCurrentDepthCommandBuffer(depthCommandBufferIndex) && "cant end render pass on command buffer from a different frame");
+
+	vkCmdEndRenderPass(commandBuffer);
+}
+
+bool Renderer::aquireNextImage()
+{
+	auto result = swapChain->acquireNextImage(&currentImageIndex);
+
+	if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+		recreateSwapChain();
+		return false;
+	}
+
+	if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+		throw std::runtime_error("failed to acquire swap chain image");
+	}
+
+	return true;
+}
+
+void Renderer::renderDepthImage(FrameInfo& frameInfo, std::vector<std::shared_ptr<GlobalRenderSystem>> renderSystems, std::vector<VkDescriptorSet> globalDescriptorSets)
+{
+
+	size_t countDepthRender = 0; 
+	for (int commandBufferIndex = 0; commandBufferIndex < DepthSwapChain::MAX_DEPTH_RENDER_COUNT && commandBufferIndex < frameInfo.spotLightCount; commandBufferIndex++)
+	{
+		if (auto depthCommandBuffer = beginDepthFrame(commandBufferIndex)) {
+
+			beginShadowRenderPass(depthCommandBuffer, commandBufferIndex); 
+
+			for (auto renderSystem : renderSystems)
+				renderSystem->renderGameObjectsDepth(depthCommandBuffer, frameInfo, globalDescriptorSets,  commandBufferIndex);
+
+			endShadowRenderPass(depthCommandBuffer, commandBufferIndex);
+			endDepthFrame(commandBufferIndex);
+			countDepthRender++;
+		}
+	}
+
+
+	swapChain->submitDepthCommandBuffer(getCurrentDepthCommandBuffers(countDepthRender));
+
+	for (uint32_t i = 0; i < isDepthStarted.size(); i++) 
+		isDepthStarted[i] = false;  
+
+	currentDepthFrameIndex = (currentDepthFrameIndex + 1) % Swap_chain::MAX_FRAMES_IN_FLIGHT; 
+}
+
 
 void Renderer::createCommandBuffer()
 {
@@ -149,14 +267,35 @@ void Renderer::createCommandBuffer()
 	allocInfo.commandPool = device.getCommandPool();
 	allocInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
 
+
 	if (vkAllocateCommandBuffers(device.device(), &allocInfo, commandBuffers.data()) !=
 		VK_SUCCESS) {
 		throw std::runtime_error("failed to allocate command buffer");
 	}
 }
 
-void Renderer::freeCommandBuffer()
+void Renderer::createDepthCommandBuffer()
+{
+	depthCommandBuffers.resize(DepthSwapChain::MAX_DEPTH_RENDER_COUNT * Swap_chain::MAX_FRAMES_IN_FLIGHT);
+
+	VkCommandBufferAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	allocInfo.commandPool = device.getCommandPool();
+	allocInfo.commandBufferCount = static_cast<uint32_t>(depthCommandBuffers.size());
+
+	if (vkAllocateCommandBuffers(device.device(), &allocInfo, depthCommandBuffers.data()) !=
+		VK_SUCCESS) {
+		throw std::runtime_error("failed to allocate command buffer");
+	}
+}
+
+void Renderer::freeCommandBuffers()
 {
 	vkFreeCommandBuffers(device.device(), device.getCommandPool(), static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
 	commandBuffers.clear();
+
+	vkFreeCommandBuffers(device.device(), device.getCommandPool(), static_cast<uint32_t>(depthCommandBuffers.size()), depthCommandBuffers.data());
+	depthCommandBuffers.clear();
 }
+

@@ -54,10 +54,12 @@ Device::Device(Window& window) : window{ window } {
     pickPhysicalDevice();
     createLogicalDevice();
     createCommandPool();
+    createTransferPool();
 }
 
 Device::~Device() {
-    vkDestroyCommandPool(device_, commandPool, nullptr);
+    vkDestroyCommandPool(device_, commandPool , nullptr);
+    vkDestroyCommandPool(device_, transferPool, nullptr);
     vkDestroyDevice(device_, nullptr);
 
     if (enableValidationLayers) {
@@ -138,7 +140,7 @@ void Device::createLogicalDevice() {
     QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-    std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily, indices.presentFamily };
+    std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily, indices.presentFamily, indices.transferFamily };
 
     float queuePriority = 1.0f;
     for (uint32_t queueFamily : uniqueQueueFamilies) {
@@ -177,6 +179,7 @@ void Device::createLogicalDevice() {
         throw std::runtime_error("failed to create logical device!");
     }
 
+    vkGetDeviceQueue(device_, indices.transferFamily, 0, &transferQueue_);
     vkGetDeviceQueue(device_, indices.graphicsFamily, 0, &graphicsQueue_);
     vkGetDeviceQueue(device_, indices.presentFamily, 0, &presentQueue_);
 }
@@ -191,6 +194,21 @@ void Device::createCommandPool() {
         VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
     if (vkCreateCommandPool(device_, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create command pool!");
+    }
+}
+
+void Device::createTransferPool()
+{
+    QueueFamilyIndices queueFamilyIndices = findPhysicalQueueFamilies(); 
+     
+    VkCommandPoolCreateInfo poolInfo = {}; 
+    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO; 
+    poolInfo.queueFamilyIndex = queueFamilyIndices.transferFamily; 
+    poolInfo.flags = 
+        VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT; 
+
+    if (vkCreateCommandPool(device_, &poolInfo, nullptr, &transferPool) != VK_SUCCESS) { 
         throw std::runtime_error("failed to create command pool!");
     }
 }
@@ -282,17 +300,17 @@ void Device::hasGflwRequiredInstanceExtensions() {
     std::vector<VkExtensionProperties> extensions(extensionCount);
     vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
 
-    std::cout << "available extensions:" << std::endl;
+    //std::cout << "available extensions:" << std::endl;
     std::unordered_set<std::string> available;
     for (const auto& extension : extensions) {
-        std::cout << "\t" << extension.extensionName << std::endl;
+        //std::cout << "\t" << extension.extensionName << std::endl;
         available.insert(extension.extensionName);
     }
 
-    std::cout << "required extensions:" << std::endl;
+    //std::cout << "required extensions:" << std::endl;
     auto requiredExtensions = getRequiredExtensions();
     for (const auto& required : requiredExtensions) {
-        std::cout << "\t" << required << std::endl;
+        //std::cout << "\t" << required << std::endl;
         if (available.find(required) == available.end()) {
             throw std::runtime_error("Missing required glfw extension");
         }
@@ -328,18 +346,36 @@ QueueFamilyIndices Device::findQueueFamilies(VkPhysicalDevice device) {
     std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
 
+    int transferQueueIndex = -1;
+
     int i = 0;
     for (const auto& queueFamily : queueFamilies) {
         if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
             indices.graphicsFamily = i;
             indices.graphicsFamilyHasValue = true;
         }
+
+        if (queueFamily.queueFlags & VK_QUEUE_TRANSFER_BIT) {
+            if (!(queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) && !(queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT)) {
+                // Dedicated transfer queue found, use it
+                indices.transferFamily = i;
+                indices.transferFamilyHasValue = true;
+                break; // Prefer dedicated queue
+            }
+            else if (transferQueueIndex == -1) {
+                // Store the first general-purpose transfer queue as a fallback
+                transferQueueIndex = i;
+            }
+        }
+
         VkBool32 presentSupport = false;
         vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface_, &presentSupport);
         if (queueFamily.queueCount > 0 && presentSupport) {
             indices.presentFamily = i;
             indices.presentFamilyHasValue = true;
         }
+
+
         if (indices.isComplete()) {
             break;
         }
@@ -347,8 +383,14 @@ QueueFamilyIndices Device::findQueueFamilies(VkPhysicalDevice device) {
         i++;
     }
 
+    if (!indices.transferFamilyHasValue && transferQueueIndex != -1) {
+        indices.transferFamily = transferQueueIndex;
+        indices.transferFamilyHasValue = true;
+    }
+
     return indices;
 }
+
 
 SwapChainSupportDetails Device::querySwapChainSupport(VkPhysicalDevice device) {
     SwapChainSupportDetails details;
@@ -398,6 +440,35 @@ bool Device::isFormatSupported(const VkFormat candidate)
     VkFormatProperties formatProperties;
     vkGetPhysicalDeviceFormatProperties(physicalDevice, candidate, &formatProperties);
     return ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_TRANSFER_DST_BIT) && (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT));
+}
+
+void Device::submitToGraphicQueue(VkSubmitInfo& submitInfo, VkFence fence)
+{
+    if (vkQueueSubmit(graphicsQueue_, 1, &submitInfo, fence) != VK_SUCCESS) {
+        throw std::runtime_error("failed to submit command buffer!");
+    }
+}
+
+ImGui_ImplVulkan_InitInfo Device::getImGuiInitInfo()
+{
+    QueueFamilyIndices queue = findPhysicalQueueFamilies();
+
+    ImGui_ImplVulkan_InitInfo init_info = {};
+    init_info.Instance = instance;
+    init_info.PhysicalDevice = physicalDevice;
+    init_info.Device = device_;
+    init_info.QueueFamily = queue.graphicsFamily;
+    init_info.Queue = graphicsQueue_;
+    //init_info.PipelineCache = YOUR_PIPELINE_CACHE;
+    //init_info.DescriptorPool = YOUR_DESCRIPTOR_POOL;
+    init_info.Subpass = 0;
+    init_info.MinImageCount = 3;
+    init_info.ImageCount = 3;
+    init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+    //init_info.Allocator = YOUR_ALLOCATOR;
+    init_info.CheckVkResultFn = check_vk_result;
+
+    return init_info;
 }
 
 uint32_t Device::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
@@ -463,7 +534,7 @@ VkCommandBuffer Device::beginSingleTimeCommands() {
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     allocInfo.commandPool = commandPool;
     allocInfo.commandBufferCount = 1;
-
+        
     VkCommandBuffer commandBuffer;
     vkAllocateCommandBuffers(device_, &allocInfo, &commandBuffer);
 
@@ -472,10 +543,13 @@ VkCommandBuffer Device::beginSingleTimeCommands() {
     beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
     vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
     return commandBuffer;
 }
 
-void Device::endSingleTimeCommands(VkCommandBuffer commandBuffer) {
+void Device::endSingleTimeCommands(VkCommandBuffer commandBuffer) 
+{
+
     vkEndCommandBuffer(commandBuffer);
 
     VkSubmitInfo submitInfo{};
@@ -489,8 +563,47 @@ void Device::endSingleTimeCommands(VkCommandBuffer commandBuffer) {
     vkFreeCommandBuffers(device_, commandPool, 1, &commandBuffer);
 }
 
+VkCommandBuffer Device::beginSingleTimeTransferCommands() {
+    VkCommandBufferAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandPool = transferPool;
+    allocInfo.commandBufferCount = 1;
+
+    std::lock_guard<std::mutex> lock(transferQueueMutex);
+
+    VkCommandBuffer commandBuffer;
+    vkAllocateCommandBuffers(device_, &allocInfo, &commandBuffer);
+
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+    return commandBuffer;
+
+}
+
+void Device::endSingleTimeTransferCommands(VkCommandBuffer commandBuffer) {
+
+    std::lock_guard<std::mutex> lock(transferQueueMutex);
+
+    vkEndCommandBuffer(commandBuffer);
+
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
+
+    vkQueueSubmit(transferQueue_, 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(transferQueue_);
+
+    vkFreeCommandBuffers(device_, transferPool, 1, &commandBuffer);
+}
+
 void Device::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
-    VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+    VkCommandBuffer commandBuffer = beginSingleTimeTransferCommands();
 
     VkBufferCopy copyRegion{};
     copyRegion.srcOffset = 0;  // Optional
@@ -498,13 +611,13 @@ void Device::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize siz
     copyRegion.size = size;
     vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 
-    endSingleTimeCommands(commandBuffer);
+    endSingleTimeTransferCommands(commandBuffer);
 }
 
 void Device::copyBufferToImage(
     VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount, uint32_t mipLevel, uint32_t bufferOffset) {
     
-    VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+    VkCommandBuffer commandBuffer = beginSingleTimeTransferCommands();
     VkBufferImageCopy region{};
     region.bufferOffset = bufferOffset;
     region.bufferRowLength = 0;
@@ -519,8 +632,6 @@ void Device::copyBufferToImage(
     uint32_t mipHeight = std::max(1u, height >> (mipLevel));
 
 
-    std::cout << "mipLevel = " << mipLevel << " width = " << (width) << " height = " << (height) << "\n";
-
     region.imageOffset = { 0, 0, 0 };
     region.imageExtent = { mipWidth, mipHeight, 1 };
 
@@ -531,8 +642,8 @@ void Device::copyBufferToImage(
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
         1,
         &region);
-
-    endSingleTimeCommands(commandBuffer);
+    
+    endSingleTimeTransferCommands(commandBuffer);
 }
 
 void Device::createImageWithInfo(
@@ -561,4 +672,101 @@ void Device::createImageWithInfo(
     if (vkBindImageMemory(device_, image, imageMemory, 0) != VK_SUCCESS) {
         throw std::runtime_error("failed to bind image memory!");
     }
+}
+
+void Device::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevel)
+{
+    std::lock_guard<std::mutex> lock(graphicQueueMutex);
+    VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+    transitionImageLayout(commandBuffer, image, format, oldLayout, newLayout, mipLevel);
+    endSingleTimeCommands(commandBuffer);
+}
+
+void Device::transitionImageLayout(VkCommandBuffer& commandBuffer, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevel)
+{
+    VkImageMemoryBarrier barrier{};
+    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    barrier.oldLayout = oldLayout;
+    barrier.newLayout = newLayout;
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.image = image;
+
+    // Determine the aspect mask based on the format
+    if (format == VK_FORMAT_D32_SFLOAT || format == VK_FORMAT_D16_UNORM) {
+        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+    }
+    else if (hasStencilComponent(format)) {
+        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+    }
+    else {
+        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    }
+
+    barrier.subresourceRange.baseMipLevel = 0;
+    barrier.subresourceRange.levelCount = mipLevel;
+    barrier.subresourceRange.baseArrayLayer = 0;
+    barrier.subresourceRange.layerCount = 1;
+
+    VkPipelineStageFlags sourceStage;
+    VkPipelineStageFlags destinationStage;
+
+    if (oldLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+        barrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+        sourceStage = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT; // Fragment tests (depth/stencil writes)
+        destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT; // Shader read access
+    }
+    else if (oldLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
+        barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+        sourceStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT; // Shader read
+        destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT; // Depth/stencil writes
+    }
+    else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+        barrier.srcAccessMask = 0;
+        barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+        sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    }
+    else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+    {
+        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+        sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    }
+    else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+        barrier.srcAccessMask = 0;    
+        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT; 
+
+        sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT; 
+        destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT; 
+    }
+    else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
+        barrier.srcAccessMask = 0;
+        barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+        sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    }
+    else {
+        std::cerr << "Unsupported layout transition! Old Layout: " << oldLayout
+            << ", New Layout: " << newLayout << std::endl;
+
+        throw std::invalid_argument("unsupported layout transition!");
+    }
+
+    vkCmdPipelineBarrier(
+        commandBuffer,
+        sourceStage, destinationStage,
+        0,
+        0, nullptr,
+        0, nullptr,
+        1, &barrier
+    );
 }

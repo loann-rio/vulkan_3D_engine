@@ -4,7 +4,7 @@
 #include "Utils.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION
-#include <tiny_obj_loader.h>
+#include "external/tinyobjectloader/tiny_obj_loader.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
@@ -30,21 +30,28 @@ Model::Model(Device& device, const Model::Builder& builder, const char* filePath
 	createVertexBuffers(builder.vertices);
 	createIndexBuffers(builder.indices);
 
-	texture = std::make_unique<Texture>( device, filePathTexture );
-
+	if (filePathTexture) {
+		texture = Texture::create(device, filePathTexture); 
+		if (texture!= nullptr)
+			hasTexture = true;
+	}
 }
 
 Model::~Model() {}
 
 std::unique_ptr<Model> Model::createModelFromFile(Device& device, const std::string& filePath, const char* filePathTexture)
 {
-	Builder builder{};
-	builder.loadModel(filePath);
-	std::cout << "vertex count: " << builder.vertices.size() << "\n";
-	return std::make_unique<Model>(device, builder, filePathTexture);
+	Builder builder{}; 
+	if (builder.loadOBJModel(filePath)) { 
+		std::cout << "vertex count: " << builder.vertices.size() << "\n"; 
+		std::unique_ptr<Model> m = std::make_unique<Model>(device, builder, filePathTexture); 
+		return m;
+	}
+
+	return nullptr;
 }
 
-void Model::bind(VkCommandBuffer commandBuffer)
+void Model::bind(VkCommandBuffer& commandBuffer)
 {
 	VkBuffer buffers[] = { vertexBuffer->getBuffer() };
 	VkDeviceSize offsets[] = { 0 };
@@ -55,7 +62,7 @@ void Model::bind(VkCommandBuffer commandBuffer)
 	}
 }
 
-void Model::draw(VkCommandBuffer commandBuffer)
+void Model::draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout)
 {
 	if (hasIndexBuffer) {
 		vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
@@ -65,10 +72,20 @@ void Model::draw(VkCommandBuffer commandBuffer)
 	}
 }
 
-//VkDescriptorImageInfo Model::getImageInfo()
-//{
-//	return { textureSampler, textureImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
-//}
+void Model::createDescriptorSet(DescriptorPool& pool, Device& device)
+{
+	auto textureSetLayout = DescriptorSetLayout::Builder(device)
+		.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+		.build();
+
+	for (int i = 0; i < descriptorSet.size(); i++)
+	{
+		auto imageInfo = texture->getImageInfo();
+		DescriptorWriter(*textureSetLayout, pool)
+			.writeImage(1, &imageInfo)
+			.build(descriptorSet[i]);
+	}
+}
 
 void Model::createVertexBuffers(const std::vector<Vertex>& vertices)
 {
@@ -156,66 +173,16 @@ std::vector<VkVertexInputAttributeDescription> Model::Vertex::getAttributeDescri
 	return attributeDescriptions;
 }
 
-void Model::Builder::loadModel(const std::string& filepath)
+std::vector<VkVertexInputAttributeDescription> Model::Vertex::getAttributeDescriptionsShadow()
 {
-	tinyobj::attrib_t attrib;
-	std::vector<tinyobj::shape_t> shapes;
-	std::vector<tinyobj::material_t> materials;
-	std::string warn, err;
+	std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
 
-	if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filepath.c_str())) {
-		std::cout << filepath.c_str() << std::endl;
-		throw std::runtime_error(warn + err);
-	}
-
-	vertices.clear();
-	indices.clear();
-
-	std::unordered_map<Vertex, uint32_t> uniqueVertices{};
-
-	for (const auto& shape : shapes) {
-		for (const auto& index : shape.mesh.indices)
-		{
-			Vertex vertex{};
-			if (index.vertex_index >= 0) {
-				vertex.position = {
-					attrib.vertices[3 * index.vertex_index + 0],
-					attrib.vertices[3 * index.vertex_index + 1],
-					attrib.vertices[3 * index.vertex_index + 2],
-				};
-
-				vertex.color = {
-					attrib.colors[3 * index.vertex_index + 0],
-					attrib.colors[3 * index.vertex_index + 1],
-					attrib.colors[3 * index.vertex_index + 2],
-				};
-			}
-
-			if (index.normal_index >= 0) {
-				vertex.normal = {
-					attrib.normals[3 * index.normal_index + 0],
-					attrib.normals[3 * index.normal_index + 1],
-					attrib.normals[3 * index.normal_index + 2],
-				};
-			}
-
-			if (index.texcoord_index >= 0) {
-				vertex.uv = {
-					attrib.texcoords[2 * index.texcoord_index + 0],
-					1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
-				};
-			}
-
-			if (uniqueVertices.count(vertex) == 0) {
-				uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
-				vertices.push_back(vertex);
-			}
-			indices.push_back(uniqueVertices[vertex]);
-		}
-	}
+	attributeDescriptions.push_back({ 0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0 }); // offsetof(Vertex, position) });
+	
+	return attributeDescriptions;
 }
 
-void Model::Builder::loadOBJModel(const std::string& filepath)
+bool Model::Builder::loadOBJModel(const std::string& filepath)
 {
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
@@ -223,7 +190,9 @@ void Model::Builder::loadOBJModel(const std::string& filepath)
 	std::string warn, err;
 
 	if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filepath.c_str())) {
-		throw std::runtime_error(warn + err);
+		//throw std::runtime_error(warn + err);
+		std::cerr << warn + err << "\n";
+		return false;
 	}
 
 	vertices.clear();
@@ -271,4 +240,6 @@ void Model::Builder::loadOBJModel(const std::string& filepath)
 			indices.push_back(uniqueVertices[vertex]);
 		}
 	}
+
+	return true;
 }

@@ -1,5 +1,7 @@
 #include "GameObject.h"
 
+ 
+GameObject::id_t GameObjectFactory::nextId = 0;
 
 glm::mat4 TransformComponent::mat4() 
 {
@@ -61,29 +63,137 @@ glm::mat3 TransformComponent::normalMatrix()
     };
 }
 
-GameObject GameObject::makePointLight(Device& device, float intencity, float radius, glm::vec3 color = glm::vec3{ 1.f })
+glm::mat4 GameObject::getTransformMat() 
 {
-    GameObject gameObj = GameObject::createGameObject(device);
-    gameObj.color = color;
-    gameObj.transform.scale.x = radius;
-    gameObj.pointLight = std::make_unique<PointLightComponent>();
-    gameObj.pointLight->LightIntencity = intencity;
-    return gameObj;
+    if (parentObject != nullptr) 
+        return parentObject->getTransformMat() * transform.mat4();
+    return transform.mat4(); 
 }
 
-void GameObject::createDescriptorSet(DescriptorPool& pool, Device& device)
+void GameObjectModel::setModel(ModelVariant newModel)
 {
+    model = std::move(newModel);
+    hasModel = true;
+}
 
-    auto textureSetLayout = DescriptorSetLayout::Builder(device)
-        .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .build();
+void GameObjectModel::createDescriptorSet(DescriptorPool& pool) const
+{
+    if (!hasModel) return;
 
-    for (int i = 0; i < descriptorSet.size(); i++)
-    {
-        auto imageInfo = model->texture->getImageInfo();
-        DescriptorWriter(*textureSetLayout, pool)
-            .writeImage(0, &imageInfo)
-            .build(descriptorSet[i]);
+    std::visit([&pool, &device = this->device](const auto& modelInstance) {
+        if (modelInstance) {
+            modelInstance->createDescriptorSet(pool, device);
+        }
+        }, model);
+}
+
+std::vector<VkDescriptorSet> GameObjectModel::getDescriptorSets() const
+{
+    return std::visit([](const auto& modelInstance) -> std::vector<VkDescriptorSet> {
+        if (modelInstance) {
+            return modelInstance->getDescriptorSets();
+        }
+        return {};
+        }, model);
+}
+
+void GameObjectModel::bindModel(VkCommandBuffer& commandBuffer) const
+{
+    std::visit([&](const auto& modelInstance) {
+        if (modelInstance) {
+            modelInstance->bind(commandBuffer);
+        }
+        }, model);
+}
+
+void GameObjectModel::drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout) const
+{
+    std::visit([&](const auto& modelInstance) {
+        if (modelInstance) {
+            modelInstance->draw(commandBuffer, GlTFPipelineLayout);
+        }
+        }, model);
+}
+
+void GameObjectSpotLight::updateCameraView() { camera->setViewYXZ(transform.translation, transform.rotation); }
+
+void GameObjectSpotLight::debugUI()
+{
+    ImGui::Text("Position:");
+    ImGui::DragFloat3("##pos", glm::value_ptr(transform.translation), 0.01f, -10.0f, 10.0f);
+
+    ImGui::Text("Rotation:");
+    ImGui::DragFloat3("##rot", glm::value_ptr(transform.rotation), 0.01f, -10.0f, 10.0f);
+
+    ImGui::Text("fov");
+    bool recreateMat = ImGui::DragFloat("##fov", &_fov, 0.01, 0.1, glm::half_pi<float>());
+
+    ImGui::Text("Aspect Ratio");
+    recreateMat = recreateMat || ImGui::DragFloat("##aspectRatio", &_aspect_ratio, 0.01, 0.01f, 20.f); 
+
+    if (recreateMat) camera->setPerspectiveProjection(_fov, _aspect_ratio, _nearClip, _farClip);
+
+    ImGui::Text("Color:"); 
+    ImGui::ColorEdit4("##clr", glm::value_ptr(transform.color)); 
+     
+
+}
+
+void GameObjectCamera::debugUI()
+{
+    ImGui::Text("Position:"); 
+    ImGui::DragFloat3("##pos", glm::value_ptr(transform.translation), 0.01f, -10.0f, 10.0f);  
+
+    ImGui::Text("Rotation:"); 
+    ImGui::DragFloat3("##rot", glm::value_ptr(transform.rotation), 0.01f, -10.0f, 10.0f); 
+
+    ImGui::Text("fov");
+    if (ImGui::DragFloat("##fov", &_fov, 0.01, 0.1, glm::half_pi<float>())) { 
+        camera->setPerspectiveProjection(_fov, _aspect_ratio, _nearClip, _farClip); 
     }
+}
 
+void GameObjectCamera::updateCameraView() { camera->setViewYXZ(transform.translation, transform.rotation); }
+
+SpotLight GameObjectSpotLight::getSpotLightInfo(bool _updateCameraView)
+{
+    if (_updateCameraView) updateCameraView(); 
+
+    return {
+        glm::vec4(transform.translation, 1.0), 
+        transform.color, 
+        glm::vec4(transform.rotation, 1.0), 
+        camera->getProjection() * camera->getView() 
+    }; 
+}
+
+//void GameObject::removeChild(id_t child)
+//{
+//    std::vector<id_t>::iterator position = std::find(children.begin(), children.end(), child);
+//    if (position != children.end()) 
+//        children.erase(position); 
+//}
+
+void GameObjectModel::debugUI()
+{
+    ImGui::Text("Position:"); 
+    ImGui::DragFloat3("##pos", glm::value_ptr(transform.translation), 0.01f, -10.0f, 10.0f); 
+
+    ImGui::Text("Rotation:"); 
+    ImGui::DragFloat3("##rot", glm::value_ptr(transform.rotation), 0.01f, -10.0f, 10.0f);
+
+    ImGui::Text("Scale:");
+    ImGui::DragFloat3("##scl", glm::value_ptr(transform.scale), 0.01f, -10.0f, 10.0f);
+}
+
+void GameObjectPointLight::debugUI()
+{
+    ImGui::Text("Position:");
+    ImGui::DragFloat3("##pos", glm::value_ptr(transform.translation), 0.01f, -10.0f, 10.0f);
+
+    ImGui::Text("Color:"); 
+    ImGui::ColorEdit3("##clr", glm::value_ptr(transform.color)); 
+
+    ImGui::Text("intensity:");
+    ImGui::DragFloat("##intensity", &transform.color.w, 0.1f, 0, 100);
 }

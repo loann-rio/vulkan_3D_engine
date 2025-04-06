@@ -5,7 +5,11 @@
 // std lib headers
 #include <string>
 #include <vector>
+#include <mutex>
 #include <vulkan/vulkan.h>
+
+// Im Gui
+#include "imgui_impl_vulkan.h"
 
 
 struct SwapChainSupportDetails {
@@ -17,10 +21,21 @@ struct SwapChainSupportDetails {
 struct QueueFamilyIndices {
     uint32_t graphicsFamily;
     uint32_t presentFamily;
+    uint32_t transferFamily;
+    bool transferFamilyHasValue = false;
     bool graphicsFamilyHasValue = false;
     bool presentFamilyHasValue = false;
-    bool isComplete() const { return graphicsFamilyHasValue && presentFamilyHasValue; }
+    bool isComplete() const { return graphicsFamilyHasValue && presentFamilyHasValue && transferFamilyHasValue; }
 };
+
+static void check_vk_result(VkResult err)
+{
+    if (err == 0)
+        return;
+    fprintf(stderr, "[vulkan] Error: VkResult = %d\n", err);
+    if (err < 0)
+        abort();
+}
 
 class Device {
 
@@ -56,6 +71,13 @@ public:
     void getPhysicalFeatures(VkPhysicalDeviceFeatures* pFeatures) { vkGetPhysicalDeviceFeatures(physicalDevice, pFeatures); }
     bool isFormatSupported(const VkFormat candidate);
 
+    void submitToGraphicQueue(VkSubmitInfo& submitInfo, VkFence fence);
+
+    std::mutex& getTransferMutex() { return transferQueueMutex; }
+    std::mutex& getGraphicMutex()  { return graphicQueueMutex;  }
+
+    ImGui_ImplVulkan_InitInfo getImGuiInitInfo();
+
     // Buffer Helper Functions
     void createBuffer(
         VkDeviceSize size,
@@ -65,8 +87,11 @@ public:
         VkDeviceMemory& bufferMemory);
 
     VkCommandBuffer beginSingleTimeCommands();
-
     void endSingleTimeCommands(VkCommandBuffer commandBuffer);
+
+    VkCommandBuffer beginSingleTimeTransferCommands();
+    void endSingleTimeTransferCommands(VkCommandBuffer commandBuffer);
+
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
     
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount, uint32_t mipLevel = 0, uint32_t bufferOffset = 0);
@@ -77,7 +102,12 @@ public:
         VkImage& image,
         VkDeviceMemory& imageMemory);
 
+    void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevel);
+    void transitionImageLayout(VkCommandBuffer& commandBuffer, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevel);
+
     VkPhysicalDeviceProperties properties;
+
+    Window& getWindow() { return window; }
 
 private:
     void createInstance();
@@ -86,6 +116,7 @@ private:
     void pickPhysicalDevice();
     void createLogicalDevice();
     void createCommandPool();
+    void createTransferPool();
 
     // helper functions
     bool isDeviceSuitable(VkPhysicalDevice device);
@@ -97,17 +128,26 @@ private:
     bool checkDeviceExtensionSupport(VkPhysicalDevice device);
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
 
+    bool hasStencilComponent(VkFormat format) {
+        return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
+    }
+
     VkInstance instance;
     VkDebugUtilsMessengerEXT debugMessenger;
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     Window& window;
     VkCommandPool commandPool;
+    VkCommandPool transferPool;
 
     VkDevice device_;
     VkSurfaceKHR surface_;
     VkQueue graphicsQueue_;
     VkQueue presentQueue_;
+    VkQueue transferQueue_;
 
-    const std::vector<const char*> validationLayers = { "VK_LAYER_KHRONOS_validation" };
+    std::mutex graphicQueueMutex;
+    std::mutex transferQueueMutex;
+
+    const std::vector<const char*> validationLayers = { "VK_LAYER_KHRONOS_validation"};
     const std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 };

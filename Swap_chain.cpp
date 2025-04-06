@@ -11,17 +11,18 @@
 #include <stdexcept>
 #include <cassert>
 
+#ifndef VK_SUBPASS_EXTERNAL
+#define VK_SUBPASS_EXTERNAL (~0U)
+#endif
+
 Swap_chain::Swap_chain(Device& deviceRef, VkExtent2D windowExtent)
     : device{ deviceRef }, windowExtent{ windowExtent } {
     init();
 }
 
 Swap_chain::Swap_chain(Device& deviceRef, VkExtent2D windowExtent, std::shared_ptr<Swap_chain> previous) 
-    : device{ deviceRef }, windowExtent{ windowExtent }, oldSwapChain{ previous }
-{
+    : device{ deviceRef }, windowExtent{ windowExtent }, oldSwapChain{ previous } {
     init();
-
-    //oldSwapChain = nullptr;
 }
 
 void Swap_chain::init()
@@ -38,12 +39,13 @@ Swap_chain::~Swap_chain() {
     for (auto imageView : swapChainImageViews) {
         vkDestroyImageView(device.device(), imageView, nullptr);
     }
-    swapChainImageViews.clear();
+
+    swapChainImageViews.clear(); 
 
     if (swapChain != nullptr) {
         vkDestroySwapchainKHR(device.device(), swapChain, nullptr);
         swapChain = nullptr;
-    }
+    }   
 
     for (int i = 0; i < depthImages.size(); i++) {
         vkDestroyImageView(device.device(), depthImageViews[i], nullptr);
@@ -55,6 +57,10 @@ Swap_chain::~Swap_chain() {
         vkDestroyFramebuffer(device.device(), framebuffer, nullptr);
     }
 
+    for (auto framebuffer : depthFramebuffers) {
+        vkDestroyFramebuffer(device.device(), framebuffer, nullptr);
+    }
+
     vkDestroyRenderPass(device.device(), renderPass, nullptr);
 
     // cleanup synchronization objects
@@ -62,6 +68,10 @@ Swap_chain::~Swap_chain() {
         vkDestroySemaphore(device.device(), renderFinishedSemaphores[i], nullptr);
         vkDestroySemaphore(device.device(), imageAvailableSemaphores[i], nullptr);
         vkDestroyFence(device.device(), inFlightFences[i], nullptr);
+    }
+
+    for (size_t i = 0; i < depthFinishedSemaphores.size(); ++i) {
+        vkDestroySemaphore(device.device(), depthFinishedSemaphores[i], nullptr);
     }
 }
 
@@ -89,18 +99,28 @@ VkResult Swap_chain::submitCommandBuffers(
 
     if (imagesInFlight[*imageIndex] != VK_NULL_HANDLE) {
         vkWaitForFences(device.device(), 1, &imagesInFlight[*imageIndex], VK_TRUE, UINT64_MAX);
+
     }
 
     imagesInFlight[*imageIndex] = inFlightFences[currentFrame];
 
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    
+    std::vector<VkSemaphore> tempWaitSemaphore{}; 
 
-    VkSemaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrame] };
-    VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-    submitInfo.waitSemaphoreCount = 1;
-    submitInfo.pWaitSemaphores = waitSemaphores;
-    submitInfo.pWaitDstStageMask = waitStages;
+    if (renderingDepthDuringFrame) {
+        tempWaitSemaphore = { depthFinishedSemaphores };
+        renderingDepthDuringFrame = false;
+    }
+        
+    tempWaitSemaphore.push_back(imageAvailableSemaphores[currentFrame]); 
+    std::vector<VkPipelineStageFlags> waitStage(tempWaitSemaphore.size(), VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT); 
+
+
+    submitInfo.waitSemaphoreCount = static_cast<uint32_t>(tempWaitSemaphore.size());
+    submitInfo.pWaitSemaphores = tempWaitSemaphore.data();// waitSemaphores;
+    submitInfo.pWaitDstStageMask = waitStage.data(); 
 
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = buffers;
@@ -110,11 +130,9 @@ VkResult Swap_chain::submitCommandBuffers(
     submitInfo.pSignalSemaphores = signalSemaphores;
 
     vkResetFences(device.device(), 1, &inFlightFences[currentFrame]);
-    if (vkQueueSubmit(device.graphicsQueue(), 1, &submitInfo, inFlightFences[currentFrame]) !=
-        VK_SUCCESS) {
-        throw std::runtime_error("failed to submit draw command buffer!");
-    }
 
+    device.submitToGraphicQueue(submitInfo, inFlightFences[currentFrame]);
+     
     VkPresentInfoKHR presentInfo = {};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
@@ -134,6 +152,42 @@ VkResult Swap_chain::submitCommandBuffers(
     return result;
 }
 
+
+void Swap_chain::submitDepthCommandBuffer(const std::vector<VkCommandBuffer> depthCommandBuffer)
+{
+    depthFinishedSemaphores.resize(depthCommandBuffer.size());
+
+    VkSemaphoreCreateInfo semaphoreInfo{};
+    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    for (size_t i = 0; i < depthCommandBuffer.size(); i++) { 
+        if (depthFinishedSemaphores[i] == VK_NULL_HANDLE) { 
+            if (vkCreateSemaphore(device.device(), &semaphoreInfo, nullptr, &depthFinishedSemaphores[i]) != VK_SUCCESS) { 
+                throw std::runtime_error("failed to create depth semaphore!");
+            }
+        }
+    } 
+
+    for (size_t i = 0; i < depthCommandBuffer.size(); i++) { 
+        if (depthCommandBuffer[i] == VK_NULL_HANDLE) { 
+            throw std::runtime_error("Error: Uninitialized command buffer in depthCommandBuffer!");
+        }
+    }
+
+    // Submit Depth Pass 
+    VkSubmitInfo depthSubmitInfo{};
+    depthSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    depthSubmitInfo.commandBufferCount = static_cast<uint32_t>(depthCommandBuffer.size());
+    depthSubmitInfo.pCommandBuffers = depthCommandBuffer.data();
+
+    // Signal semaphore after depth pass
+    depthSubmitInfo.signalSemaphoreCount = static_cast<uint32_t>(depthFinishedSemaphores.size());
+    depthSubmitInfo.pSignalSemaphores = depthFinishedSemaphores.data();
+
+    device.submitToGraphicQueue(depthSubmitInfo, VK_NULL_HANDLE);
+
+    renderingDepthDuringFrame = true;
+}
 
 void Swap_chain::createSwapChain() {
     SwapChainSupportDetails swapChainSupport = device.getSwapChainSupport();
@@ -320,6 +374,8 @@ void Swap_chain::createDepthResources() {
     depthImageMemorys.resize(imageCount());
     depthImageViews.resize(imageCount());
 
+    std::cout << "image count = " << imageCount() << "\n";
+
     for (int i = 0; i < depthImages.size(); i++) {
         VkImageCreateInfo imageInfo{};
         imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -332,16 +388,18 @@ void Swap_chain::createDepthResources() {
         imageInfo.format = depthFormat;
         imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
         imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT; 
         imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
         imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
         imageInfo.flags = 0;
+        imageInfo.pNext = NULL;
 
-        device.createImageWithInfo(
+        device.createImageWithInfo( 
             imageInfo,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             depthImages[i],
             depthImageMemorys[i]);
+       
 
         VkImageViewCreateInfo viewInfo{};
         viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -357,14 +415,15 @@ void Swap_chain::createDepthResources() {
         if (vkCreateImageView(device.device(), &viewInfo, nullptr, &depthImageViews[i]) != VK_SUCCESS) {
             throw std::runtime_error("failed to create texture image view!");
         }
+
     }
 }
 
 void Swap_chain::createSyncObjects() {
-    imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
-    imagesInFlight.resize(imageCount(), VK_NULL_HANDLE);
+    imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT); 
+    renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT); 
+    inFlightFences.resize(MAX_FRAMES_IN_FLIGHT); 
+    imagesInFlight.resize(imageCount(), VK_NULL_HANDLE); 
 
     VkSemaphoreCreateInfo semaphoreInfo = {};
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -398,12 +457,13 @@ VkSurfaceFormatKHR Swap_chain::chooseSwapSurfaceFormat(
 
 VkPresentModeKHR Swap_chain::chooseSwapPresentMode(
     const std::vector<VkPresentModeKHR>& availablePresentModes) {
-    //for (const auto& availablePresentMode : availablePresentModes) {
-    //    if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) { // VK_PRESENT_MODE_MAILBOX_KHR    VK_PRESENT_MODE_IMMEDIATE_KHR
-    //        std::cout << "Present mode: Mailbox" << std::endl;
-    //        return availablePresentMode;
-    //    }
-    //}
+
+    for (const auto& availablepresentmode : availablePresentModes) {
+        if (availablepresentmode == VK_PRESENT_MODE_MAILBOX_KHR) {
+            std::cout << "present mode: mailbox" << std::endl;
+            return availablepresentmode;
+        }
+    }
 
     // for (const auto &availablePresentMode : availablePresentModes) {
     //   if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR) {

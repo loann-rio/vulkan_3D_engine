@@ -34,7 +34,7 @@ public:
 
 	void addText(std::string text, float x, float y, TextAlign align, uint32_t width, uint32_t height);
 
-	void renderText(FrameInfo& frameInfo);
+	void renderText(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo);
 
 	uint32_t numLetters;
 	bool visible = true;

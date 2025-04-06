@@ -2,13 +2,10 @@
 
 // local
 #include "KeyboardMovementController.h"
-#include "RenderSystem.h"
 #include "Camera.h"
 #include "Buffer.h"
 #include "Frame_info.h"
-#include "preBuild.h"
-#include "point_light_system.h"
-#include "preBuild.h"
+#include "GlTFModel.h"
 #include "Texture.h"
 
 
@@ -18,6 +15,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
 
+// imgui
+#include "BasicUI.h"
 
 // std
 #include <stdexcept>
@@ -30,24 +29,171 @@
 #include <iomanip>
 
 
-
 App::App() { 
     globalPool = DescriptorPool::Builder(device)
-        .setMaxSets(Swap_chain::MAX_FRAMES_IN_FLIGHT * 12)
-        .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Swap_chain::MAX_FRAMES_IN_FLIGHT)
-        .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Swap_chain::MAX_FRAMES_IN_FLIGHT*8)
+        .setMaxSets(Swap_chain::MAX_FRAMES_IN_FLIGHT * 64 * 2)
+        .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Swap_chain::MAX_FRAMES_IN_FLIGHT * 64)
+        .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Swap_chain::MAX_FRAMES_IN_FLIGHT*64)
         .build();
 
-    loadGameObjects(); 
+    objectManager.startLoadModel(*globalPool); 
+    createRenderSystems();
 
     frameTimeVector = std::vector<float>(300);
 }
 
-App::~App() { globalPool = nullptr;  }
+App::~App() {
+    globalPool = nullptr; 
+}
 
 void App::run()
 {
-    std::vector<std::unique_ptr<Buffer>> uboBuffers(Swap_chain::MAX_FRAMES_IN_FLIGHT);
+    // ui
+    BasicUI imgui{ device, window.getGLFWwindow(), renderer.getSwapChainRenderPass() };
+
+    TextOverlay textOverlay(device, renderer.getSwapChainRenderPass());
+    textOverlay.prepareResources(*globalPool);
+
+    // user inputs
+    KeyboardMovementController cameraController{};
+
+    // UBO
+    GlobalUbo ubo{};
+    SpotLightUbo spotLightUbo{};
+    
+    // start timer
+    auto currentTime = std::chrono::high_resolution_clock::now();
+
+    int frame = 0;
+	while (!window.shouldClose())
+	{
+		glfwPollEvents();
+
+        // add loaded async model to gameObjectmap 
+        objectManager.pushModel(*globalPool);
+
+        // calculate frame time
+        auto newTime = std::chrono::high_resolution_clock::now();
+        float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
+        currentTime = newTime;
+
+        {
+            // show fps count on screen
+            getFrameRate(frameTime);
+
+            std::stringstream ss("");
+            ss << std::fixed << std::setprecision(2) << frameTimeSum << " fps";
+
+            textOverlay.beginTextUpdate();
+            textOverlay.addText(ss.str(), 10, 10, TextOverlay::alignLeft, renderer.getWidth(), renderer.getHeight());
+            textOverlay.endTextUpdate();
+        }
+        
+        //// move camera on event ////
+        {
+            if (!imgui.isWindowSelected)
+                cameraController.moveInPlaneXZ(window.getGLFWwindow(), frameTime, objectManager.get(objectManager.mainCamera));
+            dynamic_cast<GameObjectCamera*>(objectManager.get(objectManager.mainCamera))->updateCameraView();
+        }
+
+        /////// start frame ///////
+        if (!renderer.aquireNextImage()) continue;
+        
+        int frameIndex = renderer.getFrameIndex();
+
+        /////// update objects ///////
+
+        // update camera
+        {
+            auto* camObj = dynamic_cast<GameObjectCamera*>(objectManager.get(objectManager.mainCamera));
+            if (camObj->camera->aspectRatio != renderer.getAspectRatio()) {
+                camObj->camera->setPerspectiveProjection(renderer.getAspectRatio());
+            }
+
+            ubo.projection = camObj->camera->getProjection();
+            ubo.view = camObj->camera->getView(); 
+            ubo.inverseView = camObj->camera->getInverseView();
+        }
+
+        // update pointLight 
+        {
+            std::vector<GameObjectPointLight*> pointLigths = objectManager.getByType<GameObjectPointLight>();
+            uint16_t i = 0;
+            for (auto lightObj : pointLigths) {
+                if (lightObj->transform.color.w)
+                    ubo.pointLights[i++] = PointLight{ glm::vec4(lightObj->transform.translation, lightObj->transform.scale.x), lightObj->transform.color };
+                if (i >= MAX_LIGHT) break;
+            }
+            ubo.numLights = i;
+        }
+
+        // update spotLight
+        {
+            uint16_t i = 0; 
+            std::vector<GameObjectSpotLight*> spotLigths = objectManager.getByType<GameObjectSpotLight>();
+            for (auto lightObj : spotLigths) {
+                if (lightObj->transform.color.w != 0)
+                    spotLightUbo.spotLight[i++] = lightObj->getSpotLightInfo(true);
+                if (i >= DepthSwapChain::MAX_DEPTH_RENDER_COUNT) break;
+            }
+            spotLightUbo.numLights = i;
+
+            shadowUboBuffer[frameIndex]->writeToBuffer(&spotLightUbo);
+            shadowUboBuffer[frameIndex]->flush();
+        }
+
+        uboBuffers[frameIndex]->writeToBuffer(&ubo); 
+        uboBuffers[frameIndex]->flush(); 
+
+        FrameInfo frameInfo{
+            frameIndex,
+            frameTime,
+            spotLightUbo.numLights,
+            objectManager.get(objectManager.mainCamera)->transform.translation,
+            objectManager.getByType<GameObjectModel>()
+        };
+
+        /////// render frame ///////
+        {
+            std::vector<VkDescriptorSet> descriptorSets{ globalDescriptorSet[frameIndex], shadowDescriptorSet[renderer.getDepthIndex()]};
+
+            std::lock_guard<std::mutex> lock(device.getGraphicMutex());
+
+            vkQueueWaitIdle(device.presentQueue());
+            if (frame == 0) {
+                renderer.renderDepthImage(frameInfo, { depthRenderSystemGltf, depthRenderSystem }, descriptorSets);
+            }
+
+            if (auto commandBuffer = renderer.beginFrame()) {
+                 
+                // render
+                renderer.beginSwapChainRenderPass(commandBuffer); 
+                 
+                gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo, descriptorSets); 
+                objRenderSystem->renderGameObjects(commandBuffer, frameInfo, descriptorSets); 
+
+                textOverlay.renderText(commandBuffer, frameInfo); 
+
+                imgui.drawUI(commandBuffer, &objectManager);
+
+                renderer.endSwapChainRenderPass(commandBuffer);
+                renderer.endFrame();
+            }
+        }
+
+        frame = (frame + 1) % 100;
+        
+	}
+
+    vkQueueWaitIdle(device.presentQueue());
+}
+ 
+ 
+void App::createRenderSystems()
+{
+
+    /// global buffer
+    uboBuffers.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
     for (int i = 0; i < uboBuffers.size(); i++)
     {
         uboBuffers[i] = std::make_unique<Buffer>(
@@ -62,164 +208,71 @@ void App::run()
         uboBuffers[i]->map();
     }
 
-    auto globalSetLayout = DescriptorSetLayout::Builder(device).addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS).build();
+    auto globalSetLayout = DescriptorSetLayout::Builder(device)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+        .build();
 
-    std::vector<VkDescriptorSet> globalDescriptorSet(Swap_chain::MAX_FRAMES_IN_FLIGHT);
+    globalDescriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
     for (int i = 0; i < globalDescriptorSet.size() && i < 2; i++)
     {
         auto bufferInfo = uboBuffers[i]->descriptorInfo();
 
         DescriptorWriter(*globalSetLayout, *globalPool)
             .writeBuffer(0, &bufferInfo)
-            .build(globalDescriptorSet[i]);
-    }
+            .build(globalDescriptorSet[i]); 
+    } 
 
-    for (auto& kv : gameObjects)
+    //// shadow buffer
+    shadowUboBuffer.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT); 
+    for (int i = 0; i < shadowUboBuffer.size(); i++)
     {
-        auto& obj = kv.second;
-        if (obj.model == nullptr) continue;
-        obj.createDescriptorSet(*globalPool, device);
+        shadowUboBuffer[i] = std::make_unique<Buffer>( 
+            device, 
+            sizeof(SpotLightUbo),
+            1,
+            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+            device.properties.limits.minUniformBufferOffsetAlignment 
+        ); 
+
+        shadowUboBuffer[i]->map(); 
+    } 
+     
+    auto shadowSetLayout = DescriptorSetLayout::Builder(device)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS) 
+        .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, DepthSwapChain::MAX_DEPTH_RENDER_COUNT)
+        .build();
+
+    shadowDescriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
+    for (int i = 0; i < shadowDescriptorSet.size() && i < 2; i++)
+    {
+        auto bufferInfo = shadowUboBuffer[i]->descriptorInfo();
+        auto depthInfo = renderer.getShadowImageInfo(i);
+
+        DescriptorWriter(*shadowSetLayout, *globalPool)
+            .writeBuffer(0, &bufferInfo)
+            .writeImage(1, depthInfo, DepthSwapChain::MAX_DEPTH_RENDER_COUNT)
+            .build(shadowDescriptorSet[i]); 
     }
 
-    PointLightSystem pointLightSystem{ device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
-	RenderSystem renderSystem{ device, renderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
 
-    TextOverlay textOverlay{ device, renderer.getSwapChainRenderPass() };
-    textOverlay.prepareResources(*globalPool);
+    /// render systems
 
+    gltfRenderSystem = GlobalRenderSystem::create<GlTFModel::ModelGltf>(
+        device, renderer.getSwapChainRenderPass(), { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() },
+        "GlTFshader.vert.spv", "GlTFshader.frag.spv");
 
-    // camera setting
-    Camera camera{};
-    auto viewerObject = GameObject::createGameObject(device);
-    viewerObject.transform.translation = { 2.0f, -1.0f, 2.5f };
-    //viewerObject.transform.rotation.y = 180;
+    objRenderSystem = GlobalRenderSystem::create<Model>(
+        device, renderer.getSwapChainRenderPass(), { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() },
+        "simple_shader.vert.spv", "simple_shader.frag.spv");
 
-    float aspec = renderer.getAspectRatio();
-    camera.setPerspectiveProjection(glm::radians(50.f), aspec, .1f, 100.0f);
+    depthRenderSystem = GlobalRenderSystem::create<Model>(
+        device, renderer.getDepthRenderPass(), { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() },
+        "shadowmap.vert.spv");
 
-    // user inputs
-    KeyboardMovementController cameraController{};
-
-    auto currentTime = std::chrono::high_resolution_clock::now();
-
-    int frame = 0;
-	while (!window.shouldClose())
-	{
-		glfwPollEvents();
-
-
-        // calculate frame time
-        auto newTime = std::chrono::high_resolution_clock::now();
-        float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
-        currentTime = newTime;
-
-        // show fps count on screen
-        getFrameRate(frameTime);
-
-        std::stringstream ss("");
-        ss << std::fixed << std::setprecision(2) << frameTimeSum << " fps";
-
-        textOverlay.beginTextUpdate();
-        textOverlay.addText(ss.str(), 10, 10, TextOverlay::alignLeft, renderer.getWidth(), renderer.getHeight());
-        textOverlay.endTextUpdate();
-
-        // move camera on event 
-        cameraController.moveInPlaneXZ(window.getGLFWwindow(), frameTime, viewerObject);
-        camera.setViewYXZ(viewerObject.transform.translation, viewerObject.transform.rotation);
-
-        
-
-		if (auto commandBuffer = renderer.beginFrame()) {
-            int frameIndex = renderer.getFrameIndex();
-
-            FrameInfo frameInfo{
-                frameIndex,
-                frameTime,
-                commandBuffer,
-                camera,
-                globalDescriptorSet,
-                gameObjects
-            };
-
-            
-            // update
-            GlobalUbo ubo{};
-            ubo.projection = camera.getProjection();
-            ubo.view = camera.getView();
-            ubo.inverseView = camera.getInverseView();
-
-            pointLightSystem.update(frameInfo, ubo, frame);
-            uboBuffers[frameIndex]->writeToBuffer(&ubo);
-            uboBuffers[frameIndex]->flush();
-
-            // render
-			renderer.beginSwapChainRenderPass(commandBuffer);
-
-            renderSystem.renderGameObjects(frameInfo);
-            pointLightSystem.render(frameInfo);
-            textOverlay.renderText(frameInfo);
-
-            
-            renderer.endSwapChainRenderPass(commandBuffer);
-            renderer.endFrame();
-		}
-
-        //frame = (frame + 1) % 36000; 
-	}
-
-	vkDeviceWaitIdle(device.device());
-}
-
-void App::loadGameObjects() {
-    
-    std::shared_ptr<Model> model_city = Model::createModelFromFile(device, "model/viking_room.obj.txt", "textures/viking_room.png");
-    auto Lowpoly_City = GameObject::createGameObject(device);
-    Lowpoly_City.transform.rotation.x = pi<float> / 2;
-    Lowpoly_City.transform.rotation.y = pi<float> ;
-    Lowpoly_City.transform.translation = { 7, 0, 7 };
-    Lowpoly_City.model = model_city;
-    gameObjects.emplace(Lowpoly_City.getId(), std::move(Lowpoly_City));
-
-
-    std::shared_ptr<Model> model_city1 = Model::createModelFromFile(device, "model/viking_room.obj.txt", "textures/Palette.jpg");
-    auto Lowpoly_City1= GameObject::createGameObject(device);
-    Lowpoly_City1.transform.rotation.x = pi<float> / 2;
-    Lowpoly_City1.model = model_city1;
-    Lowpoly_City1.transform.translation.z = 2;
-    gameObjects.emplace(Lowpoly_City1.getId(), std::move(Lowpoly_City1));
-
-
-    /*std::shared_ptr<Model> cube = Model::createModelFromFile(device, "models/cube.obj", "textures/emptyTexture.jpg");
-    auto cube1 = GameObject::createGameObject(device);
-    cube1.transform.rotation.x = pi<float> / 2;
-    cube1.model = cube;
-    cube1.transform.scale = { 0.5f, 0.5f, 0.5f };
-
-    cube1.transform.translation = { 2, -0.4f, 6 };
-    gameObjects.emplace(cube1.getId(), std::move(cube1));*/
-
-    std::shared_ptr<Model> plane = createPlane(device, 10, 10, { 0, 0, 0 });
-
-    auto plane1 = GameObject::createGameObject(device);
-    plane1.model = plane;
-    plane1.transform.translation.y = 0.1f;
-    gameObjects.emplace(plane1.getId(), std::move(plane1));
-
-    std::vector<glm::vec3> lightColors{
-      {1.f, .1f, .1f},
-      {.1f, 1.f, .1f},
-      {1.f, 1.f, .1f},
-      {.1f, 1.f, 1.f},
-      {.1f, .1f, 1.f},
-      {1.f, 1.f, 1.f}
-    };
-
-    for (int i = 0; i < lightColors.size(); i++) {
-        auto pointLight = GameObject::makePointLight(device, 1.f, 0.05f, lightColors[i]);
-        auto rotateLight = glm::rotate(glm::mat4(1.f), (i * glm::two_pi<float>()) / lightColors.size(), { 0.f, -1.0f, 0.f });
-        pointLight.transform.translation = glm::vec3(rotateLight * glm::vec4(-1.f, -1.f, -1.f, 4.f)) + glm::vec3{ 7, 0, 7 };
-        gameObjects.emplace(pointLight.getId(), std::move(pointLight));
-    }
+    depthRenderSystemGltf = GlobalRenderSystem::create<GlTFModel::ModelGltf>(
+        device, renderer.getDepthRenderPass(), { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() },
+        "shadowmap.vert.spv");
 }
 
 void App::getFrameRate(float lastFrameTime)
@@ -229,5 +282,5 @@ void App::getFrameRate(float lastFrameTime)
     frameTimeSum -= frameTimeVector[0];
 
     frameTimeVector.push_back(v);
-    frameTimeVector.erase(frameTimeVector.begin());
+    frameTimeVector.erase(frameTimeVector.begin()); 
 }
