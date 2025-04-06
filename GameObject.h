@@ -80,14 +80,11 @@ public:
 	void setName(std::string newName) { name = newName; }
 	std::string getName() const { return name; }
 
-	//std::vector<id_t> getChildren() const { return children; } 
-	//void addChild(id_t child) { children.push_back(child); } 
-	//void removeChild(id_t child); 
-
 	void setParent(GameObject* parent) { parentObject = parent; }
 	void setChild(GameObject* child) { assert(this != child); child->setParent(this); } 
 
 	glm::mat4 getTransformMat();
+	glm::mat3 getNormalMat();
 	
 protected:
 

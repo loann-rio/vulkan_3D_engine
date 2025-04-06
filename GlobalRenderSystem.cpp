@@ -132,7 +132,7 @@ void GlobalRenderSystem::renderModel(VkCommandBuffer& commandBuffer, FrameInfo& 
 
 	SimplePushConstantData push{};
 	push.modelMatrix = obj->getTransformMat(); //transform.mat4(); 
-	push.normalMatrix = obj->transform.normalMatrix();
+	push.normalMatrix = obj->getNormalMat();
 
 	vkCmdPushConstants(
 		commandBuffer,

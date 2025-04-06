@@ -70,6 +70,13 @@ glm::mat4 GameObject::getTransformMat()
     return transform.mat4(); 
 }
 
+glm::mat3 GameObject::getNormalMat()
+{
+    if (parentObject != nullptr) 
+        return parentObject->getNormalMat() * transform.normalMatrix();
+    return transform.normalMatrix();
+}
+
 void GameObjectModel::setModel(ModelVariant newModel)
 {
     model = std::move(newModel);
