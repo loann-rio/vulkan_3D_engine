@@ -174,11 +174,11 @@ void App::run()
 
                 textOverlay.renderText(commandBuffer, frameInfo); 
 
-                imgui.drawUI(commandBuffer, &objectManager);
+                //imgui.drawUI(commandBuffer, &objectManager);
 
-                renderer.endSwapChainRenderPass(commandBuffer);
+                renderer.endSwapChainRenderPass(commandBuffer); 
                 renderer.endFrame();
-            }
+            } 
         }
 
         frame = (frame + 1) % 1;

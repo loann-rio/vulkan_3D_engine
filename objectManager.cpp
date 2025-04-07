@@ -8,7 +8,7 @@ void ObjectManager::startLoadModel(DescriptorPool& pool)
 {
 
     auto cameraObject = GameObjectFactory::createGameObject<GameObjectCamera>(device, glm::radians(50.f), 1.f , .1f, 100.f);
-    cameraObject->transform.translation = { 2.0f, -1.0f, 2.5f };
+    cameraObject->transform.translation = { -9.0f, -13.0f, -6.5f };
     cameraObject->transform.rotation.y = pi<float> * 1 / 3;
     cameraObject->setName("mainCamera");
     pushGameObject(std::move(cameraObject)); 
@@ -33,16 +33,13 @@ void ObjectManager::startLoadModel(DescriptorPool& pool)
     std::random_device rd;
     std::mt19937 gen(rd()); 
 
-    std::uniform_real_distribution<float> dis(0, 100);
+    std::uniform_real_distribution<float> dis(0, 1000);
 
-    for (int i = 0; i < 10000; i++) {
+    for (int i = 0; i < 100000; i++) {
         instances.push_back({ {dis(gen), -dis(gen), dis(gen)}, {pi<float> / 2, pi<float>, 0}, {1, 1, 1}});
     }
 
     obj->setMultipleInstances(instances);
-
-
-     
 }
 
 void ObjectManager::pushGameObject(std::unique_ptr<GameObject> gameObject)
