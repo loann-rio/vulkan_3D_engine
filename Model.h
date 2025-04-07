@@ -19,15 +19,21 @@ class Model
 {
 public:
 
+	struct Instance {
+		glm::vec3 position;
+		glm::vec3 rotation;
+		glm::vec3 scale;
+	};
+
 	struct Vertex {
 		glm::vec3 position{};
 		glm::vec3 color{};
 		glm::vec3 normal{};
 		glm::vec2 uv{};
 
-		static std::vector<VkVertexInputBindingDescription> getBindingDescriptions();
-		static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
-		static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptionsShadow();
+		static std::vector<VkVertexInputBindingDescription> getBindingDescriptions(bool hasMutipleInstances);
+		static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions(bool hasMutipleInstances);
+		static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptionsShadow(bool hasMutipleInstances);
 
 		bool operator==(const Vertex& other) const {
 			return position == other.position && color == other.color && uv == other.uv;
@@ -49,8 +55,8 @@ public:
 
 	static std::unique_ptr<Model> createModelFromFile(Device &device, const std::string &filePath, const char* filePathTexture);
 
-	void bind(VkCommandBuffer& commandBuffer);
-	void draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout);
+	void bind(VkCommandBuffer& commandBuffer, Buffer* instancesBuffer);
+	void draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout, uint32_t instanceCount);
 
 	bool hasTexture = false;
 	std::unique_ptr<Texture> texture;

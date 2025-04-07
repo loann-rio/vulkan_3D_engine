@@ -83,6 +83,39 @@ void GameObjectModel::setModel(ModelVariant newModel)
     hasModel = true;
 }
 
+void GameObjectModel::setMultipleInstances(std::vector<Model::Instance> instances)
+{
+
+    VkDeviceSize bufferSize = sizeof(Model::Instance) * instances.size();
+
+    uint32_t instanceSize = sizeof(Model::Instance);
+
+    instanceCount = static_cast<uint32_t>(instances.size());
+
+    Buffer stagingBuffer{ 
+        device, 
+        instanceSize, 
+        instanceCount, 
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT 
+    };
+
+    stagingBuffer.map(); 
+    stagingBuffer.writeToBuffer((void*)instances.data()); 
+
+    instancesBuffer = std::make_unique<Buffer>(  
+        device, 
+        instanceSize, 
+        instanceCount,
+        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT 
+    );
+
+    device.copyBuffer(stagingBuffer.getBuffer(), instancesBuffer->getBuffer(), bufferSize); 
+
+    hasMultipleInstances = true; 
+}
+
 void GameObjectModel::createDescriptorSet(DescriptorPool& pool) const
 {
     if (!hasModel) return;
@@ -98,7 +131,7 @@ std::vector<VkDescriptorSet> GameObjectModel::getDescriptorSets() const
 {
     return std::visit([](const auto& modelInstance) -> std::vector<VkDescriptorSet> {
         if (modelInstance) {
-            return modelInstance->getDescriptorSets();
+            return modelInstance->getDescriptorSets(); 
         }
         return {};
         }, model);
@@ -106,9 +139,9 @@ std::vector<VkDescriptorSet> GameObjectModel::getDescriptorSets() const
 
 void GameObjectModel::bindModel(VkCommandBuffer& commandBuffer) const
 {
-    std::visit([&](const auto& modelInstance) {
+    std::visit([&](const auto& modelInstance) {  
         if (modelInstance) {
-            modelInstance->bind(commandBuffer);
+            modelInstance->bind(commandBuffer, instancesBuffer.get()); 
         }
         }, model);
 }
@@ -117,10 +150,10 @@ void GameObjectModel::drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout
 {
     std::visit([&](const auto& modelInstance) {
         if (modelInstance) {
-            modelInstance->draw(commandBuffer, GlTFPipelineLayout);
+            modelInstance->draw(commandBuffer, GlTFPipelineLayout, instanceCount);
         }
         }, model);
-}
+} 
 
 void GameObjectSpotLight::updateCameraView() { camera->setViewYXZ(transform.translation, transform.rotation); }
 
@@ -173,13 +206,6 @@ SpotLight GameObjectSpotLight::getSpotLightInfo(bool _updateCameraView)
         camera->getProjection() * camera->getView() 
     }; 
 }
-
-//void GameObject::removeChild(id_t child)
-//{
-//    std::vector<id_t>::iterator position = std::find(children.begin(), children.end(), child);
-//    if (position != children.end()) 
-//        children.erase(position); 
-//}
 
 void GameObjectModel::debugUI()
 {

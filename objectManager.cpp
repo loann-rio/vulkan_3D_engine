@@ -2,6 +2,8 @@
 
 #include "preBuild.h"
 
+#include <random>
+
 void ObjectManager::startLoadModel(DescriptorPool& pool)
 {
 
@@ -11,17 +13,6 @@ void ObjectManager::startLoadModel(DescriptorPool& pool)
     cameraObject->setName("mainCamera");
     pushGameObject(std::move(cameraObject)); 
 
-    /*TransformComponent helmetTransform{};
-    helmetTransform.rotation = { 3 * pi<float> / 2, pi<float>, 0 };
-    helmetTransform.translation = { 8, -0.5, 9 };
-    helmetTransform.scale = { 0.5f, 0.5f, 0.5f };
-    loadObjectAsync(device, "model/2.0/damagedhelmet/gltf/damagedhelmet.gltf", helmetTransform);*/
-
-    TransformComponent vikingRoomTransform{};
-    vikingRoomTransform.rotation = { pi<float> / 2, pi<float>, 0 };
-    vikingRoomTransform.translation = { 7, 0, 7 };
-    loadObjectAsyncObj(device, "model/viking_room.obj", "textures/viking_room.png", vikingRoomTransform, "viking");
-
     std::shared_ptr<Model> plane = createPlane(device, 10, 10, { 0, 0, 0 });
     auto plane1 = GameObjectFactory::createGameObject<GameObjectModel>(device);
     plane1->setModel(plane);
@@ -29,44 +20,28 @@ void ObjectManager::startLoadModel(DescriptorPool& pool)
     plane1->createDescriptorSet(pool);
     pushGameObject(std::move(plane1));
 
-    std::shared_ptr<Model> planeModel = createPlane(device, 2, 10, { 0, 0, 0 }, "textures/emptyTexture.jpg");
-    auto plane2 = GameObjectFactory::createGameObject<GameObjectModel>(device);
-    plane2->setModel(planeModel);
-    plane2->transform.rotation.z = -pi<float> / 2;
-    plane2->transform.translation.x = 10.f;
-    plane2->transform.translation.y = 1.f;
-    plane2->createDescriptorSet(pool);
-    plane2->setChild(get("viking"));
-    plane2->setName("plane");
-    pushGameObject(std::move(plane2)); 
+    TransformComponent vikingRoomTransform{};
+    //vikingRoomTransform.rotation = { pi<float> / 2, pi<float>, 0 };
+    //vikingRoomTransform.translation = { 7, 0, 7 };
+    vikingRoomTransform.scale = { 0.1, 0.1, 0.1 };
+    loadObjectAsyncObj(device, "model/viking_room.obj", "textures/viking_room.png", vikingRoomTransform, "viking");
 
-    auto plane3 = GameObjectFactory::createGameObject<GameObjectModel>(device);
-    plane3->setModel(planeModel);
-    plane3->transform.rotation.x = pi<float> / 2;
-    plane3->transform.translation.z = 10.f;
-    plane3->transform.translation.y = 1.f;
-    plane3->createDescriptorSet(pool);
-    pushGameObject(std::move(plane3));
+    auto* obj = dynamic_cast<GameObjectModel*>(get("viking"));
 
-    auto spotLight1 = GameObjectFactory::createGameObject<GameObjectSpotLight>(device, glm::radians(50.f), 1.f, .1f, 100.f); 
-    spotLight1->transform.translation = { -4.0f, -1.0f, 5.5f }; 
-    spotLight1->transform.rotation.y = pi<float> *2 / 5; 
-    spotLight1->transform.color = { 1.0, 1.0, 1.0, .7 }; 
-    spotLight1->setName("spotLight1");
+    std::vector<Model::Instance> instances{ {} };
 
-    auto spotLight2 = GameObjectFactory::createGameObject<GameObjectSpotLight>(device, glm::radians(50.f), 1.f, .1f, 100.f);
-    spotLight2->transform.translation = { 1.0f, -2.0f, 2.5f }; 
-    spotLight2->transform.rotation.y = pi<float> *2 / 5; 
-    spotLight2->transform.color = { 0.0, 1.0, 0.0, .7 }; 
-    spotLight2->setName("spotLight2");
+    std::random_device rd;
+    std::mt19937 gen(rd()); 
 
-    pushGameObject(std::move(spotLight1));
-    pushGameObject(std::move(spotLight2)); 
+    std::uniform_real_distribution<float> dis(0, 100);
 
-    auto pointLight = GameObjectFactory::createGameObject<GameObjectPointLight>(device, 3, 3, glm::vec3{ 1.f, 0.f, 0.f });
-    pointLight->setName("pointLight");
+    for (int i = 0; i < 10000; i++) {
+        instances.push_back({ {dis(gen), -dis(gen), dis(gen)}, {pi<float> / 2, pi<float>, 0}, {1, 1, 1}});
+    }
 
-    pushGameObject(std::move(pointLight)); 
+    obj->setMultipleInstances(instances);
+
+
      
 }
 

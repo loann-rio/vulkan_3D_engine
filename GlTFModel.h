@@ -233,9 +233,9 @@ class GlTFModel
 
 			glm::vec3 color{};
 
-			static std::vector<VkVertexInputBindingDescription> getBindingDescriptions();
-			static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
-			static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptionsShadow();
+			static std::vector<VkVertexInputBindingDescription> getBindingDescriptions(bool hasMutipleInstances);
+			static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions(bool hasMutipleInstances);
+			static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptionsShadow(bool hasMutipleInstances);
 		};
 
 		std::unique_ptr<Buffer> vertexBuffer;
@@ -294,9 +294,9 @@ class GlTFModel
 		static std::vector<VkDescriptorType> getDescriptorType();
 		std::vector<VkDescriptorSet>& getDescriptorSets() { return descriptorSet; }
 
-		void bind(VkCommandBuffer& commandBuffer);
+		void bind(VkCommandBuffer& commandBuffer, Buffer* instancesBuffer);
 		void drawNode(Node* node, VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout);
-		void draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout);
+		void draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout, uint32_t instanceCount);
 		
 		
 		void updateAnimation(uint32_t index, float time);

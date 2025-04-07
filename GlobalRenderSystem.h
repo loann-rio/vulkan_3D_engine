@@ -68,17 +68,17 @@ inline std::shared_ptr<GlobalRenderSystem> GlobalRenderSystem::create(Device& de
 {
 	std::vector<VkDescriptorType> bindings;
 	std::vector<VkVertexInputAttributeDescription> attributeDescription;
-	std::vector<VkVertexInputBindingDescription> bindingDescription = T::Vertex::getBindingDescriptions();
+	std::vector<VkVertexInputBindingDescription> bindingDescription = T::Vertex::getBindingDescriptions(false); 
 	ModelType modelType = static_cast<ModelType>(T::getModelType()); 
 
 	bool isShadow = (fragFilepath == "");
 	if (isShadow) {
 		bindings = std::vector<VkDescriptorType>();
-		attributeDescription = T::Vertex::getAttributeDescriptionsShadow();
+		attributeDescription = T::Vertex::getAttributeDescriptionsShadow(false);
 	}
 	else {
 		bindings = T::getDescriptorType();  
-		attributeDescription = T::Vertex::getAttributeDescriptions();
+		attributeDescription = T::Vertex::getAttributeDescriptions(false);
 	}
 
 	return std::make_shared<GlobalRenderSystem>(device, renderPass,

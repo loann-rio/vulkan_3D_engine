@@ -138,7 +138,6 @@ public:
 	friend class GameObjectFactory;
 };
 
-
 class GameObjectSpotLight : public GameObject {
 
 public:
@@ -168,8 +167,6 @@ private:
 	friend class GameObjectFactory;
 };
 
-
-
 class GameObjectModel : public GameObject 
 {
 public:
@@ -184,6 +181,8 @@ public:
 	void setModel(ModelVariant newModel); 
 	void setModelType(ModelType type) { modelType = type; } 
 
+	void setMultipleInstances(std::vector<Model::Instance> instances);
+
 	ModelType getModelType() const { return modelType; }
 
 	void createDescriptorSet(DescriptorPool& pool) const; 
@@ -197,14 +196,18 @@ public:
 
 	GameObjectType getType() const override { return GameObjectType::MODEL; }
 
-	GameObjectModel(id_t id, Device& device) : GameObject(id, device) {}
+	GameObjectModel(id_t id, Device& device) : GameObject(id, device) { setMultipleInstances({ {} }); }
 private:
 
 	bool hasModel = false;
 	ModelType modelType = UNDEFINED_MODEL;
 	ModelVariant model;
 
-	friend class GameObjectFactory;
+	bool hasMultipleInstances = false;
+	std::unique_ptr<Buffer> instancesBuffer = nullptr;
+	uint32_t instanceCount = 1;
+
+	friend class GameObjectFactory; 
 };
 
 

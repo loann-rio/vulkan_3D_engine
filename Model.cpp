@@ -51,24 +51,25 @@ std::unique_ptr<Model> Model::createModelFromFile(Device& device, const std::str
 	return nullptr;
 }
 
-void Model::bind(VkCommandBuffer& commandBuffer)
+void Model::bind(VkCommandBuffer& commandBuffer, Buffer* instancesBuffer)  
 {
-	VkBuffer buffers[] = { vertexBuffer->getBuffer() };
-	VkDeviceSize offsets[] = { 0 };
-	vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
-
+	
+	VkBuffer buffers[] = { vertexBuffer->getBuffer(), instancesBuffer->getBuffer() };
+	VkDeviceSize offsets[] = { 0, 0 }; 
+	vkCmdBindVertexBuffers(commandBuffer, 0, 2, buffers, offsets);
+	
 	if (hasIndexBuffer) {
 		vkCmdBindIndexBuffer(commandBuffer, indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 	}
 }
 
-void Model::draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout)
+void Model::draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout, uint32_t instanceCount = 1)
 {
 	if (hasIndexBuffer) {
-		vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
+		vkCmdDrawIndexed(commandBuffer, indexCount, instanceCount, 0, 0, 0);
 	}
 	else {
-		vkCmdDraw(commandBuffer, vertexCount, 1, 0, 0);
+		vkCmdDraw(commandBuffer, vertexCount, instanceCount, 0, 0);
 	}
 }
 
@@ -149,19 +150,22 @@ void Model::createIndexBuffers(const std::vector<uint32_t>& indices)
 	);
 
 	device.copyBuffer(stagingBuffer.getBuffer(), indexBuffer->getBuffer(), bufferSize);
-
 }
 
-std::vector<VkVertexInputBindingDescription> Model::Vertex::getBindingDescriptions()
+std::vector<VkVertexInputBindingDescription> Model::Vertex::getBindingDescriptions(bool hasMutipleInstances = false)
 {
 	std::vector<VkVertexInputBindingDescription> bindingDescription(1);
 	bindingDescription[0].binding = 0;
 	bindingDescription[0].stride = sizeof(Vertex);
 	bindingDescription[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+	//if (hasMutipleInstances)
+		bindingDescription.push_back({ 1, sizeof(Instance), VK_VERTEX_INPUT_RATE_INSTANCE });
+		
 	return bindingDescription;
 }
 
-std::vector<VkVertexInputAttributeDescription> Model::Vertex::getAttributeDescriptions()
+std::vector<VkVertexInputAttributeDescription> Model::Vertex::getAttributeDescriptions(bool hasMutipleInstances = false)
 {
 	std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
 
@@ -170,14 +174,24 @@ std::vector<VkVertexInputAttributeDescription> Model::Vertex::getAttributeDescri
 	attributeDescriptions.push_back({ 2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal) });
 	attributeDescriptions.push_back({ 3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv) });
 
+	attributeDescriptions.push_back({ 4, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Instance, position) });
+	attributeDescriptions.push_back({ 5, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Instance, rotation) });
+	attributeDescriptions.push_back({ 6, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Instance, scale) });
+
 	return attributeDescriptions;
 }
 
-std::vector<VkVertexInputAttributeDescription> Model::Vertex::getAttributeDescriptionsShadow()
+std::vector<VkVertexInputAttributeDescription> Model::Vertex::getAttributeDescriptionsShadow(bool hasMutipleInstances = false)
 {
 	std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
 
-	attributeDescriptions.push_back({ 0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0 }); // offsetof(Vertex, position) });
+	attributeDescriptions.push_back({ 0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position) });
+
+	/*if (hasMutipleInstances) {
+		attributeDescriptions.push_back({ 1, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Instance, position) }); 
+		attributeDescriptions.push_back({ 2, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Instance, rotation) }); 
+		attributeDescriptions.push_back({ 3, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Instance, scale) }); 
+	}*/
 	
 	return attributeDescriptions;
 }

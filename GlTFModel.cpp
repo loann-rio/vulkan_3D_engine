@@ -818,7 +818,7 @@ void GlTFModel::ModelGltf::drawNode(Node* node, VkCommandBuffer& commandBuffer, 
 
 }
 
-void GlTFModel::ModelGltf::draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout)
+void GlTFModel::ModelGltf::draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout, uint32_t instanceCount = 1)
 {
 	for (auto& node : nodes) {
 		drawNode(node, commandBuffer, GlTFPipelineLayout);
@@ -980,7 +980,7 @@ void GlTFModel::ModelGltf::createDescriptorSet(DescriptorPool& pool, Device& dev
 	
 }
 
-void GlTFModel::ModelGltf::bind(VkCommandBuffer& commandBuffer)
+void GlTFModel::ModelGltf::bind(VkCommandBuffer& commandBuffer, Buffer* instancesBuffer = nullptr)
 {
 	VkBuffer buffers[] = { vertexBuffer->getBuffer() };
 	VkDeviceSize offsets[] = { 0 };
@@ -1186,7 +1186,7 @@ std::unique_ptr<GlTFModel::ModelGltf> GlTFModel::createModelFromFile(Device& dev
 	return nullptr;
 }
 
-std::vector<VkVertexInputBindingDescription> GlTFModel::ModelGltf::Vertex::getBindingDescriptions()
+std::vector<VkVertexInputBindingDescription> GlTFModel::ModelGltf::Vertex::getBindingDescriptions(bool hasMutipleInstances)
 {
 	std::vector<VkVertexInputBindingDescription> bindingDescription(1);
 	bindingDescription[0].binding = 0;
@@ -1195,7 +1195,7 @@ std::vector<VkVertexInputBindingDescription> GlTFModel::ModelGltf::Vertex::getBi
 	return bindingDescription;
 }
 
-std::vector<VkVertexInputAttributeDescription> GlTFModel::ModelGltf::Vertex::getAttributeDescriptions()
+std::vector<VkVertexInputAttributeDescription> GlTFModel::ModelGltf::Vertex::getAttributeDescriptions(bool hasMutipleInstances)
 {
 	std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
 
@@ -1210,7 +1210,7 @@ std::vector<VkVertexInputAttributeDescription> GlTFModel::ModelGltf::Vertex::get
 	return attributeDescriptions;
 }
 
-std::vector<VkVertexInputAttributeDescription> GlTFModel::ModelGltf::Vertex::getAttributeDescriptionsShadow()
+std::vector<VkVertexInputAttributeDescription> GlTFModel::ModelGltf::Vertex::getAttributeDescriptionsShadow(bool hasMutipleInstances)
 {
 	std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
 
