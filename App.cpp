@@ -33,13 +33,14 @@ App::App() {
     globalPool = DescriptorPool::Builder(device)
         .setMaxSets(Swap_chain::MAX_FRAMES_IN_FLIGHT * 64 * 2)
         .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Swap_chain::MAX_FRAMES_IN_FLIGHT * 64)
+        .addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, Swap_chain::MAX_FRAMES_IN_FLIGHT * 64)
         .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Swap_chain::MAX_FRAMES_IN_FLIGHT*64)
         .build();
 
     objectManager.startLoadModel(*globalPool); 
     createRenderSystems();
 
-    frameTimeVector = std::vector<float>(300);
+    frameTimeVector = std::vector<float>(50);
 }
 
 App::~App() {
@@ -277,7 +278,7 @@ void App::createRenderSystems()
 
 void App::getFrameRate(float lastFrameTime)
 {
-    float v = 1 / (lastFrameTime * 100);
+    float v = 1 / (lastFrameTime * 50);
     frameTimeSum += v;
     frameTimeSum -= frameTimeVector[0];
 

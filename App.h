@@ -9,7 +9,7 @@
 #include "Renderer.h"
 #include "GlobalRenderSystem.h"
 #include "TextOverlay.h"
-#include "objectManager.h"
+#include "ObjectManager.h"
 
 #include <memory>
 #include <vector>

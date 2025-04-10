@@ -9,8 +9,50 @@ layout (location = 3) in vec2 inUV1;
 layout (location = 4) in vec4 inColor0;
 layout (location = 5) in vec4 inPosShadow[MAX_NUM_SPOT_LIGHT]; 
 
-
 layout( location = 0 ) out vec4 outColor;
+
+struct ShaderMaterial {
+	vec4 baseColorFactor;
+	vec4 emissiveFactor;
+	vec4 diffuseFactor;
+	vec4 specularFactor;
+	float workflow;
+	int baseColorTextureSet;
+	int physicalDescriptorTextureSet;
+	int normalTextureSet;	
+	int occlusionTextureSet;
+	int emissiveTextureSet;
+	float metallicFactor;	
+	float roughnessFactor;	
+	float alphaMask;	
+	float alphaMaskCutoff;
+	float emissiveStrength;
+};
+
+struct PBRInfo 
+{
+	float NdotL;                  // cos angle between normal and light direction
+	float NdotV;                  // cos angle between normal and view direction
+	float NdotH;                  // cos angle between normal and half vector
+	float LdotH;                  // cos angle between light direction and half vector
+	float VdotH;                  // cos angle between view direction and half vector
+	float perceptualRoughness;    // roughness value, as authored by the model creator (input to shader)
+	float metalness;              // metallic value at the surface
+	vec3 reflectance0;            // full reflectance color (normal incidence angle)
+	vec3 reflectance90;           // reflectance color at grazing angle
+	float alphaRoughness;         // roughness mapped to a more linear change in the roughness (proposed by [2])
+	vec3 diffuseColor;            // color contribution from diffuse lighting
+	vec3 specularColor;           // color contribution from specular lighting
+};
+
+
+const float M_PI = 3.141592653589793;
+const float c_MinRoughness = 0.04;
+
+const float PBR_WORKFLOW_METALLIC_ROUGHNESS = 0.0;
+const float PBR_WORKFLOW_SPECULAR_GLOSSINESS = 1.0;
+
+
 
 struct PointLight {
 	vec4 position;
@@ -55,6 +97,10 @@ layout(set = 2, binding = 3) uniform sampler2D emissiveMap;
 layout(set = 2, binding = 4) uniform sampler2D aoMap;
 layout(set = 2, binding = 5) uniform sampler2D normalMap;
 
+layout(std430, set = 2, binding = 6) buffer SSBO
+{
+   ShaderMaterial materials[ ]; 
+};
 
 
 vec4 compute_shadow_factor(vec4 light_space_pos, uint indexSpotLight, vec3 surfaceNormal)
@@ -88,11 +134,71 @@ vec4 compute_shadow_factor(vec4 light_space_pos, uint indexSpotLight, vec3 surfa
 	return cosAngOfIncidence * intencity / 9 ;
 }
 
+vec3 getNormal(ShaderMaterial material)
+{
+	// Perturb normal, see http://www.thetenthplanet.de/archives/1180
+	vec3 tangentNormal = texture(normalMap, material.normalTextureSet == 0 ? inUV0 : inUV1).xyz * 2.0 - 1.0;
+
+	vec3 q1 = dFdx(inWorldPos);
+	vec3 q2 = dFdy(inWorldPos);
+	vec2 st1 = dFdx(inUV0);
+	vec2 st2 = dFdy(inUV0);
+
+	vec3 N = normalize(inNormal);
+	vec3 T = normalize(q1 * st2.t - q2 * st1.t);
+	vec3 B = -normalize(cross(N, T));
+	mat3 TBN = mat3(T, B, N);
+
+	return normalize(TBN * tangentNormal);
+}
+
+vec3 diffuse(PBRInfo pbrInputs)
+{
+	return pbrInputs.diffuseColor / M_PI;
+}
+
+vec3 specularReflection(PBRInfo pbrInputs)
+{
+	return pbrInputs.reflectance0 + (pbrInputs.reflectance90 - pbrInputs.reflectance0) * pow(clamp(1.0 - pbrInputs.VdotH, 0.0, 1.0), 5.0);
+}
+
+float geometricOcclusion(PBRInfo pbrInputs)
+{
+	float NdotL = pbrInputs.NdotL;
+	float NdotV = pbrInputs.NdotV;
+	float r = pbrInputs.alphaRoughness;
+
+	float attenuationL = 2.0 * NdotL / (NdotL + sqrt(r * r + (1.0 - r * r) * (NdotL * NdotL)));
+	float attenuationV = 2.0 * NdotV / (NdotV + sqrt(r * r + (1.0 - r * r) * (NdotV * NdotV)));
+	return attenuationL * attenuationV;
+}
+
+float microfacetDistribution(PBRInfo pbrInputs)
+{
+	float roughnessSq = pbrInputs.alphaRoughness * pbrInputs.alphaRoughness;
+	float f = (pbrInputs.NdotH * roughnessSq - pbrInputs.NdotH) * pbrInputs.NdotH + 1.0;
+	return roughnessSq / (M_PI * f * f);
+}
+
+// Gets metallic factor from specular glossiness workflow inputs 
+float convertMetallic(vec3 diffuse, vec3 specular, float maxSpecular) {
+	float perceivedDiffuse = sqrt(0.299 * diffuse.r * diffuse.r + 0.587 * diffuse.g * diffuse.g + 0.114 * diffuse.b * diffuse.b);
+	float perceivedSpecular = sqrt(0.299 * specular.r * specular.r + 0.587 * specular.g * specular.g + 0.114 * specular.b * specular.b);
+	if (perceivedSpecular < c_MinRoughness) {
+		return 0.0;
+	}
+	float a = c_MinRoughness;
+	float b = perceivedDiffuse * (1.0 - maxSpecular) / (1.0 - c_MinRoughness) + perceivedSpecular - 2.0 * c_MinRoughness;
+	float c = c_MinRoughness - perceivedSpecular;
+	float D = max(b * b - 4.0 * a * c, 0.0);
+	return clamp((-b + sqrt(D)) / (2.0 * a), 0.0, 1.0);
+}
+
 
 
 void main() {
 
-	vec3 surfaceNormal = normalize(inNormal);
+	/*vec3 surfaceNormal = normalize(inNormal);
 	vec3 directionToLight = normalize(ubo.globalLightDir.xyz);
 	float cosAngOfIncidence = max(dot(surfaceNormal, directionToLight), 0);
 	vec3 intencity = ubo.ambientLightColor.xyz * ubo.globalLightDir.w;
@@ -103,9 +209,21 @@ void main() {
 		spotLightLight += compute_shadow_factor(inPosShadow[indexSpotLight], indexSpotLight, surfaceNormal);
 	}
 
-	//vec4 color = vec4(1.0, 1.0, 1.0, 1.0);
-	vec4 color = (texture(colorMap, inUV0) * texture(aoMap, inUV0)) * (cosAngOfIncidence * ubo.globalLightDir.w + spotLightLight) + texture(emissiveMap, inUV0); 
+	vec4 color = inColor0;
+	//vec4 color = (texture(colorMap, inUV0) * texture(aoMap, inUV0)) * (cosAngOfIncidence * ubo.globalLightDir.w + spotLightLight) + texture(emissiveMap, inUV0); 
 
 	// sum colors
-	outColor =  color;
+	outColor =  color;*/
+
+	
+	ShaderMaterial material = materials[0]; 
+
+	float perceptualRoughness;
+	float metallic;
+	vec3 diffuseColor;
+	vec4 baseColor;
+
+	vec3 f0 = vec3(0.04);
+
+
 }

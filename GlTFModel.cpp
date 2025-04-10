@@ -304,7 +304,6 @@ void GlTFModel::ModelGltf::loadNode(Node* parent, const tinygltf::Node& node, ui
 	linearNodes.push_back(newNode);
 }
 
-
 void GlTFModel::ModelGltf::getNodeProps(const tinygltf::Node& node, const tinygltf::Model& model, size_t& vertexCount, size_t& indexCount)
 {
 	if (node.children.size() > 0) {
@@ -452,35 +451,37 @@ void GlTFModel::ModelGltf::loadTextureSamplers(tinygltf::Model& gltfModel)
 
 void GlTFModel::ModelGltf::loadMaterials(tinygltf::Model& gltfModel)
 {
-	Texture nullTexture = Texture{ device,  "textures/nullTexture.png" };
+	std::shared_ptr<Texture> nullTexture = std::make_shared<Texture>(device, "textures/nullTexture.png");
 
 	for (tinygltf::Material& mat : gltfModel.materials) {
-		Material material{};
-		material.doubleSided = mat.doubleSided;
+		Material material{}; 
+		material.doubleSided = mat.doubleSided; 
+		 
+		if (mat.values.find("roughnessFactor") != mat.values.end()) { 
+			material.roughnessFactor = static_cast<float>(mat.values["roughnessFactor"].Factor()); 
+		} 
+		if (mat.values.find("metallicFactor") != mat.values.end()) { 
+			material.metallicFactor = static_cast<float>(mat.values["metallicFactor"].Factor()); 
+		}
+		if (mat.values.find("baseColorFactor") != mat.values.end()) { 
+			material.baseColorFactor = glm::make_vec4(mat.values["baseColorFactor"].ColorFactor().data()); 
+		}
+
+		 
 		if (mat.values.find("baseColorTexture") != mat.values.end()) {
 			material.baseColorTexture = std::make_shared<TextureModel>(textures[mat.values["baseColorTexture"].TextureIndex()]);
 			material.texCoordSets.baseColor = mat.values["baseColorTexture"].TextureTexCoord();
 		}
 		else {
-			material.baseColorTexture = std::make_shared<TextureModel>( 1, 1, nullTexture );
+			material.baseColorTexture = std::make_shared<TextureModel>( 1, 1, nullTexture ); 
 		}
 
 		if (mat.values.find("metallicRoughnessTexture") != mat.values.end()) {
 			material.metallicRoughnessTexture = std::make_shared<TextureModel>(textures[mat.values["metallicRoughnessTexture"].TextureIndex()]);
-			material.texCoordSets.metallicRoughness = mat.values["metallicRoughnessTexture"].TextureTexCoord();
+			material.texCoordSets.metallicRoughness = mat.values["metallicRoughnessTexture"].TextureTexCoord(); 
 		}
 		else {
-			material.baseColorTexture = std::make_shared<TextureModel>( 1, 1, nullTexture );
-		}
-
-		if (mat.values.find("roughnessFactor") != mat.values.end()) {
-			material.roughnessFactor = static_cast<float>(mat.values["roughnessFactor"].Factor());
-		}
-		if (mat.values.find("metallicFactor") != mat.values.end()) {
-			material.metallicFactor = static_cast<float>(mat.values["metallicFactor"].Factor());
-		}
-		if (mat.values.find("baseColorFactor") != mat.values.end()) {
-			material.baseColorFactor = glm::make_vec4(mat.values["baseColorFactor"].ColorFactor().data());
+			material.metallicRoughnessTexture = std::make_shared<TextureModel>( 1, 1, nullTexture );
 		}
 
 		if (mat.additionalValues.find("normalTexture") != mat.additionalValues.end()) {
@@ -488,7 +489,7 @@ void GlTFModel::ModelGltf::loadMaterials(tinygltf::Model& gltfModel)
 			material.texCoordSets.normal = mat.additionalValues["normalTexture"].TextureTexCoord();
 		}
 		else {
-			material.baseColorTexture = std::make_shared<TextureModel>(1, 1, nullTexture );
+			material.normalTexture = std::make_shared<TextureModel>(1, 1, nullTexture );
 		}
 
 		if (mat.additionalValues.find("emissiveTexture") != mat.additionalValues.end()) {
@@ -496,7 +497,7 @@ void GlTFModel::ModelGltf::loadMaterials(tinygltf::Model& gltfModel)
 			material.texCoordSets.emissive = mat.additionalValues["emissiveTexture"].TextureTexCoord();
 		}
 		else {
-			material.baseColorTexture = std::make_shared<TextureModel>(1, 1, nullTexture );
+			material.emissiveTexture = std::make_shared<TextureModel>(1, 1, nullTexture );
 		}
 
 		if (mat.additionalValues.find("occlusionTexture") != mat.additionalValues.end()) {
@@ -504,7 +505,7 @@ void GlTFModel::ModelGltf::loadMaterials(tinygltf::Model& gltfModel)
 			material.texCoordSets.occlusion = mat.additionalValues["occlusionTexture"].TextureTexCoord();
 		}
 		else {
-			material.baseColorTexture = std::make_shared<TextureModel>(1, 1, nullTexture );
+			material.occlusionTexture = std::make_shared<TextureModel>(1, 1, nullTexture );
 		}
 
 		if (mat.additionalValues.find("alphaMode") != mat.additionalValues.end()) {
@@ -570,6 +571,7 @@ void GlTFModel::ModelGltf::loadMaterials(tinygltf::Model& gltfModel)
 		material.index = static_cast<uint32_t>(materials.size());
 		materials.push_back(material);
 	}
+
 	// Push a default material at the end of the list for meshes with no material assigned
 	materials.push_back(Material());
 	textures.resize(0);
@@ -745,7 +747,9 @@ bool GlTFModel::ModelGltf::loadFromFile(std::string filename, float scale)
 
 		loadTextureSamplers(gltfModel);
 		loadTextures(gltfModel, device);
+
 		loadMaterials(gltfModel);
+		createMaterialBuffer();
 
 		const tinygltf::Scene& scene = gltfModel.scenes[gltfModel.defaultScene > -1 ? gltfModel.defaultScene : 0];
 
@@ -767,7 +771,7 @@ bool GlTFModel::ModelGltf::loadFromFile(std::string filename, float scale)
 
 		/////// load animations
 		if (gltfModel.animations.size() > 0) {
-			loadAnimations(gltfModel);
+			//loadAnimations(gltfModel);
 		}
 
 		/////// load skins
@@ -941,7 +945,7 @@ std::vector<VkDescriptorType> GlTFModel::ModelGltf::getDescriptorType()
 	return {
 		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
+		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER 
 	};
 }
 
@@ -954,9 +958,10 @@ void GlTFModel::ModelGltf::createDescriptorSet(DescriptorPool& pool, Device& dev
 		.addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.addBinding(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.addBinding(5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+		.addBinding(6, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.build();
 
-	auto bufferInfo = nodes[0]->mesh->uniformBuffer->descriptorInfo(); 
+	//auto bufferInfo = nodes[0]->mesh->uniformBuffer->descriptorInfo(); 
 	
 	Material mat = materials[0];
 
@@ -966,8 +971,9 @@ void GlTFModel::ModelGltf::createDescriptorSet(DescriptorPool& pool, Device& dev
 	VkDescriptorImageInfo occlusionInfo = mat.occlusionTexture->texture->getImageInfo(); 
 	VkDescriptorImageInfo normalInfo = mat.normalTexture->texture->getImageInfo(); 
 
+	VkDescriptorBufferInfo materialBufferInfo = materialBuffer->descriptorInfo();
 
-	for (int i = 0; i < descriptorSet.size(); i++) 
+	for (int i = 0; i < descriptorSetTextures.size(); i++)
 	{
 		DescriptorWriter(*textureSetLayout, pool) 
 			.writeImage(1, &baseColorInfo)
@@ -975,9 +981,76 @@ void GlTFModel::ModelGltf::createDescriptorSet(DescriptorPool& pool, Device& dev
 			.writeImage(3, &emissiveInfo)
 			.writeImage(4, &occlusionInfo)
 			.writeImage(5, &normalInfo)
-			.build(descriptorSet[i]); 
+			.writeBuffer(6, &materialBufferInfo)
+			.build(descriptorSetTextures[i]); 
 	}
 	
+}
+
+void GlTFModel::ModelGltf::createMaterialBuffer()
+{
+	std::vector<ShaderMaterial> shaderMaterials{};
+	for (auto& material : materials) { 
+		ShaderMaterial shaderMaterial{};
+
+		shaderMaterial.emissiveFactor = material.emissiveFactor;
+		// To save space, availabilty and texture coordinate set are combined
+		// -1 = texture not used for this material, >= 0 texture used and index of texture coordinate set
+		shaderMaterial.colorTextureSet = material.baseColorTexture != nullptr ? material.texCoordSets.baseColor : -1;
+		shaderMaterial.normalTextureSet = material.normalTexture != nullptr ? material.texCoordSets.normal : -1;
+		shaderMaterial.occlusionTextureSet = material.occlusionTexture != nullptr ? material.texCoordSets.occlusion : -1;
+		shaderMaterial.emissiveTextureSet = material.emissiveTexture != nullptr ? material.texCoordSets.emissive : -1;
+		shaderMaterial.alphaMask = static_cast<float>(material.alphaMode == Material::ALPHAMODE_MASK);
+		shaderMaterial.alphaMaskCutoff = material.alphaCutoff;
+
+		shaderMaterial.emissiveStrength = material.emissiveStrength;
+
+		if (material.pbrWorkflows.metallicRoughness) {
+			// Metallic roughness workflow
+			shaderMaterial.workflow = 0;
+			shaderMaterial.baseColorFactor = material.baseColorFactor;
+			shaderMaterial.metallicFactor = material.metallicFactor;
+			shaderMaterial.roughnessFactor = material.roughnessFactor;
+			shaderMaterial.PhysicalDescriptorTextureSet = material.metallicRoughnessTexture != nullptr ? material.texCoordSets.metallicRoughness : -1;
+			shaderMaterial.colorTextureSet = material.baseColorTexture != nullptr ? material.texCoordSets.baseColor : -1;
+		}
+		else {
+			if (material.pbrWorkflows.specularGlossiness) {
+				// Specular glossiness workflow
+				shaderMaterial.workflow = 1;
+				shaderMaterial.PhysicalDescriptorTextureSet = material.extension.specularGlossinessTexture != nullptr ? material.texCoordSets.specularGlossiness : -1;
+				shaderMaterial.colorTextureSet = material.extension.diffuseTexture != nullptr ? material.texCoordSets.baseColor : -1;
+				shaderMaterial.diffuseFactor = material.extension.diffuseFactor;
+				shaderMaterial.specularFactor = glm::vec4(material.extension.specularFactor, 1.0f);
+			}
+		}
+
+		shaderMaterials.push_back(shaderMaterial);
+	}
+
+	uint32_t instanceSize = sizeof(ShaderMaterial);
+	VkDeviceSize bufferSize = shaderMaterials.size() * instanceSize;
+
+	Buffer stagingBuffer{
+		device,
+		instanceSize,
+		static_cast<uint32_t>(shaderMaterials.size()),
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+	};
+
+	stagingBuffer.map();
+	stagingBuffer.writeToBuffer((void*)shaderMaterials.data());  
+
+	materialBuffer = std::make_unique<Buffer>(
+		device,
+		instanceSize,
+		static_cast<uint32_t>(shaderMaterials.size()),
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+	);
+
+	device.copyBuffer(stagingBuffer.getBuffer(), materialBuffer->getBuffer(), bufferSize); 
 }
 
 void GlTFModel::ModelGltf::bind(VkCommandBuffer& commandBuffer, Buffer* instancesBuffer = nullptr)

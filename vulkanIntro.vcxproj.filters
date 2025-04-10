@@ -105,7 +105,7 @@
     <ClCompile Include="depthSwapChain.cpp">
       <Filter>Fichiers sources</Filter>
     </ClCompile>
-    <ClCompile Include="objectManager.cpp">
+    <ClCompile Include="ObjectManager.cpp">
       <Filter>Fichiers sources</Filter>
     </ClCompile>
     <ClCompile Include="BasicUI.cpp">
@@ -185,7 +185,7 @@
     <ClInclude Include="depthSwapChain.h">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
-    <ClInclude Include="objectManager.h">
+    <ClInclude Include="ObjectManager.h">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
     <ClInclude Include="BasicUI.h">

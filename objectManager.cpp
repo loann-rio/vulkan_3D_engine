@@ -1,4 +1,4 @@
-#include "objectManager.h"
+#include "ObjectManager.h"
 
 #include "preBuild.h"
 
@@ -20,26 +20,11 @@ void ObjectManager::startLoadModel(DescriptorPool& pool)
     plane1->createDescriptorSet(pool);
     pushGameObject(std::move(plane1));
 
-    TransformComponent vikingRoomTransform{};
-    //vikingRoomTransform.rotation = { pi<float> / 2, pi<float>, 0 };
-    //vikingRoomTransform.translation = { 7, 0, 7 };
-    vikingRoomTransform.scale = { 0.1, 0.1, 0.1 };
-    loadObjectAsyncObj(device, "model/viking_room.obj", "textures/viking_room.png", vikingRoomTransform, "viking");
-
-    auto* obj = dynamic_cast<GameObjectModel*>(get("viking"));
-
-    std::vector<Model::Instance> instances{ {} };
-
-    std::random_device rd;
-    std::mt19937 gen(rd()); 
-
-    std::uniform_real_distribution<float> dis(0, 1000);
-
-    for (int i = 0; i < 100000; i++) {
-        instances.push_back({ {dis(gen), -dis(gen), dis(gen)}, {pi<float> / 2, pi<float>, 0}, {1, 1, 1}});
-    }
-
-    obj->setMultipleInstances(instances);
+    TransformComponent gltfTransform{};
+    //gltfTransform.rotation = { pi<float> / 2, pi<float>, 0 };
+    gltfTransform.translation = { 7, 0, 7 };
+    //gltfTransform.scale = { 0.1, 0.1, 0.1 };
+    loadObjectAsync(device, "model\\2.0\\BoxAnimated\\glTF\\BoxAnimated.gltf", gltfTransform, "test gltf");
 }
 
 void ObjectManager::pushGameObject(std::unique_ptr<GameObject> gameObject)
@@ -54,7 +39,6 @@ void ObjectManager::pushGameObject(std::unique_ptr<GameObject> gameObject)
     if (!name.empty()) {
         gameObjectsByName[name] = gameObjects->at(id).get();
     }
-
     // Store in type-indexed list
     gameObjectsByType[type].push_back(gameObjects->at(id).get()); 
 }
@@ -76,14 +60,17 @@ void ObjectManager::loadObjectAsync(Device& device, const std::string& filePath,
     auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device); 
     gameObject->transform = transform; 
     gameObject->setName(name.empty() ? filePath : name); 
+    GameObject::id_t id = gameObject->getId(); 
 
-    futureGameObjects.push_back(std::async(std::launch::async, [filePath, &device]() { 
+    pushGameObject(std::move(gameObject));
+
+    futureGameObjects.push_back(std::async(std::launch::async, [filePath, &device, id]() {
         std::shared_ptr<GlTFModel::ModelGltf> model = GlTFModel::createModelFromFile(device, filePath);
-        return futureObject{ model, model ? GLTF_MODEL : UNDEFINED_MODEL}; 
+        return futureObject{ model, model ? GLTF_MODEL : UNDEFINED_MODEL, id };
         })
     );
 
-    pushGameObject(std::move(gameObject));
+    
 }
 
 void ObjectManager::loadObjectAsyncObj(Device& device, const std::string& filePath, const char* filePathTexture, TransformComponent transform, const std::string& name)
@@ -93,13 +80,15 @@ void ObjectManager::loadObjectAsyncObj(Device& device, const std::string& filePa
     gameObject->setName(name.empty() ? filePath : name); 
     GameObject::id_t id = gameObject->getId();
 
+    pushGameObject(std::move(gameObject)); 
+     
     futureGameObjects.push_back(std::async(std::launch::async, [filePath, filePathTexture, &device, id]() { 
         std::shared_ptr<Model> model = Model::createModelFromFile(device, filePath, filePathTexture);
         return futureObject{ model, model ? OBJ_MODEL : UNDEFINED_MODEL, id };
         })
     );
 
-    pushGameObject(std::move(gameObject)); 
+    
 }
 
 /// <summary>

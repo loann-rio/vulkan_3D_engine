@@ -59,7 +59,7 @@ class GlTFModel
 		std::shared_ptr<Texture> texture;
 
 		TextureModel() {}
-		TextureModel(uint32_t width, uint32_t height, Texture texture) : width{ width }, height{ height }, texture{ &texture } {}
+		TextureModel(uint32_t width, uint32_t height, std::shared_ptr<Texture> texture) : width{ width }, height{ height }, texture{ texture } {} 
 		void TextFromglTfImage(Device& device, tinygltf::Image& gltfimage, std::string path = "");
 	};
 
@@ -217,6 +217,24 @@ class GlTFModel
 		float end = std::numeric_limits<float>::min();
 	};
 
+	struct alignas(16) ShaderMaterial { 
+		glm::vec4 baseColorFactor; 
+		glm::vec4 emissiveFactor;
+		glm::vec4 diffuseFactor;
+		glm::vec4 specularFactor;
+		float workflow;
+		int colorTextureSet;
+		int PhysicalDescriptorTextureSet;
+		int normalTextureSet;
+		int occlusionTextureSet;
+		int emissiveTextureSet;
+		float metallicFactor;
+		float roughnessFactor;
+		float alphaMask;
+		float alphaMaskCutoff;
+		float emissiveStrength;
+	};
+
 	public:
 
 	struct ModelGltf {
@@ -238,6 +256,8 @@ class GlTFModel
 			static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptionsShadow(bool hasMutipleInstances);
 		};
 
+
+
 		std::unique_ptr<Buffer> vertexBuffer;
 		std::unique_ptr<Buffer> indexBuffer;
 
@@ -252,10 +272,13 @@ class GlTFModel
 		std::vector<TextureSampler> textureSamplers;
 
 		std::vector<Material> materials;
+		std::shared_ptr<Buffer> materialBuffer = nullptr; 
+
 		std::vector<Animation> animations;
 		std::vector<std::string> extensions; 
 
-		std::vector<VkDescriptorSet> descriptorSet{ Swap_chain::MAX_FRAMES_IN_FLIGHT };
+		std::vector<VkDescriptorSet> descriptorSetTextures{ Swap_chain::MAX_FRAMES_IN_FLIGHT };
+		//std::vector<VkDescriptorSet> descriptorSetTextures{ Swap_chain::MAX_FRAMES_IN_FLIGHT }; 
 
 		int32_t animationIndex = 0;
 		float animationTimer = 0.0f;
@@ -292,7 +315,7 @@ class GlTFModel
 		void getNodeProps(const tinygltf::Node& node, const tinygltf::Model& model, size_t& vertexCount, size_t& indexCount);
 		void getSceneDimensions();
 		static std::vector<VkDescriptorType> getDescriptorType();
-		std::vector<VkDescriptorSet>& getDescriptorSets() { return descriptorSet; }
+		std::vector<VkDescriptorSet>& getDescriptorSets() { return descriptorSetTextures; } 
 
 		void bind(VkCommandBuffer& commandBuffer, Buffer* instancesBuffer);
 		void drawNode(Node* node, VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout);
@@ -304,6 +327,7 @@ class GlTFModel
 		void createVertexBuffers(LoaderInfo loaderInfo);
 		void createIndexBuffers(LoaderInfo loaderInfo);
 		void createDescriptorSet(DescriptorPool& pool, Device& device);
+		void createMaterialBuffer();
 
 		void calculateBoundingBox(Node* node, Node* parent);
 
