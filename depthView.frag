@@ -20,9 +20,13 @@ layout(set = 0, binding = 0) uniform GlobalUbo {
 	mat4 invView;
 
 	vec4 ambientLightColor;
-	PointLight pointLight[10];
 	vec4 globalLightDir;
+
+	vec3 camPos;
+
 	int numLights; 
+
+	PointLight pointLight[10]; 
 } ubo;
 
 // Define the texture sampler

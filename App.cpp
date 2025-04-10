@@ -114,6 +114,7 @@ void App::run()
             ubo.projection = camObj->camera->getProjection();
             ubo.view = camObj->camera->getView(); 
             ubo.inverseView = camObj->camera->getInverseView();
+            ubo.lightPos = camObj->transform.translation;
         }
 
         // update pointLight 
