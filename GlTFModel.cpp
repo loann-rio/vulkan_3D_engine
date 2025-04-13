@@ -8,6 +8,11 @@
 
 #include "GlTFModel.h"
 
+struct GltfPushConstant {
+	int indexMaterial{ 0 }; 
+};
+
+
 bool loadImageDataFunc(tinygltf::Image* image, const int imageIndex, std::string* error, std::string* warning, int req_width, int req_height, const unsigned char* bytes, int size, void* userData)
 {
 	// KTX files will be handled by our own code
@@ -276,7 +281,7 @@ void GlTFModel::ModelGltf::loadNode(Node* parent, const tinygltf::Node& node, ui
 			}
 			
 			
-			Primitive* newPrimitive = new Primitive(indexStart, indexCount, vertexCount, primitive.material > -1 ? materials[primitive.material] : materials.back());
+			Primitive* newPrimitive = new Primitive(indexStart, indexCount, vertexCount, primitive.material > -1 ? primitive.material : 0);
 			newPrimitive->setBoundingBox(posMin, posMax);
 			newMesh->primitives.push_back(newPrimitive);
 		}
@@ -403,6 +408,7 @@ void GlTFModel::ModelGltf::loadTextures(tinygltf::Model& gltfModel, Device& devi
 {
 	for (tinygltf::Texture& tex : gltfModel.textures) 
 	{
+		std::cout << "hello texture \n";
 		int source = tex.source;
 		// If this texture uses the KHR_texture_basisu, we need to get the source index from the extension structure
 		if (tex.extensions.find("KHR_texture_basisu") != tex.extensions.end()) 
@@ -432,6 +438,13 @@ void GlTFModel::ModelGltf::loadTextures(tinygltf::Model& gltfModel, Device& devi
 		texture.TextFromglTfImage(device, image);
 		textures.push_back(texture);
 	}
+
+	if (!textures.size()) {
+		std::shared_ptr<Texture> nullTexture = std::make_shared<Texture>(device, "textures/nullTexture.png");
+		TextureModel texture;
+		texture.texture = nullTexture;
+		textures.push_back(texture); 
+	}
 }
 
 void GlTFModel::ModelGltf::loadTextureSamplers(tinygltf::Model& gltfModel)
@@ -451,7 +464,7 @@ void GlTFModel::ModelGltf::loadTextureSamplers(tinygltf::Model& gltfModel)
 
 void GlTFModel::ModelGltf::loadMaterials(tinygltf::Model& gltfModel)
 {
-	std::shared_ptr<Texture> nullTexture = std::make_shared<Texture>(device, "textures/nullTexture.png");
+	
 
 	for (tinygltf::Material& mat : gltfModel.materials) {
 		Material material{}; 
@@ -469,45 +482,31 @@ void GlTFModel::ModelGltf::loadMaterials(tinygltf::Model& gltfModel)
 
 		 
 		if (mat.values.find("baseColorTexture") != mat.values.end()) {
-			material.baseColorTexture = std::make_shared<TextureModel>(textures[mat.values["baseColorTexture"].TextureIndex()]);
 			material.texCoordSets.baseColor = mat.values["baseColorTexture"].TextureTexCoord();
-		}
-		else {
-			material.baseColorTexture = std::make_shared<TextureModel>( 1, 1, nullTexture ); 
+			material.baseColorTexture = mat.values["baseColorTexture"].TextureIndex();
 		}
 
 		if (mat.values.find("metallicRoughnessTexture") != mat.values.end()) {
-			material.metallicRoughnessTexture = std::make_shared<TextureModel>(textures[mat.values["metallicRoughnessTexture"].TextureIndex()]);
 			material.texCoordSets.metallicRoughness = mat.values["metallicRoughnessTexture"].TextureTexCoord(); 
+			material.metallicRoughnessTexture = mat.values["metallicRoughnessTexture"].TextureIndex();
 		}
-		else {
-			material.metallicRoughnessTexture = std::make_shared<TextureModel>( 1, 1, nullTexture );
-		}
-
+		
 		if (mat.additionalValues.find("normalTexture") != mat.additionalValues.end()) {
-			material.normalTexture = std::make_shared<TextureModel>(textures[mat.additionalValues["normalTexture"].TextureIndex()]);
+			//material.normalTexture = std::make_shared<TextureModel>(textures[mat.additionalValues["normalTexture"].TextureIndex()]);
 			material.texCoordSets.normal = mat.additionalValues["normalTexture"].TextureTexCoord();
+			material.normalTexture = mat.additionalValues["normalTexture"].TextureIndex();
 		}
-		else {
-			material.normalTexture = std::make_shared<TextureModel>(1, 1, nullTexture );
-		}
-
+	
 		if (mat.additionalValues.find("emissiveTexture") != mat.additionalValues.end()) {
-			material.emissiveTexture = std::make_shared<TextureModel>(textures[mat.additionalValues["emissiveTexture"].TextureIndex()]);
 			material.texCoordSets.emissive = mat.additionalValues["emissiveTexture"].TextureTexCoord();
+			material.emissiveTexture = mat.additionalValues["emissiveTexture"].TextureIndex();
 		}
-		else {
-			material.emissiveTexture = std::make_shared<TextureModel>(1, 1, nullTexture );
-		}
-
+	
 		if (mat.additionalValues.find("occlusionTexture") != mat.additionalValues.end()) {
-			material.occlusionTexture = std::make_shared<TextureModel>(textures[mat.additionalValues["occlusionTexture"].TextureIndex()]);
 			material.texCoordSets.occlusion = mat.additionalValues["occlusionTexture"].TextureTexCoord();
+			material.occlusionTexture = mat.additionalValues["occlusionTexture"].TextureIndex();
 		}
-		else {
-			material.occlusionTexture = std::make_shared<TextureModel>(1, 1, nullTexture );
-		}
-
+		
 		if (mat.additionalValues.find("alphaMode") != mat.additionalValues.end()) {
 			tinygltf::Parameter param = mat.additionalValues["alphaMode"];
 			if (param.string_value == "BLEND") {
@@ -574,7 +573,7 @@ void GlTFModel::ModelGltf::loadMaterials(tinygltf::Model& gltfModel)
 
 	// Push a default material at the end of the list for meshes with no material assigned
 	materials.push_back(Material());
-	textures.resize(0);
+	//textures.resize(0);
 }
 
 void GlTFModel::ModelGltf::loadAnimations(tinygltf::Model& gltfModel)
@@ -812,6 +811,19 @@ void GlTFModel::ModelGltf::drawNode(Node* node, VkCommandBuffer& commandBuffer, 
 	if (node->mesh) {
 
 		for (Primitive* primitive : node->mesh->primitives) {
+			GltfPushConstant push{};
+			
+			push.indexMaterial = primitive->materialIndex;
+
+			vkCmdPushConstants(
+				commandBuffer,
+				GlTFPipelineLayout,
+				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+				0,
+				sizeof(push),
+				&push
+			);
+
 			vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
 		}
 	}
@@ -824,6 +836,9 @@ void GlTFModel::ModelGltf::drawNode(Node* node, VkCommandBuffer& commandBuffer, 
 
 void GlTFModel::ModelGltf::draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout, uint32_t instanceCount = 1)
 {
+
+	//// bind materials buffer here ////
+
 	for (auto& node : nodes) {
 		drawNode(node, commandBuffer, GlTFPipelineLayout);
 	}
@@ -940,51 +955,43 @@ void GlTFModel::ModelGltf::createIndexBuffers(LoaderInfo loaderInfo)
 
 }
 
-std::vector<VkDescriptorType> GlTFModel::ModelGltf::getDescriptorType()
+std::vector<DescriptorObject> GlTFModel::ModelGltf::getDescriptorType()
 {
-	return {
-		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER 
+	return{
+		{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, MAX_TEXTURES}, 
+		{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1} 
 	};
 }
 
 void GlTFModel::ModelGltf::createDescriptorSet(DescriptorPool& pool, Device& device)
 {
+	std::cout << textures.size() << "\n";
+
+	for (auto& texture : textures) {
+		texturesImageInfo.push_back(texture.texture->getImageInfo());
+	}
+
+	VkDescriptorImageInfo info = textures[0].texture->getImageInfo();
+	
+	while (texturesImageInfo.size() < MAX_TEXTURES) {
+		texturesImageInfo.push_back(info);
+	}
 
 	auto textureSetLayout = DescriptorSetLayout::Builder(device)
-		.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-		.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-		.addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-		.addBinding(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-		.addBinding(5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-		.addBinding(6, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
+		.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, MAX_TEXTURES)
+		.addBinding(2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT) 
 		.build();
 
-	//auto bufferInfo = nodes[0]->mesh->uniformBuffer->descriptorInfo(); 
-	
-	Material mat = materials[0];
-
-	VkDescriptorImageInfo baseColorInfo = mat.baseColorTexture->texture->getImageInfo(); 
-	VkDescriptorImageInfo metallicRoughnessInfo = mat.metallicRoughnessTexture->texture->getImageInfo(); 
-	VkDescriptorImageInfo emissiveInfo = mat.emissiveTexture->texture->getImageInfo(); 
-	VkDescriptorImageInfo occlusionInfo = mat.occlusionTexture->texture->getImageInfo(); 
-	VkDescriptorImageInfo normalInfo = mat.normalTexture->texture->getImageInfo(); 
-
 	VkDescriptorBufferInfo materialBufferInfo = materialBuffer->descriptorInfo();
+	auto texturesInfo = texturesImageInfo.data();
 
-	for (int i = 0; i < descriptorSetTextures.size(); i++)
+	for (int i = 0; i < descriptorSet.size(); i++) 
 	{
-		DescriptorWriter(*textureSetLayout, pool) 
-			.writeImage(1, &baseColorInfo)
-			.writeImage(2, &metallicRoughnessInfo)
-			.writeImage(3, &emissiveInfo)
-			.writeImage(4, &occlusionInfo)
-			.writeImage(5, &normalInfo)
-			.writeBuffer(6, &materialBufferInfo)
-			.build(descriptorSetTextures[i]); 
+		DescriptorWriter(*textureSetLayout, pool)
+			.writeImage(1, texturesInfo, MAX_TEXTURES)
+			.writeBuffer(2, &materialBufferInfo) 
+			.build(descriptorSet[i]); 
 	}
-	
 }
 
 void GlTFModel::ModelGltf::createMaterialBuffer()
@@ -996,10 +1003,17 @@ void GlTFModel::ModelGltf::createMaterialBuffer()
 		shaderMaterial.emissiveFactor = material.emissiveFactor;
 		// To save space, availabilty and texture coordinate set are combined
 		// -1 = texture not used for this material, >= 0 texture used and index of texture coordinate set
-		shaderMaterial.colorTextureSet = material.baseColorTexture != nullptr ? material.texCoordSets.baseColor : -1;
-		shaderMaterial.normalTextureSet = material.normalTexture != nullptr ? material.texCoordSets.normal : -1;
-		shaderMaterial.occlusionTextureSet = material.occlusionTexture != nullptr ? material.texCoordSets.occlusion : -1;
-		shaderMaterial.emissiveTextureSet = material.emissiveTexture != nullptr ? material.texCoordSets.emissive : -1;
+		shaderMaterial.colorTextureSet = material.baseColorTexture > -1 ? material.texCoordSets.baseColor : -1;
+		shaderMaterial.normalTextureSet = material.normalTexture > -1 ? material.texCoordSets.normal : -1;
+		shaderMaterial.occlusionTextureSet = material.occlusionTexture > -1 ? material.texCoordSets.occlusion : -1;
+		shaderMaterial.emissiveTextureSet = material.emissiveTexture > -1 ? material.texCoordSets.emissive : -1;
+
+		shaderMaterial.baseColorTextureIndex = material.baseColorTexture;
+		shaderMaterial.normalTextureIndex = material.normalTexture;
+		shaderMaterial.occlusionTextureIndex = material.occlusionTexture;
+		shaderMaterial.emissiveTextureIndex = material.emissiveTexture;
+		shaderMaterial.metallicRoughnessTextureIndex = material.metallicRoughnessTexture;
+
 		shaderMaterial.alphaMask = static_cast<float>(material.alphaMode == Material::ALPHAMODE_MASK);
 		shaderMaterial.alphaMaskCutoff = material.alphaCutoff;
 
@@ -1011,8 +1025,8 @@ void GlTFModel::ModelGltf::createMaterialBuffer()
 			shaderMaterial.baseColorFactor = material.baseColorFactor;
 			shaderMaterial.metallicFactor = material.metallicFactor;
 			shaderMaterial.roughnessFactor = material.roughnessFactor;
-			shaderMaterial.PhysicalDescriptorTextureSet = material.metallicRoughnessTexture != nullptr ? material.texCoordSets.metallicRoughness : -1;
-			shaderMaterial.colorTextureSet = material.baseColorTexture != nullptr ? material.texCoordSets.baseColor : -1;
+			shaderMaterial.PhysicalDescriptorTextureSet = material.metallicRoughnessTexture > -1 ? material.texCoordSets.metallicRoughness : -1;
+			shaderMaterial.colorTextureSet = material.baseColorTexture > -1 ? material.texCoordSets.baseColor : -1;
 		}
 		else {
 			if (material.pbrWorkflows.specularGlossiness) {
@@ -1119,7 +1133,7 @@ void GlTFModel::Mesh::createBuffer(bool hasSkin)
 		sizeBuffer = sizeof(glm::mat4);
 	else
 		sizeBuffer = sizeof(UniformBlock);
-
+	 
 	uniformBuffer = std::make_unique<Buffer>(
 		device,
 		sizeBuffer,
@@ -1132,7 +1146,7 @@ void GlTFModel::Mesh::createBuffer(bool hasSkin)
 	uniformBuffer->map();
 }
 
-GlTFModel::Primitive::Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t vertexCount, Material& matrial) : firstIndex(firstIndex), indexCount(indexCount), vertexCount(vertexCount), material(material) 
+GlTFModel::Primitive::Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t vertexCount, int matIndex) : firstIndex(firstIndex), indexCount(indexCount), vertexCount(vertexCount), materialIndex(matIndex)
 {
 	hasIndices = indexCount > 0;
 }

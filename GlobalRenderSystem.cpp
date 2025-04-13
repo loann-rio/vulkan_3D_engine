@@ -21,7 +21,7 @@ struct DepthPushConstantData {
 
 
 GlobalRenderSystem::GlobalRenderSystem(Device& device, VkRenderPass renderPass, 
-	std::vector<VkDescriptorSetLayout> globalSetLayout, std::vector<VkDescriptorType> bindings,
+	std::vector<VkDescriptorSetLayout> globalSetLayout, std::vector<DescriptorObject> bindings,
 	const std::string& vertFilepath, const std::string& fragFilepath,
 	ModelType modelType,
 	std::vector<VkVertexInputBindingDescription> bindingDescription, std::vector<VkVertexInputAttributeDescription> attributeDescription, bool isShadow)
@@ -30,7 +30,7 @@ GlobalRenderSystem::GlobalRenderSystem(Device& device, VkRenderPass renderPass,
 	auto builder = DescriptorSetLayout::Builder(device);
 
 	for (int i = 0; i < bindings.size(); i++) {
-		builder.addBinding(i + 1, bindings[i], VK_SHADER_STAGE_FRAGMENT_BIT);
+		builder.addBinding(i + 1, bindings[i].descriptorType, VK_SHADER_STAGE_FRAGMENT_BIT, bindings[i].count);
 	}
 
 	auto newLayout = builder.build(); 
@@ -130,18 +130,21 @@ void GlobalRenderSystem::renderModel(VkCommandBuffer& commandBuffer, FrameInfo& 
 		nullptr
 	);
 
-	SimplePushConstantData push{};
-	push.modelMatrix = obj->getTransformMat(); //transform.mat4(); 
-	push.normalMatrix = obj->getNormalMat();
+	if (obj->getModelType() == 1) {
+		SimplePushConstantData push{}; 
+		push.modelMatrix = obj->getTransformMat(); //transform.mat4();  
+		push.normalMatrix = obj->getNormalMat(); 
 
-	vkCmdPushConstants(
-		commandBuffer,
-		objPipelineLayout,
-		VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-		0,
-		sizeof(push),
-		&push
-	);
+		vkCmdPushConstants( 
+			commandBuffer,
+			objPipelineLayout, 
+			VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 
+			0, 
+			sizeof(push),
+			&push 
+		); 
+	}
+	
 
 
 	obj->bindModel(commandBuffer);

@@ -8,23 +8,25 @@ void ObjectManager::startLoadModel(DescriptorPool& pool)
 {
 
     auto cameraObject = GameObjectFactory::createGameObject<GameObjectCamera>(device, glm::radians(50.f), 1.f , .1f, 100.f);
-    cameraObject->transform.translation = { -9.0f, -13.0f, -6.5f };
+    cameraObject->transform.translation = { 3.0f, -1.0f, 3.5f };
     cameraObject->transform.rotation.y = pi<float> * 1 / 3;
     cameraObject->setName("mainCamera");
     pushGameObject(std::move(cameraObject)); 
 
-    std::shared_ptr<Model> plane = createPlane(device, 10, 10, { 0, 0, 0 });
+    /*std::shared_ptr<Model> plane = createPlane(device, 10, 10, { 0, 0, 0 });
     auto plane1 = GameObjectFactory::createGameObject<GameObjectModel>(device);
     plane1->setModel(plane);
     plane1->transform.translation.y = 0.1f;
     plane1->createDescriptorSet(pool);
-    pushGameObject(std::move(plane1));
+    pushGameObject(std::move(plane1));*/
 
     TransformComponent gltfTransform{};
-    //gltfTransform.rotation = { pi<float> / 2, pi<float>, 0 };
-    gltfTransform.translation = { 7, 0, 7 };
+    gltfTransform.rotation = { -pi<float> / 2, 0, 0 };
+    gltfTransform.translation = { 7, -1, 7 };
     //gltfTransform.scale = { 0.1, 0.1, 0.1 };
-    loadObjectAsync(device, "model\\2.0\\BoxAnimated\\glTF\\BoxAnimated.gltf", gltfTransform, "test gltf");
+    //loadObjectAsync(device, "model\\2.0\\BoxAnimated\\glTF\\BoxAnimated.gltf", gltfTransform, "test gltf");
+    //loadObjectAsync(device, "model\\DamagedHelmet.gltf", gltfTransform, "test gltf");
+    loadObjectAsync(device, "model\\2.0\\Sponza\\glTF\\Sponza.gltf", gltfTransform, "test gltf");
 }
 
 void ObjectManager::pushGameObject(std::unique_ptr<GameObject> gameObject)

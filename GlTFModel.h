@@ -37,7 +37,7 @@
 #include "external/basisu/transcoder/basisu_transcoder.h"
 
 #define MAX_NUM_JOINTS 128u
-
+#define MAX_TEXTURES 128u
 
 class GlTFModel
 {
@@ -83,11 +83,17 @@ class GlTFModel
 		glm::vec4 baseColorFactor = glm::vec4(1.0f); 
 		glm::vec4 emissiveFactor  = glm::vec4(0.0f);
 
-		std::shared_ptr<TextureModel> baseColorTexture;
+		/*std::shared_ptr<TextureModel> baseColorTexture;
 		std::shared_ptr<TextureModel> metallicRoughnessTexture; 
 		std::shared_ptr<TextureModel> normalTexture; 
 		std::shared_ptr<TextureModel> occlusionTexture; 
-		std::shared_ptr<TextureModel> emissiveTexture;
+		std::shared_ptr<TextureModel> emissiveTexture;*/
+
+		int baseColorTexture{ -1 };
+		int metallicRoughnessTexture{ -1 };
+		int normalTexture{ -1 };
+		int occlusionTexture{ -1 };
+		int emissiveTexture{ -1 };
 
 		bool doubleSided = false;
 
@@ -119,7 +125,6 @@ class GlTFModel
 
 		} pbrWorkflows;
 
-		VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
 		int index = 0;
 		bool unlit = false;
 		float emissiveStrength = 1.0f;
@@ -130,10 +135,11 @@ class GlTFModel
 		uint32_t indexCount;
 		uint32_t vertexCount;
 
-		Material& material;
+		int materialIndex = 0;
+
 		bool hasIndices;
 		BoundingBox bb;
-		Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t vertexCount, Material& material);
+		Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t vertexCount, int matIndex);
 		void setBoundingBox(glm::vec3 min, glm::vec3 max);
 	};
 
@@ -228,6 +234,13 @@ class GlTFModel
 		int normalTextureSet;
 		int occlusionTextureSet;
 		int emissiveTextureSet;
+
+		int baseColorTextureIndex;
+		int metallicRoughnessTextureIndex;
+		int normalTextureIndex;
+		int occlusionTextureIndex;
+		int emissiveTextureIndex;
+
 		float metallicFactor;
 		float roughnessFactor;
 		float alphaMask;
@@ -270,6 +283,7 @@ class GlTFModel
 
 		std::vector<TextureModel> textures; 
 		std::vector<TextureSampler> textureSamplers;
+		std::vector<VkDescriptorImageInfo> texturesImageInfo;
 
 		std::vector<Material> materials;
 		std::shared_ptr<Buffer> materialBuffer = nullptr; 
@@ -277,8 +291,7 @@ class GlTFModel
 		std::vector<Animation> animations;
 		std::vector<std::string> extensions; 
 
-		std::vector<VkDescriptorSet> descriptorSetTextures{ Swap_chain::MAX_FRAMES_IN_FLIGHT };
-		//std::vector<VkDescriptorSet> descriptorSetTextures{ Swap_chain::MAX_FRAMES_IN_FLIGHT }; 
+		std::vector<VkDescriptorSet> descriptorSet{ Swap_chain::MAX_FRAMES_IN_FLIGHT };
 
 		int32_t animationIndex = 0;
 		float animationTimer = 0.0f;
@@ -314,8 +327,8 @@ class GlTFModel
 		VkFilter getVkFilterMode(int32_t filterMode);
 		void getNodeProps(const tinygltf::Node& node, const tinygltf::Model& model, size_t& vertexCount, size_t& indexCount);
 		void getSceneDimensions();
-		static std::vector<VkDescriptorType> getDescriptorType();
-		std::vector<VkDescriptorSet>& getDescriptorSets() { return descriptorSetTextures; } 
+		static std::vector<DescriptorObject> getDescriptorType();
+		std::vector<VkDescriptorSet>& getDescriptorSets() { return descriptorSet; }  
 
 		void bind(VkCommandBuffer& commandBuffer, Buffer* instancesBuffer);
 		void drawNode(Node* node, VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout);
@@ -333,7 +346,6 @@ class GlTFModel
 
 		static int getModelType() { return 2; }
 		const uint16_t descriptorSetIndex = 1;
-
 
 		GlTFModel::Node* findNode(Node* parent, uint32_t index);
 		GlTFModel::Node* nodeFromIndex(uint32_t index);

@@ -60,25 +60,29 @@ layout(set = 1, binding = 0) uniform SpotLightUbo {
 } spotLightUbo;
 
 layout(push_constant) uniform Push {
-	mat4 modelMatrix;
-	mat4 normalMatrix;
+	int a;
 } push;
 
 
 void main() 
 {
 	
-	vec4 positionWorld = push.modelMatrix * vec4(inPos, 1.0);
+	//vec4 positionWorld = push.modelMatrix * vec4(inPos, 1.0);
 
-	for (uint indexSpotLight = 0; indexSpotLight < spotLightUbo.numLights; ++indexSpotLight) {
-		outPosShadow[indexSpotLight] = spotLightUbo.spotLight[indexSpotLight].lightMatrix * positionWorld;
-	}
+	//for (uint indexSpotLight = 0; indexSpotLight < spotLightUbo.numLights; ++indexSpotLight) {
+	//	outPosShadow[indexSpotLight] = spotLightUbo.spotLight[indexSpotLight].lightMatrix * positionWorld;
+	//}
 
-	outNormal = normalize(mat3(push.normalMatrix) * inNormal);
-	outWorldPos = positionWorld.xyz;
+	//outNormal = normalize(mat3(push.normalMatrix) * inNormal);
+	//outWorldPos = positionWorld.xyz;
+	outWorldPos = inPos * 0.01;
+	outWorldPos = vec3(outWorldPos.x, -outWorldPos.y, outWorldPos.z);
+	outNormal = inNormal;
 	outUV0 = inUV0;
 	outUV1 = inUV1;
 	outColor0 = inColor0;
 
-	gl_Position =  ubo.projection * ubo.view * positionWorld;
+	//gl_Position =  ubo.projection * ubo.view * positionWorld;
+	gl_Position =  ubo.projection * ubo.view * vec4(outWorldPos, 1);
+
 }

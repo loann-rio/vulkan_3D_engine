@@ -69,7 +69,7 @@ public:
 	void updateAnimation() {};
 	void update() {};
 
-	static std::vector<VkDescriptorType> getDescriptorType() { return { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER }; }
+	static std::vector<DescriptorObject> getDescriptorType() { return { {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1} }; }
 	static int getModelType() { return 1; }
 
 	const uint16_t descriptorSetIndex = 2;

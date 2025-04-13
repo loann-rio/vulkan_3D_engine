@@ -81,7 +81,7 @@ void Device::createInstance() {
     appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
     appInfo.pEngineName = "No Engine";
     appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.apiVersion = VK_API_VERSION_1_0;
+    appInfo.apiVersion = VK_API_VERSION_1_2;
 
     VkInstanceCreateInfo createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -164,6 +164,15 @@ void Device::createLogicalDevice() {
     createInfo.pEnabledFeatures = &deviceFeatures;
     createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
     createInfo.ppEnabledExtensionNames = deviceExtensions.data();
+
+    VkPhysicalDeviceVulkan12Features features12{};  
+    features12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES; 
+    features12.runtimeDescriptorArray = VK_TRUE; 
+    features12.shaderSampledImageArrayNonUniformIndexing = VK_TRUE; 
+    features12.descriptorBindingVariableDescriptorCount = VK_TRUE; 
+    features12.descriptorBindingPartiallyBound = VK_TRUE; 
+
+    createInfo.pNext = &features12;
 
     // might not really be necessary anymore because device specific validation layers
     // have been deprecated

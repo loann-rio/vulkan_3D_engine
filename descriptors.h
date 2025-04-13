@@ -7,6 +7,10 @@
 #include <unordered_map>
 #include <vector>
 
+struct DescriptorObject {
+    VkDescriptorType descriptorType;
+    int count = 1;
+};
 
 class DescriptorSetLayout {
 public:

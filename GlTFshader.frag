@@ -1,4 +1,5 @@
 #version 450
+#extension GL_EXT_nonuniform_qualifier : require
 
 #define MAX_NUM_SPOT_LIGHT 4
 
@@ -22,6 +23,13 @@ struct ShaderMaterial {
 	int normalTextureSet;	
 	int occlusionTextureSet;
 	int emissiveTextureSet;
+
+	int baseColorTextureIndex;
+	int metallicRoughnessTextureIndex;
+	int normalTextureIndex;
+	int occlusionTextureIndex;
+	int emissiveTextureIndex;
+
 	float metallicFactor;	
 	float roughnessFactor;	
 	float alphaMask;	
@@ -83,8 +91,7 @@ layout(set = 0, binding = 0) uniform GlobalUbo {
 } ubo;
 
 layout(push_constant) uniform Push {
-	mat4 modelMatrix;
-	mat4 normalMatrix;
+	int materialIndex;
 } push;
 
 // shadow layout
@@ -96,17 +103,18 @@ layout(set = 1, binding = 0) uniform SpotLightUbo {
 } spotLightUbo;
 
 // Define the texture sampler
-layout(set = 2, binding = 1) uniform sampler2D colorMap;
+/*layout(set = 2, binding = 1) uniform sampler2D colorMap;
 layout(set = 2, binding = 2) uniform sampler2D physicalDescriptorMap;
 layout(set = 2, binding = 3) uniform sampler2D emissiveMap;
 layout(set = 2, binding = 4) uniform sampler2D aoMap;
-layout(set = 2, binding = 5) uniform sampler2D normalMap;
+layout(set = 2, binding = 5) uniform sampler2D normalMap;*/
 
-layout(std430, set = 2, binding = 6) buffer SSBO
+layout(std430, set = 2, binding = 2) readonly buffer SSBO
 {
-   ShaderMaterial materials[ ]; 
+   ShaderMaterial materials[ ];
 };
 
+layout(set = 2, binding = 1) uniform sampler2D textures[];
 
 vec4 compute_shadow_factor(vec4 light_space_pos, uint indexSpotLight, vec3 surfaceNormal)
 {
@@ -123,7 +131,7 @@ vec4 compute_shadow_factor(vec4 light_space_pos, uint indexSpotLight, vec3 surfa
     // Sample a 3x3 grid of shadow values
     for (int x = -1; x <= 1; x++) {
        for (int y = -1; y <= 1; y++) {
-           shadow += texture(shadowMap[indexSpotLight], vec3(shadowUV.xy + vec2(x, y) * offset, depth));
+           shadow += texture(shadowMap[nonuniformEXT(indexSpotLight)], vec3(shadowUV.xy + vec2(x, y) * offset, depth));
        }
     }
     
@@ -142,7 +150,7 @@ vec4 compute_shadow_factor(vec4 light_space_pos, uint indexSpotLight, vec3 surfa
 vec3 getNormal(ShaderMaterial material)
 {
 	// Perturb normal, see http://www.thetenthplanet.de/archives/1180
-	vec3 tangentNormal = texture(normalMap, material.normalTextureSet == 0 ? inUV0 : inUV1).xyz * 2.0 - 1.0;
+	vec3 tangentNormal = texture(textures[nonuniformEXT(materials[push.materialIndex].normalTextureIndex)], material.normalTextureSet == 0 ? inUV0 : inUV1).xyz * 2.0 - 1.0;
 
 	vec3 q1 = dFdx(inWorldPos);
 	vec3 q2 = dFdy(inWorldPos);
@@ -219,6 +227,10 @@ vec4 SRGBtoLINEAR(vec4 srgbIn)
 
 void main() {
 
+
+	//vec4 color = (texture(textures[nonuniformEXT(materials[push.materialIndex].baseColorTextureIndex)], inUV0)); 
+	//outColor =  color;
+
 	/*vec3 surfaceNormal = normalize(inNormal);
 	vec3 directionToLight = normalize(ubo.globalLightDir.xyz);
 	float cosAngOfIncidence = max(dot(surfaceNormal, directionToLight), 0);
@@ -237,7 +249,7 @@ void main() {
 	outColor =  color;*/
 
 	
-	ShaderMaterial material = materials[0];
+	ShaderMaterial material = materials[push.materialIndex];
 
 	float perceptualRoughness;
 	float metallic;
@@ -248,7 +260,7 @@ void main() {
 
 	if (material.alphaMask == 1.0f) {
 		if (material.baseColorTextureSet > -1) {
-			baseColor = SRGBtoLINEAR(texture(colorMap, material.baseColorTextureSet == 0 ? inUV0 : inUV1)) * material.baseColorFactor; 
+			baseColor = SRGBtoLINEAR(texture(textures[nonuniformEXT(material.baseColorTextureIndex)], material.baseColorTextureSet == 0 ? inUV0 : inUV1)) * material.baseColorFactor; 
 		} else {
 			baseColor = material.baseColorFactor;
 		}
@@ -257,16 +269,16 @@ void main() {
 		}
 	}
 
-	if (material.workflow == PBR_WORKFLOW_METALLIC_ROUGHNESS) {
+	if (material.workflow == PBR_WORKFLOW_METALLIC_ROUGHNESS) { 
 		// Metallic and Roughness material properties are packed together
 		// In glTF, these factors can be specified by fixed scalar values
 		// or from a metallic-roughness map
 		perceptualRoughness = material.roughnessFactor;
-		metallic = material.metallicFactor;
-		if (material.physicalDescriptorTextureSet > -1) {
+		metallic = material.metallicFactor; 
+		if (material.physicalDescriptorTextureSet > -1) { 
 			// Roughness is stored in the 'g' channel, metallic is stored in the 'b' channel.
 			// This layout intentionally reserves the 'r' channel for (optional) occlusion map data
-			vec4 mrSample = texture(physicalDescriptorMap, material.physicalDescriptorTextureSet == 0 ? inUV0 : inUV1);
+			vec4 mrSample = texture(textures[nonuniformEXT(material.metallicRoughnessTextureIndex)], material.physicalDescriptorTextureSet == 0 ? inUV0 : inUV1);
 			perceptualRoughness = mrSample.g * perceptualRoughness;
 			metallic = mrSample.b * metallic;
 		} else {
@@ -278,7 +290,7 @@ void main() {
 
 		// The albedo may be defined from a base texture or a flat color
 		if (material.baseColorTextureSet > -1) {
-			baseColor = SRGBtoLINEAR(texture(colorMap, material.baseColorTextureSet == 0 ? inUV0 : inUV1)) * material.baseColorFactor;
+			baseColor = SRGBtoLINEAR(texture(textures[nonuniformEXT(material.baseColorTextureIndex)], material.baseColorTextureSet == 0 ? inUV0 : inUV1)) * material.baseColorFactor;
 		} else {
 			baseColor = material.baseColorFactor;
 		}
@@ -287,15 +299,15 @@ void main() {
 	if (material.workflow == PBR_WORKFLOW_SPECULAR_GLOSSINESS) {
 		// Values from specular glossiness workflow are converted to metallic roughness
 		if (material.physicalDescriptorTextureSet > -1) {
-			perceptualRoughness = 1.0 - texture(physicalDescriptorMap, material.physicalDescriptorTextureSet == 0 ? inUV0 : inUV1).a;
+			perceptualRoughness = 1.0 - texture(textures[nonuniformEXT(material.metallicRoughnessTextureIndex)], material.physicalDescriptorTextureSet == 0 ? inUV0 : inUV1).a;
 		} else {
 			perceptualRoughness = 0.0;
 		}
 
 		const float epsilon = 1e-6;
 
-		vec4 diffuse = SRGBtoLINEAR(texture(colorMap, inUV0));
-		vec3 specular = SRGBtoLINEAR(texture(physicalDescriptorMap, inUV0)).rgb;
+		vec4 diffuse = SRGBtoLINEAR(texture(textures[nonuniformEXT(material.baseColorTextureIndex)], inUV0));
+		vec3 specular = SRGBtoLINEAR(texture(textures[nonuniformEXT(material.metallicRoughnessTextureIndex)], inUV0)).rgb;
 
 		float maxSpecular = max(max(specular.r, specular.g), specular.b);
 
@@ -363,21 +375,24 @@ void main() {
 
 	// Calculation of analytical lighting contribution
 	vec3 diffuseContrib = (1.0 - F) * diffuse(pbrInputs);
-	vec3 specContrib = F * G * D / (4.0 * NdotL * NdotV);
+	vec3 specContrib = F * G * D / (4.0 * NdotL * NdotV); // NdotL
+
 	// Obtain final intensity as reflectance (BRDF) scaled by the energy of the light (cosine law)
-	vec3 color = NdotL * u_LightColor * (diffuseContrib + specContrib);
+	vec3 color = NdotL * u_LightColor * (specContrib + diffuseContrib); // NdotL
 
 	const float u_OcclusionStrength = 1.0f;
 	// Apply optional PBR terms for additional (optional) shading
 	if (material.occlusionTextureSet > -1) {
-		float ao = texture(aoMap, (material.occlusionTextureSet == 0 ? inUV0 : inUV1)).r;
+		float ao = texture(textures[nonuniformEXT(material.occlusionTextureIndex)], (material.occlusionTextureSet == 0 ? inUV0 : inUV1)).r;
 		color = mix(color, color * ao, u_OcclusionStrength);
 	}
 
 	vec3 emissive = material.emissiveFactor.rgb * material.emissiveStrength;
 	if (material.emissiveTextureSet > -1) {
-		emissive *= SRGBtoLINEAR(texture(emissiveMap, material.emissiveTextureSet == 0 ? inUV0 : inUV1)).rgb;
+		emissive *= SRGBtoLINEAR(texture(textures[nonuniformEXT(material.emissiveTextureIndex)], material.emissiveTextureSet == 0 ? inUV0 : inUV1)).rgb;
 	};
+
+	color += ubo.ambientLightColor.rgb * diffuseColor;
 
 	color += emissive;
 	
