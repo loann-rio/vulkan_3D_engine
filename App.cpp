@@ -31,10 +31,10 @@
 
 App::App() { 
     globalPool = DescriptorPool::Builder(device)
-        .setMaxSets(Swap_chain::MAX_FRAMES_IN_FLIGHT * 64 * 2)
-        .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Swap_chain::MAX_FRAMES_IN_FLIGHT * 64)
-        .addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, Swap_chain::MAX_FRAMES_IN_FLIGHT * 64)
-        .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Swap_chain::MAX_FRAMES_IN_FLIGHT*64)
+        .setMaxSets(Swap_chain::MAX_FRAMES_IN_FLIGHT * 640 * 2)
+        .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Swap_chain::MAX_FRAMES_IN_FLIGHT * 640)
+        .addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, Swap_chain::MAX_FRAMES_IN_FLIGHT * 640)
+        .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Swap_chain::MAX_FRAMES_IN_FLIGHT*640)
         .build();
 
     objectManager.startLoadModel(*globalPool); 
@@ -144,6 +144,15 @@ void App::run()
             shadowUboBuffer[frameIndex]->flush();
         }
 
+        // update GLTF game objects
+        {
+            uint16_t i = 0;
+            std::vector<GameObjectModel*> objects = objectManager.getByType<GameObjectModel>();
+            for (auto obj : objects) {
+                obj->update(frameTime);
+            }
+        }
+
         uboBuffers[frameIndex]->writeToBuffer(&ubo); 
         uboBuffers[frameIndex]->flush(); 
 
@@ -163,8 +172,8 @@ void App::run()
 
             vkQueueWaitIdle(device.presentQueue());
             if (frame == 0) {
-                renderer.renderDepthImage(frameInfo, { depthRenderSystemGltf, depthRenderSystem }, descriptorSets);
-            }
+                renderer.renderDepthImage(frameInfo, { depthRenderSystem, depthRenderSystemGltf }, descriptorSets);
+            } 
 
             if (auto commandBuffer = renderer.beginFrame()) {
                  
@@ -176,18 +185,18 @@ void App::run()
 
                 textOverlay.renderText(commandBuffer, frameInfo); 
 
-                //imgui.drawUI(commandBuffer, &objectManager);
+                imgui.drawUI(commandBuffer, &objectManager);
 
                 renderer.endSwapChainRenderPass(commandBuffer); 
                 renderer.endFrame();
             } 
-        }
+        }   
 
-        frame = (frame + 1) % 1;
+        frame = (frame + 1) % 10;
         
 	}
 
-    vkQueueWaitIdle(device.presentQueue());
+        vkQueueWaitIdle(device.presentQueue());
 }
  
  
@@ -259,22 +268,21 @@ void App::createRenderSystems()
 
 
     /// render systems
-
     gltfRenderSystem = GlobalRenderSystem::create<GlTFModel::ModelGltf>(
         device, renderer.getSwapChainRenderPass(), { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() },
         "GlTFshader.vert.spv", "GlTFshader.frag.spv");
 
-    objRenderSystem = GlobalRenderSystem::create<Model>(
-        device, renderer.getSwapChainRenderPass(), { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() },
-        "simple_shader.vert.spv", "simple_shader.frag.spv");
+    objRenderSystem = GlobalRenderSystem::create<Model>( 
+        device, renderer.getSwapChainRenderPass(), { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() }, 
+        "simple_shader.vert.spv", "simple_shader.frag.spv"); 
 
     depthRenderSystem = GlobalRenderSystem::create<Model>(
         device, renderer.getDepthRenderPass(), { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() },
-        "shadowmap.vert.spv");
-
-    depthRenderSystemGltf = GlobalRenderSystem::create<GlTFModel::ModelGltf>(
-        device, renderer.getDepthRenderPass(), { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() },
-        "shadowmap.vert.spv");
+        "shadowmap.vert.spv");  
+     
+    depthRenderSystemGltf = GlobalRenderSystem::create<GlTFModel::ModelGltf>( 
+        device, renderer.getDepthRenderPass(), { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() }, 
+        "shadowmapgltf.vert.spv");
 }
 
 void App::getFrameRate(float lastFrameTime)

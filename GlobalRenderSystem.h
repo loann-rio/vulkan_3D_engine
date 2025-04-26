@@ -20,7 +20,7 @@ public:
 		std::vector<VkDescriptorSetLayout> globalSetLayout, const std::string& vertFilepath, const std::string& fragFilepath = "");
 
 	GlobalRenderSystem(Device& device, VkRenderPass renderPass,  
-		std::vector<VkDescriptorSetLayout> globalSetLayout, std::vector<DescriptorObject> bindings,
+		std::vector<VkDescriptorSetLayout> globalSetLayout, std::vector<DescriptorSetObject> bindings, 
 		const std::string& vertFilepath, const std::string& fragFilepath,
 		ModelType modelType,
 		std::vector<VkVertexInputBindingDescription> bindingDescription, std::vector<VkVertexInputAttributeDescription> attributeDescription,
@@ -66,19 +66,19 @@ private:
 template<class T>
 inline std::shared_ptr<GlobalRenderSystem> GlobalRenderSystem::create(Device& device, VkRenderPass renderPass, std::vector<VkDescriptorSetLayout>  globalSetLayout, const std::string& vertFilepath, const std::string& fragFilepath)
 {
-	std::vector<DescriptorObject> bindings;
+	std::vector<DescriptorSetObject> bindings;
 	std::vector<VkVertexInputAttributeDescription> attributeDescription;
 	std::vector<VkVertexInputBindingDescription> bindingDescription = T::Vertex::getBindingDescriptions(false); 
-	ModelType modelType = static_cast<ModelType>(T::getModelType()); 
+	ModelType modelType = static_cast<ModelType>(T::getModelType());  
 
 	bool isShadow = (fragFilepath == "");
 	if (isShadow) {
-		bindings = std::vector<DescriptorObject>();
+		bindings = T::getDescriptorType(); //std::vector<DescriptorSetObject>();
 		attributeDescription = T::Vertex::getAttributeDescriptionsShadow(false);
 	}
 	else {
-		bindings = T::getDescriptorType();  
-		attributeDescription = T::Vertex::getAttributeDescriptions(false);
+		bindings = T::getDescriptorType(); 
+ 		attributeDescription = T::Vertex::getAttributeDescriptions(false);
 	}
 
 	return std::make_shared<GlobalRenderSystem>(device, renderPass,

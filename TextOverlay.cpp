@@ -171,8 +171,8 @@ void TextOverlay::addText(std::string text, float x, float y, TextAlign align, u
 
 	assert(mapped != nullptr);
 
-	float fbW = width;
-	float fbH = height;
+	float fbW = static_cast<float>(width);
+	float fbH = static_cast<float>(height);
 
 	const float charW = 1.5f * scale / fbW;
 	const float charH = 1.5f * scale / fbH;

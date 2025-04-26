@@ -228,6 +228,7 @@
     <None Include="point_light.frag" />
     <None Include="point_light.vert" />
     <None Include="shadowmap.vert" />
+    <None Include="shadowmapgltf.vert" />
     <None Include="simple_shader.frag" />
     <None Include="simple_shader.vert" />
     <None Include="text.frag" />

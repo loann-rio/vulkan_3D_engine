@@ -22,7 +22,7 @@
 using ModelVariant = std::variant<std::shared_ptr<Model>,
 	std::shared_ptr<GlTFModel::ModelGltf>>;
 
-typedef enum ModelType {
+enum ModelType {
 	UNDEFINED_MODEL = 0,
 	OBJ_MODEL = 1,
 	GLTF_MODEL = 2,
@@ -189,8 +189,10 @@ public:
 
 	std::vector<VkDescriptorSet> getDescriptorSets() const;
 
+	void update(float dtime);
+
 	void bindModel(VkCommandBuffer& commandBuffer) const;
-	void drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout) const;
+	void drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout);
 
 	void debugUI(); 
 
@@ -206,6 +208,10 @@ private:
 	bool hasMultipleInstances = false;
 	std::unique_ptr<Buffer> instancesBuffer = nullptr;
 	uint32_t instanceCount = 1;
+
+	int32_t animationIndex{ 0 }; 
+	float animationTimer = 0.0f;
+	bool animate = false;
 
 	friend class GameObjectFactory; 
 };

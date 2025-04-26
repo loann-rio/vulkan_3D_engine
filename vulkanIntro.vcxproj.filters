@@ -229,5 +229,8 @@
     <None Include="depthView.vert">
       <Filter>shaders</Filter>
     </None>
+    <None Include="shadowmapgltf.vert">
+      <Filter>shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

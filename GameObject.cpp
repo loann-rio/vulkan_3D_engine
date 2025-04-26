@@ -137,6 +137,22 @@ std::vector<VkDescriptorSet> GameObjectModel::getDescriptorSets() const
         }, model);
 }
 
+void GameObjectModel::update(float dtime)
+{
+    if (animate) {
+        animationTimer += dtime;
+
+        std::visit([&](const auto& modelInstance) {
+            if (modelInstance) {
+                if (!modelInstance->updateAnimation(animationIndex, animationTimer)) {
+                    animationTimer = 0.f;
+                    animate = false;
+                }
+            }
+            }, model);
+    }
+}
+
 void GameObjectModel::bindModel(VkCommandBuffer& commandBuffer) const
 {
     std::visit([&](const auto& modelInstance) {  
@@ -146,11 +162,11 @@ void GameObjectModel::bindModel(VkCommandBuffer& commandBuffer) const
         }, model);
 }
 
-void GameObjectModel::drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout) const
+void GameObjectModel::drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout)
 {
     std::visit([&](const auto& modelInstance) {
         if (modelInstance) {
-            modelInstance->draw(commandBuffer, GlTFPipelineLayout, instanceCount);
+            modelInstance->draw(commandBuffer, GlTFPipelineLayout, getTransformMat(), instanceCount);
         }
         }, model);
 } 
@@ -166,10 +182,10 @@ void GameObjectSpotLight::debugUI()
     ImGui::DragFloat3("##rot", glm::value_ptr(transform.rotation), 0.01f, -10.0f, 10.0f);
 
     ImGui::Text("fov");
-    bool recreateMat = ImGui::DragFloat("##fov", &_fov, 0.01, 0.1, glm::half_pi<float>());
+    bool recreateMat = ImGui::DragFloat("##fov", &_fov, 0.01f, 0.1f, glm::half_pi<float>());
 
     ImGui::Text("Aspect Ratio");
-    recreateMat = recreateMat || ImGui::DragFloat("##aspectRatio", &_aspect_ratio, 0.01, 0.01f, 20.f); 
+    recreateMat = recreateMat || ImGui::DragFloat("##aspectRatio", &_aspect_ratio, 0.01f, 0.01f, 20.f); 
 
     if (recreateMat) camera->setPerspectiveProjection(_fov, _aspect_ratio, _nearClip, _farClip);
 
@@ -188,7 +204,7 @@ void GameObjectCamera::debugUI()
     ImGui::DragFloat3("##rot", glm::value_ptr(transform.rotation), 0.01f, -10.0f, 10.0f); 
 
     ImGui::Text("fov");
-    if (ImGui::DragFloat("##fov", &_fov, 0.01, 0.1, glm::half_pi<float>())) { 
+    if (ImGui::DragFloat("##fov", &_fov, 0.01f, 0.1f, glm::half_pi<float>())) { 
         camera->setPerspectiveProjection(_fov, _aspect_ratio, _nearClip, _farClip); 
     }
 }
@@ -217,6 +233,14 @@ void GameObjectModel::debugUI()
 
     ImGui::Text("Scale:");
     ImGui::DragFloat3("##scl", glm::value_ptr(transform.scale), 0.01f, -10.0f, 10.0f);
+
+    ImGui::Text("animation:");
+    ImGui::InputInt("index", &animationIndex);
+
+    if (ImGui::Button("start"))
+    {
+        animate = true;
+    }
 }
 
 void GameObjectPointLight::debugUI()

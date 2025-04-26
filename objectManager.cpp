@@ -13,20 +13,67 @@ void ObjectManager::startLoadModel(DescriptorPool& pool)
     cameraObject->setName("mainCamera");
     pushGameObject(std::move(cameraObject)); 
 
-    /*std::shared_ptr<Model> plane = createPlane(device, 10, 10, { 0, 0, 0 });
+    auto cameraObject1 = GameObjectFactory::createGameObject<GameObjectCamera>(device, glm::radians(50.f), 1.f, .1f, 100.f); 
+    cameraObject1->transform.translation = { 3.0f, -1.0f, 3.5f };
+    cameraObject1->transform.rotation.y = pi<float> *1 / 3;
+    cameraObject1->setName("camera2");
+    pushGameObject(std::move(cameraObject1));
+
+
+    TransformComponent vikingRoomTransform{};
+    vikingRoomTransform.rotation = { pi<float> / 2, pi<float>, 0 };
+    vikingRoomTransform.translation = { 7, 0, 7 };
+    loadObjectAsyncObj(device, "model/viking_room.obj", "textures/viking_room.png", vikingRoomTransform, "viking");
+  
+    std::shared_ptr<Model> plane = createPlane(device, 10, 10, {0, 0, 0});
     auto plane1 = GameObjectFactory::createGameObject<GameObjectModel>(device);
     plane1->setModel(plane);
-    plane1->transform.translation.y = 0.1f;
+    plane1->transform.translation.y = 0.f;
     plane1->createDescriptorSet(pool);
-    pushGameObject(std::move(plane1));*/
+    pushGameObject(std::move(plane1));
 
     TransformComponent gltfTransform{};
     gltfTransform.rotation = { -pi<float> / 2, 0, 0 };
-    gltfTransform.translation = { 7, -1, 7 };
+    gltfTransform.translation = { 7, 0, 7 };
     //gltfTransform.scale = { 0.1, 0.1, 0.1 };
-    //loadObjectAsync(device, "model\\2.0\\BoxAnimated\\glTF\\BoxAnimated.gltf", gltfTransform, "test gltf");
+    loadObjectAsync(device, "model\\2.0\\BrainStem\\glTF\\BrainStem.gltf", gltfTransform, "test gltf");
     //loadObjectAsync(device, "model\\DamagedHelmet.gltf", gltfTransform, "test gltf");
-    loadObjectAsync(device, "model\\2.0\\Sponza\\glTF\\Sponza.gltf", gltfTransform, "test gltf");
+    //loadObjectAsync(device, "model\\2.0\\Sponza\\glTF\\Sponza.gltf", gltfTransform, "test gltf");
+
+    auto spotLight1 = GameObjectFactory::createGameObject<GameObjectSpotLight>(device, glm::radians(50.f), 1.f, .1f, 100.f);
+    spotLight1->transform.translation = { -4.0f, -1.0f, 5.5f };
+    spotLight1->transform.rotation.y = pi<float> *2 / 5;
+    spotLight1->transform.color = { 1.0, 1.0, 1.0, .7 };
+    spotLight1->setName("spotLight1");
+
+    auto spotLight2 = GameObjectFactory::createGameObject<GameObjectSpotLight>(device, glm::radians(50.f), 1.f, .1f, 100.f);
+    spotLight2->transform.translation = { 1.0f, -2.0f, 2.5f };
+    spotLight2->transform.rotation.y = pi<float> *2 / 5;
+    spotLight2->transform.color = { 0.0, 1.0, 0.0, .7 };
+    spotLight2->setName("spotLight2");
+
+    std::shared_ptr<Model> planeModel = createPlane(device, 2, 10, { 0, 0, 0 }, "textures/emptyTexture.jpg");
+    auto plane2 = GameObjectFactory::createGameObject<GameObjectModel>(device);
+    plane2->setModel(planeModel);
+    plane2->transform.rotation.z = -pi<float> / 2;
+    plane2->transform.translation.x = 10.f;
+    plane2->transform.translation.y = 1.f;
+    plane2->createDescriptorSet(pool);
+    plane2->setName("plane");
+    pushGameObject(std::move(plane2));
+
+    auto plane3 = GameObjectFactory::createGameObject<GameObjectModel>(device);
+    plane3->setModel(planeModel);
+    plane3->transform.rotation.x = pi<float> / 2;
+    plane3->transform.translation.z = 10.f;
+    plane3->transform.translation.y = 1.f;
+    plane3->createDescriptorSet(pool);
+    pushGameObject(std::move(plane3));
+
+
+    pushGameObject(std::move(spotLight1));
+    pushGameObject(std::move(spotLight2));
+
 }
 
 void ObjectManager::pushGameObject(std::unique_ptr<GameObject> gameObject)

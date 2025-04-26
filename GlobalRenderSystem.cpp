@@ -20,22 +20,36 @@ struct DepthPushConstantData {
 };
 
 
+
+
+
 GlobalRenderSystem::GlobalRenderSystem(Device& device, VkRenderPass renderPass, 
-	std::vector<VkDescriptorSetLayout> globalSetLayout, std::vector<DescriptorObject> bindings,
+	std::vector<VkDescriptorSetLayout> globalSetLayout, std::vector<DescriptorSetObject> bindings,
 	const std::string& vertFilepath, const std::string& fragFilepath,
 	ModelType modelType,
 	std::vector<VkVertexInputBindingDescription> bindingDescription, std::vector<VkVertexInputAttributeDescription> attributeDescription, bool isShadow)
 	: device{ device }, modelType{ modelType }, isShadow{ isShadow }   
 {
-	auto builder = DescriptorSetLayout::Builder(device);
+	std::vector<std::unique_ptr<DescriptorSetLayout>> layouts;
 
-	for (int i = 0; i < bindings.size(); i++) {
-		builder.addBinding(i + 1, bindings[i].descriptorType, VK_SHADER_STAGE_FRAGMENT_BIT, bindings[i].count);
+	for (size_t j = 0; j < bindings.size(); j++) {
+		auto builder = DescriptorSetLayout::Builder(device);
+
+		for (int i = 0; i < bindings[j].descriptorSet.size(); i++) {
+			builder.addBinding(i + 1, bindings[j].descriptorSet[i].descriptorType, bindings[j].descriptorSet[i].stage, bindings[j].descriptorSet[i].count);
+		}
+
+		auto newLayout = builder.build(); 
+
+		if (!newLayout) { 
+			std::cerr << "Failed to build descriptor set layout at index " << j << "\n"; 
+			continue;
+		} 
+
+		globalSetLayout.push_back(newLayout->getDescriptorSetLayout());  
+		layouts.push_back(std::move(newLayout)); 
 	}
-
-	auto newLayout = builder.build(); 
-	globalSetLayout.push_back(newLayout->getDescriptorSetLayout());
-
+	
 	createPipelineLayout(globalSetLayout);
 	createPipeline(renderPass, vertFilepath, fragFilepath, bindingDescription, attributeDescription);
 }
@@ -56,8 +70,16 @@ void GlobalRenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout>
 		pushConstantRange.size = sizeof(DepthPushConstantData);
 	}
 	else {
-		pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT; 
-		pushConstantRange.size = sizeof(SimplePushConstantData); 
+		if (modelType == ModelType::GLTF_MODEL) {
+			std::cout << "gltf push constant \n";
+			pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+			pushConstantRange.size = sizeof(GltfPushConstant); 
+		}
+		else {
+			std::cout << "obj push constant \n";
+			pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+			pushConstantRange.size = sizeof(SimplePushConstantData);
+		}
 	}
 
 	VkDescriptorBindingFlags descriptorBindingFlags[] = {
@@ -66,16 +88,19 @@ void GlobalRenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout>
 	};
 
 	/*VkDescriptorSetLayoutBindingFlagsCreateInfoEXT bindingFlagsInfo = {};
-	bindingFlagsInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT;
-	bindingFlagsInfo.bindingCount = sizeof(descriptorBindingFlags) / sizeof(descriptorBindingFlags[0]);
+	bindingFlagsInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT; 
+	bindingFlagsInfo.bindingCount = sizeof(descriptorBindingFlags) / sizeof(descriptorBindingFlags[0]); 
 	bindingFlagsInfo.pBindingFlags = descriptorBindingFlags;*/
 
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayout.size());
 	pipelineLayoutInfo.pSetLayouts = descriptorSetLayout.data();
+	
 	pipelineLayoutInfo.pushConstantRangeCount = 1;
 	pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
+
+	
 	//pipelineLayoutInfo.pNext = &bindingFlagsInfo;
 
 	if (vkCreatePipelineLayout(device.device(), &pipelineLayoutInfo, nullptr, &objPipelineLayout) !=
@@ -120,6 +145,7 @@ void GlobalRenderSystem::createPipeline(VkRenderPass renderPass, const std::stri
 
 void GlobalRenderSystem::renderModel(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, GameObjectModel* obj)
 {
+
 	vkCmdBindDescriptorSets(
 		commandBuffer,
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -130,6 +156,8 @@ void GlobalRenderSystem::renderModel(VkCommandBuffer& commandBuffer, FrameInfo& 
 		nullptr
 	);
 
+	obj->bindModel(commandBuffer);
+
 	if (obj->getModelType() == 1) {
 		SimplePushConstantData push{}; 
 		push.modelMatrix = obj->getTransformMat(); //transform.mat4();  
@@ -138,34 +166,33 @@ void GlobalRenderSystem::renderModel(VkCommandBuffer& commandBuffer, FrameInfo& 
 		vkCmdPushConstants( 
 			commandBuffer,
 			objPipelineLayout, 
-			VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 
+			VK_SHADER_STAGE_VERTEX_BIT, 
 			0, 
 			sizeof(push),
 			&push 
 		); 
 	}
-	
 
-
-	obj->bindModel(commandBuffer);
 	obj->drawModel(commandBuffer, objPipelineLayout);
-	
 }
 
 void GlobalRenderSystem::renderModelDepth(VkCommandBuffer& commandBuffer, GameObjectModel* obj, int lightIndex)
 {
-	DepthPushConstantData push{}; 
-	push.modelMatrix = obj->getTransformMat();//transform.mat4(); 
-	push.indexDepthCamera = lightIndex; 
 
-	vkCmdPushConstants(
-		commandBuffer,
-		objPipelineLayout,
-		VK_SHADER_STAGE_VERTEX_BIT,
-		0,
-		sizeof(push),
-		&push
-	); 
+	if (obj->getModelType() == 1) {
+		DepthPushConstantData push{};
+		push.modelMatrix = obj->getTransformMat();//transform.mat4(); 
+		push.indexDepthCamera = lightIndex;
+
+		vkCmdPushConstants(
+			commandBuffer,
+			objPipelineLayout,
+			VK_SHADER_STAGE_VERTEX_BIT,
+			0,
+			sizeof(push),
+			&push
+		);
+	}
 
 	obj->bindModel(commandBuffer); 
 	obj->drawModel(commandBuffer, objPipelineLayout); 

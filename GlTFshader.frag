@@ -91,6 +91,8 @@ layout(set = 0, binding = 0) uniform GlobalUbo {
 } ubo;
 
 layout(push_constant) uniform Push {
+	
+	mat4 nodeMatrix;
 	int materialIndex;
 } push;
 
@@ -102,12 +104,7 @@ layout(set = 1, binding = 0) uniform SpotLightUbo {
 	int numLights;
 } spotLightUbo;
 
-// Define the texture sampler
-/*layout(set = 2, binding = 1) uniform sampler2D colorMap;
-layout(set = 2, binding = 2) uniform sampler2D physicalDescriptorMap;
-layout(set = 2, binding = 3) uniform sampler2D emissiveMap;
-layout(set = 2, binding = 4) uniform sampler2D aoMap;
-layout(set = 2, binding = 5) uniform sampler2D normalMap;*/
+
 
 layout(std430, set = 2, binding = 2) readonly buffer SSBO
 {
@@ -150,7 +147,7 @@ vec4 compute_shadow_factor(vec4 light_space_pos, uint indexSpotLight, vec3 surfa
 vec3 getNormal(ShaderMaterial material)
 {
 	// Perturb normal, see http://www.thetenthplanet.de/archives/1180
-	vec3 tangentNormal = texture(textures[nonuniformEXT(materials[push.materialIndex].normalTextureIndex)], material.normalTextureSet == 0 ? inUV0 : inUV1).xyz * 2.0 - 1.0;
+	vec3 tangentNormal = texture(textures[nonuniformEXT(materials[0].normalTextureIndex)], material.normalTextureSet == 0 ? inUV0 : inUV1).xyz * 2.0 - 1.0;
 
 	vec3 q1 = dFdx(inWorldPos);
 	vec3 q2 = dFdy(inWorldPos);

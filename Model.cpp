@@ -63,7 +63,7 @@ void Model::bind(VkCommandBuffer& commandBuffer, Buffer* instancesBuffer)
 	}
 }
 
-void Model::draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout, uint32_t instanceCount = 1)
+void Model::draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout, glm::mat4 modelMatrix, uint32_t instanceCount = 1)
 {
 	if (hasIndexBuffer) {
 		vkCmdDrawIndexed(commandBuffer, indexCount, instanceCount, 0, 0, 0);
@@ -86,6 +86,15 @@ void Model::createDescriptorSet(DescriptorPool& pool, Device& device)
 			.writeImage(1, &imageInfo)
 			.build(descriptorSet[i]);
 	}
+}
+
+std::vector<DescriptorSetObject> Model::getDescriptorType()
+{
+	std::vector<DescriptorObject> set1 = {
+		 {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1} 
+	};
+
+	return std::vector<DescriptorSetObject>{{set1, 2}};
 }
 
 void Model::createVertexBuffers(const std::vector<Vertex>& vertices)

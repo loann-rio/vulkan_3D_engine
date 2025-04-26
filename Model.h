@@ -47,7 +47,7 @@ public:
 		bool loadOBJModel(const std::string& filepath);
 	};
 
-	Model(Device& device, const Model::Builder &builder, const char* filePathTexture = "");
+	Model(Device& device, const Model::Builder &builder, const char* filePathTexture = ""); 
 	~Model(); 
 
 	Model(const Model&) = delete;
@@ -56,23 +56,21 @@ public:
 	static std::unique_ptr<Model> createModelFromFile(Device &device, const std::string &filePath, const char* filePathTexture);
 
 	void bind(VkCommandBuffer& commandBuffer, Buffer* instancesBuffer);
-	void draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout, uint32_t instanceCount);
+	void draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout, glm::mat4 modelMatrix, uint32_t instanceCount); 
 
 	bool hasTexture = false;
 	std::unique_ptr<Texture> texture;
 	void setTexture(std::unique_ptr<Texture> newTexture) { texture = std::move(newTexture); }
 
-	std::vector<VkDescriptorSet> descriptorSet{ Swap_chain::MAX_FRAMES_IN_FLIGHT };
+	
 	void createDescriptorSet(DescriptorPool& pool, Device& device);
 	std::vector<VkDescriptorSet> getDescriptorSets() { return descriptorSet; };
 
-	void updateAnimation() {};
+	bool updateAnimation(uint32_t index, float time) { return false; };
 	void update() {};
 
-	static std::vector<DescriptorObject> getDescriptorType() { return { {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1} }; }
+	static std::vector<DescriptorSetObject> getDescriptorType();
 	static int getModelType() { return 1; }
-
-	const uint16_t descriptorSetIndex = 2;
 
 private:
 	void createVertexBuffers(const std::vector<Vertex>& vertices);
@@ -87,6 +85,9 @@ private:
 	std::unique_ptr<Buffer> indexBuffer;
 	uint32_t indexCount;
 
+	std::vector<VkDescriptorSet> descriptorSet{ Swap_chain::MAX_FRAMES_IN_FLIGHT };
+
 	static std::vector<VkDescriptorType> bindingDescription;
+
 };
 

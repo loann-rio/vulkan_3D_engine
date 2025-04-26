@@ -22,7 +22,7 @@ BasicUI::BasicUI(Device& device, GLFWwindow* window, VkRenderPass renderPass) : 
     pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
     pool_info.maxSets = 1000;
-    pool_info.poolSizeCount = std::size(pool_sizes);
+    pool_info.poolSizeCount = static_cast<int>(std::size(pool_sizes));
     pool_info.pPoolSizes = pool_sizes;
 
     if (vkCreateDescriptorPool(device.device(), &pool_info, nullptr, &imguiPool) != VK_SUCCESS) {
@@ -177,7 +177,7 @@ void BasicUI::objectSelectionWindow(std::vector<std::string> listObjectsName, Ob
     } 
 
     
-    ImGui::ListBox("##go", &item_current, listObjectsNameCStr.data(), listObjectsNameCStr.size());
+    ImGui::ListBox("##go", &item_current, listObjectsNameCStr.data(), static_cast<int>(listObjectsNameCStr.size()));
 
     selected_object = listObjectsName[item_current];
 
@@ -261,7 +261,7 @@ void BasicUI::createCameraWindow(ObjectManager* manager, bool isSpotLight = fals
 
     ImGui::Text("fov");
     static float fov = 1.0f;
-    ImGui::DragFloat("##fov", &fov, 0.01, 0.1, glm::half_pi<float>());
+    ImGui::DragFloat("##fov", &fov, 0.01f, 0.1f, glm::half_pi<float>());
 
     static glm::vec4 color{ 1.0f };
     static float ar = 1.0f;
@@ -270,7 +270,7 @@ void BasicUI::createCameraWindow(ObjectManager* manager, bool isSpotLight = fals
     {
         ImGui::Text("Aspect Ratio");
         
-        ImGui::DragFloat("##aspectRatio", &ar, 0.1, 1 / 20, 20);
+        ImGui::DragFloat("##aspectRatio", &ar, 0.1f, 1 / 20, 20);
 
         ImGui::Text("Color:");
         ImGui::ColorEdit4("##clr", glm::value_ptr(color));

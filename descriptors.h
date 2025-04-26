@@ -9,7 +9,13 @@
 
 struct DescriptorObject {
     VkDescriptorType descriptorType;
-    int count = 1;
+    VkShaderStageFlagBits stage;
+    uint32_t count = 1;
+};
+
+struct DescriptorSetObject {
+    std::vector<DescriptorObject> descriptorSet;
+    uint16_t setIndex = 0;
 };
 
 class DescriptorSetLayout {

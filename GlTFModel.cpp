@@ -8,9 +8,6 @@
 
 #include "GlTFModel.h"
 
-struct GltfPushConstant {
-	int indexMaterial{ 0 }; 
-};
 
 
 bool loadImageDataFunc(tinygltf::Image* image, const int imageIndex, std::string* error, std::string* warning, int req_width, int req_height, const unsigned char* bytes, int size, void* userData)
@@ -95,6 +92,7 @@ void GlTFModel::ModelGltf::loadNode(Node* parent, const tinygltf::Node& node, ui
 		const tinygltf::Mesh mesh = model.meshes[node.mesh];
 
 		Mesh* newMesh = new Mesh(device, newNode->matrix);
+		bool hasSkin = false; 
 
 		for (size_t j = 0; j < mesh.primitives.size(); j++) 
 		{
@@ -109,7 +107,7 @@ void GlTFModel::ModelGltf::loadNode(Node* parent, const tinygltf::Node& node, ui
 			glm::vec3 posMin{};
 			glm::vec3 posMax{};
 
-			bool hasSkin = false;
+			
 			bool hasIndices = primitive.indices > -1;
 
 			// Vertices
@@ -193,7 +191,7 @@ void GlTFModel::ModelGltf::loadNode(Node* parent, const tinygltf::Node& node, ui
 					weightByteStride = weightAccessor.ByteStride(weightView) ? (weightAccessor.ByteStride(weightView) / sizeof(float)) : tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC4);
 				}
 
-				hasSkin = (bufferJoints && bufferWeights);
+				hasSkin = hasSkin || (bufferJoints && bufferWeights);
 
 				for (size_t v = 0; v < posAccessor.count; v++) 
 				{
@@ -228,7 +226,6 @@ void GlTFModel::ModelGltf::loadNode(Node* parent, const tinygltf::Node& node, ui
 					}
 
 					vert.weight0 = hasSkin ? glm::make_vec4(&bufferWeights[v * weightByteStride]) : glm::vec4(0.0f);
-					newMesh->createBuffer(hasSkin);
 
 					// Fix for all zero weights
 					if (glm::length(vert.weight0) == 0.0f) {
@@ -285,6 +282,8 @@ void GlTFModel::ModelGltf::loadNode(Node* parent, const tinygltf::Node& node, ui
 			newPrimitive->setBoundingBox(posMin, posMax);
 			newMesh->primitives.push_back(newPrimitive);
 		}
+
+		newMesh->createBuffer(hasSkin); 
 
 		// Mesh BB from BBs of primitives
 		for (auto p : newMesh->primitives) {
@@ -770,7 +769,7 @@ bool GlTFModel::ModelGltf::loadFromFile(std::string filename, float scale)
 
 		/////// load animations
 		if (gltfModel.animations.size() > 0) {
-			//loadAnimations(gltfModel);
+			loadAnimations(gltfModel); 
 		}
 
 		/////// load skins
@@ -806,21 +805,33 @@ bool GlTFModel::ModelGltf::loadFromFile(std::string filename, float scale)
 	return true;
 }
 
-void GlTFModel::ModelGltf::drawNode(Node* node, VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout)
+void GlTFModel::ModelGltf::drawNode(Node* node, VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout, glm::mat4 modelMatrix)
 {	
 	if (node->mesh) {
 
+		// bind skin matrix
+		if (node->mesh->primitives.size()) {
+			vkCmdBindDescriptorSets(
+				commandBuffer,
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				GlTFPipelineLayout,
+				3, 1,
+				&node->mesh->descriptorSet[0],
+				0, nullptr
+			);
+		}
+
 		for (Primitive* primitive : node->mesh->primitives) {
-			GltfPushConstant push{};
 			
 			push.indexMaterial = primitive->materialIndex;
+			push.nodeMatrix = modelMatrix;// *node->getMatrix(); 
 
 			vkCmdPushConstants(
 				commandBuffer,
 				GlTFPipelineLayout,
 				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 				0,
-				sizeof(push),
+				sizeof(GltfPushConstant),
 				&push
 			);
 
@@ -829,18 +840,15 @@ void GlTFModel::ModelGltf::drawNode(Node* node, VkCommandBuffer& commandBuffer, 
 	}
 
 	for (auto& child : node->children) {
-		drawNode(child, commandBuffer, GlTFPipelineLayout);
+		drawNode(child, commandBuffer, GlTFPipelineLayout, modelMatrix);  
 	}
 
 }
 
-void GlTFModel::ModelGltf::draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout, uint32_t instanceCount = 1)
+void GlTFModel::ModelGltf::draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout, glm::mat4 modelMatrix, uint32_t instanceCount = 1)
 {
-
-	//// bind materials buffer here ////
-
 	for (auto& node : nodes) {
-		drawNode(node, commandBuffer, GlTFPipelineLayout);
+		drawNode(node, commandBuffer, GlTFPipelineLayout, modelMatrix); 
 	}
 }
 
@@ -955,26 +963,32 @@ void GlTFModel::ModelGltf::createIndexBuffers(LoaderInfo loaderInfo)
 
 }
 
-std::vector<DescriptorObject> GlTFModel::ModelGltf::getDescriptorType()
+std::vector<DescriptorSetObject> GlTFModel::ModelGltf::getDescriptorType()
 {
-	return{
-		{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, MAX_TEXTURES}, 
-		{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1} 
+
+	auto set1 = std::vector<DescriptorObject>{
+		{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT,  MAX_TEXTURES},
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 1 } }; 
+
+	auto set2 = std::vector<DescriptorObject>{
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 1 } };
+
+
+	return std::vector<DescriptorSetObject>{
+		{set1, 2},
+		{set2, 3}
 	};
 }
 
 void GlTFModel::ModelGltf::createDescriptorSet(DescriptorPool& pool, Device& device)
 {
-	std::cout << textures.size() << "\n";
-
-	for (auto& texture : textures) {
-		texturesImageInfo.push_back(texture.texture->getImageInfo());
-	}
-
 	VkDescriptorImageInfo info = textures[0].texture->getImageInfo();
-	
-	while (texturesImageInfo.size() < MAX_TEXTURES) {
-		texturesImageInfo.push_back(info);
+
+	std::vector<VkDescriptorImageInfo> texturesImageInfo{ MAX_TEXTURES, info }; 
+
+	size_t i = 0;
+	for (auto& texture : textures) {
+		texturesImageInfo[i++] = texture.texture->getImageInfo();
 	}
 
 	auto textureSetLayout = DescriptorSetLayout::Builder(device)
@@ -991,6 +1005,10 @@ void GlTFModel::ModelGltf::createDescriptorSet(DescriptorPool& pool, Device& dev
 			.writeImage(1, texturesInfo, MAX_TEXTURES)
 			.writeBuffer(2, &materialBufferInfo) 
 			.build(descriptorSet[i]); 
+	}
+
+	for (auto& node : linearNodes) {
+		node->createDescriptorSets(pool, device);  
 	}
 }
 
@@ -1073,8 +1091,8 @@ void GlTFModel::ModelGltf::bind(VkCommandBuffer& commandBuffer, Buffer* instance
 	VkDeviceSize offsets[] = { 0 };
 
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
-	vkCmdBindIndexBuffer(commandBuffer, indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
-}
+	vkCmdBindIndexBuffer(commandBuffer, indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32); 
+} 
 
 GlTFModel::Node* GlTFModel::ModelGltf::findNode(Node* parent, uint32_t index)
 {
@@ -1129,21 +1147,41 @@ void GlTFModel::Mesh::setBoundingBox(glm::vec3 min, glm::vec3 max)
 void GlTFModel::Mesh::createBuffer(bool hasSkin)
 {
 	VkDeviceSize sizeBuffer;
-	if (hasSkin)
+	if (!hasSkin)
 		sizeBuffer = sizeof(glm::mat4);
 	else
 		sizeBuffer = sizeof(UniformBlock);
-	 
-	uniformBuffer = std::make_unique<Buffer>(
-		device,
+
+	uniformBuffer = std::make_unique<Buffer>( 
+		device, 
 		sizeBuffer,
 		1,
-		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-		device.properties.limits.minUniformBufferOffsetAlignment
-	);
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT		
+	); 
 
-	uniformBuffer->map();
+	uniformBuffer->map();  
+	 
+	bufferCreated++; 
+} 
+
+void GlTFModel::Mesh::createDescriptorSet(DescriptorPool& pool, Device& device)
+{
+	std::cout << "create desc set \n";
+	auto textureSetLayout = DescriptorSetLayout::Builder(device) 
+		.addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+		.build(); 
+
+	VkDescriptorBufferInfo skinBufferInfo = uniformBuffer->descriptorInfo(); 
+
+	for (int i = 0; i < descriptorSet.size(); i++)
+	{
+		DescriptorWriter(*textureSetLayout, pool) 
+			.writeBuffer(1, &skinBufferInfo)
+			.build(descriptorSet[i]); 
+	}
+
+	descriptorCreated++;
 }
 
 GlTFModel::Primitive::Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t vertexCount, int matIndex) : firstIndex(firstIndex), indexCount(indexCount), vertexCount(vertexCount), materialIndex(matIndex)
@@ -1186,15 +1224,21 @@ glm::mat4 GlTFModel::Node::getMatrix()
 	}
 }
 
+void GlTFModel::Node::createDescriptorSets(DescriptorPool& pool, Device& device)
+{
+	if (mesh)
+		mesh->createDescriptorSet(pool, device);
+}
+
 void GlTFModel::Node::update()
 {
 	useCachedMatrix = false; 
 
 	if (mesh) {
 		glm::mat4 m = getMatrix();
+
 		if (skin)
 		{
-
 			mesh->uniformBlock.matrix = m;
 
 			// Update join matrices
@@ -1211,11 +1255,14 @@ void GlTFModel::Node::update()
 			}
 
 			mesh->uniformBlock.jointcount = static_cast<uint32_t>(numJoints);
+
+
 			mesh->uniformBuffer->writeToBuffer(&mesh->uniformBlock, sizeof(mesh->uniformBlock), 0);
 		}
 		else {
 			mesh->uniformBuffer->writeToBuffer(&m, sizeof(glm::mat4), 0);
 		}
+
 		mesh->uniformBuffer->flush();
 	}
 
@@ -1287,11 +1334,11 @@ std::vector<VkVertexInputAttributeDescription> GlTFModel::ModelGltf::Vertex::get
 	std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
 
 	attributeDescriptions.push_back({ 0, 0, VK_FORMAT_R32G32B32_SFLOAT    , offsetof(Vertex, position) });
-	attributeDescriptions.push_back({ 1, 0, VK_FORMAT_R32G32B32_SFLOAT    , offsetof(Vertex, normal)   });
-	attributeDescriptions.push_back({ 2, 0, VK_FORMAT_R32G32_SFLOAT       , offsetof(Vertex, uv0)      });
-	attributeDescriptions.push_back({ 3, 0, VK_FORMAT_R32G32_SFLOAT       , offsetof(Vertex, uv1)      });
-	attributeDescriptions.push_back({ 4, 0, VK_FORMAT_R32G32B32A32_UINT   , offsetof(Vertex, joint0)   });
-	attributeDescriptions.push_back({ 5, 0, VK_FORMAT_R32G32B32A32_SFLOAT , offsetof(Vertex, weight0)  });
+	attributeDescriptions.push_back({ 1, 0, VK_FORMAT_R32G32B32A32_UINT   , offsetof(Vertex, joint0)   });
+	attributeDescriptions.push_back({ 2, 0, VK_FORMAT_R32G32B32A32_SFLOAT , offsetof(Vertex, weight0)  });
+	attributeDescriptions.push_back({ 3, 0, VK_FORMAT_R32G32B32_SFLOAT    , offsetof(Vertex, normal)   });
+	attributeDescriptions.push_back({ 4, 0, VK_FORMAT_R32G32_SFLOAT       , offsetof(Vertex, uv0)      });
+	attributeDescriptions.push_back({ 5, 0, VK_FORMAT_R32G32_SFLOAT       , offsetof(Vertex, uv1)      });
 	attributeDescriptions.push_back({ 6, 0, VK_FORMAT_R32G32B32_SFLOAT    , offsetof(Vertex, color)    });
 
 	return attributeDescriptions;
@@ -1302,6 +1349,8 @@ std::vector<VkVertexInputAttributeDescription> GlTFModel::ModelGltf::Vertex::get
 	std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
 
 	attributeDescriptions.push_back({ 0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0 }); 
+	attributeDescriptions.push_back({ 1, 0, VK_FORMAT_R32G32B32A32_UINT   , offsetof(Vertex, joint0) }); 
+	attributeDescriptions.push_back({ 2, 0, VK_FORMAT_R32G32B32A32_SFLOAT , offsetof(Vertex, weight0) }); 
 
 	return attributeDescriptions;
 }
@@ -1469,7 +1518,7 @@ void GlTFModel::TextureModel::TextFromglTfImage(Device& device, tinygltf::Image&
 
 		image->createTextureImageView(mipLevels);
 		image->createTextureSampler(mipLevels);
-
+		
 		texture = image;
 
 		delete[] buffer;
@@ -1627,16 +1676,16 @@ void GlTFModel::AnimationSampler::rotate(size_t index, float time, Node* node)
 
 }
 
-void GlTFModel::ModelGltf::updateAnimation(uint32_t index, float time)
+bool GlTFModel::ModelGltf::updateAnimation(uint32_t index, float animationTimer)
 {
 	if (animations.empty()) {
 		std::cout << ".glTF does not contain animation." << std::endl;
-		return;
+		return false;
 	}
 
 	if (index > static_cast<uint32_t>(animations.size()) - 1) {
 		std::cout << "No animation with index " << index << std::endl;
-		return;
+		return false;
 	}
 
 	Animation& animation = animations[index];
@@ -1649,29 +1698,35 @@ void GlTFModel::ModelGltf::updateAnimation(uint32_t index, float time)
 		}
 
 		for (size_t i = 0; i < sampler.inputs.size() - 1; i++) {
-			if ((time >= sampler.inputs[i]) && (time <= sampler.inputs[i + 1])) {
-				float u = std::max(0.0f, time - sampler.inputs[i]) / (sampler.inputs[i + 1] - sampler.inputs[i]);
+			if ((animationTimer >= sampler.inputs[i]) && (animationTimer <= sampler.inputs[i + 1])) {
+				float u = std::max(0.0f, animationTimer - sampler.inputs[i]) / (sampler.inputs[i + 1] - sampler.inputs[i]);
 				if (u <= 1.0f) {
 					switch (channel.path) {
 					case AnimationChannel::PathType::TRANSLATION:
-						sampler.translate(i, time, channel.node);
+						sampler.translate(i, animationTimer, channel.node);
 						break;
 					case AnimationChannel::PathType::SCALE:
-						sampler.scale(i, time, channel.node);
+						sampler.scale(i, animationTimer, channel.node);
 						break;
 					case AnimationChannel::PathType::ROTATION:
-						sampler.rotate(i, time, channel.node);
+						sampler.rotate(i, animationTimer, channel.node);
 						break;
 					}
 					updated = true;
 				}
+
 			}
 		}
 	}
-	if (updated) {
+
+	if (updated) 
+	{
 		for (auto& node : nodes) {
 			node->update();
 		}
+		return true;
 	}
+	
+	return false;
 
 }

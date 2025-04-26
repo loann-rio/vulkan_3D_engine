@@ -39,6 +39,11 @@
 #define MAX_NUM_JOINTS 128u
 #define MAX_TEXTURES 128u
 
+struct GltfPushConstant {
+	glm::mat4 nodeMatrix{};
+	int indexMaterial{ 0 };
+};
+
 class GlTFModel
 {
 	struct Node;
@@ -82,12 +87,6 @@ class GlTFModel
 
 		glm::vec4 baseColorFactor = glm::vec4(1.0f); 
 		glm::vec4 emissiveFactor  = glm::vec4(0.0f);
-
-		/*std::shared_ptr<TextureModel> baseColorTexture;
-		std::shared_ptr<TextureModel> metallicRoughnessTexture; 
-		std::shared_ptr<TextureModel> normalTexture; 
-		std::shared_ptr<TextureModel> occlusionTexture; 
-		std::shared_ptr<TextureModel> emissiveTexture;*/
 
 		int baseColorTexture{ -1 };
 		int metallicRoughnessTexture{ -1 };
@@ -160,9 +159,13 @@ class GlTFModel
 
 		Mesh(Device& device, glm::mat4 matrix);
 		~Mesh();
+
+		int bufferCreated = 0;
+		int descriptorCreated = 0;
 		
 		void setBoundingBox(glm::vec3 min, glm::vec3 max);
 		void createBuffer(bool hasSkin);
+		void createDescriptorSet(DescriptorPool& pool, Device& device);
 		Device& device;
 	};
 
@@ -176,22 +179,32 @@ class GlTFModel
 	struct Node {
 		Node* parent;
 		uint32_t index;
+
 		std::vector<Node*> children;
+
 		glm::mat4 matrix;
+
 		std::string name;
+
 		Mesh* mesh;
 		Skin* skin;
 		int32_t skinIndex = -1;
+
 		glm::vec3 translation{};
 		glm::vec3 scale{ 1.0f };
 		glm::quat rotation;
+
 		BoundingBox bvh;
 		BoundingBox aabb;
+
 		bool useCachedMatrix{ false };
-		glm::mat4 cachedLocalMatrix{ glm::mat4(1.0f) };
-		glm::mat4 cachedMatrix{ glm::mat4(1.0f) };
+		glm::mat4 cachedLocalMatrix{ glm::mat4(1.0f) };  
+		glm::mat4 cachedMatrix{ glm::mat4(1.0f) }; 
 		glm::mat4 localMatrix();
 		glm::mat4 getMatrix();
+
+		void createDescriptorSets(DescriptorPool& pool, Device& device);
+
 		void update();
 		~Node();
 	};
@@ -256,11 +269,11 @@ class GlTFModel
 			glm::vec3 position{};
 			glm::vec3 normal{};
 
+			glm::uvec4 joint0; 
+			glm::vec4 weight0;
+
 			glm::vec2 uv0{};
 			glm::vec2 uv1{};
-
-			glm::uvec4 joint0;
-			glm::vec4 weight0;
 
 			glm::vec3 color{};
 
@@ -269,7 +282,7 @@ class GlTFModel
 			static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptionsShadow(bool hasMutipleInstances);
 		};
 
-
+		GltfPushConstant push{};
 
 		std::unique_ptr<Buffer> vertexBuffer;
 		std::unique_ptr<Buffer> indexBuffer;
@@ -283,19 +296,16 @@ class GlTFModel
 
 		std::vector<TextureModel> textures; 
 		std::vector<TextureSampler> textureSamplers;
-		std::vector<VkDescriptorImageInfo> texturesImageInfo;
+		
 
 		std::vector<Material> materials;
 		std::shared_ptr<Buffer> materialBuffer = nullptr; 
 
-		std::vector<Animation> animations;
+		std::vector<Animation> animations;		
+
 		std::vector<std::string> extensions; 
 
 		std::vector<VkDescriptorSet> descriptorSet{ Swap_chain::MAX_FRAMES_IN_FLIGHT };
-
-		int32_t animationIndex = 0;
-		float animationTimer = 0.0f;
-		bool animate = true;
 
 		struct Dimensions {
 			glm::vec3 min = glm::vec3(FLT_MAX);
@@ -321,21 +331,20 @@ class GlTFModel
 		void loadMaterials(tinygltf::Model& gltfModel);
 		void loadAnimations(tinygltf::Model& gltfModel);
 		bool loadFromFile(std::string filename, float scale = 1.0f);
-		
 
 		VkSamplerAddressMode getVkWrapMode(int32_t wrapMode);
 		VkFilter getVkFilterMode(int32_t filterMode);
 		void getNodeProps(const tinygltf::Node& node, const tinygltf::Model& model, size_t& vertexCount, size_t& indexCount);
 		void getSceneDimensions();
-		static std::vector<DescriptorObject> getDescriptorType();
-		std::vector<VkDescriptorSet>& getDescriptorSets() { return descriptorSet; }  
+		std::vector<VkDescriptorSet>& getDescriptorSets() { return descriptorSet; }
+		static std::vector<DescriptorSetObject> getDescriptorType(); 
+		static int getModelType() { return 2; }
 
 		void bind(VkCommandBuffer& commandBuffer, Buffer* instancesBuffer);
-		void drawNode(Node* node, VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout);
-		void draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout, uint32_t instanceCount);
+		void drawNode(Node* node, VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout, glm::mat4 modelMatrix);
+		void draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout, glm::mat4 modelMatrix, uint32_t instanceCount);
 		
-		
-		void updateAnimation(uint32_t index, float time);
+		bool updateAnimation(uint32_t index, float animationTimer);
 		
 		void createVertexBuffers(LoaderInfo loaderInfo);
 		void createIndexBuffers(LoaderInfo loaderInfo);
@@ -344,8 +353,7 @@ class GlTFModel
 
 		void calculateBoundingBox(Node* node, Node* parent);
 
-		static int getModelType() { return 2; }
-		const uint16_t descriptorSetIndex = 1;
+		
 
 		GlTFModel::Node* findNode(Node* parent, uint32_t index);
 		GlTFModel::Node* nodeFromIndex(uint32_t index);

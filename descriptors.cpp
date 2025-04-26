@@ -160,10 +160,6 @@ DescriptorWriter& DescriptorWriter::writeImage(
 
     auto& bindingDescription = setLayout.bindings[binding];
 
-    /*assert(
-        bindingDescription.descriptorCount == 1 &&
-        "Binding single descriptor info, but binding expects multiple");*/
-
     VkWriteDescriptorSet write{};
     write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     write.descriptorType = bindingDescription.descriptorType;
@@ -180,6 +176,7 @@ bool DescriptorWriter::build(VkDescriptorSet& set) {
     if (!success) {
         return false;
     }
+
     overwrite(set);
     return true;
 }
@@ -192,5 +189,5 @@ void DescriptorWriter::overwrite(VkDescriptorSet& set) {
         write.dstSet = set;
     }
 
-    vkUpdateDescriptorSets(pool.device.device(), writes.size(), writes.data(), 0, nullptr);
+    vkUpdateDescriptorSets(pool.device.device(), static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
 }

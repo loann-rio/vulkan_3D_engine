@@ -11,6 +11,7 @@ C:\VulkanSDK\1.3.290.0\Bin\glslc.exe GlTFshader.vert -o GlTFshader.vert.spv --ta
 C:\VulkanSDK\1.3.290.0\Bin\glslc.exe GlTFshader.frag -o GlTFshader.frag.spv --target-env=vulkan1.2
 
 C:\VulkanSDK\1.3.290.0\Bin\glslc.exe shadowmap.vert -o shadowmap.vert.spv --target-env=vulkan1.2
+C:\VulkanSDK\1.3.290.0\Bin\glslc.exe shadowmapgltf.vert -o shadowmapgltf.vert.spv --target-env=vulkan1.2 
 
 C:\VulkanSDK\1.3.290.0\Bin\glslc.exe depthView.vert -o depthView.vert.spv --target-env=vulkan1.2
 C:\VulkanSDK\1.3.290.0\Bin\glslc.exe depthView.frag -o depthView.frag.spv --target-env=vulkan1.2
