@@ -1,14 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Fichiers sources">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-    </Filter>
-    <Filter Include="Fichiers d%27en-tête">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
-    </Filter>
     <Filter Include="Fichiers de ressources">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
@@ -16,65 +8,20 @@
     <Filter Include="shaders">
       <UniqueIdentifier>{3fb14638-fe08-4911-9322-85bfbb5a28a1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="objects">
+      <UniqueIdentifier>{927d5ed7-1ec5-41a0-a0e3-61cae2b03d8d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="model">
+      <UniqueIdentifier>{14016dc5-cfbb-4052-b5d1-7a37066e020b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="base">
+      <UniqueIdentifier>{ab9730ba-1978-4a69-9614-0cb4e1a321fd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="render">
+      <UniqueIdentifier>{5bf50b9e-6539-4c58-af42-1fb964733756}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
-      <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="Window.cpp">
-      <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="App.cpp">
-      <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="Pipeline.cpp">
-      <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="Device.cpp">
-      <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="Swap_chain.cpp">
-      <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="Model.cpp">
-      <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="GameObject.cpp">
-      <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer.cpp">
-      <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="Camera.cpp">
-      <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="KeyboardMovementController.cpp">
-      <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="Buffer.cpp">
-      <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="Frame_info.cpp">
-      <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="descriptors.cpp">
-      <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="TextOverlay.cpp">
-      <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="Texture.cpp">
-      <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="GlTFModel.cpp">
-      <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="GlobalRenderSystem.cpp">
-      <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="shadowRenderer.cpp">
-      <Filter>Fichiers sources</Filter>
-    </ClCompile>
     <ClCompile Include="external\basisu\transcoder\basisu_transcoder.cpp">
       <Filter>Fichiers de ressources</Filter>
     </ClCompile>
@@ -102,134 +49,182 @@
     <ClCompile Include="external\imgui-master\imgui_widgets.cpp">
       <Filter>Fichiers de ressources</Filter>
     </ClCompile>
-    <ClCompile Include="depthSwapChain.cpp">
-      <Filter>Fichiers sources</Filter>
+    <ClCompile Include="src\objects\BasicUI.cpp">
+      <Filter>objects</Filter>
     </ClCompile>
-    <ClCompile Include="ObjectManager.cpp">
-      <Filter>Fichiers sources</Filter>
+    <ClCompile Include="src\objects\GameObject.cpp">
+      <Filter>objects</Filter>
     </ClCompile>
-    <ClCompile Include="BasicUI.cpp">
-      <Filter>Fichiers sources</Filter>
+    <ClCompile Include="src\objects\KeyboardMovementController.cpp">
+      <Filter>objects</Filter>
     </ClCompile>
-    <ClCompile Include="preBuild.cpp">
-      <Filter>Fichiers sources</Filter>
+    <ClCompile Include="src\objects\objectManager.cpp">
+      <Filter>objects</Filter>
+    </ClCompile>
+    <ClCompile Include="src\objects\Texture.cpp">
+      <Filter>objects</Filter>
+    </ClCompile>
+    <ClCompile Include="src\model\GlTFModel.cpp">
+      <Filter>model</Filter>
+    </ClCompile>
+    <ClCompile Include="src\model\Model.cpp">
+      <Filter>model</Filter>
+    </ClCompile>
+    <ClCompile Include="src\model\preBuild.cpp">
+      <Filter>model</Filter>
+    </ClCompile>
+    <ClCompile Include="src\base\Buffer.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="src\base\depthSwapChain.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="src\base\descriptors.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="src\base\Device.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="src\base\Pipeline.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="src\base\Swap_chain.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="src\render\Camera.cpp">
+      <Filter>render</Filter>
+    </ClCompile>
+    <ClCompile Include="src\render\GlobalRenderSystem.cpp">
+      <Filter>render</Filter>
+    </ClCompile>
+    <ClCompile Include="src\render\Renderer.cpp">
+      <Filter>render</Filter>
+    </ClCompile>
+    <ClCompile Include="src\render\TextOverlay.cpp">
+      <Filter>render</Filter>
+    </ClCompile>
+    <ClCompile Include="src\App.cpp" />
+    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\base\Window.cpp">
+      <Filter>base</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Window.h">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="App.h">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="Pipeline.h">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="Device.h">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="Swap_chain.h">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="Model.h">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="GameObject.h">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer.h">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="Camera.h">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="KeyboardMovementController.h">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="Utils.h">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="Buffer.h">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame_info.h">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="preBuild.h">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="descriptors.h">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="TextOverlay.h">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="Texture.h">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="GlTFModel.h">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="GlobalRenderSystem.h">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="shadowRenderer.h">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
     <ClInclude Include="json.hpp">
       <Filter>Fichiers de ressources</Filter>
     </ClInclude>
     <ClInclude Include="tiny_gltf.h">
       <Filter>Fichiers de ressources</Filter>
     </ClInclude>
-    <ClInclude Include="depthSwapChain.h">
-      <Filter>Fichiers d%27en-tête</Filter>
+    <ClInclude Include="src\objects\BasicUI.h">
+      <Filter>objects</Filter>
     </ClInclude>
-    <ClInclude Include="ObjectManager.h">
-      <Filter>Fichiers d%27en-tête</Filter>
+    <ClInclude Include="src\objects\GameObject.h">
+      <Filter>objects</Filter>
     </ClInclude>
-    <ClInclude Include="BasicUI.h">
-      <Filter>Fichiers d%27en-tête</Filter>
+    <ClInclude Include="src\objects\KeyboardMovementController.h">
+      <Filter>objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\objectManager.h">
+      <Filter>objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\Texture.h">
+      <Filter>objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\model\GlTFModel.h">
+      <Filter>model</Filter>
+    </ClInclude>
+    <ClInclude Include="src\model\Model.h">
+      <Filter>model</Filter>
+    </ClInclude>
+    <ClInclude Include="src\model\preBuild.h">
+      <Filter>model</Filter>
+    </ClInclude>
+    <ClInclude Include="src\base\Buffer.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="src\base\depthSwapChain.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="src\base\descriptors.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="src\base\Device.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="src\base\Frame_info.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="src\base\Pipeline.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="src\base\Swap_chain.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="src\base\Utils.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="src\render\Camera.h">
+      <Filter>render</Filter>
+    </ClInclude>
+    <ClInclude Include="src\render\GlobalRenderSystem.h">
+      <Filter>render</Filter>
+    </ClInclude>
+    <ClInclude Include="src\render\Renderer.h">
+      <Filter>render</Filter>
+    </ClInclude>
+    <ClInclude Include="src\render\TextOverlay.h">
+      <Filter>render</Filter>
+    </ClInclude>
+    <ClInclude Include="src\App.h" />
+    <ClInclude Include="src\base\Window.h">
+      <Filter>base</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="compile.bat">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </None>
-    <None Include="simple_shader.vert">
+    <None Include="shaders\compile.bat">
       <Filter>shaders</Filter>
     </None>
-    <None Include="simple_shader.frag">
+    <None Include="shaders\depthView.frag">
       <Filter>shaders</Filter>
     </None>
-    <None Include="point_light.vert">
+    <None Include="shaders\depthView.vert">
       <Filter>shaders</Filter>
     </None>
-    <None Include="point_light.frag">
+    <None Include="shaders\GlTFshader.frag">
       <Filter>shaders</Filter>
     </None>
-    <None Include="text.vert">
+    <None Include="shaders\GlTFshader.vert">
       <Filter>shaders</Filter>
     </None>
-    <None Include="text.frag">
+    <None Include="shaders\point_light.frag">
       <Filter>shaders</Filter>
     </None>
-    <None Include="GlTFshader.vert">
+    <None Include="shaders\point_light.vert">
       <Filter>shaders</Filter>
     </None>
-    <None Include="GlTFshader.frag">
+    <None Include="shaders\shadowmap.vert">
       <Filter>shaders</Filter>
     </None>
-    <None Include="shadowmap.vert">
+    <None Include="shaders\shadowmapgltf.vert">
       <Filter>shaders</Filter>
     </None>
-    <None Include="depthView.frag">
+    <None Include="shaders\simple_shader.frag">
       <Filter>shaders</Filter>
     </None>
-    <None Include="depthView.vert">
+    <None Include="shaders\simple_shader.vert">
       <Filter>shaders</Filter>
     </None>
-    <None Include="shadowmapgltf.vert">
+    <None Include="shaders\text.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\text.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="skybox.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="skybox.frag">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>
