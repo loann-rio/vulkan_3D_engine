@@ -1,3 +1,4 @@
+
 #include "Swap_chain.h"
 
 // std
@@ -458,12 +459,12 @@ VkSurfaceFormatKHR Swap_chain::chooseSwapSurfaceFormat(
 VkPresentModeKHR Swap_chain::chooseSwapPresentMode(
     const std::vector<VkPresentModeKHR>& availablePresentModes) {
 
-    for (const auto& availablepresentmode : availablePresentModes) {
+    /*for (const auto& availablepresentmode : availablePresentModes) {
         if (availablepresentmode == VK_PRESENT_MODE_MAILBOX_KHR) {
             std::cout << "present mode: mailbox" << std::endl;
             return availablepresentmode;
         }
-    }
+    }*/
 
     for (const auto &availablePresentMode : availablePresentModes) {
        if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR) {

@@ -240,13 +240,10 @@ void main() {
 		spotLightLight += compute_shadow_factor(inPosShadow[indexSpotLight], indexSpotLight, surfaceNormal);
 	}
 
-	vec4 color = inColor0;
+	//vec4 color = inColor0;
 	//vec4 color = (texture(colorMap, inUV0) * texture(aoMap, inUV0)) * (cosAngOfIncidence * ubo.globalLightDir.w + spotLightLight) + texture(emissiveMap, inUV0); 
+	*/
 
-	// sum colors
-	outColor =  color;*/
-
-	
 	ShaderMaterial material = materials[push.materialIndex];
 
 	float perceptualRoughness;
@@ -320,7 +317,7 @@ void main() {
 	baseColor *= inColor0;
 
 	diffuseColor = baseColor.rgb * (vec3(1.0) - f0);
-	diffuseColor *= 1.0 - metallic;
+	diffuseColor *= 1.0 - metallic * 0.5;
 		
 	float alphaRoughness = perceptualRoughness * perceptualRoughness;
 
@@ -400,7 +397,8 @@ void main() {
 
 	
 	color += ubo.ambientLightColor.w * ubo.ambientLightColor.rgb * diffuseColor;
+	color += spotLightLight.rgb * diffuseColor;// * spotLightLight.w;
 	color += emissive;
 	
-	outColor = spotLightLight * vec4(color, baseColor.a);
+	outColor = vec4(color, baseColor.a);
 }

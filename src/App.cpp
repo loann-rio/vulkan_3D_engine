@@ -107,6 +107,15 @@ void App::run()
 
         /////// update objects ///////
 
+        // update GLTF game objects
+        {
+            uint16_t i = 0;
+            std::vector<GameObjectModel*> objects = objectManager.getByType<GameObjectModel>();
+            for (auto obj : objects) {
+                obj->update(frameTime);
+            }
+        }
+
         // update camera
         {
             auto* camObj = dynamic_cast<GameObjectCamera*>(objectManager.get(objectManager.mainCamera));
@@ -149,15 +158,6 @@ void App::run()
 
             shadowUboBuffer[frameIndex]->writeToBuffer(&spotLightUbo);
             shadowUboBuffer[frameIndex]->flush();
-        }
-
-        // update GLTF game objects
-        {
-            uint16_t i = 0;
-            std::vector<GameObjectModel*> objects = objectManager.getByType<GameObjectModel>();
-            for (auto obj : objects) {
-                obj->update(frameTime);
-            }
         }
 
         FrameInfo frameInfo{
