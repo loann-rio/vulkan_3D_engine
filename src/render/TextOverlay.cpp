@@ -99,7 +99,7 @@ void TextOverlay::renderText(VkCommandBuffer& commandBuffer, FrameInfo& frameInf
 		nullptr
 	);
 
-	VkBuffer buffers[] = { vertexBuffer->getBuffer() };
+	VkBuffer buffers[] = { vertexBuffer[frameInfo.frameIndex]->getBuffer()}; 
 	VkDeviceSize offsets[] = { 0 };
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
 
@@ -119,14 +119,18 @@ void TextOverlay::prepareResources(DescriptorPool& pool)
 
 	// create buffer corresponding to the position in the texture of each letter (max nb of letters)
 
-	vertexBuffer = std::make_unique<Buffer>(
-		device,
-		bufferSize,
-		1,
-		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-	);
 
+	vertexBuffer.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
+	for (int i = 0; i < vertexBuffer.size() && i < 2; i++)
+	{
+		vertexBuffer[i] = std::make_unique<Buffer>(
+			device,
+			bufferSize,
+			1,
+			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+		);
+	}
 
 	// create texture
 	
@@ -162,12 +166,12 @@ void TextOverlay::prepareResources(DescriptorPool& pool)
 	}
 }
 
-void TextOverlay::addText(std::string text, float x, float y, TextAlign align, uint32_t width, uint32_t height)
+void TextOverlay::addText(uint16_t frameIndex, std::string text, float x, float y, TextAlign align, uint32_t width, uint32_t height)
 {
 
 	const uint32_t firstChar = STB_FONT_consolas_24_latin1_FIRST_CHAR;
 
-	glm::vec4* mapped = (glm::vec4*)(vertexBuffer->getMappedMemory());
+	glm::vec4* mapped = (glm::vec4*)(vertexBuffer[frameIndex]->getMappedMemory());
 
 	assert(mapped != nullptr);
 

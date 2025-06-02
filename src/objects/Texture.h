@@ -9,6 +9,9 @@
 #include <string>
 #include <fstream>
 
+#include <ktx.h>
+#include <ktxvulkan.h> 
+
 
 class Texture
 {
@@ -58,7 +61,7 @@ private:
 
 	bool createTextureImage(const char* path);
 	bool createTextureImageKtx2(const std::string path, bool isCubeMap);
-	bool createTextureImageKtx(const std::string path, bool isCubeMap);
+	//bool createTextureImageKtx(const std::string path, bool isCubeMap);
 
 	void generateMipChain(VkImage image, uint32_t mipLevels, uint32_t width, uint32_t height);
 

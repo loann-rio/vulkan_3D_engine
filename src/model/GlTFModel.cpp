@@ -801,7 +801,7 @@ bool GlTFModel::ModelGltf::loadFromFile(std::string filename, float scale)
 	return true;
 }
 
-void GlTFModel::ModelGltf::drawNode(Node* node, VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, glm::mat4 modelMatrix, glm::mat4 normalMatrix) 
+void GlTFModel::ModelGltf::drawNode(Node* node, VkCommandBuffer& commandBuffer, uint16_t frameIndex, VkPipelineLayout& pipelineLayout, glm::mat4 modelMatrix, glm::mat4 normalMatrix)
 {	
 	if (node->mesh) {
 
@@ -836,12 +836,12 @@ void GlTFModel::ModelGltf::drawNode(Node* node, VkCommandBuffer& commandBuffer, 
 	}
 
 	for (auto& child : node->children) {
-		drawNode(child, commandBuffer, pipelineLayout, modelMatrix, normalMatrix);  
+		drawNode(child, commandBuffer, frameIndex, pipelineLayout, modelMatrix, normalMatrix);  
 	}
 
 }
 
-void GlTFModel::ModelGltf::drawNodeDepth(Node* node, VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, glm::mat4 modelMatrix, int lightIndex)
+void GlTFModel::ModelGltf::drawNodeDepth(Node* node, VkCommandBuffer& commandBuffer, uint16_t frameIndex, VkPipelineLayout& pipelineLayout, glm::mat4 modelMatrix, int lightIndex)
 {
 
 	if (node->mesh) {
@@ -877,15 +877,15 @@ void GlTFModel::ModelGltf::drawNodeDepth(Node* node, VkCommandBuffer& commandBuf
 	}
 
 	for (auto& child : node->children) {
-		drawNodeDepth(child, commandBuffer, pipelineLayout, modelMatrix, lightIndex) ;
+		drawNodeDepth(child, commandBuffer, frameIndex, pipelineLayout, modelMatrix, lightIndex) ;
 	}
 
 }
 
-void GlTFModel::ModelGltf::draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout, glm::mat4 modelMatrix, glm::mat4 normalMatrix, uint32_t instanceCount = 1)
+void GlTFModel::ModelGltf::draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout, uint16_t frameIndex, glm::mat4 modelMatrix, glm::mat4 normalMatrix, uint32_t instanceCount = 1)
 {
 	for (auto& node : nodes) {
-		drawNode(node, commandBuffer, GlTFPipelineLayout, modelMatrix, normalMatrix); 
+		drawNode(node, commandBuffer, frameIndex, GlTFPipelineLayout, modelMatrix, normalMatrix); 
 	}
 }
 

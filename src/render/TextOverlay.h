@@ -30,10 +30,10 @@ public:
 
 	void prepareResources(DescriptorPool& pool);
 
-	void beginTextUpdate() { vertexBuffer->map(VK_WHOLE_SIZE, 0); numLetters = 0; };
-	void endTextUpdate() { vertexBuffer->unmap(); };
+	void beginTextUpdate(uint16_t frameIndex) { vertexBuffer[frameIndex]->map(VK_WHOLE_SIZE, 0); numLetters = 0; };
+	void endTextUpdate(uint16_t frameIndex) { vertexBuffer[frameIndex]->unmap(); };
 
-	void addText(std::string text, float x, float y, TextAlign align, uint32_t width, uint32_t height);
+	void addText(uint16_t frameIndex, std::string text, float x, float y, TextAlign align, uint32_t width, uint32_t height); 
 
 	void renderText(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo);
 
@@ -46,7 +46,7 @@ private:
 
 	Device& device;
 
-	std::unique_ptr<Buffer> vertexBuffer;
+	std::vector<std::unique_ptr<Buffer>> vertexBuffer;
 
 	std::unique_ptr<Pipeline> pipeline;
 	VkPipelineLayout pipelineLayout;

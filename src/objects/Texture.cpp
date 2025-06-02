@@ -21,8 +21,8 @@ Texture::Texture(Device& device, const char* filePathTexture, bool isCubeMap) : 
 
     bool result = false;
 
-    if (isKtx2)
-        result = createTextureImageKtx2(path, isCubeMap); 
+    if (isKtx2) {}
+        //result = createTextureImageKtx2(path, isCubeMap); 
     else if (!isCubeMap) 
         result = createTextureImage(filePathTexture);
 
@@ -355,15 +355,13 @@ bool Texture::createTextureImageKtx2(const std::string path, bool isCubeMap)
 
 }
 
-bool Texture::createTextureImageKtx(const std::string path, bool isCubeMap)
+/*bool Texture::createTextureImageKtx(const std::string path, bool isCubeMap)
 {
     
-    VkFormat format = VK_FORMAT_R8G8B8A8_UNORM; 
-    basist::ktx2_transcoder ktxTranscoder;
+    VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
 
-    basist::basisu_transcoder_init(); 
-
-    std::ifstream ifs( path, std::ios::binary | std::ios::in | std::ios::ate );
+    // open save file
+    std::ifstream ifs(path, std::ios::binary | std::ios::in | std::ios::ate);
     if (!ifs.is_open()) {
         throw std::runtime_error("Could not load the requested image file " + path);
     }
@@ -374,194 +372,84 @@ bool Texture::createTextureImageKtx(const std::string path, bool isCubeMap)
     ifs.seekg(0, std::ios::beg);
     ifs.read(inputData, inputDataSize); // write to buffer
 
-    bool success = ktxTranscoder.init(inputData, inputDataSize);
-    if (!success) {
-        throw std::runtime_error("Could not initialize ktx2 transcoder for image file " + path);
+    // init transcoder
+    ktxTexture* kTexture;
+    KTX_error_code result = ktxTexture_CreateFromMemory(
+        reinterpret_cast<const ktx_uint8_t*>(inputData),
+        inputDataSize,
+        KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT,
+        &kTexture
+    );
+
+    if (result != KTX_SUCCESS) {
+        throw std::runtime_error("Failed to load KTX texture: " + std::to_string(result));
     }
 
-    // Select target format based on device features (use uncompressed if none supported)
-    auto targetFormat = basist::transcoder_texture_format::cTFRGBA32;
+    uint32_t width = kTexture->baseWidth;
+    uint32_t height = kTexture->baseHeight;
+    mipLevel = kTexture->numLevels;
 
-    {
-        VkPhysicalDeviceFeatures pFeatures;
+    ktx_uint8_t* ktxTextureData = ktxTexture_GetData(kTexture);
+    ktx_size_t ktxTextureSize = ktxTexture_GetElementSize(kTexture);
 
-        device.getPhysicalFeatures(&pFeatures);
+    uint32_t faceCount = kTexture->numFaces;
+    uint32_t layerCount = kTexture->numLayers;
 
-        // select available format
-        if (pFeatures.textureCompressionBC) {
-            // BC7 is the preferred block compression if available
-            if (device.isFormatSupported(VK_FORMAT_BC7_UNORM_BLOCK)) {
-                targetFormat = basist::transcoder_texture_format::cTFBC7_RGBA;
-                format = VK_FORMAT_BC7_UNORM_BLOCK;
-            }
-            else {
-                if (device.isFormatSupported(VK_FORMAT_BC3_SRGB_BLOCK)) {
-                    targetFormat = basist::transcoder_texture_format::cTFBC3_RGBA;
-                    format = VK_FORMAT_BC3_SRGB_BLOCK;
-                }
-            }
-        }
-
-        // Adaptive scalable texture compression
-        if (pFeatures.textureCompressionASTC_LDR) {
-            if (device.isFormatSupported(VK_FORMAT_ASTC_4x4_SRGB_BLOCK))
-            {
-                targetFormat = basist::transcoder_texture_format::cTFASTC_4x4_RGBA;
-                format = VK_FORMAT_ASTC_4x4_SRGB_BLOCK;
-            }
-        }
-
-        // Ericsson texture compression
-        if (pFeatures.textureCompressionETC2) {
-            if (device.isFormatSupported(VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK))
-            {
-                targetFormat = basist::transcoder_texture_format::cTFETC2_RGBA;
-                format = VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK;
-            }
-        }
-    }
-
-    // @todo PowerVR texture compression support needs to be checked via an extension (VK_IMG_FORMAT_PVRTC_EXTENSION_NAME)
-    const bool targetFormatIsUncompressed = basist::basis_transcoder_format_is_uncompressed(targetFormat);
-
-    std::vector<basist::ktx2_image_level_info> levelInfos(ktxTranscoder.get_levels());
-    uint32_t mipLevel = ktxTranscoder.get_levels();
-
-    // Query image level information that we need later on for several calculations
-    // We only support 2D images (no cube maps or layered images)
-    for (uint32_t i = 0; i < mipLevel; i++) {
-        ktxTranscoder.get_image_level_info(levelInfos[i], i, 0, 0);
-    }
-
-    uint32_t width = levelInfos[0].m_orig_width;
-    uint32_t height = levelInfos[0].m_orig_height;
-
-    VkMemoryAllocateInfo memAllocInfo{};
-    memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    VkMemoryRequirements memReqs{};
-
-    // Create one staging buffer large enough to hold all uncompressed image levels
-    const uint32_t bytesPerBlockOrPixel = basist::basis_get_bytes_per_block_or_pixel(targetFormat);
-    uint32_t numBlocksOrPixels = 0;
-    VkDeviceSize totalBufferSize = 0;
-
-    for (uint32_t i = 0; i < mipLevel; i++) {
-        // Size calculations differ for compressed/uncompressed formats
-        numBlocksOrPixels = targetFormatIsUncompressed ? levelInfos[i].m_orig_width * levelInfos[i].m_orig_height : levelInfos[i].m_total_blocks;
-        totalBufferSize += numBlocksOrPixels * bytesPerBlockOrPixel;
-    }
-
-    Buffer stagingBufferMapped{ device, totalBufferSize, numBlocksOrPixels, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 0 };
-
-    unsigned char* buffer = new unsigned char[totalBufferSize];
-    unsigned char* bufferPtr = &buffer[0];
-
-    success = ktxTranscoder.start_transcoding();
-    if (!success) {
-        throw std::runtime_error("Could not start transcoding for image file " + path);
-    }
-
-    // Transcode all mip levels into the staging buffer
-    for (uint32_t i = 0; i < mipLevel; i++) {
-        // Size calculations differ for compressed/uncompressed formats
-        numBlocksOrPixels = targetFormatIsUncompressed ? levelInfos[i].m_orig_width * levelInfos[i].m_orig_height : levelInfos[i].m_total_blocks;
-        uint32_t outputSize = numBlocksOrPixels * bytesPerBlockOrPixel;
-        if (!ktxTranscoder.transcode_image_level(i, 0, 0, bufferPtr, numBlocksOrPixels, targetFormat, 0)) {
-            throw std::runtime_error("Could not transcode the requested image file " + path);
-        }
-        bufferPtr += outputSize;
-    }
+    createImage(
+        width, height,
+        format,
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        textureImage,
+        textureImageMemory,
+        layerCount,
+        isCubeMap ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0);
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
-    device.createBuffer(totalBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+    device.createBuffer(ktxTextureSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
 
     // transfer to device and copy from staging
     void* data;
-    vkMapMemory(device.device(), stagingBufferMemory, 0, totalBufferSize, 0, &data);
-    memcpy(data, buffer, static_cast<size_t>(totalBufferSize));
+    vkMapMemory(device.device(), stagingBufferMemory, 0, ktxTextureSize, 0, &data);
+    memcpy(data, ktxTextureData, static_cast<size_t>(ktxTextureSize));
     vkUnmapMemory(device.device(), stagingBufferMemory);
 
-    if (!isCubeMap) {
-        createImage(
-            width, height,
-            format,
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            textureImage,
-            textureImageMemory);
+    std::vector<VkBufferImageCopy> bufferCopyRegions;
+    uint32_t offset = 0;
 
-        device.transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevel);
-        device.copyBufferToImage(stagingBuffer, textureImage, width, height, 1, mipLevel - 1);
-        device.transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevel);
-
-    }
-    else
+    for (uint32_t face = 0; face < 6; face++)
     {
-        createImage(
-            width, height,
-            format,
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            textureImage,
-            textureImageMemory, 
-            6,
-            VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT); 
-
-
-
-        std::vector<VkBufferImageCopy> bufferCopyRegions;
-        bufferCopyRegions.reserve(6 * mipLevel);
-
-        uint32_t offset = 0;
-
-        for (uint32_t face = 0; face < 6; face++)
+        for (uint32_t level = 0; level < mipLevel; level++)
         {
-            for (uint32_t level = 0; level < mipLevel; level++) 
-            {
-                auto& levelInfo = levelInfos[level]; 
-
-                uint32_t width = std::max(1u, levelInfo.m_orig_width); 
-                uint32_t height = std::max(1u, levelInfo.m_orig_height); 
-                uint32_t blocksOrPixels = targetFormatIsUncompressed ? width * height : levelInfo.m_total_blocks; 
-                uint32_t imageSize = blocksOrPixels * bytesPerBlockOrPixel; 
-
-                if (!ktxTranscoder.transcode_image_level(level, face, 0, buffer + offset, blocksOrPixels, targetFormat, 0)) {
-                    throw std::runtime_error("Transcoding failed for level " + std::to_string(level) + ", face " + std::to_string(face));
-                } 
-                    
-                VkBufferImageCopy bufferCopyRegion = {};
-                bufferCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-                bufferCopyRegion.imageSubresource.mipLevel = level;
-                bufferCopyRegion.imageSubresource.baseArrayLayer = face;
-                bufferCopyRegion.imageSubresource.layerCount = 1;
-                bufferCopyRegion.imageExtent = { width, height, 1 };
-                    
-                bufferCopyRegion.bufferOffset = offset;
-
-                bufferCopyRegions.push_back(bufferCopyRegion);
-
-                offset += imageSize; 
-            }
+            // Calculate offset into staging buffer for the current mip level and face
+            ktx_size_t offset;
+            KTX_error_code ret = ktxTexture_GetImageOffset(kTexture, level, 0, face, &offset);
+            assert(ret == KTX_SUCCESS);
+            VkBufferImageCopy bufferCopyRegion = {};
+            bufferCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            bufferCopyRegion.imageSubresource.mipLevel = level;
+            bufferCopyRegion.imageSubresource.baseArrayLayer = face;
+            bufferCopyRegion.imageSubresource.layerCount = 1;
+            bufferCopyRegion.imageExtent.width = kTexture->baseWidth >> level;
+            bufferCopyRegion.imageExtent.height = kTexture->baseHeight >> level;
+            bufferCopyRegion.imageExtent.depth = 1;
+            bufferCopyRegion.bufferOffset = offset;
+            bufferCopyRegions.push_back(bufferCopyRegion);
         }
-
-        device.transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevel, 6); 
-        device.copyBufferToImage(stagingBuffer, textureImage, bufferCopyRegions);
-        device.transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevel, 6);
-
     }
+
+    device.transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevel, layerCount);
+    device.copyBufferToImage(stagingBuffer, textureImage, bufferCopyRegions);
+    device.transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevel, layerCount);
 
     vkDestroyBuffer(device.device(), stagingBuffer, nullptr);
     vkFreeMemory(device.device(), stagingBufferMemory, nullptr);
 
     return true;
-
-}
-
+}*/
 
 void Texture::bind(VkImage& image, VkMemoryPropertyFlags properties, VkDeviceMemory& imageMemory)
 {

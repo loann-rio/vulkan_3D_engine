@@ -80,18 +80,6 @@ void App::run()
         auto newTime = std::chrono::high_resolution_clock::now();
         float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
         currentTime = newTime;
-
-        {
-            // show fps count on screen
-            getFrameRate(frameTime);
-
-            std::stringstream ss("");
-            ss << std::fixed << std::setprecision(2) << frameTimeSum << " fps";
-
-            textOverlay.beginTextUpdate();
-            textOverlay.addText(ss.str(), 10, 10, TextOverlay::alignLeft, renderer.getWidth(), renderer.getHeight());
-            textOverlay.endTextUpdate();
-        }
         
         //// move camera on event ////
         {
@@ -104,6 +92,18 @@ void App::run()
         if (!renderer.aquireNextImage()) continue;
         
         int frameIndex = renderer.getFrameIndex();
+
+        {
+            // show fps count on screen
+            getFrameRate(frameTime);
+
+            std::stringstream ss("");
+            ss << std::fixed << std::setprecision(2) << frameTimeSum << " fps";
+
+            textOverlay.beginTextUpdate(frameIndex);
+            textOverlay.addText(frameIndex, ss.str(), 10, 10, TextOverlay::alignLeft, renderer.getWidth(), renderer.getHeight()); 
+            textOverlay.endTextUpdate(frameIndex); 
+        }
 
         /////// update objects ///////
 
@@ -126,7 +126,7 @@ void App::run()
             ubo.projection = camObj->camera->getProjection();
             ubo.view = camObj->camera->getView(); 
             ubo.inverseView = camObj->camera->getInverseView();
-            ubo.lightPos = camObj->transform.translation;
+            ubo.lightPos = camObj->transform.translation; 
         }
 
         // update pointLight 
