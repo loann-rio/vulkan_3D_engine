@@ -142,13 +142,13 @@ void GlobalRenderSystem::renderModel(VkCommandBuffer& commandBuffer, FrameInfo& 
 
 	obj->bindModel(commandBuffer);
 
-	obj->drawModel(commandBuffer, objPipelineLayout);
+	obj->drawModel(commandBuffer, objPipelineLayout, frameInfo.frameIndex);
 }
 
-void GlobalRenderSystem::renderModelDepth(VkCommandBuffer& commandBuffer, GameObjectModel* obj, int lightIndex)
+void GlobalRenderSystem::renderModelDepth(VkCommandBuffer& commandBuffer, GameObjectModel* obj, int lightIndex, uint16_t frameIndex)
 {
 	obj->bindModel(commandBuffer); 
-	obj->drawModelDepth(commandBuffer, objPipelineLayout, lightIndex); 
+	obj->drawModelDepth(commandBuffer, objPipelineLayout, lightIndex, frameIndex);
 }
 
 void GlobalRenderSystem::bind(VkCommandBuffer& commandBuffer, std::vector<VkDescriptorSet> globalDescriptorSets)
@@ -180,7 +180,7 @@ void GlobalRenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, Frame
 	}
 }
 
-void GlobalRenderSystem::renderGameObjectsDepth(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, std::vector<VkDescriptorSet> globalDescriptorSets, int lightIndex)
+void GlobalRenderSystem::renderGameObjectsDepth(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, std::vector<VkDescriptorSet> globalDescriptorSets, int lightIndex, uint16_t frameIndex)
 { 
 	// bind pipeline and global descriptor sets
 	bind(commandBuffer, globalDescriptorSets);
@@ -189,6 +189,6 @@ void GlobalRenderSystem::renderGameObjectsDepth(VkCommandBuffer& commandBuffer, 
 	for (auto obj : frameInfo.listGameObjects)
 	{
 		if (obj->getModelType() == modelType)
-			renderModelDepth(commandBuffer, obj, lightIndex);
+			renderModelDepth(commandBuffer, obj, lightIndex, frameIndex);
 	}
 }

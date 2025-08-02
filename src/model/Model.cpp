@@ -62,7 +62,7 @@ void Model::bind(VkCommandBuffer& commandBuffer, Buffer* instancesBuffer)
 	}
 }
 
-void Model::draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& PipelineLayout, glm::mat4 modelMatrix, glm::mat4 normalMatrix, uint32_t instanceCount = 1) 
+void Model::draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& PipelineLayout, uint16_t frameIndex, glm::mat4 modelMatrix, glm::mat4 normalMatrix, uint32_t instanceCount = 1)
 {
 	SimplePushConstantData push{};  
 	push.modelMatrix = modelMatrix;  
@@ -85,7 +85,7 @@ void Model::draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& PipelineLayou
 	}
 }
 
-void Model::drawDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, glm::mat4 modelMatrix, uint32_t cameraIndex, uint32_t instanceCount)
+void Model::drawDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, glm::mat4 modelMatrix, uint32_t cameraIndex, uint32_t instanceCount)
 {
 	DepthPushConstantData push{};   
 	push.modelMatrix = modelMatrix; 

@@ -192,8 +192,8 @@ public:
 	void update(float dtime);
 
 	void bindModel(VkCommandBuffer& commandBuffer) const;
-	void drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout);
-	void drawModelDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, int cameraIndex); 
+	void drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex);
+	void drawModelDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, int cameraIndex, uint16_t frameIndex);
 
 	void debugUI(); 
 

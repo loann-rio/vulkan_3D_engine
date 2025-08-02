@@ -2,7 +2,7 @@
 
 ////
 // this class use the implementation of GlTF model from sascha willems:
-//https://github.com/SaschaWillems/Vulkan-glTF-PBR?tab=readme-ov-file
+// https://github.com/SaschaWillems/Vulkan-glTF-PBR?tab=readme-ov-file
 ////
 
 #include <vulkan/vulkan.h>

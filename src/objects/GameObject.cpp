@@ -162,19 +162,19 @@ void GameObjectModel::bindModel(VkCommandBuffer& commandBuffer) const
         }, model);
 }
 
-void GameObjectModel::drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout)
+void GameObjectModel::drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frame_index)
 { 
     std::visit([&](const auto& modelInstance) {
         if (modelInstance) {
-            modelInstance->draw(commandBuffer, pipelineLayout, getTransformMat(), getNormalMat(), instanceCount);
+            modelInstance->draw(commandBuffer, pipelineLayout, frame_index, getTransformMat(), getNormalMat(), instanceCount);
         }
         }, model);
 }
-void GameObjectModel::drawModelDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, int cameraIndex)
+void GameObjectModel::drawModelDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, int cameraIndex, uint16_t frame_index)
 {
     std::visit([&](const auto& modelInstance) { 
         if (modelInstance) {  
-            modelInstance->drawDepth(commandBuffer, pipelineLayout, getTransformMat(), cameraIndex, instanceCount); 
+            modelInstance->drawDepth(commandBuffer, pipelineLayout, frame_index, getTransformMat(), cameraIndex, instanceCount);
         }
         }, model); 
 }

@@ -889,10 +889,10 @@ void GlTFModel::ModelGltf::draw(VkCommandBuffer& commandBuffer, VkPipelineLayout
 	}
 }
 
-void GlTFModel::ModelGltf::drawDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, glm::mat4 modelMatrix, uint32_t cameraIndex, uint32_t instanceCount)
+void GlTFModel::ModelGltf::drawDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, glm::mat4 modelMatrix, uint32_t cameraIndex, uint32_t instanceCount)
 {
 	for (auto& node : nodes) { 
-		drawNodeDepth(node, commandBuffer, pipelineLayout, modelMatrix, cameraIndex); 
+		drawNodeDepth(node, commandBuffer, frameIndex, pipelineLayout, modelMatrix, cameraIndex); 
 	}
 }
 

@@ -10,7 +10,6 @@
 #include <memory>
 #include <vector>
 
-
 class GlobalRenderSystem
 {
 
@@ -33,7 +32,7 @@ public:
 	GlobalRenderSystem& operator=(const GlobalRenderSystem&) = delete; 
 
 	void renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, std::vector<VkDescriptorSet> globalDescriptorSets); 
-	void renderGameObjectsDepth(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, std::vector<VkDescriptorSet> globalDescriptorSets, int lightIndex);
+	void renderGameObjectsDepth(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, std::vector<VkDescriptorSet> globalDescriptorSets, int lightIndex, uint16_t frameIndex);
 	
 	void setType(ModelType type) { modelType = type; }
 
@@ -46,7 +45,7 @@ private:
 		std::vector<VkVertexInputAttributeDescription> attributeDescription);
 
 	void renderModel(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, GameObjectModel* obj);
-	void renderModelDepth(VkCommandBuffer& commandBuffer, GameObjectModel* obj, int lightIndex);
+	void renderModelDepth(VkCommandBuffer& commandBuffer, GameObjectModel* obj, int lightIndex, uint16_t frameIndex);
 	
 	void bind(VkCommandBuffer& commandBuffer, std::vector<VkDescriptorSet> globalDescriptorSets); 
 

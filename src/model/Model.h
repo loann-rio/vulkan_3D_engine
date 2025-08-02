@@ -66,8 +66,8 @@ public:
 	static std::unique_ptr<Model> createModelFromFile(Device &device, const std::string &filePath, const char* filePathTexture);
 
 	void bind(VkCommandBuffer& commandBuffer, Buffer* instancesBuffer);
-	void draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, glm::mat4 modelMatrix, glm::mat4 normalMatrix, uint32_t instanceCount);
-	void drawDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, glm::mat4 modelMatrix, uint32_t cameraIndex, uint32_t instanceCount); 
+	void draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, glm::mat4 modelMatrix, glm::mat4 normalMatrix, uint32_t instanceCount);
+	void drawDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, glm::mat4 modelMatrix, uint32_t cameraIndex, uint32_t instanceCount);
 
 	bool hasTexture = false;
 	std::unique_ptr<Texture> texture;

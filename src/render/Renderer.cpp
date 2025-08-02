@@ -239,7 +239,7 @@ void Renderer::renderDepthImage(FrameInfo& frameInfo, std::vector<std::shared_pt
 			beginShadowRenderPass(depthCommandBuffer, commandBufferIndex); 
 
 			for (auto renderSystem : renderSystems)
-				renderSystem->renderGameObjectsDepth(depthCommandBuffer, frameInfo, globalDescriptorSets,  commandBufferIndex);
+				renderSystem->renderGameObjectsDepth(depthCommandBuffer, frameInfo, globalDescriptorSets,  commandBufferIndex, frameInfo.frameIndex);
 
 			endShadowRenderPass(depthCommandBuffer, commandBufferIndex);
 			endDepthFrame(commandBufferIndex);
