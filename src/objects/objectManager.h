@@ -8,7 +8,6 @@
 #include <thread>
 #include <typeindex>
 
-
 #include "GameObject.h"
 
 template<class T>
@@ -18,6 +17,7 @@ struct futureObject {
     ModelVariant model;
     ModelType type;
     GameObject::id_t id; 
+    std::vector<Model::Instance> instances{};
 }; 
 
 class ObjectManager
@@ -42,11 +42,16 @@ public:
     GameObject* get(GameObject::id_t id);
     GameObject* get(const std::string& name);
 
+    void removeGameObject(GameObject::id_t id);
+    void removeGameObject(const std::string& name) {};
+
     std::shared_ptr<GameObject::Map> getGameObjects() const { return gameObjects; } 
 
     void loadObjectAsync(Device& device, const std::string& filePath, TransformComponent transform, const std::string& name = "");
     void loadObjectAsyncObj(Device& device, const std::string& filePath, const char* filePathTexture, TransformComponent transform, const std::string& name = "");
 
+    void pushFuture(std::future<futureObject> future) { futureGameObjects.push_back(std::move(future)); };
+    void pushFuture(std::future<std::vector<futureObject>> futures);
 
     // camera
     std::string mainCamera = "mainCamera"; 
@@ -58,6 +63,7 @@ private:
     std::mutex gameObjectsMutex;
 
     std::vector<std::future<futureObject>> futureGameObjects;
+    std::vector<std::future<std::vector<futureObject>>> futureGameObjectslist;
 
     std::shared_ptr<GameObject::Map> gameObjects{};
     std::unordered_map<std::string, GameObject*> gameObjectsByName;

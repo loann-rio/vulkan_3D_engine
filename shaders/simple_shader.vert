@@ -75,7 +75,7 @@ void main() {
 	mat4 model;
 	mat4 normalMat;
 
-	if (gl_InstanceIndex != 0) {
+	if (gl_InstanceIndex > 0) {
 		model = push.modelMatrix * composeModelMatrix(instancePosition, instanceRotation, instanceScale);
 		normalMat = push.normalMatrix * composeModelMatrix(instancePosition, instanceRotation, instanceScale);
 	} 

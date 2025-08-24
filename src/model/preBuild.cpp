@@ -1,15 +1,17 @@
 #include "preBuild.h"
 
-std::shared_ptr<Model> PrebuiltModel::createPlane(Device& device, float width, float depth, uint16_t widthDetail, uint16_t depthDetail, float UVfactor)
+#include <random>
+#include "../base/perlinNoise.h"
+#include "../base/VoronoiNoise.h"
+
+std::shared_ptr<Model> PrebuiltModel::createPlane(Device& device, float width, float depth, uint16_t widthDetail, uint16_t depthDetail, glm::vec3 color, float UVfactor)
 {
     Model::Builder modelBuilder{};
-
     // Step 1: Generate vertices
     for (unsigned int i = 0; i <= widthDetail; i++) {
         for (unsigned int j = 0; j <= depthDetail; j++) {
 
             glm::vec3 position = { i * width / widthDetail, 0.f, j * depth / depthDetail };
-            glm::vec3 color = { 1.0f, 1.0f, 1.0f }; // White color
             glm::vec3 normal = { 0, 1, 0 };  // Upward-facing normal
             glm::vec2 uv = { (float)(i * UVfactor) / (float)widthDetail, (float)(j * UVfactor) / (float)depthDetail };
 
@@ -57,7 +59,7 @@ std::shared_ptr<Model> PrebuiltModel::createPlane(Device& device, float width, f
         modelBuilder.vertices[i].normal = glm::normalize(accumulatedNormals[i]);
     }
 
-    return std::make_shared<Model>(device, modelBuilder, "");
+    return std::make_shared<Model>(device, modelBuilder, "textures/whiteTexture.jpg");
 }
 
 std::shared_ptr<Model> PrebuiltModel::createIcoSphere(Device& device, float radius, uint16_t detail)
@@ -108,4 +110,202 @@ std::shared_ptr<Model> PrebuiltModel::createIcoSphere(Device& device, float radi
 
 
     return std::make_shared<Model>(device, modelBuilder, "textures/floor.jpg"); 
+}
+
+
+
+std::shared_ptr<Model> PrebuiltModel::createTerrain(Device& device,
+    float width, float depth,
+    uint16_t widthDetail, uint16_t depthDetail,
+    float scale,
+    uint16_t octaves ,
+    float persistance, 
+    float lacunarity, 
+    float gradientFactor, 
+    float heightMultiplier,
+    float Xoffset, float Yoffset
+    )
+{
+
+    PerlinNoise pn{ 3141592 };
+    std::vector<std::vector<float>> noiseMap = pn.GenerateGradientTrick2DnoiseMap(widthDetail + 1, depthDetail + 1, scale, octaves, persistance, lacunarity, Xoffset, Yoffset, gradientFactor, heightMultiplier);
+
+    Model::Builder modelBuilder{};
+
+    float UVfactor = 1.f;;
+
+    // Step 1: Generate vertices
+    for (unsigned int i = 0; i <= widthDetail; i++) {
+        for (unsigned int j = 0; j <= depthDetail; j++) {
+
+            glm::vec3 position = { i * width / widthDetail, -noiseMap[j][i], j * depth / depthDetail};
+            glm::vec3 color = { noiseMap[j][i], noiseMap[j][i], noiseMap[j][i] }; // White color
+            glm::vec3 normal = { 0, -1, 0 };  // Upward-facing normal
+            glm::vec2 uv = { (float)(i * UVfactor) / (float)widthDetail, (float)(j * UVfactor) / (float)depthDetail };
+
+            modelBuilder.vertices.push_back({ position, color, normal, uv });
+        }
+    }
+
+    // Step 2: Generate indices (triangles)
+    for (unsigned int i = 0; i < widthDetail; i++) {
+        for (unsigned int j = 0; j < depthDetail; j++) {
+            int topLeft = i * (depthDetail + 1) + j;
+            int topRight = topLeft + 1;
+            int bottomLeft = (i + 1) * (depthDetail + 1) + j;
+            int bottomRight = bottomLeft + 1;
+
+            // First triangle
+            modelBuilder.indices.push_back(topLeft);
+            modelBuilder.indices.push_back(bottomLeft);
+            modelBuilder.indices.push_back(topRight);
+
+            // Second triangle
+            modelBuilder.indices.push_back(topRight);
+            modelBuilder.indices.push_back(bottomLeft);
+            modelBuilder.indices.push_back(bottomRight);
+        }
+    }
+
+    // Step 3: Compute normals
+    std::vector<glm::vec3> accumulatedNormals(modelBuilder.vertices.size(), glm::vec3(0.0f));
+
+    for (size_t i = 0; i < modelBuilder.indices.size(); i += 3) {
+        glm::vec3& v0 = modelBuilder.vertices[modelBuilder.indices[i]].position;
+        glm::vec3& v1 = modelBuilder.vertices[modelBuilder.indices[i + 1]].position;
+        glm::vec3& v2 = modelBuilder.vertices[modelBuilder.indices[i + 2]].position;
+
+        glm::vec3 normal = glm::normalize(glm::cross(v1 - v0, v2 - v0));
+
+        accumulatedNormals[modelBuilder.indices[i]] += normal;
+        accumulatedNormals[modelBuilder.indices[i + 1]] += normal;
+        accumulatedNormals[modelBuilder.indices[i + 2]] += normal;
+    }
+
+
+    // Normalize accumulated normals
+    for (size_t i = 0; i < modelBuilder.vertices.size(); i++) {
+        modelBuilder.vertices[i].normal = glm::normalize(accumulatedNormals[i]);
+
+        if (modelBuilder.vertices[i].position.y < 2 && modelBuilder.vertices[i].normal.y < -0.7f) {
+            modelBuilder.vertices[i].color = { 0.1, 0.7, 0.2 };
+        }
+        else
+        {
+            //modelBuilder.vertices[i].color = { 98, 70, 27 };
+            modelBuilder.vertices[i].color = { 64.f, 61.f, 56.f };
+            modelBuilder.vertices[i].color = modelBuilder.vertices[i].color / 255.f;
+        }
+    }
+
+    return std::make_shared<Model>(device, modelBuilder, "textures/whiteTexture.jpg");
+}
+
+std::shared_ptr<Model> PrebuiltModel::createTerrain(Device& device, float width, float depth, std::vector<std::vector<float>> heightMap, float UVfactor)
+{
+
+    uint16_t widthDetail = heightMap.size() - 1;
+    uint16_t depthDetail = heightMap[0].size() - 1;
+
+    Model::Builder modelBuilder{};
+    // Step 1: Generate vertices
+    for (unsigned int i = 0; i <= widthDetail; i++) {
+        for (unsigned int j = 0; j <= depthDetail; j++) {
+
+            glm::vec3 position = { i * width / widthDetail, -heightMap[j][i], j * depth / depthDetail};
+            glm::vec3 normal = { 0, 1, 0 };  // Upward-facing normal
+            glm::vec2 uv = { (float)(i * UVfactor) / (float)widthDetail, (float)(j * UVfactor) / (float)depthDetail };
+
+            modelBuilder.vertices.push_back({ position, {0, 0, 0}, normal, uv});
+        }
+    }
+
+    // Step 2: Generate indices (triangles)
+    for (unsigned int i = 0; i < widthDetail; i++) {
+        for (unsigned int j = 0; j < depthDetail; j++) {
+            int topLeft = i * (depthDetail + 1) + j;
+            int topRight = topLeft + 1;
+            int bottomLeft = (i + 1) * (depthDetail + 1) + j;
+            int bottomRight = bottomLeft + 1;
+
+            // First triangle
+            modelBuilder.indices.push_back(topLeft);
+            modelBuilder.indices.push_back(bottomLeft);
+            modelBuilder.indices.push_back(topRight);
+
+            // Second triangle
+            modelBuilder.indices.push_back(topRight);
+            modelBuilder.indices.push_back(bottomLeft);
+            modelBuilder.indices.push_back(bottomRight);
+        }
+    }
+
+    // Step 3: Compute normals
+    std::vector<glm::vec3> accumulatedNormals(modelBuilder.vertices.size(), glm::vec3(0.0f));
+
+    for (size_t i = 0; i < modelBuilder.indices.size(); i += 3) {
+        glm::vec3& v0 = modelBuilder.vertices[modelBuilder.indices[i]].position;
+        glm::vec3& v1 = modelBuilder.vertices[modelBuilder.indices[i + 1]].position;
+        glm::vec3& v2 = modelBuilder.vertices[modelBuilder.indices[i + 2]].position;
+
+        glm::vec3 normal = glm::normalize(glm::cross(v1 - v0, v2 - v0));
+
+        accumulatedNormals[modelBuilder.indices[i]] += normal;
+        accumulatedNormals[modelBuilder.indices[i + 1]] += normal;
+        accumulatedNormals[modelBuilder.indices[i + 2]] += normal;
+    }
+
+    // Normalize accumulated normals
+    for (size_t i = 0; i < modelBuilder.vertices.size(); i++) {
+        modelBuilder.vertices[i].normal = glm::normalize(accumulatedNormals[i]);
+
+        float height = -1 * modelBuilder.vertices[i].position.y;
+        float slope  = abs(modelBuilder.vertices[i].normal.y);
+
+        glm::vec3 color = { 0, 0, 0 };
+
+        // larger abs(y) -> min slope
+        if (slope > 0.7f) {
+            // flat terrain
+
+            if (height < 2.3f)
+            { 
+                // grass
+                color = { 0.1, 0.7, 0.2 };
+            }
+            else
+            {
+                // dirt
+                color = { 0.2, 0.5, 0.1 };
+            }
+            
+            if (height < 2.5f && slope < 0.8f)
+            {
+               // grass
+                color = { 0.2, 0.7, 0.2 };                
+            }
+            else if (height < 2.7f && slope < 0.8f)
+            {
+                // dirt
+                color = { 0.2, 0.5, 0.2 };
+            }
+            else if (height > 2.5)
+            {
+                // snow
+                color = { 0.78f, 0.78f, 0.9f };
+            }
+        }
+        else
+        {
+            // rock cliff
+            color = { 0.25f, 0.239f, 0.219f };
+
+            // dirt
+            // modelBuilder.vertices[i].color = { 0.384f, 0.274f, 0.106f };
+        }
+
+        modelBuilder.vertices[i].color = color;
+    }
+
+    return std::make_shared<Model>(device, modelBuilder, "textures/whiteTexture.jpg");
 }

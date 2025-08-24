@@ -7,15 +7,21 @@
 #include <memory>
 #include <assert.h>
 #include <vector>
+#include <array>
 
 
 class PrebuiltModel {
 public:
-    static std::shared_ptr<Model> createPlane(Device& device, float width, float depth, uint16_t widthDetail, uint16_t depthDetail, float UVfactor = 1);
+    static std::shared_ptr<Model> createPlane(Device& device, float width, float depth, uint16_t widthDetail, uint16_t depthDetail, glm::vec3 color = { 1.0f, 1.0f, 1.0f }, float UVfactor = 1);
+
+    static std::shared_ptr<Model> createVoronoiPlane(Device& device, float width, float depth, uint16_t widthDetail, uint16_t depthDetail, float UVfactor = 1);
 
     static std::shared_ptr<Model> createIcoSphere(Device& device, float radius, uint16_t detail);
 
     static std::shared_ptr<Model> createCube(Device& device, float size);
+
+    static std::shared_ptr<Model> createTerrain(Device& device, float width, float depth, uint16_t widthDetail, uint16_t depthDetail, float scale = 200.f, uint16_t octaves = 6, float persistance = 0.55f, float lacunarity = 2, float gradientFactor = 4400, float heightMultiplier = 1, float Xoffset = 0, float Yoffset = 0);
+    static std::shared_ptr<Model> createTerrain(Device& device, float width, float depth, std::vector<std::vector<float>> heightMap, float UVfactor = 1);
 };
 
 
@@ -59,18 +65,3 @@ static std::unique_ptr<Model> createPlane(Device& device, const unsigned int det
 
     return std::make_unique<Model>(device, modelBuilder, path);
 }
-
-
-/*
-Model::Builder modelBuilder{};
-    modelBuilder.vertices = {
-        {{-1.0f,  1.0f, 0.f}, {0, 0, 0}, {0, 0, 0}, { 0.0f, 1.0f }}, // Top-left
-        {{-0.6f,  1.0f, 0.f}, {0, 0, 0}, {0, 0, 0}, {1.0f, 1.0f}}, // Top-right
-        {{-1.0f,  0.6f, 0.f}, {0, 0, 0}, {0, 0, 0}, {0.0f, 0.0f}}, // Bottom-left
-        {{-0.6f,  0.6f, 0.f}, {0, 0, 0}, {0, 0, 0}, {1.0f, 0.0f}}  // Bottom-right
-    };
-
-    modelBuilder.indices = {
-        0, 1, 2, // First triangle
-        2, 1, 3  // Second triangle
-    };*/

@@ -176,6 +176,7 @@
     <ClCompile Include="src\base\Pipeline.cpp" />
     <ClCompile Include="src\base\Swap_chain.cpp" />
     <ClCompile Include="src\base\Window.cpp" />
+    <ClCompile Include="src\GameObjectClassAssets\TerrainGenerator.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\model\GlTFModel.cpp" />
     <ClCompile Include="src\model\Model.cpp" />
@@ -198,10 +199,15 @@
     <ClInclude Include="src\base\descriptors.h" />
     <ClInclude Include="src\base\Device.h" />
     <ClInclude Include="src\base\Frame_info.h" />
+    <ClInclude Include="src\base\PerlinNoise.h" />
     <ClInclude Include="src\base\Pipeline.h" />
     <ClInclude Include="src\base\Swap_chain.h" />
     <ClInclude Include="src\base\Utils.h" />
+    <ClInclude Include="src\base\VoronoiNoise.h" />
     <ClInclude Include="src\base\Window.h" />
+    <ClInclude Include="src\GameObjectClassAssets\mainLightBehavior.h" />
+    <ClInclude Include="src\GameObjectClassAssets\TerrainGenerator.h" />
+    <ClInclude Include="src\GameObjectClassAssets\test.h" />
     <ClInclude Include="src\model\GlTFModel.h" />
     <ClInclude Include="src\model\Model.h" />
     <ClInclude Include="src\model\preBuild.h" />

@@ -38,7 +38,7 @@ Model::Model(Device& device, const Model::Builder& builder, const char* filePath
 
 Model::~Model() {}
 
-std::unique_ptr<Model> Model::createModelFromFile(Device& device, const std::string& filePath, const char* filePathTexture)
+std::unique_ptr<Model> Model::createModelFromFile(Device& device, const std::string& filePath, const char* filePathTexture = "textures\\whiteTexture.jpg")
 {
 	Builder builder{}; 
 	if (builder.loadOBJModel(filePath)) { 
@@ -50,7 +50,7 @@ std::unique_ptr<Model> Model::createModelFromFile(Device& device, const std::str
 	return nullptr;
 }
 
-void Model::bind(VkCommandBuffer& commandBuffer, Buffer* instancesBuffer)  
+void Model::bind(VkCommandBuffer& commandBuffer, Buffer* instancesBuffer) 
 {
 	
 	VkBuffer buffers[] = { vertexBuffer->getBuffer(), instancesBuffer->getBuffer() };
@@ -77,11 +77,13 @@ void Model::draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& PipelineLayou
 		&push 
 	);
 
+	uint32_t firstInstance = (instanceCount == 1) ? 0 : 1;
+
 	if (hasIndexBuffer) {
-		vkCmdDrawIndexed(commandBuffer, indexCount, instanceCount, 0, 0, 0);
+		vkCmdDrawIndexed(commandBuffer, indexCount, instanceCount, 0, 0, firstInstance);
 	}
 	else {
-		vkCmdDraw(commandBuffer, vertexCount, instanceCount, 0, 0);
+		vkCmdDraw(commandBuffer, vertexCount, instanceCount, 0, firstInstance);
 	}
 }
 
@@ -100,11 +102,13 @@ void Model::drawDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipeline
 		&push 
 	);
 
+	uint32_t firstInstance = (instanceCount == 1) ? 0 : 1;
+
 	if (hasIndexBuffer) { 
-		vkCmdDrawIndexed(commandBuffer, indexCount, instanceCount, 0, 0, 0);
+		vkCmdDrawIndexed(commandBuffer, indexCount, instanceCount, 0, 0, firstInstance);
 	}
 	else {
-		vkCmdDraw(commandBuffer, vertexCount, instanceCount, 0, 0); 
+		vkCmdDraw(commandBuffer, vertexCount, instanceCount, 0, firstInstance);
 	}
 }
 
@@ -231,11 +235,11 @@ std::vector<VkVertexInputAttributeDescription> Model::Vertex::getAttributeDescri
 
 	attributeDescriptions.push_back({ 0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position) });
 
-	/*if (hasMutipleInstances) {
+	if (hasMutipleInstances) {
 		attributeDescriptions.push_back({ 1, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Instance, position) }); 
 		attributeDescriptions.push_back({ 2, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Instance, rotation) }); 
 		attributeDescriptions.push_back({ 3, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Instance, scale) }); 
-	}*/
+	}
 	
 	return attributeDescriptions;
 }

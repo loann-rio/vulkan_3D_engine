@@ -107,9 +107,16 @@ void App::run()
 
         /////// update objects ///////
 
+        // loop on games objects
+        {
+            std::shared_ptr<GameObject::Map> objects = objectManager.getGameObjects();
+            for (auto obj = objects->begin(); obj != objects->end(); obj++) {
+                obj->second->loop(&objectManager);
+            }
+        }
+
         // update GLTF game objects
         {
-            uint16_t i = 0;
             std::vector<GameObjectModel*> objects = objectManager.getByType<GameObjectModel>();
             for (auto obj : objects) {
                 obj->update(frameTime);
@@ -274,19 +281,19 @@ void App::createRenderSystems()
     /// render systems
     gltfRenderSystem = GlobalRenderSystem::create<GlTFModel::ModelGltf>(
         device, renderer.getSwapChainRenderPass(), { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() },
-        "shaders\\GlTFshader.vert.spv", "shaders\\GlTFshader.frag.spv");
+        "shaders\\GlTFshader.vert.spv", false, "shaders\\GlTFshader.frag.spv");
 
     objRenderSystem = GlobalRenderSystem::create<Model>( 
         device, renderer.getSwapChainRenderPass(), { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() }, 
-        "shaders\\simple_shader.vert.spv", "shaders\\simple_shader.frag.spv"); 
+        "shaders\\simple_shader.vert.spv", false, "shaders\\simple_shader.frag.spv"); 
 
     depthRenderSystem = GlobalRenderSystem::create<Model>(
         device, renderer.getDepthRenderPass(), { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() },
-        "shaders\\shadowmap.vert.spv");  
+        "shaders\\shadowmap.vert.spv", true);  
      
     depthRenderSystemGltf = GlobalRenderSystem::create<GlTFModel::ModelGltf>( 
         device, renderer.getDepthRenderPass(), { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() }, 
-        "shaders\\shadowmapgltf.vert.spv");
+        "shaders\\shadowmapgltf.vert.spv", false);
 }
 
 void App::getFrameRate(float lastFrameTime)

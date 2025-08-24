@@ -305,6 +305,8 @@ class GlTFModel
 
 		std::vector<std::string> extensions; 
 
+		//std::vector<Model::Instance> instanceList = {};
+
 		std::vector<VkDescriptorSet> descriptorSet{ Swap_chain::MAX_FRAMES_IN_FLIGHT };
 
 		struct Dimensions {
@@ -353,6 +355,8 @@ class GlTFModel
 		void createIndexBuffers(LoaderInfo loaderInfo);
 		void createDescriptorSet(DescriptorPool& pool, Device& device);
 		void createMaterialBuffer();
+
+		//std::vector<Model::Instance> getInstanceList() { return instanceList; }
 
 		void calculateBoundingBox(Node* node, Node* parent);
 

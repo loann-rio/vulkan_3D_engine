@@ -77,6 +77,19 @@ glm::mat3 GameObject::getNormalMat()
     return transform.normalMatrix();
 }
 
+void GameObjectModel::setModel(std::shared_ptr<Model> newModel)
+{
+    model = std::move(newModel);
+    modelType = ModelType::OBJ_MODEL;
+    hasModel = true;
+}
+
+void GameObjectModel::setModel(std::shared_ptr<GlTFModel::ModelGltf> newModel) {
+    model = std::move(newModel);
+    modelType = ModelType::GLTF_MODEL;
+    hasModel = true;
+}
+
 void GameObjectModel::setModel(ModelVariant newModel)
 {
     model = std::move(newModel);
@@ -85,12 +98,14 @@ void GameObjectModel::setModel(ModelVariant newModel)
 
 void GameObjectModel::setMultipleInstances(std::vector<Model::Instance> instances)
 {
-
+    
     VkDeviceSize bufferSize = sizeof(Model::Instance) * instances.size();
 
     uint32_t instanceSize = sizeof(Model::Instance);
 
     instanceCount = static_cast<uint32_t>(instances.size());
+
+    if (instanceCount == 0) return;
 
     Buffer stagingBuffer{ 
         device, 

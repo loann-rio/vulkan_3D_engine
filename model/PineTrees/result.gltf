@@ -1,0 +1,244 @@
+{
+    "asset": {
+        "version": "2.0",
+        "generator": "Open Asset Import Library (assimp v5.2.cf7d3637)"
+    },
+    "extensionsUsed": [
+        "KHR_materials_volume",
+        "FB_ngon_encoding"
+    ],
+    "accessors": [
+        {
+            "bufferView": 0,
+            "byteOffset": 0,
+            "componentType": 5126,
+            "count": 1440,
+            "type": "VEC3",
+            "max": [
+                0.007875903509557248,
+                0.006783975288271904,
+                0.0048991842195391659
+            ],
+            "min": [
+                -0.006974818650633097,
+                -0.007306498009711504,
+                -0.00003848680353257805
+            ]
+        },
+        {
+            "bufferView": 1,
+            "byteOffset": 0,
+            "componentType": 5126,
+            "count": 1440,
+            "type": "VEC3",
+            "max": [
+                0.999994158744812,
+                0.996390700340271,
+                0.036165788769721988
+            ],
+            "min": [
+                -0.9999897480010986,
+                -0.9964557886123657,
+                -0.6647080183029175
+            ]
+        },
+        {
+            "bufferView": 2,
+            "byteOffset": 0,
+            "componentType": 5125,
+            "count": 1440,
+            "type": "SCALAR",
+            "max": [
+                1439
+            ],
+            "min": [
+                0
+            ]
+        },
+        {
+            "bufferView": 3,
+            "byteOffset": 0,
+            "componentType": 5126,
+            "count": 9558,
+            "type": "VEC3",
+            "max": [
+                0.00912585761398077,
+                0.008328148163855076,
+                0.007843795232474804
+            ],
+            "min": [
+                -0.008671412244439125,
+                -0.008929237723350525,
+                0.0006176117458380759
+            ]
+        },
+        {
+            "bufferView": 4,
+            "byteOffset": 0,
+            "componentType": 5126,
+            "count": 9558,
+            "type": "VEC3",
+            "max": [
+                0.9974351525306702,
+                0.9988065361976624,
+                0.9999424815177918
+            ],
+            "min": [
+                -0.9933422803878784,
+                -0.9997992515563965,
+                -0.47241026163101199
+            ]
+        },
+        {
+            "bufferView": 5,
+            "byteOffset": 0,
+            "componentType": 5125,
+            "count": 9558,
+            "type": "SCALAR",
+            "max": [
+                9557
+            ],
+            "min": [
+                0
+            ]
+        }
+    ],
+    "buffers": [
+        {
+            "byteLength": 307944,
+            "uri": "result.bin"
+        }
+    ],
+    "bufferViews": [
+        {
+            "buffer": 0,
+            "byteOffset": 0,
+            "byteLength": 17280,
+            "target": 34962
+        },
+        {
+            "buffer": 0,
+            "byteOffset": 17280,
+            "byteLength": 17280,
+            "target": 34962
+        },
+        {
+            "buffer": 0,
+            "byteOffset": 34560,
+            "byteLength": 5760,
+            "target": 34963
+        },
+        {
+            "buffer": 0,
+            "byteOffset": 40320,
+            "byteLength": 114696,
+            "target": 34962
+        },
+        {
+            "buffer": 0,
+            "byteOffset": 155016,
+            "byteLength": 114696,
+            "target": 34962
+        },
+        {
+            "buffer": 0,
+            "byteOffset": 269712,
+            "byteLength": 38232,
+            "target": 34963
+        }
+    ],
+    "materials": [
+        {
+            "name": "Wood",
+            "pbrMetallicRoughness": {
+                "baseColorFactor": [
+                    0.24618732929229737,
+                    0.14435896277427674,
+                    0.053798429667949679,
+                    1.0
+                ],
+                "metallicFactor": 0.4000000059604645,
+                "roughnessFactor": 0.27216553688049319
+            }
+        },
+        {
+            "name": "Green",
+            "pbrMetallicRoughness": {
+                "baseColorFactor": [
+                    0.09404914081096649,
+                    0.1788560301065445,
+                    0.012008205987513066,
+                    1.0
+                ],
+                "metallicFactor": 0.4000000059604645,
+                "roughnessFactor": 0.27216553688049319
+            }
+        },
+        {
+            "name": "material"
+        }
+    ],
+    "meshes": [
+        {
+            "name": "Resource_PineTree_Group-0",
+            "primitives": [
+                {
+                    "mode": 4,
+                    "material": 0,
+                    "indices": 2,
+                    "attributes": {
+                        "POSITION": 0,
+                        "NORMAL": 1
+                    }
+                },
+                {
+                    "mode": 4,
+                    "material": 1,
+                    "indices": 5,
+                    "attributes": {
+                        "POSITION": 3,
+                        "NORMAL": 4
+                    }
+                }
+            ]
+        }
+    ],
+    "nodes": [
+        {
+            "name": "RootNode",
+            "children": [
+                1
+            ]
+        },
+        {
+            "name": "Resource_PineTree_Group",
+            "matrix": [
+                100.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                -0.000011920928955078125,
+                -99.99999237060547,
+                0.0,
+                0.0,
+                99.99999237060547,
+                -0.000011920928955078125,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                1.0
+            ],
+            "mesh": 0
+        }
+    ],
+    "scenes": [
+        {
+            "nodes": [
+                0
+            ]
+        }
+    ],
+    "scene": 0
+}

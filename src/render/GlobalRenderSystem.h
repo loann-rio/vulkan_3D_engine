@@ -16,7 +16,7 @@ class GlobalRenderSystem
 public:
 
 	template <class T> static std::shared_ptr<GlobalRenderSystem> create(Device& device, VkRenderPass renderPass,
-		std::vector<VkDescriptorSetLayout> globalSetLayout, const std::string& vertFilepath, const std::string& fragFilepath = "");
+		std::vector<VkDescriptorSetLayout> globalSetLayout, const std::string& vertFilepath, bool hasMultipleInstance = false, const std::string& fragFilepath = "");
 
 	GlobalRenderSystem(Device& device, VkRenderPass renderPass,  
 		std::vector<VkDescriptorSetLayout> globalSetLayout, std::vector<DescriptorSetObject> bindings, 
@@ -63,21 +63,21 @@ private:
 };
 
 template<class T>
-inline std::shared_ptr<GlobalRenderSystem> GlobalRenderSystem::create(Device& device, VkRenderPass renderPass, std::vector<VkDescriptorSetLayout>  globalSetLayout, const std::string& vertFilepath, const std::string& fragFilepath)
+inline std::shared_ptr<GlobalRenderSystem> GlobalRenderSystem::create(Device& device, VkRenderPass renderPass, std::vector<VkDescriptorSetLayout>  globalSetLayout, const std::string& vertFilepath, bool hasMultipleInstance, const std::string& fragFilepath)
 {
 	std::vector<DescriptorSetObject> bindings;
 	std::vector<VkVertexInputAttributeDescription> attributeDescription;
-	std::vector<VkVertexInputBindingDescription> bindingDescription = T::Vertex::getBindingDescriptions(false); 
+	std::vector<VkVertexInputBindingDescription> bindingDescription = T::Vertex::getBindingDescriptions(hasMultipleInstance);
 	ModelType modelType = static_cast<ModelType>(T::getModelType());  
 
 	bool isShadow = (fragFilepath == "");
 	if (isShadow) {
 		bindings = T::getDescriptorType(); //std::vector<DescriptorSetObject>();
-		attributeDescription = T::Vertex::getAttributeDescriptionsShadow(false);
+		attributeDescription = T::Vertex::getAttributeDescriptionsShadow(hasMultipleInstance);
 	}
 	else {
 		bindings = T::getDescriptorType(); 
- 		attributeDescription = T::Vertex::getAttributeDescriptions(false);
+ 		attributeDescription = T::Vertex::getAttributeDescriptions(hasMultipleInstance);
 	}
 
 	return std::make_shared<GlobalRenderSystem>(device, renderPass,

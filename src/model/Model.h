@@ -83,6 +83,9 @@ public:
 	static std::vector<DescriptorSetObject> getDescriptorType();
 	static int getModelType() { return 1; }
 
+	std::vector<Model::Instance> instanceList = {};
+	std::vector<Model::Instance> getInstanceList() { return instanceList; }
+
 private:
 	void createVertexBuffers(const std::vector<Vertex>& vertices);
 	void createIndexBuffers(const std::vector<uint32_t>& indices);

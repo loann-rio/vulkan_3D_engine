@@ -175,7 +175,7 @@ void GlobalRenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, Frame
 	
 	for (auto obj : frameInfo.listGameObjects)
 	{
-		if (obj->getModelType() == modelType)
+		if (obj->show && obj->getModelType() == modelType)
 			renderModel(commandBuffer, frameInfo, obj);	
 	}
 }

@@ -19,6 +19,8 @@
 #include <variant>
 #include <unordered_map>
 
+class ObjectManager;
+
 using ModelVariant = std::variant<std::shared_ptr<Model>,
 	std::shared_ptr<GlTFModel::ModelGltf>>;
 
@@ -54,6 +56,14 @@ struct TransformComponent {
 	glm::mat3 normalMatrix();
 };
 
+class GameObject; 
+
+class GameObjectBehavior { 
+public:
+	virtual void setup(Device& device, ObjectManager* objManager, GameObject* object) = 0;
+	virtual void loop(Device& device, ObjectManager* objManager, GameObject* object) = 0;
+};
+
 class GameObject
 {
 public:
@@ -61,6 +71,7 @@ public:
 	using id_t = unsigned int;
 	using Map = std::unordered_map<id_t, std::unique_ptr<GameObject>>;
 
+	virtual GameObjectType getType() const { return GameObjectType::UNKNOWN; }
 	id_t getId() { return id; } 
 
 	GameObject(const GameObject&) = delete;
@@ -72,11 +83,15 @@ public:
 	GameObject(id_t id, Device& device) : id(id), device(device) {}
 	virtual ~GameObject() = default;
 
+	// UI
 	virtual void debugUI() {}
-	virtual GameObjectType getType() const { return GameObjectType::UNKNOWN; } 
+	
 
+	// position scale rotation
 	TransformComponent transform{};
 
+
+	// name
 	void setName(std::string newName) { name = newName; }
 	std::string getName() const { return name; }
 
@@ -85,17 +100,27 @@ public:
 
 	glm::mat4 getTransformMat();
 	glm::mat3 getNormalMat();
+
+
+	// attached behavior class 
+	bool hasAttachedClass = false;
+
+	void setAttachedClass(std::unique_ptr<GameObjectBehavior> attClass) { attachedClass = std::move(attClass); hasAttachedClass = true; }
+	void setup(ObjectManager* objManager) { if (hasAttachedClass) attachedClass->setup(device, objManager, this); } 
+	void loop(ObjectManager* objManager) { if (hasAttachedClass) attachedClass->loop(device, objManager, this); }
 	
 protected:
+	std::unique_ptr<GameObjectBehavior> attachedClass = nullptr;
 
-	//std::vector<id_t> children{};
-	//id_t parent;
 	GameObject* parentObject = nullptr;
 
 	std::string name;
 	Device& device;
 	id_t id;
+
+	friend class GameObjectBehavior;
 };
+
 
 
 class GameObjectCamera : public GameObject { 
@@ -178,7 +203,10 @@ public:
 		hasModel = true; 
 	}
 
-	void setModel(ModelVariant newModel); 
+	void setModel(std::shared_ptr<Model> model);
+	void setModel(std::shared_ptr<GlTFModel::ModelGltf> model);
+	void setModel(ModelVariant newModel);
+
 	void setModelType(ModelType type) { modelType = type; } 
 
 	void setMultipleInstances(std::vector<Model::Instance> instances);
@@ -196,6 +224,8 @@ public:
 	void drawModelDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, int cameraIndex, uint16_t frameIndex);
 
 	void debugUI(); 
+
+	bool show = true; 
 
 	GameObjectType getType() const override { return GameObjectType::MODEL; }
 
