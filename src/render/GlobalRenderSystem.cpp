@@ -12,9 +12,9 @@
 GlobalRenderSystem::GlobalRenderSystem(Device& device, VkRenderPass renderPass, 
 	std::vector<VkDescriptorSetLayout> globalSetLayout, std::vector<DescriptorSetObject> bindings,
 	const std::string& vertFilepath, const std::string& fragFilepath,
-	ModelType modelType,
+	ModelType modelType, ModelSubType subModelType,
 	std::vector<VkVertexInputBindingDescription> bindingDescription, std::vector<VkVertexInputAttributeDescription> attributeDescription, bool isShadow)
-	: device{ device }, modelType{ modelType }, isShadow{ isShadow }   
+	: device{ device }, modelType{ modelType }, isShadow{ isShadow }, modelSubType{ subModelType }
 {
 	std::vector<std::unique_ptr<DescriptorSetLayout>> layouts;
 
@@ -175,7 +175,7 @@ void GlobalRenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, Frame
 	
 	for (auto obj : frameInfo.listGameObjects)
 	{
-		if (obj->show && obj->getModelType() == modelType)
+		if (obj->show && obj->getModelType() == modelType && obj->getModelSubType() == modelSubType)
 			renderModel(commandBuffer, frameInfo, obj);	
 	}
 }
@@ -188,7 +188,7 @@ void GlobalRenderSystem::renderGameObjectsDepth(VkCommandBuffer& commandBuffer, 
 	// render each model with the corresponding type
 	for (auto obj : frameInfo.listGameObjects)
 	{
-		if (obj->getModelType() == modelType)
+		if (obj->show && obj->getModelType() == modelType && obj->getModelSubType() == modelSubType)
 			renderModelDepth(commandBuffer, obj, lightIndex, frameIndex);
 	}
 }

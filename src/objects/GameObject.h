@@ -31,6 +31,11 @@ enum ModelType {
 	QUAD_MODEL = 3 
 };
 
+enum ModelSubType { 
+	NONE = 0,
+	TERRAIN = 1,
+};
+
 enum class GameObjectType { 
 	UNKNOWN,
 	CAMERA,
@@ -95,9 +100,11 @@ public:
 	void setName(std::string newName) { name = newName; }
 	std::string getName() const { return name; }
 
+	// parent child
 	void setParent(GameObject* parent) { parentObject = parent; }
 	void setChild(GameObject* child) { assert(this != child); child->setParent(this); } 
 
+	// matrices
 	glm::mat4 getTransformMat();
 	glm::mat3 getNormalMat();
 
@@ -105,6 +112,7 @@ public:
 	// attached behavior class 
 	bool hasAttachedClass = false;
 
+	// attach class
 	void setAttachedClass(std::unique_ptr<GameObjectBehavior> attClass) { attachedClass = std::move(attClass); hasAttachedClass = true; }
 	void setup(ObjectManager* objManager) { if (hasAttachedClass) attachedClass->setup(device, objManager, this); } 
 	void loop(ObjectManager* objManager) { if (hasAttachedClass) attachedClass->loop(device, objManager, this); }
@@ -208,10 +216,12 @@ public:
 	void setModel(ModelVariant newModel);
 
 	void setModelType(ModelType type) { modelType = type; } 
+	ModelType getModelType() const { return modelType; } 
+
+	void setModelSubType(ModelSubType type) { modelSubType = type; }
+	ModelSubType getModelSubType() const { return modelSubType; }
 
 	void setMultipleInstances(std::vector<Model::Instance> instances);
-
-	ModelType getModelType() const { return modelType; }
 
 	void createDescriptorSet(DescriptorPool& pool) const; 
 
@@ -233,7 +243,10 @@ public:
 private:
 
 	bool hasModel = false;
+
 	ModelType modelType = UNDEFINED_MODEL;
+	ModelSubType modelSubType = NONE;
+
 	ModelVariant model;
 
 	bool hasMultipleInstances = false;

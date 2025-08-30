@@ -248,5 +248,11 @@
     <None Include="skybox.frag">
       <Filter>shaders</Filter>
     </None>
+    <None Include="src\GameObjectClassAssets\terrainShader.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="src\GameObjectClassAssets\terrainShader.vert">
+      <Filter>shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

@@ -238,6 +238,8 @@
     <None Include="shaders\text.vert" />
     <None Include="skybox.frag" />
     <None Include="skybox.vert" />
+    <None Include="src\GameObjectClassAssets\terrainShader.frag" />
+    <None Include="src\GameObjectClassAssets\terrainShader.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

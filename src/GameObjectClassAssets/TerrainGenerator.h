@@ -39,9 +39,9 @@ public:
 	std::vector<std::vector<glm::vec2>> generateChunck(float Xoffset, float Yoffset);
 	std::vector<Model::Instance> placeTrees(std::vector<std::vector<glm::vec2>> heightMap, float Xoffset, float Yoffset) const;
 
-	const uint32_t sizeWorldInChunck = 5;
-	const uint16_t chunkSize = 130;
-	const int treeProbability = 30; // between 0 - 100
+	const uint32_t sizeWorldInChunck = 4;
+	const uint16_t chunkSize = 158;
+	const int treeProbability = 20; // between 0 - 100
 
 private:
 	const unsigned int seed = 314151;
@@ -49,7 +49,7 @@ private:
 
 	Device& device;
 	
-	float globalHeightMultiplier = 0.2 * (9 - int(log2(chunkSize))) * (1 + 0.5 * sum(int(globalScale / 100) - 1));
+	float globalHeightMultiplier = 0.2 * 2 * (1 + 0.5 * sum(int(globalScale / 100) - 1));
 	
 
 	float biomeScale = 300;
@@ -68,6 +68,8 @@ private:
 	std::vector<RegionVariables> regions = { montains, planes };
 
 	PerlinNoise pn{ seed };
+
+	std::vector<std::vector<glm::vec3>> generatecolorMap(std::vector<std::vector<glm::vec2>> heightMap);
 
 	float weightedRegionValue(const std::vector<glm::vec2>& lookupVoronoi, float RegionVariables::* member);
 	int sum(int n) { return (n == 0) || (n == 1) ? 1 : n + sum(n - 1); }

@@ -279,21 +279,42 @@ void App::createRenderSystems()
 
 
     /// render systems
-    gltfRenderSystem = GlobalRenderSystem::create<GlTFModel::ModelGltf>(
+
+	RenderSystemBuilder gltfBuilder{};
+	gltfBuilder.fragFilepath = "shaders\\GlTFshader.frag.spv";
+	gltfBuilder.vertFilepath = "shaders\\GlTFshader.vert.spv";
+    gltfBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
+	gltfBuilder.renderPass = renderer.getSwapChainRenderPass();
+
+    gltfRenderSystem = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, gltfBuilder); 
+
+    RenderSystemBuilder objBuilder{};
+    objBuilder.fragFilepath = "shaders\\simple_shader.frag.spv";
+    objBuilder.vertFilepath = "shaders\\simple_shader.vert.spv";
+    objBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
+    objBuilder.renderPass = renderer.getSwapChainRenderPass();
+    objBuilder.hasMultipleInstance = true;
+
+    objRenderSystem = GlobalRenderSystem::create<Model>(device, objBuilder); 
+
+    RenderSystemBuilder objShadowBuilder{};
+    objShadowBuilder.vertFilepath = "shaders\\shadowmap.vert.spv";
+    objShadowBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
+    objShadowBuilder.renderPass = renderer.getDepthRenderPass();
+    objShadowBuilder.hasMultipleInstance = true;
+
+    depthRenderSystem = GlobalRenderSystem::create<Model>(device, objShadowBuilder);
+    
+    RenderSystemBuilder gltfShadowBuilder{};
+    gltfShadowBuilder.vertFilepath = "shaders\\shadowmapgltf.vert.spv";
+    gltfShadowBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
+    gltfShadowBuilder.renderPass = renderer.getDepthRenderPass();
+
+    depthRenderSystemGltf = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, gltfShadowBuilder);
+
+    /*objRenderSystem = GlobalRenderSystem::create<Model>(
         device, renderer.getSwapChainRenderPass(), { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() },
-        "shaders\\GlTFshader.vert.spv", false, "shaders\\GlTFshader.frag.spv");
-
-    objRenderSystem = GlobalRenderSystem::create<Model>( 
-        device, renderer.getSwapChainRenderPass(), { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() }, 
-        "shaders\\simple_shader.vert.spv", false, "shaders\\simple_shader.frag.spv"); 
-
-    depthRenderSystem = GlobalRenderSystem::create<Model>(
-        device, renderer.getDepthRenderPass(), { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() },
-        "shaders\\shadowmap.vert.spv", true);  
-     
-    depthRenderSystemGltf = GlobalRenderSystem::create<GlTFModel::ModelGltf>( 
-        device, renderer.getDepthRenderPass(), { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() }, 
-        "shaders\\shadowmapgltf.vert.spv", false);
+        "shaders\\simple_shader.vert.spv", false, "shaders\\terrainShader.frag.spv");*/
 }
 
 void App::getFrameRate(float lastFrameTime)

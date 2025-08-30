@@ -10,6 +10,16 @@
 #include <memory>
 #include <vector>
 
+
+struct RenderSystemBuilder {
+	std::string vertFilepath;
+	std::string fragFilepath = "";
+	std::vector<VkDescriptorSetLayout> globalSetLayout;
+	VkRenderPass renderPass;
+	bool hasMultipleInstance = false;
+	ModelSubType subModelType = NONE;
+};
+
 class GlobalRenderSystem
 {
 
@@ -18,12 +28,14 @@ public:
 	template <class T> static std::shared_ptr<GlobalRenderSystem> create(Device& device, VkRenderPass renderPass,
 		std::vector<VkDescriptorSetLayout> globalSetLayout, const std::string& vertFilepath, bool hasMultipleInstance = false, const std::string& fragFilepath = "");
 
+	template <class T> static std::shared_ptr<GlobalRenderSystem> create(Device& device, RenderSystemBuilder builder);
+
 	GlobalRenderSystem(Device& device, VkRenderPass renderPass,  
 		std::vector<VkDescriptorSetLayout> globalSetLayout, std::vector<DescriptorSetObject> bindings, 
 		const std::string& vertFilepath, const std::string& fragFilepath,
-		ModelType modelType,
+		ModelType modelType, ModelSubType subModelType, 
 		std::vector<VkVertexInputBindingDescription> bindingDescription, std::vector<VkVertexInputAttributeDescription> attributeDescription,
-		bool isShadow = false 
+		bool isShadow = false
 	);
 
 	~GlobalRenderSystem();
@@ -83,7 +95,37 @@ inline std::shared_ptr<GlobalRenderSystem> GlobalRenderSystem::create(Device& de
 	return std::make_shared<GlobalRenderSystem>(device, renderPass,
 		globalSetLayout, bindings,
 		vertFilepath, fragFilepath,
-		modelType,  
+		modelType, ModelSubType::NONE,
 		bindingDescription, attributeDescription, isShadow);
-} 
+}
+
+template<class T>
+inline std::shared_ptr<GlobalRenderSystem> GlobalRenderSystem::create(Device& device, RenderSystemBuilder builder)
+{
+	std::vector<DescriptorSetObject> bindings;
+	std::vector<VkVertexInputAttributeDescription> attributeDescription;
+	std::vector<VkVertexInputBindingDescription> bindingDescription = T::Vertex::getBindingDescriptions(builder.hasMultipleInstance);
+	
+	ModelType modelType = static_cast<ModelType>(T::getModelType());
+
+	bool isShadow = (builder.fragFilepath == "");
+	if (isShadow) {
+		bindings = T::getDescriptorType();
+		attributeDescription = T::Vertex::getAttributeDescriptionsShadow(builder.hasMultipleInstance);
+	}
+	else {
+		bindings = T::getDescriptorType();
+		attributeDescription = T::Vertex::getAttributeDescriptions(builder.hasMultipleInstance);
+	}
+
+	return std::make_shared<GlobalRenderSystem>(
+		device, 
+		builder.renderPass,
+		builder.globalSetLayout, 
+		bindings,
+		builder.vertFilepath, builder.fragFilepath,
+		modelType, builder.subModelType, 
+		bindingDescription, attributeDescription, 
+		isShadow);
+}
 

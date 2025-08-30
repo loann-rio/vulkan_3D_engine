@@ -29,7 +29,7 @@ void TerrainGenerator::loop(Device& device, ObjectManager* objManager, GameObjec
 
 			// push Tree
 			auto treesObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
-			treesObject->transform.translation = { i * chunkWorldSide, 0, j * chunkWorldSide };
+			treesObject->transform.translation = { j * chunkWorldSide, 0, i * chunkWorldSide };
 			//treesObject->setName("trees");
 			GameObject::id_t id_tree = treesObject->getId();
 
@@ -44,6 +44,9 @@ void TerrainGenerator::loop(Device& device, ObjectManager* objManager, GameObjec
 				// separate height and slope
 				std::vector<std::vector<float>> map = std::vector<std::vector<float>>(this->chunkSize, std::vector<float>(this->chunkSize));
 				for (int x = 0; x < this->chunkSize; x++) for (int y = 0; y < this->chunkSize; y++) map[y][x] = heightMap[x][y].x;
+
+				// create color map
+
 
 				// create plane object
 				std::shared_ptr<Model> plane = PrebuiltModel::createTerrain(this->device, 4, 4, map);
@@ -175,7 +178,7 @@ std::vector<Model::Instance> TerrainGenerator::placeTrees(std::vector<std::vecto
 			if (abs(heightMap[x][y].y) < 0.02 && heightMap[x][y].x < 2.f)
 			{
 				Model::Instance instance = {
-					{ Yoffset + yPos, -heightMap[x][y].x, Xoffset + xPos},
+					{ Xoffset + xPos, -heightMap[x][y].x, Yoffset + yPos},
 					{0, 0, 0},
 					{0.1,  -0.1 * sizeFactor, 0.1} 
 				};
@@ -186,6 +189,67 @@ std::vector<Model::Instance> TerrainGenerator::placeTrees(std::vector<std::vecto
 	}
 
 	return treeList;
+}
+
+std::vector<std::vector<glm::vec3>> TerrainGenerator::generatecolorMap(std::vector<std::vector<glm::vec2>> heightMap)
+{
+	std::vector<std::vector<glm::vec3>> colorMap(chunkSize, std::vector<glm::vec3>(chunkSize)); 
+
+	for (int y = 0; y < chunkSize; y++) 
+	{
+		for (int x = 0; x < chunkSize; x++) 
+		{
+
+			float height = -1 * heightMap[x][y].x;
+			float slope = abs(heightMap[x][y].y);
+
+			glm::vec3 color = { 0, 0, 0 };
+
+			// larger abs(y) -> min slope
+			if (slope > 0.7f) {
+				// flat terrain
+
+				if (height < 2.3f)
+				{
+					// grass
+					color = { 0.1, 0.7, 0.2 };
+				}
+				else
+				{
+					// dirt
+					color = { 0.2, 0.5, 0.1 };
+				}
+
+				if (height < 2.5f && slope < 0.8f)
+				{
+					// grass
+					color = { 0.2, 0.7, 0.2 };
+				}
+				else if (height < 2.7f && slope < 0.8f)
+				{
+					// dirt
+					color = { 0.2, 0.5, 0.2 };
+				}
+				else if (height > 2.5)
+				{
+					// snow
+					color = { 0.78f, 0.78f, 0.9f };
+				}
+			}
+			else
+			{
+				// rock cliff
+				color = { 0.25f, 0.239f, 0.219f };
+
+				// dirt
+				// modelBuilder.vertices[i].color = { 0.384f, 0.274f, 0.106f };
+			}
+
+			colorMap[x][y] = color;
+		}
+	}
+
+	return colorMap;
 }
 
 float TerrainGenerator::weightedRegionValue(const std::vector<glm::vec2>& lookupVoronoi, float RegionVariables::* member)

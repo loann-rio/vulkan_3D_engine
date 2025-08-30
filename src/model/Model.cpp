@@ -222,9 +222,11 @@ std::vector<VkVertexInputAttributeDescription> Model::Vertex::getAttributeDescri
 	attributeDescriptions.push_back({ 2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal) });
 	attributeDescriptions.push_back({ 3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv) });
 
-	attributeDescriptions.push_back({ 4, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Instance, position) });
-	attributeDescriptions.push_back({ 5, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Instance, rotation) });
-	attributeDescriptions.push_back({ 6, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Instance, scale) });
+	if (hasMutipleInstances) {
+		attributeDescriptions.push_back({ 4, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Instance, position) });
+		attributeDescriptions.push_back({ 5, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Instance, rotation) });
+		attributeDescriptions.push_back({ 6, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Instance, scale) });
+	}
 
 	return attributeDescriptions;
 }
