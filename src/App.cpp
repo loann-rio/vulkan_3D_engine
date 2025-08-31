@@ -308,13 +308,18 @@ void App::createRenderSystems()
     RenderSystemBuilder gltfShadowBuilder{};
     gltfShadowBuilder.vertFilepath = "shaders\\shadowmapgltf.vert.spv";
     gltfShadowBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
-    gltfShadowBuilder.renderPass = renderer.getDepthRenderPass();
+    gltfShadowBuilder.renderPass = renderer.getDepthRenderPass(); 
 
     depthRenderSystemGltf = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, gltfShadowBuilder);
 
-    /*objRenderSystem = GlobalRenderSystem::create<Model>(
-        device, renderer.getSwapChainRenderPass(), { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() },
-        "shaders\\simple_shader.vert.spv", false, "shaders\\terrainShader.frag.spv");*/
+    RenderSystemBuilder terrainBuilder{};
+    terrainBuilder.vertFilepath = "shaders\\simple_shader.vert.spv";
+    terrainBuilder.fragFilepath = "shaders\\terrainShader.frag.spv";
+    terrainBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
+    terrainBuilder.renderPass = renderer.getSwapChainRenderPass();
+
+    terrainRenderSystem = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, terrainBuilder);
+
 }
 
 void App::getFrameRate(float lastFrameTime)

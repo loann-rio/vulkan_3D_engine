@@ -25,9 +25,7 @@ class GlobalRenderSystem
 
 public:
 
-	template <class T> static std::shared_ptr<GlobalRenderSystem> create(Device& device, VkRenderPass renderPass,
-		std::vector<VkDescriptorSetLayout> globalSetLayout, const std::string& vertFilepath, bool hasMultipleInstance = false, const std::string& fragFilepath = "");
-
+	// external builder to allow the use of template, take a RenderSystemBuilder as arg
 	template <class T> static std::shared_ptr<GlobalRenderSystem> create(Device& device, RenderSystemBuilder builder);
 
 	GlobalRenderSystem(Device& device, VkRenderPass renderPass,  
@@ -46,8 +44,6 @@ public:
 	void renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, std::vector<VkDescriptorSet> globalDescriptorSets); 
 	void renderGameObjectsDepth(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, std::vector<VkDescriptorSet> globalDescriptorSets, int lightIndex, uint16_t frameIndex);
 	
-	void setType(ModelType type) { modelType = type; }
-
 private:
 
 	void createPipelineLayout(std::vector<VkDescriptorSetLayout> descriptorSetLayout);
@@ -63,42 +59,23 @@ private:
 
 	Device& device;
 
-	std::unique_ptr<Pipeline> objPipeline;
-	VkPipelineLayout objPipelineLayout;
-
-	std::unique_ptr<Pipeline> GlTFPipeline;
-	VkPipelineLayout GlTFPipelineLayout;
+	std::unique_ptr<Pipeline> pipeline;
+	VkPipelineLayout pipelineLayout;
 
 	ModelType modelType = UNDEFINED_MODEL;
+	ModelSubType modelSubType = NONE;
 	const bool isShadow = false;
 		
 };
 
-template<class T>
-inline std::shared_ptr<GlobalRenderSystem> GlobalRenderSystem::create(Device& device, VkRenderPass renderPass, std::vector<VkDescriptorSetLayout>  globalSetLayout, const std::string& vertFilepath, bool hasMultipleInstance, const std::string& fragFilepath)
-{
-	std::vector<DescriptorSetObject> bindings;
-	std::vector<VkVertexInputAttributeDescription> attributeDescription;
-	std::vector<VkVertexInputBindingDescription> bindingDescription = T::Vertex::getBindingDescriptions(hasMultipleInstance);
-	ModelType modelType = static_cast<ModelType>(T::getModelType());  
-
-	bool isShadow = (fragFilepath == "");
-	if (isShadow) {
-		bindings = T::getDescriptorType(); //std::vector<DescriptorSetObject>();
-		attributeDescription = T::Vertex::getAttributeDescriptionsShadow(hasMultipleInstance);
-	}
-	else {
-		bindings = T::getDescriptorType(); 
- 		attributeDescription = T::Vertex::getAttributeDescriptions(hasMultipleInstance);
-	}
-
-	return std::make_shared<GlobalRenderSystem>(device, renderPass,
-		globalSetLayout, bindings,
-		vertFilepath, fragFilepath,
-		modelType, ModelSubType::NONE,
-		bindingDescription, attributeDescription, isShadow);
-}
-
+/// <summary>
+/// external builder to allow the use of template, get the attribute description;, model type and descriptor type from template model type
+/// if frag shader not included, the render system will only render depth
+/// </summary>
+/// <typeparam name="T"> model type class ( to be changed to have a single model class ) </typeparam>
+/// <param name="device"> device </param>
+/// <param name="builder"> RenderSystemBuilder </param>
+/// <returns> return an instance of render system </returns>
 template<class T>
 inline std::shared_ptr<GlobalRenderSystem> GlobalRenderSystem::create(Device& device, RenderSystemBuilder builder)
 {

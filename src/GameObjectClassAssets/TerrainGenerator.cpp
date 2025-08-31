@@ -50,15 +50,14 @@ void TerrainGenerator::loop(Device& device, ObjectManager* objManager, GameObjec
 
 				// create plane object
 				std::shared_ptr<Model> plane = PrebuiltModel::createTerrain(this->device, 4, 4, map);
-				
-				// place tree
-				std::vector<Model::Instance> treeList = this->placeTrees(heightMap, i, j);
-				
-				// load tree model
-				std::shared_ptr<Model> trees = Model::createModelFromFile(this->device, "C:\\Users\\riolo\\Desktop\\vulkan_3D_engine\\model\\coloredTree1.obj", "textures\\whiteTexture.jpg");
-				//trees->instanceList = treeList;
 
-				return std::vector<futureObject>{futureObject{ plane, plane ? OBJ_MODEL : UNDEFINED_MODEL, id_terrain }, futureObject{ trees, trees ? OBJ_MODEL : UNDEFINED_MODEL, id_tree, treeList }};
+				// place tree
+				//std::vector<Model::Instance> treeList = this->placeTrees(heightMap, i, j);
+
+				// load tree model
+				//std::shared_ptr<Model> trees = Model::createModelFromFile(this->device, "C:\\Users\\riolo\\OneDrive\\Bureau\\vulkan_3D_engine\\model\\coloredTree1.obj", "textures\\whiteTexture.jpg");
+
+				return std::vector<futureObject>{futureObject{ plane, plane ? OBJ_MODEL : UNDEFINED_MODEL, id_terrain }};// , futureObject{ trees, trees ? OBJ_MODEL : UNDEFINED_MODEL, id_tree, treeList }};
 				}));
 
 			loadedChunk[hash] = { id_terrain, id_tree };

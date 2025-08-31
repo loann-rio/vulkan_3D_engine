@@ -40,9 +40,12 @@ GlobalRenderSystem::GlobalRenderSystem(Device& device, VkRenderPass renderPass,
 	createPipeline(renderPass, vertFilepath, fragFilepath, bindingDescription, attributeDescription);
 }
 
+/// <summary>
+/// destroy pipelinelayout at removal of object
+/// </summary>
 GlobalRenderSystem::~GlobalRenderSystem()
 {
-	vkDestroyPipelineLayout(device.device(), objPipelineLayout, nullptr);
+	vkDestroyPipelineLayout(device.device(), pipelineLayout, nullptr);
 }
 
 void GlobalRenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout> descriptorSetLayout)
@@ -51,12 +54,16 @@ void GlobalRenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout>
 	VkPushConstantRange pushConstantRange{};
 	pushConstantRange.offset = 0;
 
+
+	// find the size and flag of push constant depending on type of obj/render
 	if (isShadow) { 
 		pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 		pushConstantRange.size = sizeof(DepthPushConstantData);
 	}
+
 	else {
 		if (modelType == ModelType::GLTF_MODEL) {
+			// gltf model need the push constant both in vertex and frag shader 
 			pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 			pushConstantRange.size = sizeof(GltfPushConstant); 
 		}
@@ -71,11 +78,6 @@ void GlobalRenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout>
 	VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT // For dynamic descriptor sets
 	};
 
-	/*VkDescriptorSetLayoutBindingFlagsCreateInfoEXT bindingFlagsInfo = {};
-	bindingFlagsInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT; 
-	bindingFlagsInfo.bindingCount = sizeof(descriptorBindingFlags) / sizeof(descriptorBindingFlags[0]); 
-	bindingFlagsInfo.pBindingFlags = descriptorBindingFlags;*/
-
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayout.size());
@@ -84,10 +86,8 @@ void GlobalRenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout>
 	pipelineLayoutInfo.pushConstantRangeCount = 1;
 	pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 
-	
-	//pipelineLayoutInfo.pNext = &bindingFlagsInfo;
-
-	if (vkCreatePipelineLayout(device.device(), &pipelineLayoutInfo, nullptr, &objPipelineLayout) !=
+	// create layout
+	if (vkCreatePipelineLayout(device.device(), &pipelineLayoutInfo, nullptr, &pipelineLayout) !=
 		VK_SUCCESS) {
 		throw std::runtime_error("fail to create pipeline layout");
 	}
@@ -96,7 +96,7 @@ void GlobalRenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout>
 void GlobalRenderSystem::createPipeline(VkRenderPass renderPass, const std::string& vertFilepath, const std::string& fragFilepath, 
 	std::vector<VkVertexInputBindingDescription> bindingDescription, std::vector<VkVertexInputAttributeDescription> attributeDescription)
 {
-	assert(objPipelineLayout != nullptr && "Cannot create pipeline before pipeline layout");
+	assert(pipelineLayout != nullptr && "Cannot create pipeline before pipeline layout");
 
 	PipelineConfigInfo pipelineConfig{};
 
@@ -111,7 +111,7 @@ void GlobalRenderSystem::createPipeline(VkRenderPass renderPass, const std::stri
 	}
 
 	pipelineConfig.renderPass = renderPass;
-	pipelineConfig.pipelineLayout = objPipelineLayout;
+	pipelineConfig.pipelineLayout = pipelineLayout;
 
 	if (fragFilepath.empty()) {
 		pipelineConfig.rasterizationInfo.depthBiasEnable = VK_TRUE;
@@ -119,7 +119,7 @@ void GlobalRenderSystem::createPipeline(VkRenderPass renderPass, const std::stri
 		pipelineConfig.rasterizationInfo.depthBiasSlopeFactor = 1.5f;
 	}
 
-	objPipeline = std::make_unique<Pipeline>(
+	pipeline = std::make_unique<Pipeline>(
 		device,
 		vertFilepath,
 		fragFilepath,
@@ -133,7 +133,7 @@ void GlobalRenderSystem::renderModel(VkCommandBuffer& commandBuffer, FrameInfo& 
 	vkCmdBindDescriptorSets(
 		commandBuffer,
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
-		objPipelineLayout,
+		pipelineLayout,
 		2, 1,
 		&obj->getDescriptorSets()[frameInfo.frameIndex],
 		0,
@@ -142,26 +142,26 @@ void GlobalRenderSystem::renderModel(VkCommandBuffer& commandBuffer, FrameInfo& 
 
 	obj->bindModel(commandBuffer);
 
-	obj->drawModel(commandBuffer, objPipelineLayout, frameInfo.frameIndex);
+	obj->drawModel(commandBuffer, pipelineLayout, frameInfo.frameIndex);
 }
 
 void GlobalRenderSystem::renderModelDepth(VkCommandBuffer& commandBuffer, GameObjectModel* obj, int lightIndex, uint16_t frameIndex)
 {
 	obj->bindModel(commandBuffer); 
-	obj->drawModelDepth(commandBuffer, objPipelineLayout, lightIndex, frameIndex);
+	obj->drawModelDepth(commandBuffer, pipelineLayout, lightIndex, frameIndex);
 }
 
 void GlobalRenderSystem::bind(VkCommandBuffer& commandBuffer, std::vector<VkDescriptorSet> globalDescriptorSets)
 {
 
-	objPipeline->bind(commandBuffer); 
+	pipeline->bind(commandBuffer);
 
 	for (uint16_t setIndex = 0; setIndex < globalDescriptorSets.size(); setIndex++)
 	{
 		vkCmdBindDescriptorSets(
 			commandBuffer,
 			VK_PIPELINE_BIND_POINT_GRAPHICS,
-			objPipelineLayout,
+			pipelineLayout,
 			setIndex, 1,
 			&globalDescriptorSets[setIndex],
 			0, nullptr 

@@ -100,7 +100,7 @@ void main() {
 	vec3 intencity = ubo.ambientLightColor.xyz * ubo.globalLightDir.w;
 
 	// get texture color
-	//vec2 normal = texture(texSampler, fragTexCoord).xy;
+	vec2 normal = texture(texSampler, fragTexCoord).xy;
 
 	// spot light mapping
 	vec4 spotLightLight = {0.0, 0.0, 0.0 , 0.0};
