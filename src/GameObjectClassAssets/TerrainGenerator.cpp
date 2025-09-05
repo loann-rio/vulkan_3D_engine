@@ -41,6 +41,9 @@ void TerrainGenerator::loop(Device& device, ObjectManager* objManager, GameObjec
 
 				// create height map from noise function
 				std::vector<std::vector<glm::vec2>> heightMap = generateChunck(i * (this->chunkSize - 1), j * (this->chunkSize - 1));
+				std::unique_ptr<Texture> text = Texture::create(this->device, heightMap);
+
+				
 
 				// separate height and slope
 				std::vector<std::vector<float>> map = std::vector<std::vector<float>>(this->chunkSize, std::vector<float>(this->chunkSize));
@@ -51,6 +54,11 @@ void TerrainGenerator::loop(Device& device, ObjectManager* objManager, GameObjec
 
 				// create plane object
 				std::shared_ptr<Model> plane = PrebuiltModel::createTerrain(this->device, 4, 4, map);
+				if (text != nullptr) {
+					plane->setTexture(std::move(text));
+					std::cout << "texture loaded \n";
+				}
+				
 
 				// place tree
 				//std::vector<Model::Instance> treeList = this->placeTrees(heightMap, i, j);

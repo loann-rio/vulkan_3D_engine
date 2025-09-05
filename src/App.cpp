@@ -204,7 +204,7 @@ void App::run()
             } 
         }   
 
-        frame = (frame + 1) % 1;
+        //frame = (frame + 1) % 1;
         
 	}
 

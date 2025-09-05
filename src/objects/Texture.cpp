@@ -8,7 +8,48 @@
 #include <stdexcept>
 
 
-Texture::Texture(Device& device, const char* filePathTexture, bool isCubeMap) : device{device} 
+std::unique_ptr<Texture> Texture::create(Device& device, const char* path)
+{
+    auto tex = std::unique_ptr<Texture>(new Texture(device, path, false));
+    if (!tex->isLoaded) {
+        return nullptr;
+    }
+    return tex;
+}
+
+std::unique_ptr<Texture> Texture::create(Device& device, std::vector<std::vector<glm::vec2>> imageArray)
+{
+    unsigned char* buffer = nullptr;
+    VkDeviceSize bufferSize = 0;
+
+	int width  = static_cast<int>(imageArray[0].size());
+	int height = static_cast<int>(imageArray.size());
+
+    bufferSize = width * height * 4;
+
+    buffer = new unsigned char[bufferSize];
+
+    unsigned char* rgba = buffer;
+    for (int32_t i = 0; i < width; ++i) {
+        for (int32_t j = 0; j < height; ++j) {
+            rgba[0] = imageArray[j][i].x;
+            rgba[1] = imageArray[j][i].y;
+            rgba += 4;
+        }
+    }
+   
+    auto tex = std::unique_ptr<Texture>(new Texture(device, buffer, width, height, bufferSize));
+
+	delete[] buffer;
+
+    if (!tex->isLoaded) {
+        return nullptr;
+    }
+    return tex;
+	
+}
+
+Texture::Texture(Device& device, const char* filePathTexture, bool isCubeMap) : device{device}
 {
     const std::string path = filePathTexture;
 
@@ -707,7 +748,6 @@ VkImageView Texture::createTextureCubeMapImageView()
 
     return imageView;  
 }
-
 
 VkImageView Texture::createImageView(VkImage image, VkFormat format)
 {

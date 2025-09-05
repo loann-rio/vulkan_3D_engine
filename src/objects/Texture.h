@@ -9,6 +9,8 @@
 #include <string>
 #include <fstream>
 
+#include <glm/glm.hpp>
+
 #include <ktx.h>
 #include <ktxvulkan.h> 
 
@@ -16,13 +18,8 @@
 class Texture
 {
 public:
-	static std::unique_ptr<Texture> create(Device& device, const char* path) {
-		auto tex = std::unique_ptr<Texture>(new Texture(device,  path, false)); 
-		if (!tex->isLoaded) {
-			return nullptr;
-		}
-		return tex;
-	}
+	static std::unique_ptr<Texture> create(Device& device, const char* path);
+	static std::unique_ptr<Texture> create(Device& device, std::vector<std::vector<glm::vec2>> imageArray);
 
 	static std::unique_ptr<Texture> createCubeMap(Device& device, const char* path) {
 		auto tex = std::unique_ptr<Texture>(new Texture(device, path, true)); 
