@@ -23,6 +23,7 @@ void TerrainGenerator::loop(Device& device, ObjectManager* objManager, GameObjec
 			// push terrain
 			auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
 			gameObject->transform.translation = { i * chunkWorldSide, 0, j * chunkWorldSide };
+			gameObject->setModelSubType(TERRAIN);
 			GameObject::id_t id_terrain = gameObject->getId();
 
 			objManager->pushGameObject(std::move(gameObject));
@@ -55,7 +56,7 @@ void TerrainGenerator::loop(Device& device, ObjectManager* objManager, GameObjec
 				//std::vector<Model::Instance> treeList = this->placeTrees(heightMap, i, j);
 
 				// load tree model
-				//std::shared_ptr<Model> trees = Model::createModelFromFile(this->device, "C:\\Users\\riolo\\OneDrive\\Bureau\\vulkan_3D_engine\\model\\coloredTree1.obj", "textures\\whiteTexture.jpg");
+				//std::shared_ptr<Model> trees = Model::createModelFromFile(this->device, "model\\coloredTree1.obj", "textures\\whiteTexture.jpg");
 
 				return std::vector<futureObject>{futureObject{ plane, plane ? OBJ_MODEL : UNDEFINED_MODEL, id_terrain }};// , futureObject{ trees, trees ? OBJ_MODEL : UNDEFINED_MODEL, id_tree, treeList }};
 				}));

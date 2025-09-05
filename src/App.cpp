@@ -193,6 +193,7 @@ void App::run()
                  
                 gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo, descriptorSets); 
                 objRenderSystem->renderGameObjects(commandBuffer, frameInfo, descriptorSets); 
+                terrainRenderSystem->renderGameObjects(commandBuffer, frameInfo, descriptorSets);
 
                 textOverlay.renderText(commandBuffer, frameInfo); 
 
@@ -313,12 +314,15 @@ void App::createRenderSystems()
     depthRenderSystemGltf = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, gltfShadowBuilder);
 
     RenderSystemBuilder terrainBuilder{};
+    
     terrainBuilder.vertFilepath = "shaders\\simple_shader.vert.spv";
     terrainBuilder.fragFilepath = "shaders\\terrainShader.frag.spv";
     terrainBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
     terrainBuilder.renderPass = renderer.getSwapChainRenderPass();
+    terrainBuilder.hasMultipleInstance = true;
+    terrainBuilder.subModelType = TERRAIN;
 
-    terrainRenderSystem = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, terrainBuilder);
+    terrainRenderSystem = GlobalRenderSystem::create<Model>(device, terrainBuilder);
 
 }
 

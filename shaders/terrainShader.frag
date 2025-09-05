@@ -95,12 +95,13 @@ void main() {
 	// global light
 
 	vec3 directionToLight = normalize(ubo.globalLightDir.xyz);
-
+		
 	float cosAngOfIncidence = max(dot(surfaceNormal, directionToLight), 0);
 	vec3 intencity = ubo.ambientLightColor.xyz * ubo.globalLightDir.w;
 
+
 	// get texture color
-	vec2 normal = texture(texSampler, fragTexCoord).xy;
+	vec4 color = texture(texSampler, fragTexCoord) * vec4(fragColor, 1.0);
 
 	// spot light mapping
 	vec4 spotLightLight = {0.0, 0.0, 0.0 , 0.0};
@@ -108,8 +109,6 @@ void main() {
 	for (uint indexSpotLight = 0; indexSpotLight < spotLightUbo.numLights && indexSpotLight < MAX_NUM_SPOT_LIGHT; ++indexSpotLight) {
 		spotLightLight += compute_shadow_factor(fragPosShadow[indexSpotLight], indexSpotLight, surfaceNormal);
 	}
-
-	vec4 color = vec4(fragColor, 1);
 
 	// sum colors
 	outColor = ((vec4(diffuseLight, 1.0) + vec4(specularLight, 1.0) + cosAngOfIncidence * ubo.globalLightDir.w + spotLightLight) * color);

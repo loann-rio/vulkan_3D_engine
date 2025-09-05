@@ -127,13 +127,13 @@
       <PreprocessorDefinitions>
       </PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)\external\imgui-master\backends;$(SolutionDir)\external\imgui-master;$(SolutionDir)\external\glm-1.0.0;$(SolutionDir)\external\stb-master;$(SolutionDir)\external\basis_universal-master\transcoder;$(SolutionDir)\external\glfw-3.3.9.bin.WIN64\include;$(SolutionDir)\external\tinyobjloader-release;C:\VulkanSDK\1.4.309.0\Include;$(SolutionDir)\external\KTX-Software-main\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\external\imgui-master\backends;$(SolutionDir)\external\imgui-master;$(SolutionDir)\external\glm-1.0.0;$(SolutionDir)\external\stb-master;$(SolutionDir)\external\basis_universal-master\transcoder;$(SolutionDir)\external\glfw-3.3.9.bin.WIN64\include;$(SolutionDir)\external\tinyobjloader-release;C:\VulkanSDK\1.4.313.2\Include;$(SolutionDir)\external\KTX-Software-main\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)\external\KTX-Software-main\build\Debug;$(SolutionDir)\external\KTX-Software-main\lib;$(SolutionDir)\external\glfw-3.3.9.bin.WIN64\lib-vc2022;C:\VulkanSDK\1.4.309.0\Bin;C:\VulkanSDK\1.4.309.0\Lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)\external\KTX-Software-main\build\Debug;$(SolutionDir)\external\KTX-Software-main\lib;$(SolutionDir)\external\glfw-3.3.9.bin.WIN64\lib-vc2022;C:\VulkanSDK\1.4.313.2\Lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib; glfw3.lib;  </AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -234,11 +234,11 @@
     <None Include="shaders\shadowmapgltf.vert" />
     <None Include="shaders\simple_shader.frag" />
     <None Include="shaders\simple_shader.vert" />
+    <None Include="shaders\terrainShader.frag" />
     <None Include="shaders\text.frag" />
     <None Include="shaders\text.vert" />
     <None Include="skybox.frag" />
     <None Include="skybox.vert" />
-    <None Include="src\GameObjectClassAssets\terrainShader.frag" />
     <None Include="src\GameObjectClassAssets\terrainShader.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

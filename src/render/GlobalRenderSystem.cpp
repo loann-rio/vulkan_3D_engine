@@ -68,6 +68,7 @@ void GlobalRenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout>
 			pushConstantRange.size = sizeof(GltfPushConstant); 
 		}
 		else {
+			std::cout << "simple push constant \n";
 			pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 			pushConstantRange.size = sizeof(SimplePushConstantData);
 		}
