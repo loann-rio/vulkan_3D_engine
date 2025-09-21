@@ -19,34 +19,44 @@ std::unique_ptr<Texture> Texture::create(Device& device, const char* path)
 
 std::unique_ptr<Texture> Texture::create(Device& device, std::vector<std::vector<glm::vec2>> imageArray)
 {
-    unsigned char* buffer = nullptr;
-    VkDeviceSize bufferSize = 0;
+    // Validate input
+    if (imageArray.empty() || imageArray[0].empty()) {
+        std::cerr << "Texture::create(imageArray): empty image array\n";
+        return nullptr;
+    }
 
-	int width  = static_cast<int>(imageArray[0].size());
-	int height = static_cast<int>(imageArray.size());
+    const uint32_t height = static_cast<uint32_t>(imageArray.size());
+    const uint32_t width = static_cast<uint32_t>(imageArray[0].size());
 
-    bufferSize = width * height * 4;
+    const uint32_t mipLevel = 1; // no mipmap generation here
+    const VkDeviceSize imageSize = width * height * 4;
 
-    buffer = new unsigned char[bufferSize];
+    // Allocate RGBA8 buffer
+    unsigned char* rgba = new unsigned char[imageSize];
 
-    unsigned char* rgba = buffer;
-    for (int32_t i = 0; i < width; ++i) {
-        for (int32_t j = 0; j < height; ++j) {
-            rgba[0] = imageArray[j][i].x;
-            rgba[1] = imageArray[j][i].y;
-            rgba += 4;
+    size_t idx = 0;
+    for (uint32_t y = 0; y < height; ++y) {
+        const auto& row = imageArray[y];
+        for (uint32_t x = 0; x < width; ++x) {
+            const glm::vec2& c = row[x];
+      
+            rgba[idx + 0] = c.x;
+            rgba[idx + 1] = c.y * 100;
+            rgba[idx + 2] = 0;
+            rgba[idx + 3] = 1;
+            idx += 4;
         }
     }
-   
-    auto tex = std::unique_ptr<Texture>(new Texture(device, buffer, width, height, bufferSize));
 
-	delete[] buffer;
+    auto tex = std::unique_ptr<Texture>(new Texture(device, rgba, width, height, imageSize, mipLevel));
+
+    delete[] rgba;
 
     if (!tex->isLoaded) {
         return nullptr;
     }
+
     return tex;
-	
 }
 
 Texture::Texture(Device& device, const char* filePathTexture, bool isCubeMap) : device{device}
@@ -87,6 +97,8 @@ Texture::Texture(Device& device, unsigned char* rgbaPixels, const uint32_t fontW
     createTextureImage(rgbaPixels, fontWidth, fontHeight, mipLevel, imageSize);
     createTextureImageView();
     createTextureSampler();
+    isLoaded = true;
+
 }
 
 void Texture::createTextureImage(unsigned char* rgbaPixels, const uint32_t fontWidth, const uint32_t fontHeight, uint32_t mipLevel, VkDeviceSize imageSize) { 

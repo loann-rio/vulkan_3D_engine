@@ -96,6 +96,25 @@ void GameObjectModel::setModel(ModelVariant newModel)
     hasModel = true;
 }
 
+void GameObject::debugUI()
+{
+    ImGui::Text("Position:");
+    ImGui::DragFloat3("##pos", glm::value_ptr(transform.translation), 0.01f, -10.0f, 10.0f);
+
+    ImGui::Text("Rotation:");
+    ImGui::DragFloat3("##rot", glm::value_ptr(transform.rotation), 0.01f, -10.0f, 10.0f);
+
+    ImGui::Text("Scale:");
+    ImGui::DragFloat3("##scl", glm::value_ptr(transform.scale), 0.01f, -10.0f, 10.0f);
+}
+
+std::string GameObject::getName() const
+{
+    if (name.empty())
+        return "object_" + std::to_string(id);
+    return name;
+}
+
 void GameObjectModel::setMultipleInstances(std::vector<Model::Instance> instances)
 {
     
@@ -128,7 +147,6 @@ void GameObjectModel::setMultipleInstances(std::vector<Model::Instance> instance
 
     device.copyBuffer(stagingBuffer.getBuffer(), instancesBuffer->getBuffer(), bufferSize); 
 
-    hasMultipleInstances = true; 
 }
 
 void GameObjectModel::createDescriptorSet(DescriptorPool& pool) const
@@ -265,6 +283,8 @@ void GameObjectModel::debugUI()
     {
         animate = true;
     }
+
+	ImGui::Checkbox("show", &show);
 }
 
 void GameObjectPointLight::debugUI()

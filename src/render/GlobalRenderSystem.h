@@ -65,6 +65,8 @@ private:
 	ModelType modelType = UNDEFINED_MODEL;
 	ModelSubType modelSubType = NONE;
 	const bool isShadow = false;
+
+	uint16_t modelDescriptorSetIndex; // start after global, shadow add additional descriptor set
 		
 };
 

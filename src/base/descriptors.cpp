@@ -134,13 +134,13 @@ DescriptorWriter::DescriptorWriter(DescriptorSetLayout& setLayout, DescriptorPoo
 
 DescriptorWriter& DescriptorWriter::writeBuffer(
     uint32_t binding, VkDescriptorBufferInfo* bufferInfo) {
-    assert(setLayout.bindings.count(binding) == 1 && "Layout does not contain specified binding");
+    //assert(setLayout.bindings.count(binding) == 1 && "Layout does not contain specified binding");
 
     auto& bindingDescription = setLayout.bindings[binding];
-
-    assert(
+    //assert(setLayout.bindings.count(binding) != bindingDescription.descriptorCount && "Layout does not contain specified binding");
+    /*assert(
         bindingDescription.descriptorCount == 1 &&
-        "Binding single descriptor info, but binding expects multiple");
+        "Binding single descriptor info, but binding expects multiple");*/
 
     VkWriteDescriptorSet write{};
     write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;

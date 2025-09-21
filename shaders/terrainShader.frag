@@ -37,13 +37,22 @@ layout(set = 0, binding = 0) uniform GlobalUbo {
 	PointLight pointLight[10]; 
 } ubo;
 
+layout(set = 2, binding = 1) uniform TerrainUbo {
+	float clif_slop;
+	float height_grass;
+	float slope_snow;
+	float height_grass_with_slope;
+	float height_dirt_with_slope;
+	float height_snow;
+} terrainUbo;
+
 layout(push_constant) uniform Push {
 	mat4 modelMatrix;
 	mat4 normalMatrix;
 } push;
 
 // Define the texture sampler 
-layout(set = 2, binding = 1) uniform sampler2D texSampler;
+layout(set = 3, binding = 1) uniform sampler2D texSampler;
 layout(set = 1, binding = 1) uniform sampler2DShadow shadowMap[MAX_NUM_SPOT_LIGHT];
 
 layout(set = 1, binding = 0) uniform SpotLightUbo {
@@ -90,7 +99,6 @@ void main() {
 	vec3 viewDirection = normalize(cameraWorldPos - fragPositionWorld);
 
 	vec3 diffuseLight = ubo.ambientLightColor.xyz * ubo.ambientLightColor.w;
-	vec3 specularLight = vec3(0.0);
 
 	// global light
 
@@ -101,7 +109,7 @@ void main() {
 
 
 	// get texture color
-	vec4 color = texture(texSampler, fragTexCoord) * vec4(fragColor, 1.0);
+	vec3 color = vec3(0.0);
 
 	// spot light mapping
 	vec4 spotLightLight = {0.0, 0.0, 0.0 , 0.0};
@@ -110,7 +118,50 @@ void main() {
 		spotLightLight += compute_shadow_factor(fragPosShadow[indexSpotLight], indexSpotLight, surfaceNormal);
 	}
 
-	// sum colors
-	outColor = ((vec4(diffuseLight, 1.0) + vec4(specularLight, 1.0) + cosAngOfIncidence * ubo.globalLightDir.w + spotLightLight) * color);
+	float slope = abs(normalize(fragNormalWorld).y);
+	float height = -fragPositionWorld.y;
 
+	color = vec3(0, 0, 1);
+
+
+	if (slope > terrainUbo.clif_slop) {
+		// flat terrain
+		color = vec3(0.1, 0.7, 0.2 );
+
+		if (height < terrainUbo.height_grass)
+		{
+			// grass
+			color = vec3(0.1, 0.7, 0.2 );
+		}
+		else
+		{
+			// dirt
+			color = vec3( 0.2, 0.5, 0.1 );
+		}
+
+		if (height < terrainUbo.height_grass_with_slope && slope < terrainUbo.slope_snow)
+		{
+			// grass
+			color = vec3( 0.2, 0.7, 0.2 );
+		}
+		else if (height < terrainUbo.height_dirt_with_slope && slope < terrainUbo.slope_snow)
+		{
+			// dirt
+			color = vec3( 0.2, 0.5, 0.2 );
+		}
+		else if (height > terrainUbo.height_snow)
+		{
+			// snow
+			color = vec3( 0.78, 0.78, 0.9 );
+		}
+	} 
+	else 
+	{
+		// rock cliff
+		color = vec3( 0.25, 0.239, 0.219 );
+	}
+
+
+	// sum colors
+	outColor = (vec4(diffuseLight, 1.0) +  cosAngOfIncidence * ubo.globalLightDir.w + spotLightLight) * vec4(color, 255);
 }

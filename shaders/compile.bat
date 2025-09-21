@@ -17,5 +17,6 @@ C:\VulkanSDK\1.4.313.2\Bin\glslc.exe depthView.vert -o depthView.vert.spv --targ
 C:\VulkanSDK\1.4.313.2\Bin\glslc.exe depthView.frag -o depthView.frag.spv --target-env=vulkan1.2
 
 C:\VulkanSDK\1.4.313.2\Bin\glslc.exe terrainShader.frag -o terrainShader.frag.spv --target-env=vulkan1.2
+C:\VulkanSDK\1.4.313.2\Bin\glslc.exe terrainShader.vert -o terrainShader.vert.spv --target-env=vulkan1.2
 
 pause

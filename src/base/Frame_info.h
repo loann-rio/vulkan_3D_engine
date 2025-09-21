@@ -29,6 +29,15 @@ struct GlobalUbo {
 	PointLight pointLights[MAX_LIGHT];
 };
 
+struct TerrainUbo {
+	float clif_slop{ 0.76f };
+	float height_grass{ 2.3f };
+	float slope_snow{ 1.f };
+	float height_grass_with_slope{ 2.5f };
+	float height_dirt_with_slope{ 2.5f };
+	float height_snow{ 2.5f };
+};
+
 struct FrameInfo {
 	int frameIndex;
 	float frameTime;

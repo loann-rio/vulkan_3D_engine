@@ -8,11 +8,21 @@
 #include <thread>
 #include <typeindex>
 
+#include <fstream>
+
+
 #include "GameObject.h"
 
 template<class T>
 constexpr T pi = T(3.1415926535897932385L);
 
+#include <../json.hpp>
+using json = nlohmann::json;
+
+
+/// <summary>
+/// Represents a future game object with associated model information and instances.
+/// </summary>
 struct futureObject {
     ModelVariant model;
     ModelType type;
@@ -29,8 +39,10 @@ public:
 
     ObjectManager(Device& device) : device{ device } {
         gameObjects = std::make_shared<GameObject::Map>();
+        loadScene("default"); 
     };
 
+    ~ObjectManager() { saveFullScene(); }
 	
 	void startLoadModel(DescriptorPool& pool); 
 	void pushModel(DescriptorPool& pool); 
@@ -48,14 +60,25 @@ public:
     std::shared_ptr<GameObject::Map> getGameObjects() const { return gameObjects; } 
 
     void loadObjectAsync(Device& device, const std::string& filePath, TransformComponent transform, const std::string& name = "");
-    void loadObjectAsyncObj(Device& device, const std::string& filePath, const char* filePathTexture, TransformComponent transform, const std::string& name = "");
+    void loadObjectAsyncObj(Device& device, const std::string& filePath, const std::string filePathTexture, TransformComponent transform, const std::string& name = "");
 
     void pushFuture(std::future<futureObject> future) { futureGameObjects.push_back(std::move(future)); };
     void pushFuture(std::future<std::vector<futureObject>> futures);
 
+    // scene 
+	json currentSceneJson;
+    std::string currentScene = "default";
+	std::string scenePath = "scenes/default.json";
+
+    void switchScene(std::string name); 
+    void loadScene(std::string name);
+    void addObjectToScene(GameObject* gameObject);
+    void createScene(std::string name);
+	void saveFullScene();
+
     // camera
     std::string mainCamera = "mainCamera"; 
-
+    
 
 private:
     Device& device;
@@ -65,14 +88,18 @@ private:
     std::vector<std::future<futureObject>> futureGameObjects;
     std::vector<std::future<std::vector<futureObject>>> futureGameObjectslist;
 
+	// main storage
     std::shared_ptr<GameObject::Map> gameObjects{};
     std::unordered_map<std::string, GameObject*> gameObjectsByName;
     std::unordered_map<std::type_index, std::vector<GameObject*>> gameObjectsByType; 
 
-    std::shared_ptr<GameObject::Map> spotLights{};
-    std::shared_ptr<GameObject::Map> cameras{};
 };
 
+/// <summary>
+/// Retrieves all managed objects of a specified type.
+/// </summary>
+/// <typeparam name="T">The type of objects to retrieve.</typeparam>
+/// <returns>A vector containing pointers to objects of type T managed by ObjectManager.</returns>
 template<typename T>
 inline std::vector<T*> ObjectManager::getByType()
 {
@@ -86,6 +113,6 @@ inline std::vector<T*> ObjectManager::getByType()
             }
         }
     }
-  
+    
     return result;  
 }

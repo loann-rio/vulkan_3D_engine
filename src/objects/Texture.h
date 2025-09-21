@@ -32,8 +32,8 @@ public:
 	Texture(Device& device, const char* filePathTexture, bool isCubeMap);
 	
 	Texture(Device& device, unsigned char* rgbaPixels, const uint32_t fontWidth, const uint32_t fontHeight, VkDeviceSize imageSize = 0, uint32_t mipLevel = 1);
-	Texture(Device& device, VkImageView textureImageView) : device { device }, textureImageView { textureImageView } {}
-	Texture(Device& device) : device{ device } {}
+	Texture(Device& device, VkImageView textureImageView) : device { device }, textureImageView { textureImageView } { isLoaded = true; }
+	Texture(Device& device) : device{ device } { isLoaded = true; }
 	
 	~Texture() {
 		vkDestroySampler(device.device(), textureSampler, nullptr);

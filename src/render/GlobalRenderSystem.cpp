@@ -16,27 +16,36 @@ GlobalRenderSystem::GlobalRenderSystem(Device& device, VkRenderPass renderPass,
 	std::vector<VkVertexInputBindingDescription> bindingDescription, std::vector<VkVertexInputAttributeDescription> attributeDescription, bool isShadow)
 	: device{ device }, modelType{ modelType }, isShadow{ isShadow }, modelSubType{ subModelType }
 {
-	std::vector<std::unique_ptr<DescriptorSetLayout>> layouts;
+	std::vector<std::unique_ptr<DescriptorSetLayout>> layouts;  // to hold the unique ptr of the descriptor set layouts
 
+	modelDescriptorSetIndex = static_cast<uint32_t>(globalSetLayout.size()); // index of the model descriptor set in the pipeline layout
+
+	// create descriptor set layout for each binding set of the model
 	for (size_t j = 0; j < bindings.size(); j++) {
 		auto builder = DescriptorSetLayout::Builder(device);
 
+		// add binding for each descriptor in the set
 		for (int i = 0; i < bindings[j].descriptorSet.size(); i++) {
 			builder.addBinding(i + 1, bindings[j].descriptorSet[i].descriptorType, bindings[j].descriptorSet[i].stage, bindings[j].descriptorSet[i].count);
 		}
 
 		auto newLayout = builder.build(); 
 
+		// check if layout creation success
 		if (!newLayout) { 
 			std::cerr << "Failed to build descriptor set layout at index " << j << "\n"; 
 			continue;
-		} 
+		}
 
-		globalSetLayout.push_back(newLayout->getDescriptorSetLayout());  
-		layouts.push_back(std::move(newLayout)); 
+		// add to the list of descriptor set layout
+		globalSetLayout.push_back(newLayout->getDescriptorSetLayout());
+		layouts.push_back(std::move(newLayout));
 	}
 	
+	// create pipelinelayout with the global and model descriptor set layout
 	createPipelineLayout(globalSetLayout);
+
+	// create pipeline
 	createPipeline(renderPass, vertFilepath, fragFilepath, bindingDescription, attributeDescription);
 }
 
@@ -68,7 +77,7 @@ void GlobalRenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout>
 			pushConstantRange.size = sizeof(GltfPushConstant); 
 		}
 		else {
-			std::cout << "simple push constant \n";
+			
 			pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 			pushConstantRange.size = sizeof(SimplePushConstantData);
 		}
@@ -97,10 +106,12 @@ void GlobalRenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout>
 void GlobalRenderSystem::createPipeline(VkRenderPass renderPass, const std::string& vertFilepath, const std::string& fragFilepath, 
 	std::vector<VkVertexInputBindingDescription> bindingDescription, std::vector<VkVertexInputAttributeDescription> attributeDescription)
 {
+	// check if pipeline layout is created
 	assert(pipelineLayout != nullptr && "Cannot create pipeline before pipeline layout");
 
 	PipelineConfigInfo pipelineConfig{};
 
+	// get default pipeline configuration
 	Pipeline::defaultPipelineConfigInfo(pipelineConfig);
 
 	if (!bindingDescription.empty()) {
@@ -113,13 +124,15 @@ void GlobalRenderSystem::createPipeline(VkRenderPass renderPass, const std::stri
 
 	pipelineConfig.renderPass = renderPass;
 	pipelineConfig.pipelineLayout = pipelineLayout;
-
+	
+	// enable depth bias if no frag shader (depth only)
 	if (fragFilepath.empty()) {
 		pipelineConfig.rasterizationInfo.depthBiasEnable = VK_TRUE;
 		pipelineConfig.rasterizationInfo.depthBiasConstantFactor = 4.0f;
 		pipelineConfig.rasterizationInfo.depthBiasSlopeFactor = 1.5f;
 	}
 
+	// create the pipeline
 	pipeline = std::make_unique<Pipeline>(
 		device,
 		vertFilepath,
@@ -135,12 +148,12 @@ void GlobalRenderSystem::renderModel(VkCommandBuffer& commandBuffer, FrameInfo& 
 		commandBuffer,
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
 		pipelineLayout,
-		2, 1,
+		modelDescriptorSetIndex, 1,
 		&obj->getDescriptorSets()[frameInfo.frameIndex],
 		0,
 		nullptr
 	);
-
+	
 	obj->bindModel(commandBuffer);
 
 	obj->drawModel(commandBuffer, pipelineLayout, frameInfo.frameIndex);

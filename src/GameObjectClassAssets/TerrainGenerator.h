@@ -39,7 +39,7 @@ public:
 	std::vector<std::vector<glm::vec2>> generateChunck(float Xoffset, float Yoffset);
 	std::vector<Model::Instance> placeTrees(std::vector<std::vector<glm::vec2>> heightMap, float Xoffset, float Yoffset) const;
 
-	const uint32_t sizeWorldInChunck = 4;
+	const uint32_t sizeWorldInChunck = 1;
 	const uint16_t chunkSize = 158;
 	const int treeProbability = 20; // between 0 - 100
 
@@ -82,4 +82,3 @@ private:
 	//std::shared_ptr<Model> treeModel = Model::createModelFromFile(device, "C:\\Users\\riolo\\Desktop\\vulkan_3D_engine\\model\\coloredTree1.obj", "textures\\whiteTexture.jpg");
 
 };
-

@@ -41,7 +41,7 @@ static std::unique_ptr<Model> createPlane(Device& device, const unsigned int det
     for (unsigned int i = 0; i < detail + 1; i++) {
         for (unsigned int j = 0; j < detail + 1; j++)
         {
-            modelBuilder.vertices.push_back({ {i * sizePlane / detail, 0.f, j * sizePlane / detail}, {0, 0, 0}, {0, -1, 0}, {(float) (i * 8) / (float) detail , (float) (j * 8) / (float) detail } });
+            modelBuilder.vertices.push_back({ {i * sizePlane / detail, 0.f, j * sizePlane / detail}, {1, 1, 1}, {0, -1, 0}, {(float) (i * 8) / (float) detail , (float) (j * 8) / (float) detail } });
         }
     }
 

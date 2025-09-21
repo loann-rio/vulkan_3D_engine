@@ -50,6 +50,7 @@ private:
 	// buffers
 	std::vector<std::unique_ptr<Buffer>> uboBuffers;
 	std::vector<std::unique_ptr<Buffer>> shadowUboBuffer;
+	std::vector<std::unique_ptr<Buffer>> terrainBuffers;
 
 	// render systems
 	std::shared_ptr<GlobalRenderSystem> gltfRenderSystem;
@@ -61,6 +62,7 @@ private:
 	// global descriptor sets
 	std::vector<VkDescriptorSet> globalDescriptorSet;
 	std::vector<VkDescriptorSet> shadowDescriptorSet;
+	std::vector<VkDescriptorSet> terrainDescriptorSet;
 
 	// object management:
 	ObjectManager objectManager{ device };

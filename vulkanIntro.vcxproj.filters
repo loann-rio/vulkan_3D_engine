@@ -116,9 +116,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="json.hpp">
-      <Filter>Fichiers de ressources</Filter>
-    </ClInclude>
     <ClInclude Include="tiny_gltf.h">
       <Filter>Fichiers de ressources</Filter>
     </ClInclude>
@@ -201,6 +198,9 @@
     <ClInclude Include="src\GameObjectClassAssets\mainLightBehavior.h">
       <Filter>GameObjectClassAssets</Filter>
     </ClInclude>
+    <ClInclude Include="external\json.hpp">
+      <Filter>Fichiers de ressources</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\compile.bat">
@@ -248,11 +248,7 @@
     <None Include="skybox.frag">
       <Filter>shaders</Filter>
     </None>
-    <None Include="src\GameObjectClassAssets\terrainShader.frag">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="src\GameObjectClassAssets\terrainShader.vert">
-      <Filter>shaders</Filter>
-    </None>
+    <None Include="shaders\terrainShader.frag" />
+    <None Include="shaders\terrainShader.vert" />
   </ItemGroup>
 </Project>

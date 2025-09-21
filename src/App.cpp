@@ -62,6 +62,8 @@ void App::run()
     // UBO
     GlobalUbo ubo{};
     SpotLightUbo spotLightUbo{};
+    TerrainUbo terrainUbo{};
+
 
     //std::unique_ptr<Texture> cubeMap = Texture::createCubeMap(device, "skybox\\cubemap_space.ktx");
     
@@ -110,8 +112,15 @@ void App::run()
         // loop on games objects
         {
             std::shared_ptr<GameObject::Map> objects = objectManager.getGameObjects();
-            for (auto obj = objects->begin(); obj != objects->end(); obj++) {
-                obj->second->loop(&objectManager);
+            std::vector<GameObject::id_t> toRemove;
+            for (auto& [id, obj] : *objects) {
+                if (obj->toBeRemoved)
+                    toRemove.push_back(id);
+                else
+                    obj->loop(&objectManager);
+            }
+            for (auto id : toRemove) {
+                objectManager.removeGameObject(id);
             }
         }
 
@@ -149,7 +158,14 @@ void App::run()
         }
 
         uboBuffers[frameIndex]->writeToBuffer(&ubo); 
-        uboBuffers[frameIndex]->flush(); 
+        uboBuffers[frameIndex]->flush();
+
+
+        // update terrain ubo
+        {
+            terrainBuffers[frameIndex]->writeToBuffer(&terrainUbo);
+            terrainBuffers[frameIndex]->flush();
+		}
 
 
         // update spotLight
@@ -175,6 +191,7 @@ void App::run()
             objectManager.getByType<GameObjectModel>()
         };
 
+		
         /////// render frame ///////
         {
             std::vector<VkDescriptorSet> descriptorSets{ globalDescriptorSet[frameIndex], shadowDescriptorSet[renderer.getDepthIndex()]};
@@ -193,19 +210,18 @@ void App::run()
                  
                 gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo, descriptorSets); 
                 objRenderSystem->renderGameObjects(commandBuffer, frameInfo, descriptorSets); 
-                terrainRenderSystem->renderGameObjects(commandBuffer, frameInfo, descriptorSets);
+
+                std::vector<VkDescriptorSet> terrainDescriptorSets{ globalDescriptorSet[frameIndex], shadowDescriptorSet[renderer.getDepthIndex()], terrainDescriptorSet[frameIndex] };
+                terrainRenderSystem->renderGameObjects(commandBuffer, frameInfo, terrainDescriptorSets);
 
                 textOverlay.renderText(commandBuffer, frameInfo); 
 
-                imgui.drawUI(commandBuffer, &objectManager);
+                imgui.drawUI(commandBuffer, &objectManager, terrainUbo);
 
                 renderer.endSwapChainRenderPass(commandBuffer); 
                 renderer.endFrame();
             } 
         }   
-
-        //frame = (frame + 1) % 1;
-        
 	}
 
         vkQueueWaitIdle(device.presentQueue());
@@ -244,6 +260,37 @@ void App::createRenderSystems()
             .writeBuffer(0, &bufferInfo)
             .build(globalDescriptorSet[i]); 
     } 
+
+    //// terrain buffer 
+
+    terrainBuffers.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
+    for (int i = 0; i < terrainBuffers.size(); i++)
+    {
+        terrainBuffers[i] = std::make_unique<Buffer>(
+            device,
+            sizeof(TerrainUbo),
+            1,
+            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+            device.properties.limits.minUniformBufferOffsetAlignment
+        );
+
+        terrainBuffers[i]->map();
+    }
+
+    auto terrainSetLayout = DescriptorSetLayout::Builder(device)
+        .addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .build();
+
+    terrainDescriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
+    for (int i = 0; i < terrainDescriptorSet.size() && i < 2; i++)
+    {
+        auto bufferInfo = terrainBuffers[i]->descriptorInfo();
+
+        DescriptorWriter(*terrainSetLayout, *globalPool)
+            .writeBuffer(1, &bufferInfo)
+            .build(terrainDescriptorSet[i]);
+    }
 
     //// shadow buffer
     shadowUboBuffer.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT); 
@@ -315,9 +362,9 @@ void App::createRenderSystems()
 
     RenderSystemBuilder terrainBuilder{};
     
-    terrainBuilder.vertFilepath = "shaders\\simple_shader.vert.spv";
+    terrainBuilder.vertFilepath = "shaders\\terrainShader.vert.spv";
     terrainBuilder.fragFilepath = "shaders\\terrainShader.frag.spv";
-    terrainBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
+    terrainBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() , terrainSetLayout->getDescriptorSetLayout()};
     terrainBuilder.renderPass = renderer.getSwapChainRenderPass();
     terrainBuilder.hasMultipleInstance = true;
     terrainBuilder.subModelType = TERRAIN;

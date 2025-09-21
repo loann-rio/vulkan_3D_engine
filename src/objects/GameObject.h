@@ -7,7 +7,6 @@
 #include "../model/Model.h"
 #include "../render/Camera.h"
 
-
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
 
@@ -19,7 +18,20 @@
 #include <variant>
 #include <unordered_map>
 
+#define REGISTER_BEHAVIOR(CLASS) \
+    namespace { \
+        struct CLASS##Register { \
+            CLASS##Register() { \
+                GameObjectBehavior::registerBehaviorType(#CLASS, [](Device& device) { return std::make_unique<CLASS>(device); }); \
+            } \
+        }; \
+        static CLASS##Register global_##CLASS##Register; \
+    }
+
+
 class ObjectManager;
+class GameObject;
+class GameObjectBehavior;
 
 using ModelVariant = std::variant<std::shared_ptr<Model>,
 	std::shared_ptr<GlTFModel::ModelGltf>>;
@@ -37,11 +49,11 @@ enum ModelSubType {
 };
 
 enum class GameObjectType { 
-	UNKNOWN,
-	CAMERA,
-	MODEL,
-	SPOT_LIGHT,
-	POINT_LIGHT 
+	UNKNOWN = 0,
+	CAMERA = 1,
+	MODEL = 2,
+	SPOT_LIGHT = 3,
+	POINT_LIGHT = 4
 };
 
 struct SpotLight { 
@@ -61,12 +73,28 @@ struct TransformComponent {
 	glm::mat3 normalMatrix();
 };
 
-class GameObject; 
-
 class GameObjectBehavior { 
 public:
 	virtual void setup(Device& device, ObjectManager* objManager, GameObject* object) = 0;
 	virtual void loop(Device& device, ObjectManager* objManager, GameObject* object) = 0;
+
+	using BehaviorFactory = std::function<std::unique_ptr<GameObjectBehavior>(Device&)>;
+
+	static std::unordered_map<std::string, BehaviorFactory>& behaviorRegistry() {
+		static std::unordered_map<std::string, BehaviorFactory> instance;
+		return instance;
+	}
+
+	static void registerBehaviorType(const std::string& typeName, BehaviorFactory factory) {
+		behaviorRegistry()[typeName] = factory;
+	}
+
+	static std::unique_ptr<GameObjectBehavior> createBehaviorFromType(const std::string& typeName, Device& device) {
+		auto it = behaviorRegistry().find(typeName);
+		if (it != behaviorRegistry().end()) return (it->second)(device);
+		return nullptr;
+	}
+
 };
 
 class GameObject
@@ -89,16 +117,14 @@ public:
 	virtual ~GameObject() = default;
 
 	// UI
-	virtual void debugUI() {}
+	virtual void debugUI();
 	
-
 	// position scale rotation
 	TransformComponent transform{};
 
-
 	// name
 	void setName(std::string newName) { name = newName; }
-	std::string getName() const { return name; }
+	std::string getName() const;
 
 	// parent child
 	void setParent(GameObject* parent) { parentObject = parent; }
@@ -108,16 +134,23 @@ public:
 	glm::mat4 getTransformMat();
 	glm::mat3 getNormalMat();
 
+	// buffer
+	//std::vector<std::unique_ptr<Buffer>> uboBuffers;
+	//bool hasUbo = false;
 
 	// attached behavior class 
 	bool hasAttachedClass = false;
+	std::string getAttachedClassName() { return typeid(*attachedClass).name(); }
 
 	// attach class
-	void setAttachedClass(std::unique_ptr<GameObjectBehavior> attClass) { attachedClass = std::move(attClass); hasAttachedClass = true; }
+	void setAttachedClass(std::unique_ptr<GameObjectBehavior> attClass) { attachedClass = std::move(attClass); hasAttachedClass = true;} 
 	void setup(ObjectManager* objManager) { if (hasAttachedClass) attachedClass->setup(device, objManager, this); } 
 	void loop(ObjectManager* objManager) { if (hasAttachedClass) attachedClass->loop(device, objManager, this); }
 	
+
+	bool toBeRemoved = false;
 protected:
+   
 	std::unique_ptr<GameObjectBehavior> attachedClass = nullptr;
 
 	GameObject* parentObject = nullptr;
@@ -128,8 +161,6 @@ protected:
 
 	friend class GameObjectBehavior;
 };
-
-
 
 class GameObjectCamera : public GameObject { 
 
@@ -145,6 +176,11 @@ public:
 	void debugUI(); 
 	void updateCameraView();
 	GameObjectType getType() const override { return GameObjectType::CAMERA; } 
+
+	float getFov() const { return _fov; }
+	float getAspectRatio() const { return _aspect_ratio; }
+	float getNearClip() const { return _nearClip; }
+	float getFarClip() const { return _farClip; }
 
 private:
 
@@ -189,10 +225,15 @@ public:
 
 	GameObjectType getType() const override { return GameObjectType::SPOT_LIGHT; }
 
+	float getFov() const { return _fov; }
+	float getAspectRatio() const { return _aspect_ratio; }
+	float getNearClip() const { return _nearClip; }
+	float getFarClip() const { return _farClip; }
+
 private:
 	void updateCameraView();
 
-	float _fov;
+	float _fov; // field of view
 	float _aspect_ratio;
 	const float _nearClip; 
 	const float _farClip;
@@ -235,9 +276,11 @@ public:
 
 	void debugUI(); 
 
-	bool show = true; 
+	bool show = true;
 
 	GameObjectType getType() const override { return GameObjectType::MODEL; }
+	std::string texturePath;
+	std::string modelPath;
 
 	GameObjectModel(id_t id, Device& device) : GameObject(id, device) { setMultipleInstances({ {} }); }
 private:
@@ -247,9 +290,10 @@ private:
 	ModelType modelType = UNDEFINED_MODEL;
 	ModelSubType modelSubType = NONE;
 
+	
+
 	ModelVariant model;
 
-	bool hasMultipleInstances = false;
 	std::unique_ptr<Buffer> instancesBuffer = nullptr;
 	uint32_t instanceCount = 1;
 
@@ -259,7 +303,6 @@ private:
 
 	friend class GameObjectFactory; 
 };
-
 
 class GameObjectFactory {
 

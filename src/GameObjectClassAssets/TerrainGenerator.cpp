@@ -22,8 +22,9 @@ void TerrainGenerator::loop(Device& device, ObjectManager* objManager, GameObjec
 			
 			// push terrain
 			auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
-			gameObject->transform.translation = { i * chunkWorldSide, 0, j * chunkWorldSide };
+			gameObject->transform.translation = { i * chunkWorldSide, 4, j * chunkWorldSide };
 			gameObject->setModelSubType(TERRAIN);
+			gameObject->setParent(objManager->get("terrain G"));
 			GameObject::id_t id_terrain = gameObject->getId();
 
 			objManager->pushGameObject(std::move(gameObject));
@@ -41,10 +42,7 @@ void TerrainGenerator::loop(Device& device, ObjectManager* objManager, GameObjec
 
 				// create height map from noise function
 				std::vector<std::vector<glm::vec2>> heightMap = generateChunck(i * (this->chunkSize - 1), j * (this->chunkSize - 1));
-				std::unique_ptr<Texture> text = Texture::create(this->device, heightMap);
-
 				
-
 				// separate height and slope
 				std::vector<std::vector<float>> map = std::vector<std::vector<float>>(this->chunkSize, std::vector<float>(this->chunkSize));
 				for (int x = 0; x < this->chunkSize; x++) for (int y = 0; y < this->chunkSize; y++) map[y][x] = heightMap[x][y].x;
@@ -54,10 +52,14 @@ void TerrainGenerator::loop(Device& device, ObjectManager* objManager, GameObjec
 
 				// create plane object
 				std::shared_ptr<Model> plane = PrebuiltModel::createTerrain(this->device, 4, 4, map);
+
+				std::unique_ptr<Texture> text = Texture::create(this->device, heightMap);
+				//std::unique_ptr<Texture> text = Texture::create(this->device, "textures\\floor.jpg");
 				if (text != nullptr) {
 					plane->setTexture(std::move(text));
 					std::cout << "texture loaded \n";
 				}
+				else std::cout << "texture not loaded \n";
 				
 
 				// place tree
@@ -106,6 +108,9 @@ void TerrainGenerator::loop(Device& device, ObjectManager* objManager, GameObjec
 
 TerrainGenerator::TerrainGenerator(Device& device) : device(device)
 {
+
+	std::cout << "| " << typeid(this).name() << " | "  << "\n";
+
 	if (globalScale <= 0) {
 		globalScale = 0.0001f;
 	}

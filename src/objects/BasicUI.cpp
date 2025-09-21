@@ -58,7 +58,7 @@ BasicUI::~BasicUI()
     vkDestroyDescriptorPool(device.device(), imguiPool, nullptr); 
 }
 
-void BasicUI::drawUI(VkCommandBuffer commandBuffer, ObjectManager* manager)
+void BasicUI::drawUI(VkCommandBuffer commandBuffer, ObjectManager* manager, TerrainUbo& terrainUbo)
 {
     isWindowSelected = false;
 
@@ -77,13 +77,15 @@ void BasicUI::drawUI(VkCommandBuffer commandBuffer, ObjectManager* manager)
 
     objectSelectionWindow(listObjectsName,  manager);
 
+	//terrainUboWindow(terrainUbo);
+
     auto gameObject = manager->get(selected_object);
     if (gameObject != nullptr) {
         gameObjectWindow(gameObject, manager); 
     }
 
     ImGui::Render(); 
-    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);  
+    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 }
 
 
@@ -166,7 +168,19 @@ void BasicUI::objectSelectionWindow(std::vector<std::string> listObjectsName, Ob
         show_create_go_window = false; 
     }
 
+    ////// scene selection //////
 
+    ImGui::SeparatorText("scene selection");
+
+    ImGui::Text(manager->currentScene.c_str());
+
+    static char newScene[128] = "";
+    ImGui::InputTextWithHint("##newScene", "new scene path", newScene, IM_ARRAYSIZE(newScene));
+
+    if (ImGui::Button("change scene"))
+        manager->switchScene(newScene);
+
+    ////// object selection //////
     ImGui::SeparatorText("loaded game objects"); 
 
     static int item_current = 0;
@@ -176,12 +190,35 @@ void BasicUI::objectSelectionWindow(std::vector<std::string> listObjectsName, Ob
         listObjectsNameCStr.push_back(str.c_str());
     } 
 
-    
     ImGui::ListBox("##go", &item_current, listObjectsNameCStr.data(), static_cast<int>(listObjectsNameCStr.size()));
 
     selected_object = listObjectsName[item_current];
 
     ImGui::End();
+}
+
+void BasicUI::terrainUboWindow(TerrainUbo& terrainUbo)
+{
+    ImGui::Begin("terrain data", &show_create_terrain_window);
+
+    isWindowSelected = (isWindowSelected || ImGui::IsWindowFocused());
+
+    ImGui::Text("clif_slop");
+    ImGui::DragFloat("##clif_slop", &terrainUbo.clif_slop, 0.01f, 0.0f, 1.0f);
+    ImGui::Text("height_grass");
+    ImGui::DragFloat("##height_grass", &terrainUbo.height_grass, 0.1f, -10.f, 10.0f);
+    ImGui::Text("slope_snow");
+    ImGui::DragFloat("##slope_snow ", &terrainUbo.slope_snow, 0.01f, 0.0f, 1.0f);
+    ImGui::Text("height_grass_with_slope");
+    ImGui::DragFloat("##height_grass_with_slope", &terrainUbo.height_grass_with_slope, 0.1f, -10.f, 10.0f);
+    ImGui::Text("height_dirt_with_slope");
+    ImGui::DragFloat("##height_dirt_with_slope", &terrainUbo.height_dirt_with_slope, 0.1f, -10.f, 10.0f);
+    ImGui::Text("height_snow");
+    ImGui::DragFloat("##height_snow", &terrainUbo.height_snow, 0.1f, -10.f, 10.0f);
+
+    ImGui::End();
+
+    if (!show_create_terrain_window) selected = -1;
 }
 
 void BasicUI::createObjWindow(ObjectManager* manager)

@@ -192,7 +192,7 @@
     <ClCompile Include="src\render\TextOverlay.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="json.hpp" />
+    <ClInclude Include="external\json.hpp" />
     <ClInclude Include="src\App.h" />
     <ClInclude Include="src\base\Buffer.h" />
     <ClInclude Include="src\base\depthSwapChain.h" />
@@ -235,11 +235,11 @@
     <None Include="shaders\simple_shader.frag" />
     <None Include="shaders\simple_shader.vert" />
     <None Include="shaders\terrainShader.frag" />
+    <None Include="shaders\terrainShader.vert" />
     <None Include="shaders\text.frag" />
     <None Include="shaders\text.vert" />
     <None Include="skybox.frag" />
     <None Include="skybox.vert" />
-    <None Include="src\GameObjectClassAssets\terrainShader.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
