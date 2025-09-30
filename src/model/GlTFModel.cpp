@@ -403,7 +403,6 @@ void GlTFModel::ModelGltf::loadTextures(tinygltf::Model& gltfModel, Device& devi
 {
 	for (tinygltf::Texture& tex : gltfModel.textures) 
 	{
-		std::cout << "hello texture \n";
 		int source = tex.source;
 		// If this texture uses the KHR_texture_basisu, we need to get the source index from the extension structure
 		if (tex.extensions.find("KHR_texture_basisu") != tex.extensions.end()) 

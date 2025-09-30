@@ -25,14 +25,16 @@ namespace std {
 	};
 }
 
-Model::Model(Device& device, const Model::Builder& builder, const char* filePathTexture) : device{ device } {
+Model::Model(Device& device, const Model::Builder& builder, const std::string filePathTexture) : device{ device } {
 	createVertexBuffers(builder.vertices);
 	createIndexBuffers(builder.indices);
 
-	if (filePathTexture) {
-		texture = Texture::create(device, filePathTexture); 
+	if (!filePathTexture.empty()) {
+		texture = Texture::create(device, filePathTexture.c_str()); 
 		if (texture != nullptr)
 			hasTexture = true;
+		else
+			std::cout << "failed loading " << filePathTexture << "\n";
 	}
 }
 

@@ -17,7 +17,7 @@ struct RenderSystemBuilder {
 	std::vector<VkDescriptorSetLayout> globalSetLayout;
 	VkRenderPass renderPass;
 	bool hasMultipleInstance = false;
-	ModelSubType subModelType = NONE;
+	ModelSubType subModelType = ModelSubType::NONE;
 };
 
 class GlobalRenderSystem
@@ -62,8 +62,8 @@ private:
 	std::unique_ptr<Pipeline> pipeline;
 	VkPipelineLayout pipelineLayout;
 
-	ModelType modelType = UNDEFINED_MODEL;
-	ModelSubType modelSubType = NONE;
+	ModelType modelType = ModelType::UNDEFINED_MODEL;
+	ModelSubType modelSubType = ModelSubType::NONE;
 	const bool isShadow = false;
 
 	uint16_t modelDescriptorSetIndex; // start after global, shadow add additional descriptor set

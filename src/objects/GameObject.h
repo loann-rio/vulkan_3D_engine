@@ -18,15 +18,21 @@
 #include <variant>
 #include <unordered_map>
 
-#define REGISTER_BEHAVIOR(CLASS) \
-    namespace { \
-        struct CLASS##Register { \
-            CLASS##Register() { \
-                GameObjectBehavior::registerBehaviorType(#CLASS, [](Device& device) { return std::make_unique<CLASS>(device); }); \
-            } \
-        }; \
-        static CLASS##Register global_##CLASS##Register; \
-    }
+// Used inside class definition
+#define DECLARE_BEHAVIOR(T) \
+    std::string getClassName() const override { return #T; }
+
+// Used once in the .cpp file
+#define REGISTER_BEHAVIOR(T) \
+    static struct T##Registrator { \
+        T##Registrator() { \
+            GameObjectBehavior::registerBehavior( \
+                #T, \
+                [](Device& device) { return std::make_unique<T>(device); } \
+            ); \
+        } \
+    } T##RegistratorInstance;
+
 
 
 class ObjectManager;
@@ -36,14 +42,23 @@ class GameObjectBehavior;
 using ModelVariant = std::variant<std::shared_ptr<Model>,
 	std::shared_ptr<GlTFModel::ModelGltf>>;
 
-enum ModelType {
+enum class ModelType {
 	UNDEFINED_MODEL = 0,
 	OBJ_MODEL = 1,
 	GLTF_MODEL = 2,
-	QUAD_MODEL = 3 
+	PREBUILT_MODEL = 3
 };
 
-enum ModelSubType { 
+enum class PrimitivesModelType {
+	NONE = 0,
+	PLANE = 1,
+	CUBE = 2,
+	SPHERE = 3,
+	CYLINDER = 4,
+	CONE = 5,
+};
+
+enum class ModelSubType { 
 	NONE = 0,
 	TERRAIN = 1,
 };
@@ -75,27 +90,44 @@ struct TransformComponent {
 
 class GameObjectBehavior { 
 public:
+	virtual ~GameObjectBehavior() = default;
+
+	virtual std::string getClassName() const = 0;
+
 	virtual void setup(Device& device, ObjectManager* objManager, GameObject* object) = 0;
 	virtual void loop(Device& device, ObjectManager* objManager, GameObject* object) = 0;
 
-	using BehaviorFactory = std::function<std::unique_ptr<GameObjectBehavior>(Device&)>;
+	// Factory signature
+	using CreatorFn = std::function<std::unique_ptr<GameObjectBehavior>(Device&)>;
 
-	static std::unordered_map<std::string, BehaviorFactory>& behaviorRegistry() {
-		static std::unordered_map<std::string, BehaviorFactory> instance;
-		return instance;
+	// Register a behavior by name
+	static void registerBehavior(const std::string& name, CreatorFn fn) {
+		getRegistry()[name] = std::move(fn);
 	}
 
-	static void registerBehaviorType(const std::string& typeName, BehaviorFactory factory) {
-		behaviorRegistry()[typeName] = factory;
+	// Factory method
+	static std::unique_ptr<GameObjectBehavior> createBehaviorFromType(const std::string& name, Device& device) {
+
+		std::cout << "[BehaviorFactory] Registered types are:\n";
+		for (const auto& [key, _] : getRegistry()) {
+			std::cout << "  - " << key << "\n";
+		}
+
+		auto it = getRegistry().find(name);
+		if (it != getRegistry().end()) {
+			return it->second(device);
+		}
+		return nullptr; // unknown behavior type
 	}
 
-	static std::unique_ptr<GameObjectBehavior> createBehaviorFromType(const std::string& typeName, Device& device) {
-		auto it = behaviorRegistry().find(typeName);
-		if (it != behaviorRegistry().end()) return (it->second)(device);
-		return nullptr;
-	}
 
-};
+
+private:
+	static std::unordered_map<std::string, CreatorFn>& getRegistry() {
+		static std::unordered_map<std::string, CreatorFn> registry;
+		return registry;
+	}
+}; 
 
 class GameObject
 {
@@ -134,21 +166,27 @@ public:
 	glm::mat4 getTransformMat();
 	glm::mat3 getNormalMat();
 
-	// buffer
-	//std::vector<std::unique_ptr<Buffer>> uboBuffers;
-	//bool hasUbo = false;
-
 	// attached behavior class 
-	bool hasAttachedClass = false;
-	std::string getAttachedClassName() { return typeid(*attachedClass).name(); }
+	bool hasAttachedClass = false; 
 
-	// attach class
+	std::string getAttachedClassType() const {
+		if (!hasAttachedClass) return std::string{};
+		return attachedClass->getClassName();
+	}
+
+	std::string getAttachedClassName() const {
+		if (!hasAttachedClass) return std::string{};
+		return attachedClass->getClassName();
+	}
+
 	void setAttachedClass(std::unique_ptr<GameObjectBehavior> attClass) { attachedClass = std::move(attClass); hasAttachedClass = true;} 
 	void setup(ObjectManager* objManager) { if (hasAttachedClass) attachedClass->setup(device, objManager, this); } 
 	void loop(ObjectManager* objManager) { if (hasAttachedClass) attachedClass->loop(device, objManager, this); }
 	
-
+	
+	// mark for removal
 	bool toBeRemoved = false;
+
 protected:
    
 	std::unique_ptr<GameObjectBehavior> attachedClass = nullptr;
@@ -256,11 +294,18 @@ public:
 	void setModel(std::shared_ptr<GlTFModel::ModelGltf> model);
 	void setModel(ModelVariant newModel);
 
+
+	// setters getters
 	void setModelType(ModelType type) { modelType = type; } 
 	ModelType getModelType() const { return modelType; } 
 
 	void setModelSubType(ModelSubType type) { modelSubType = type; }
 	ModelSubType getModelSubType() const { return modelSubType; }
+
+	void setPrimitivesModelType(PrimitivesModelType type) { primitivesModelType = type; }
+	PrimitivesModelType getPrimitivesModelType() const { return primitivesModelType; }
+
+
 
 	void setMultipleInstances(std::vector<Model::Instance> instances);
 
@@ -282,16 +327,18 @@ public:
 	std::string texturePath;
 	std::string modelPath;
 
+	// primitive info
+	int primitiveLOD = 0;
+
 	GameObjectModel(id_t id, Device& device) : GameObject(id, device) { setMultipleInstances({ {} }); }
 private:
 
 	bool hasModel = false;
 
-	ModelType modelType = UNDEFINED_MODEL;
-	ModelSubType modelSubType = NONE;
-
+	ModelType modelType = ModelType::UNDEFINED_MODEL;
+	ModelSubType modelSubType = ModelSubType::NONE;
+	PrimitivesModelType primitivesModelType = PrimitivesModelType::NONE;
 	
-
 	ModelVariant model;
 
 	std::unique_ptr<Buffer> instancesBuffer = nullptr;

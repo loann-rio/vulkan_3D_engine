@@ -78,7 +78,7 @@ vec4 compute_shadow_factor(vec4 light_space_pos, uint indexSpotLight, vec3 surfa
 	directionToLight = normalize(directionToLight);
 	float cosAngOfIncidence = max(dot(surfaceNormal, directionToLight), 0);
 
-	vec4 intencity = shadow * spotLightUbo.spotLight[indexSpotLight].color.w * vec4(spotLightUbo.spotLight[indexSpotLight].color.xyz, 0.0);// * attenuation;
+	vec4 intencity = shadow * spotLightUbo.spotLight[indexSpotLight].color.w * 2 * vec4(spotLightUbo.spotLight[indexSpotLight].color.xyz, 0.0);// * attenuation;
 
 	return cosAngOfIncidence * intencity / 9 ;
 }

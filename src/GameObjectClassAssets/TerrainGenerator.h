@@ -32,6 +32,7 @@ struct RegionVariables {
 class TerrainGenerator : public GameObjectBehavior 
 {
 public:
+	DECLARE_BEHAVIOR(TerrainGenerator); 
 	void setup(Device& device, ObjectManager* objManager, GameObject* object) override {}
 	void loop(Device& device, ObjectManager* objManager, GameObject* object) override;
 

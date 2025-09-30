@@ -62,7 +62,48 @@ std::shared_ptr<Model> PrebuiltModel::createPlane(Device& device, float width, f
     return std::make_shared<Model>(device, modelBuilder, "textures/whiteTexture.jpg");
 }
 
-std::shared_ptr<Model> PrebuiltModel::createIcoSphere(Device& device, float radius, uint16_t detail)
+/// <summary>
+/// create a terrain made of triangles
+/// </summary>
+/// <param name="device"></param>
+/// <param name="detail"> length of the plane in term of triangles </param>
+/// <param name="sizePlane"> length of the plane in term of pixels </param>
+/// <param name="color"></param>
+/// <returns> pointer to a new model </returns>
+/// 
+std::unique_ptr<Model> PrebuiltModel::createPlane(Device& device, const unsigned int detail, const float sizePlane, glm::vec3 color, const std::string texturePath)
+{
+    Model::Builder modelBuilder{};
+
+    for (unsigned int i = 0; i < detail + 1; i++) {
+        for (unsigned int j = 0; j < detail + 1; j++)
+        {
+            modelBuilder.vertices.push_back({ {i * sizePlane / detail, 0.f, j * sizePlane / detail}, {1, 1, 1}, {0, -1, 0}, {(float)(i * 20) / (float)detail , (float)(j * 20) / (float)detail } });
+        }
+    }
+
+    int row = 0;
+    for (unsigned int i = 0; i < (detail + 1) * detail - 1; i++) {
+        if ((i - row) % detail == 0 && i != 0) {
+            i++;
+            row++;
+        }
+
+        modelBuilder.indices.push_back(i);
+        modelBuilder.indices.push_back(i + 1);
+        modelBuilder.indices.push_back(i + detail + 1);
+
+        modelBuilder.indices.push_back(i + 1);
+        modelBuilder.indices.push_back(i + detail + 2);
+        modelBuilder.indices.push_back(i + detail + 1);
+
+        modelBuilder.vertices[i].normal = -glm::normalize(glm::cross(modelBuilder.vertices[i].position - modelBuilder.vertices[i + 1].position, modelBuilder.vertices[i].position - modelBuilder.vertices[i + detail + 1].position));
+    }
+
+    return std::make_unique<Model>(device, modelBuilder, texturePath);
+}
+
+std::shared_ptr<Model> PrebuiltModel::createIcoSphere(Device& device, uint16_t detail)
 {
     Model::Builder modelBuilder{};
 
@@ -112,6 +153,62 @@ std::shared_ptr<Model> PrebuiltModel::createIcoSphere(Device& device, float radi
     return std::make_shared<Model>(device, modelBuilder, "textures/floor.jpg"); 
 }
 
+std::shared_ptr<Model> PrebuiltModel::createCube(Device& device, uint16_t detail)
+{
+    return std::shared_ptr<Model>();
+}
+
+std::shared_ptr<Model> PrebuiltModel::createCube(Device& device)
+{
+    Model::Builder modelBuilder{};
+    glm::vec3 color = { 1.0f, 1.0f, 1.0f };
+    float h = 0.5f;
+
+    // 8 shared vertices (corners)
+    modelBuilder.vertices = {
+        {{-h,-h,-h}, color, {-1,-1,-1}, {0,0}}, // 0
+        {{ h,-h,-h}, color, { 1,-1,-1}, {1,0}}, // 1
+        {{ h, h,-h}, color, { 1, 1,-1}, {1,1}}, // 2
+        {{-h, h,-h}, color, {-1, 1,-1}, {0,1}}, // 3
+        {{-h,-h, h}, color, {-1,-1, 1}, {0,0}}, // 4
+        {{ h,-h, h}, color, { 1,-1, 1}, {1,0}}, // 5
+        {{ h, h, h}, color, { 1, 1, 1}, {1,1}}, // 6
+        {{-h, h, h}, color, {-1, 1, 1}, {0,1}}  // 7
+    };
+
+    // Indices for 12 triangles (2 per face)
+    modelBuilder.indices = {
+        // Front face
+        4,5,6, 6,7,4,
+        // Back face
+        1,0,3, 3,2,1,
+        // Left face
+        0,4,7, 7,3,0,
+        // Right face
+        5,1,2, 2,6,5,
+        // Top face
+        3,7,6, 6,2,3,
+        // Bottom face
+        0,1,5, 5,4,0
+    };
+
+    // Recompute normals as average of faces for smooth shading:
+    std::vector<glm::vec3> accum(modelBuilder.vertices.size(), glm::vec3(0.0f));
+    for (size_t i = 0; i < modelBuilder.indices.size(); i += 3) {
+        glm::vec3& p0 = modelBuilder.vertices[modelBuilder.indices[i]].position;
+        glm::vec3& p1 = modelBuilder.vertices[modelBuilder.indices[i + 1]].position;
+        glm::vec3& p2 = modelBuilder.vertices[modelBuilder.indices[i + 2]].position;
+        glm::vec3 normal = glm::normalize(glm::cross(p1 - p0, p2 - p0));
+        accum[modelBuilder.indices[i]] += normal;
+        accum[modelBuilder.indices[i + 1]] += normal;
+        accum[modelBuilder.indices[i + 2]] += normal;
+    }
+    for (size_t i = 0; i < modelBuilder.vertices.size(); i++) {
+        modelBuilder.vertices[i].normal = glm::normalize(accum[i]);
+    }
+
+    return std::make_shared<Model>(device, modelBuilder, "textures/whiteTexture.jpg");
+}
 
 
 std::shared_ptr<Model> PrebuiltModel::createTerrain(Device& device,

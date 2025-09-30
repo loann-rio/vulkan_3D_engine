@@ -23,7 +23,7 @@ void TerrainGenerator::loop(Device& device, ObjectManager* objManager, GameObjec
 			// push terrain
 			auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
 			gameObject->transform.translation = { i * chunkWorldSide, 4, j * chunkWorldSide };
-			gameObject->setModelSubType(TERRAIN);
+			gameObject->setModelSubType(ModelSubType::TERRAIN);
 			gameObject->setParent(objManager->get("terrain G"));
 			GameObject::id_t id_terrain = gameObject->getId();
 
@@ -68,7 +68,7 @@ void TerrainGenerator::loop(Device& device, ObjectManager* objManager, GameObjec
 				// load tree model
 				//std::shared_ptr<Model> trees = Model::createModelFromFile(this->device, "model\\coloredTree1.obj", "textures\\whiteTexture.jpg");
 
-				return std::vector<futureObject>{futureObject{ plane, plane ? OBJ_MODEL : UNDEFINED_MODEL, id_terrain }};// , futureObject{ trees, trees ? OBJ_MODEL : UNDEFINED_MODEL, id_tree, treeList }};
+				return std::vector<futureObject>{futureObject{ plane, plane ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id_terrain }};// , futureObject{ trees, trees ? OBJ_MODEL : UNDEFINED_MODEL, id_tree, treeList }};
 				}));
 
 			loadedChunk[hash] = { id_terrain, id_tree };
@@ -108,8 +108,6 @@ void TerrainGenerator::loop(Device& device, ObjectManager* objManager, GameObjec
 
 TerrainGenerator::TerrainGenerator(Device& device) : device(device)
 {
-
-	std::cout << "| " << typeid(this).name() << " | "  << "\n";
 
 	if (globalScale <= 0) {
 		globalScale = 0.0001f;

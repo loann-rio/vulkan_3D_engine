@@ -367,7 +367,7 @@ void App::createRenderSystems()
     terrainBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() , terrainSetLayout->getDescriptorSetLayout()};
     terrainBuilder.renderPass = renderer.getSwapChainRenderPass();
     terrainBuilder.hasMultipleInstance = true;
-    terrainBuilder.subModelType = TERRAIN;
+    terrainBuilder.subModelType = ModelSubType::TERRAIN;
 
     terrainRenderSystem = GlobalRenderSystem::create<Model>(device, terrainBuilder);
 

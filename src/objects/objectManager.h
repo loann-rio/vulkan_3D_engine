@@ -48,6 +48,9 @@ public:
 	void pushModel(DescriptorPool& pool); 
     void pushGameObject(std::unique_ptr<GameObject> gameObject);
 
+	// create primitive object
+	void createPrimitive(PrimitivesModelType type, int detail, TransformComponent transform, const std::string& name = "", const std::string& filePathTexture = "");
+
     template <typename T>
     std::vector<T*> getByType();
 
@@ -78,7 +81,6 @@ public:
 
     // camera
     std::string mainCamera = "mainCamera"; 
-    
 
 private:
     Device& device;
