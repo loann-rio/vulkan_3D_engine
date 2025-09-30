@@ -11,47 +11,9 @@
 #include <chrono>
 #include <stdlib.h>
 
-REGISTER_BEHAVIOR(TerrainGenerator);
+//REGISTER_BEHAVIOR(TerrainGenerator);
 
-void ObjectManager::startLoadModel(DescriptorPool& pool)
-{
-
-    /*auto cameraObject = GameObjectFactory::createGameObject<GameObjectCamera>(device, glm::radians(50.f), 1.f, .1f, 100.f);
-    cameraObject->transform.translation = { -2.f, 1.1f, 1.5f };
-    cameraObject->transform.rotation = { -0.327, 1.475, 0 };
-    cameraObject->setName("mainCamera");
-    pushGameObject(std::move(cameraObject));*/
-
-    /*auto spotLight1 = GameObjectFactory::createGameObject<GameObjectSpotLight>(device, 1.5, 1.f, .1f, 100.f);
-    spotLight1->transform.translation = { -5.f, -4.0f, -7.6f };
-    spotLight1->transform.rotation = { -.07, 0.67, -0.358 };
-    spotLight1->transform.color = { 1.0, 1.0, 1.0, .7 };
-    spotLight1->setName("spotLight1");
-    pushGameObject(std::move(spotLight1));*/
-
-    /*auto terrainManager = GameObjectFactory::createGameObject<GameObject>(device);
-    terrainManager->setAttachedClass(std::make_unique<TerrainGenerator>(device));
-    terrainManager->setName("terrain G");
-    pushGameObject(std::move(terrainManager));*/
-
-    /*TransformComponent vikingRoomTransform{};
-    vikingRoomTransform.rotation = { 0, 0, 0 };
-    vikingRoomTransform.translation = { 7, 0, 7 };
-    
-	loadObjectAsync(device, "model/DamagedHelmet.gltf", vikingRoomTransform, "damage_helmet");
-
-    TransformComponent vikingRoomTransform2{};
-    vikingRoomTransform2.rotation = { 0, 0, 0 };
-    vikingRoomTransform2.translation = { 7, 0, 5 };
-    loadObjectAsyncObj(device, "model/coloredTree1.obj", "textures/whiteTexture.jpg", vikingRoomTransform2, "viking");
-
-
-    createPrimitive(PrimitivesModelType::PLANE, 5, TransformComponent{ {0.f, 0.1f, 0.f}, {10.f,10.f,10.f}, {0.f,0.f,0.f} }, "ground", "textures/floor.jpg");
-    createPrimitive(PrimitivesModelType::PLANE, 5, TransformComponent{ {10.f, 1.f, 0.f}, {10.f,10.f,10.f}, {0.f,0.f, -pi<float> / 2 } }, "plane", "textures/emptyTexture.jpg");
-    createPrimitive(PrimitivesModelType::PLANE, 5, TransformComponent{ {0.f, 1.f, 10.f}, {10.f,10.f,10.f}, {-pi<float> / 2, 0.f,0.f } }, "wall2", "textures/emptyTexture.jpg");*/
-
-    //createPrimitive(PrimitivesModelType::CUBE, 5, TransformComponent{ {0.f, 1.f, 10.f}, {10.f,10.f,10.f}, {-pi<float> / 2, 0.f,0.f } }, "cube", "textures/emptyTexture.jpg");
-}
+void ObjectManager::startLoadModel(DescriptorPool& pool){}
 
 void ObjectManager::createPrimitive(PrimitivesModelType type, int detail, TransformComponent transform, const std::string& name, const std::string& filePathTexture)
 {

@@ -32,7 +32,7 @@ struct RegionVariables {
 class TerrainGenerator : public GameObjectBehavior 
 {
 public:
-	DECLARE_BEHAVIOR(TerrainGenerator); 
+	REGISTER_BEHAVIOR(TerrainGenerator);
 	void setup(Device& device, ObjectManager* objManager, GameObject* object) override {}
 	void loop(Device& device, ObjectManager* objManager, GameObject* object) override;
 
@@ -74,12 +74,5 @@ private:
 
 	float weightedRegionValue(const std::vector<glm::vec2>& lookupVoronoi, float RegionVariables::* member);
 	int sum(int n) { return (n == 0) || (n == 1) ? 1 : n + sum(n - 1); }
-
-
-
-	// objects:
-
-	// tree model
-	//std::shared_ptr<Model> treeModel = Model::createModelFromFile(device, "C:\\Users\\riolo\\Desktop\\vulkan_3D_engine\\model\\coloredTree1.obj", "textures\\whiteTexture.jpg");
 
 };

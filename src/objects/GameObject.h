@@ -18,20 +18,19 @@
 #include <variant>
 #include <unordered_map>
 
-// Used inside class definition
-#define DECLARE_BEHAVIOR(T) \
-    std::string getClassName() const override { return #T; }
-
-// Used once in the .cpp file
-#define REGISTER_BEHAVIOR(T) \
-    static struct T##Registrator { \
-        T##Registrator() { \
-            GameObjectBehavior::registerBehavior( \
-                #T, \
-                [](Device& device) { return std::make_unique<T>(device); } \
-            ); \
-        } \
-    } T##RegistratorInstance;
+#define REGISTER_BEHAVIOR(T)                                \
+    std::string getClassName() const override { return #T; }\
+    struct T##Registrator {                                 \
+        T##Registrator() {                                  \
+            GameObjectBehavior::registerBehavior(           \
+                #T,                                         \
+                [](Device& device) {                        \
+                    return std::make_unique<T>(device);     \
+                }                                           \
+            );                                              \
+        }                                                   \
+    };                                                      \
+    inline static T##Registrator T##RegistratorInstance;
 
 
 
@@ -107,20 +106,12 @@ public:
 
 	// Factory method
 	static std::unique_ptr<GameObjectBehavior> createBehaviorFromType(const std::string& name, Device& device) {
-
-		std::cout << "[BehaviorFactory] Registered types are:\n";
-		for (const auto& [key, _] : getRegistry()) {
-			std::cout << "  - " << key << "\n";
-		}
-
 		auto it = getRegistry().find(name);
 		if (it != getRegistry().end()) {
 			return it->second(device);
 		}
 		return nullptr; // unknown behavior type
 	}
-
-
 
 private:
 	static std::unordered_map<std::string, CreatorFn>& getRegistry() {
@@ -174,15 +165,9 @@ public:
 		return attachedClass->getClassName();
 	}
 
-	std::string getAttachedClassName() const {
-		if (!hasAttachedClass) return std::string{};
-		return attachedClass->getClassName();
-	}
-
 	void setAttachedClass(std::unique_ptr<GameObjectBehavior> attClass) { attachedClass = std::move(attClass); hasAttachedClass = true;} 
 	void setup(ObjectManager* objManager) { if (hasAttachedClass) attachedClass->setup(device, objManager, this); } 
 	void loop(ObjectManager* objManager) { if (hasAttachedClass) attachedClass->loop(device, objManager, this); }
-	
 	
 	// mark for removal
 	bool toBeRemoved = false;
