@@ -13,9 +13,6 @@
 
 #include "GameObject.h"
 
-template<class T>
-constexpr T pi = T(3.1415926535897932385L);
-
 #include <../json.hpp>
 using json = nlohmann::json;
 
@@ -67,7 +64,6 @@ public:
     void loadObjectAsync(Device& device, const std::string& filePath, TransformComponent transform, const std::string& name = "");
     void loadObjectAsyncObj(Device& device, const std::string& filePath, const std::string filePathTexture, TransformComponent transform, const std::string& name = "");
 
-    void pushFuture(std::future<futureObject> future) { futureGameObjects.push_back(std::move(future)); };
     void pushFuture(std::future<std::vector<futureObject>> futures);
 
     // scene 

@@ -27,7 +27,7 @@ void ObjectManager::createPrimitive(PrimitivesModelType type, int detail, Transf
 
     pushGameObject(std::move(gameObject));
 
-    futureGameObjects.push_back(std::async(std::launch::async, [this, id, type, detail, filePathTexture]() {
+    pushFuture(std::async(std::launch::async, [this, id, type, detail, filePathTexture]() {
         std::shared_ptr<Model> primitive;
 
         switch (type) {
@@ -47,11 +47,11 @@ void ObjectManager::createPrimitive(PrimitivesModelType type, int detail, Transf
             std::cerr << "Unknown primitive type\n";
             break;
         }
-        
-        
-        return futureObject{ primitive, primitive ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id };
+
+
+        return std::vector<futureObject>{ futureObject{ primitive, primitive ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id } };
         })
-    );
+     );
 }
 
     /////// get and remove ///////
@@ -339,51 +339,21 @@ void ObjectManager::pushFuture(std::future<std::vector<futureObject>> futures)
 /// <param name="pool">global model pool</param>
 void ObjectManager::pushModel(DescriptorPool& pool)
 {
-    auto it = futureGameObjects.begin();
-    while (it != futureGameObjects.end()) { // iter over futures
+    auto it = futureGameObjectslist.begin();
+    while (it != futureGameObjectslist.end()) { // iter over futures
         if (it->wait_for(std::chrono::seconds(0)) == std::future_status::ready) { // check if future is ready
-            futureObject object = it->get();  // get loaded model from future
-
-            if (object.type != ModelType::UNDEFINED_MODEL) {
-                auto* gameObject = dynamic_cast<GameObjectModel*>(get(object.id)); 
-
-                
-                if (!gameObject) {
-                    it = futureGameObjects.erase(it);
-                    continue;
-                }
-
-                if (object.instances.size() > 0) {
-                    gameObject->setMultipleInstances(object.instances);
-                }
-
-                gameObject->setModel(object.model); 
-                gameObject->setModelType(object.type);
-                gameObject->createDescriptorSet(pool); 
-				gameObject->saveable = object.saveable;
-            }
-
-            it = futureGameObjects.erase(it); // remove from futures
-        }
-        else {
-            ++it;
-        }
-    }
-
-
-
-    auto it2 = futureGameObjectslist.begin();
-    while (it2 != futureGameObjectslist.end()) { // iter over futures
-        if (it2->wait_for(std::chrono::seconds(0)) == std::future_status::ready) { // check if future is ready
             
-            for (futureObject object : it2->get()) {  // get loaded model from future
+            // iter over models in future
+            for (futureObject object : it->get()) { 
 
+                // confirm that its a model
                 if (object.type != ModelType::UNDEFINED_MODEL) {
+
+                    // get gameobject
                     auto* gameObject = dynamic_cast<GameObjectModel*>(get(object.id));
 
-
                     if (!gameObject) {
-                        it2 = futureGameObjectslist.erase(it2);
+                        it = futureGameObjectslist.erase(it);
                         continue;
                     }
 
@@ -395,15 +365,13 @@ void ObjectManager::pushModel(DescriptorPool& pool)
                     gameObject->setModelType(object.type);
                     gameObject->createDescriptorSet(pool);
                     gameObject->saveable = object.saveable;
-
-					std::cout << "saveable : " << gameObject->saveable << std::endl;
                 }
             }
 
-            it2 = futureGameObjectslist.erase(it2); // remove from futures
+            it = futureGameObjectslist.erase(it); // remove from futures
         }
         else {
-            ++it2;
+            ++it;
         }
     }
 }
@@ -435,11 +403,17 @@ void ObjectManager::loadObjectAsync(Device& device, const std::string& filePath,
 
     pushGameObject(std::move(gameObject));
 
-    futureGameObjects.push_back(std::async(std::launch::async, [filePath, &device, id]() {
+    pushFuture( std::async(std::launch::async, [filePath, &device, id]() {
+        std::shared_ptr<GlTFModel::ModelGltf> model = GlTFModel::createModelFromFile(device, filePath);
+        return std::vector<futureObject>{ futureObject{ model, model ? ModelType::GLTF_MODEL : ModelType::UNDEFINED_MODEL, id }};
+        }) 
+	);
+
+    /*futureGameObjects.push_back(std::async(std::launch::async, [filePath, &device, id]() {
         std::shared_ptr<GlTFModel::ModelGltf> model = GlTFModel::createModelFromFile(device, filePath);
         return futureObject{ model, model ? ModelType::GLTF_MODEL : ModelType::UNDEFINED_MODEL, id };
         }) 
-    );
+    );*/
 }
 
 void ObjectManager::loadObjectAsyncObj(Device& device, const std::string& filePath, const std::string filePathTexture, TransformComponent transform, const std::string& name)
@@ -455,9 +429,15 @@ void ObjectManager::loadObjectAsyncObj(Device& device, const std::string& filePa
 
     pushGameObject(std::move(gameObject)); 
      
-    futureGameObjects.push_back(std::async(std::launch::async, [filePath, filePathTexture, &device, id]() { 
+    pushFuture( std::async(std::launch::async, [filePath, filePathTexture, &device, id]() {
+        std::shared_ptr<Model> model = Model::createModelFromFile(device, filePath, filePathTexture.c_str());
+        return std::vector<futureObject> {futureObject{ model, model ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id }};
+        }) 
+     );
+
+    /*futureGameObjects.push_back(std::async(std::launch::async, [filePath, filePathTexture, &device, id]() { 
         std::shared_ptr<Model> model = Model::createModelFromFile(device, filePath, filePathTexture.c_str());
         return futureObject{ model, model ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id };
         })
-    );
+    );*/
 }
