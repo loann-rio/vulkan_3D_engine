@@ -189,7 +189,7 @@ void GlobalRenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, Frame
 	
 	for (auto obj : frameInfo.listGameObjects)
 	{
-		if (obj->show && obj->getModelType() == modelType && obj->getModelSubType() == modelSubType)
+		if (obj->show && !obj->toBeRemoved && obj->getModelType() == modelType && obj->getModelSubType() == modelSubType)
 			renderModel(commandBuffer, frameInfo, obj);	
 	}
 }

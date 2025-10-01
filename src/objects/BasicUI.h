@@ -16,6 +16,9 @@
 
 #include <glm/glm.hpp>
 
+#define _CRT_SECURE_NO_WARNINGS 
+#include <nfd.h>
+
 class BasicUI
 {
 public:
@@ -33,6 +36,7 @@ private:
 	void createObjWindow(ObjectManager* manager);
 	void createGLTFWindow(ObjectManager* manager);
 	void createCameraWindow(ObjectManager* manager, bool isSpotLight);
+	std::string openFileDialog(const char* filter);
 
 	VkDescriptorPool imguiPool; 
 	Device& device;

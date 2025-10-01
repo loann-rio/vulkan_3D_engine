@@ -124,17 +124,19 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>
-      </PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)\external\imgui-master\backends;$(SolutionDir)\external\imgui-master;$(SolutionDir)\external\glm-1.0.0;$(SolutionDir)\external\stb-master;$(SolutionDir)\external\basis_universal-master\transcoder;$(SolutionDir)\external\glfw-3.3.9.bin.WIN64\include;$(SolutionDir)\external\tinyobjloader-release;C:\VulkanSDK\1.4.313.2\Include;$(SolutionDir)\external\KTX-Software-main\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\riolo\Desktop\vulkan_3D_engine\external\nativefiledialog-master\src\include;$(SolutionDir)\external\imgui-master\backends;$(SolutionDir)\external\imgui-master;$(SolutionDir)\external\glm-1.0.0;$(SolutionDir)\external\stb-master;$(SolutionDir)\external\basis_universal-master\transcoder;$(SolutionDir)\external\glfw-3.3.9.bin.WIN64\include;$(SolutionDir)\external\tinyobjloader-release;C:\VulkanSDK\1.4.313.2\Include;$(SolutionDir)\external\KTX-Software-main\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)\external\KTX-Software-main\build\Debug;$(SolutionDir)\external\KTX-Software-main\lib;$(SolutionDir)\external\glfw-3.3.9.bin.WIN64\lib-vc2022;C:\VulkanSDK\1.4.313.2\Lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib; glfw3.lib;  </AdditionalDependencies>
+      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;ole32.lib;
+shell32.lib;
+uuid.lib;
+comdlg32.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -143,10 +145,9 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>
-      </PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)\external\imgui-master\backends;$(SolutionDir)\external\imgui-master;$(SolutionDir)\external\glm-1.0.0;$(SolutionDir)\external\stb-master;$(SolutionDir)\external\basis_universal-master\transcoder;$(SolutionDir)\external\glfw-3.3.9.bin.WIN64\include;$(SolutionDir)\external\tinyobjloader-release;C:\VulkanSDK\1.3.290.0\Include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\riolo\Desktop\vulkan_3D_engine\external\nativefiledialog-master\src\include;$(SolutionDir)\external\imgui-master\backends;$(SolutionDir)\external\imgui-master;$(SolutionDir)\external\glm-1.0.0;$(SolutionDir)\external\stb-master;$(SolutionDir)\external\basis_universal-master\transcoder;$(SolutionDir)\external\glfw-3.3.9.bin.WIN64\include;$(SolutionDir)\external\tinyobjloader-release;C:\VulkanSDK\1.3.290.0\Include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -155,7 +156,10 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)\external\glfw-3.3.9.bin.WIN64\lib-vc2022;C:\VulkanSDK\1.3.290.0\Lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib; glfw3.lib;</AdditionalDependencies>
+      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;ole32.lib;
+shell32.lib;
+uuid.lib;
+comdlg32.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -168,6 +172,8 @@
     <ClCompile Include="external\imgui-master\imgui_draw.cpp" />
     <ClCompile Include="external\imgui-master\imgui_tables.cpp" />
     <ClCompile Include="external\imgui-master\imgui_widgets.cpp" />
+    <ClCompile Include="external\nativefiledialog-master\src\nfd_common.c" />
+    <ClCompile Include="external\nativefiledialog-master\src\nfd_win.cpp" />
     <ClCompile Include="src\App.cpp" />
     <ClCompile Include="src\base\Buffer.cpp" />
     <ClCompile Include="src\base\depthSwapChain.cpp" />
@@ -193,6 +199,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="external\json.hpp" />
+    <ClInclude Include="external\nativefiledialog-master\src\common.h" />
+    <ClInclude Include="external\nativefiledialog-master\src\include\nfd.h" />
+    <ClInclude Include="external\nativefiledialog-master\src\nfd_common.h" />
+    <ClInclude Include="external\nativefiledialog-master\src\simple_exec.h" />
     <ClInclude Include="src\App.h" />
     <ClInclude Include="src\base\Buffer.h" />
     <ClInclude Include="src\base\depthSwapChain.h" />

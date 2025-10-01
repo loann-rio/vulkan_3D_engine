@@ -171,6 +171,7 @@ public:
 	
 	// mark for removal
 	bool toBeRemoved = false;
+	bool saveable = true;
 
 protected:
    

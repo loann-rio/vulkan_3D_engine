@@ -28,6 +28,7 @@ struct futureObject {
     ModelType type;
     GameObject::id_t id; 
     std::vector<Model::Instance> instances{};
+    bool saveable = true;
 }; 
 
 class ObjectManager
@@ -54,11 +55,12 @@ public:
     template <typename T>
     std::vector<T*> getByType();
 
-    GameObject* get(GameObject::id_t id);
+    GameObject* get(const GameObject::id_t id);
     GameObject* get(const std::string& name);
 
-    void removeGameObject(GameObject::id_t id);
-    void removeGameObject(const std::string& name) {};
+    void removeGameObject(const GameObject::id_t id);
+    void removeGameObject(const std::string& name);
+    void removeGameObject(GameObject* gameObject);
 
     std::shared_ptr<GameObject::Map> getGameObjects() const { return gameObjects; } 
 
@@ -75,7 +77,6 @@ public:
 
     void switchScene(std::string name); 
     void loadScene(std::string name);
-    void addObjectToScene(GameObject* gameObject);
     void createScene(std::string name);
 	void saveFullScene();
 
@@ -95,6 +96,7 @@ private:
     std::unordered_map<std::string, GameObject*> gameObjectsByName;
     std::unordered_map<std::type_index, std::vector<GameObject*>> gameObjectsByType; 
 
+    void addObjectToScene(GameObject* gameObject);
 };
 
 /// <summary>

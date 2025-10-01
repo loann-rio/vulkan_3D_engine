@@ -113,12 +113,24 @@ void App::run()
         {
             std::shared_ptr<GameObject::Map> objects = objectManager.getGameObjects();
             std::vector<GameObject::id_t> toRemove;
+
             for (auto& [id, obj] : *objects) {
-                if (obj->toBeRemoved)
-                    toRemove.push_back(id);
+                if (obj->toBeRemoved) {
+                    // if it model first hide the remove to avoid issues with descriptor set still in use
+                    if (obj->getType() == GameObjectType::MODEL) {
+                        auto* modelObj = dynamic_cast<GameObjectModel*>(obj.get());
+                        if (modelObj->show) {
+                            modelObj->show = false; // hide the model
+                        }
+                        else {
+                            toRemove.push_back(id); // remove the object
+						}
+                    }
+                }
                 else
                     obj->loop(&objectManager);
             }
+
             for (auto id : toRemove) {
                 objectManager.removeGameObject(id);
             }

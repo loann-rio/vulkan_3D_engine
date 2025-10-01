@@ -33,6 +33,7 @@ class TerrainGenerator : public GameObjectBehavior
 {
 public:
 	REGISTER_BEHAVIOR(TerrainGenerator);
+
 	void setup(Device& device, ObjectManager* objManager, GameObject* object) override {}
 	void loop(Device& device, ObjectManager* objManager, GameObject* object) override;
 

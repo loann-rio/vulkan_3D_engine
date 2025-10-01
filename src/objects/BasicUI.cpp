@@ -105,6 +105,9 @@ void BasicUI::gameObjectWindow(GameObject* gameObject, ObjectManager* manager)
 
     gameObject->debugUI();
 
+    if (ImGui::Button("remove object"))
+        gameObject->toBeRemoved = true;
+
     ImGui::End(); 
 }
 
@@ -192,7 +195,8 @@ void BasicUI::objectSelectionWindow(std::vector<std::string> listObjectsName, Ob
 
     ImGui::ListBox("##go", &item_current, listObjectsNameCStr.data(), static_cast<int>(listObjectsNameCStr.size()));
 
-    selected_object = listObjectsName[item_current];
+
+    selected_object = listObjectsName[item_current % listObjectsName.size()];
 
     ImGui::End();
 }
@@ -238,9 +242,23 @@ void BasicUI::createObjWindow(ObjectManager* manager)
     static char path[128] = "";
     ImGui::InputTextWithHint("##path", "enter model path", path, IM_ARRAYSIZE(path));
 
+    if (ImGui::Button("model dialog")) {
+        std::string filePath = openFileDialog("obj");
+
+        if (!filePath.empty())
+            strcpy_s(path, filePath.c_str());
+    }
+
     ImGui::Text("texture path");
     static char pathTexture[128] = "";
     ImGui::InputTextWithHint("##pathTexture", "enter texture path", pathTexture, IM_ARRAYSIZE(pathTexture)); 
+
+    if (ImGui::Button("texture dialog")) {
+        std::string filePath = openFileDialog("jpg,png");
+
+        if (!filePath.empty())
+            strcpy_s(pathTexture, filePath.c_str()); 
+    }
 
     if (ImGui::Button("create"))
     {
@@ -271,6 +289,13 @@ void BasicUI::createGLTFWindow(ObjectManager* manager)
     ImGui::Text("model path");
     static char path[128] = "";
     ImGui::InputTextWithHint("##path", "enter model path", path, IM_ARRAYSIZE(path));
+
+    if (ImGui::Button("open dialog")) {
+        std::string filePath = openFileDialog("gltf");
+
+        if (!filePath.empty())
+            strcpy_s(path, filePath.c_str());
+    }
 
     if (ImGui::Button("create"))
     {
@@ -333,12 +358,29 @@ void BasicUI::createCameraWindow(ObjectManager* manager, bool isSpotLight = fals
 
             manager->pushGameObject(std::move(camera));
         }
-
-        //std::memset(path, 0, sizeof(path));
     }
 
     ImGui::End();
 
     if (!show_create_go_window) selected = -1;
+}
+
+std::string BasicUI::openFileDialog(const char* filter)
+{
+    nfdchar_t* outPath = nullptr;
+
+    nfdresult_t result = NFD_OpenDialog(filter, nullptr, &outPath);
+    if (result == NFD_OKAY) {
+        std::cout << "Selected file: " << outPath << "\n";
+        return std::string{ outPath };
+    }
+    else if (result == NFD_CANCEL) {
+        std::cout << "User canceled.\n";
+    }
+    else {
+        std::cout << "Error: " << NFD_GetError() << "\n";
+    }
+
+    return "";
 }
 

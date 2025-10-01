@@ -11,8 +11,6 @@
 #include <chrono>
 #include <stdlib.h>
 
-//REGISTER_BEHAVIOR(TerrainGenerator);
-
 void ObjectManager::startLoadModel(DescriptorPool& pool){}
 
 void ObjectManager::createPrimitive(PrimitivesModelType type, int detail, TransformComponent transform, const std::string& name, const std::string& filePathTexture)
@@ -58,7 +56,7 @@ void ObjectManager::createPrimitive(PrimitivesModelType type, int detail, Transf
 
     /////// get and remove ///////
 
-GameObject* ObjectManager::get(GameObject::id_t id)
+GameObject* ObjectManager::get(const GameObject::id_t id)
 {
     auto it = gameObjects->find(id);
     return (it != gameObjects->end()) ? it->second.get() : nullptr;
@@ -70,7 +68,7 @@ GameObject* ObjectManager::get(const std::string& name)
     return (it != gameObjectsByName.end()) ? it->second : nullptr;
 }
 
-void ObjectManager::removeGameObject(GameObject::id_t id)
+void ObjectManager::removeGameObject(const GameObject::id_t id)
 {
     auto it = gameObjects->find(id);
     if (it == gameObjects->end()) {
@@ -91,6 +89,16 @@ void ObjectManager::removeGameObject(GameObject::id_t id)
 
     // remove from main storage
     gameObjects->erase(it);
+}
+
+void ObjectManager::removeGameObject(const std::string& name)
+{
+	removeGameObject(get(name)->getId());
+}
+
+void ObjectManager::removeGameObject(GameObject* gameObject)
+{
+	removeGameObject(gameObject->getId());
 }
 
     /////// scene management ///////
@@ -245,7 +253,6 @@ void ObjectManager::addObjectToScene(GameObject* gameObject)
 
     // TODO:
 	// parent object
-	// attached class
 
     // type-specific params
     if (objJson["type"] == GameObjectType::MODEL) {
@@ -307,9 +314,11 @@ void ObjectManager::createScene(std::string name)
 
 void ObjectManager::saveFullScene()
 {
+    currentSceneJson = json::parse(R"({})");
     
     for (auto& [id, obj] : *gameObjects) {
-        addObjectToScene(obj.get());
+        if (obj->saveable)
+            addObjectToScene(obj.get());
 	}
 
     // save back to file
@@ -351,6 +360,7 @@ void ObjectManager::pushModel(DescriptorPool& pool)
                 gameObject->setModel(object.model); 
                 gameObject->setModelType(object.type);
                 gameObject->createDescriptorSet(pool); 
+				gameObject->saveable = object.saveable;
             }
 
             it = futureGameObjects.erase(it); // remove from futures
@@ -384,6 +394,9 @@ void ObjectManager::pushModel(DescriptorPool& pool)
                     gameObject->setModel(object.model);
                     gameObject->setModelType(object.type);
                     gameObject->createDescriptorSet(pool);
+                    gameObject->saveable = object.saveable;
+
+					std::cout << "saveable : " << gameObject->saveable << std::endl;
                 }
             }
 
