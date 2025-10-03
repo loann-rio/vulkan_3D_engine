@@ -408,7 +408,7 @@ bool Texture::createTextureImageKtx2(const std::string path, bool isCubeMap)
 
 }
 
-/*bool Texture::createTextureImageKtx(const std::string path, bool isCubeMap)
+bool Texture::createTextureImageKtx(const std::string path, bool isCubeMap)
 {
     
     VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
@@ -502,7 +502,7 @@ bool Texture::createTextureImageKtx2(const std::string path, bool isCubeMap)
     vkFreeMemory(device.device(), stagingBufferMemory, nullptr);
 
     return true;
-}*/
+}
 
 void Texture::bind(VkImage& image, VkMemoryPropertyFlags properties, VkDeviceMemory& imageMemory)
 {

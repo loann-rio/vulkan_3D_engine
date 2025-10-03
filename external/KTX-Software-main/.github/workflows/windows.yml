@@ -31,8 +31,6 @@ on:
       - LICENSE.md
       - LICENSES
       - REUSE.toml
-      - vcpkg.json
-      - vcpkg-configuration.json
 
   # Allow manual trigger
   workflow_dispatch:
@@ -42,6 +40,8 @@ jobs:
   #formatting:
   #  uses: ./.github/workflows/formatting.yml
   windows:
+    permissions:
+      packages: write
     # Shortcircuit and don't burn CI time when formatting will reject
     #needs: formatting
     strategy:
@@ -50,6 +50,7 @@ jobs:
         generator: [ 'Visual Studio 17 2022' ]
         toolset: [v143, CLangCL]
         arch: [ x64 ]
+        java-version: [ '17' ]
         check_mkvk: [ NO ]
         options: [
           {config: 'Debug,Release',
@@ -70,10 +71,11 @@ jobs:
            sse: ON, opencl: ON}
         ]
         include:
-          - os: windows-2019
-            generator: 'Visual Studio 16 2019'
-            toolset: v142
+          - os: windows-2022
+            generator: 'Visual Studio 17 2022'
+            toolset: v143
             arch: x64
+            java-version: '17'
             options: {
               config: 'Debug,Release',
               doc: OFF, jni: ON, loadtests: OpenGL+Vulkan, py: ON, tests: ON, tools: ON, tools_cts: ON,
@@ -84,16 +86,31 @@ jobs:
             generator: 'Visual Studio 17 2022'
             toolset: CLangCL
             arch: arm64
+            #vcpkg_install_options: --debug
             options: {
               config: 'Debug,Release',
-              doc: ON, jni: ON, loadtests: OpenGL+Vulkan, py: OFF, tests: ON, tools: ON, tools_cts: ON,
+              # Can't run arm64 tests on x86 runner. Can't cross-compile Vulkan apps.
+              # Vulkan is added to test the build script correctly forces OpenGL only.
+              doc: ON, jni: OFF, loadtests: OpenGL+Vulkan, py: OFF, tests: OFF, tools: ON, tools_cts: OFF,
+              package: NO
+            }
+          - os: windows-11-arm
+            generator: 'Visual Studio 17 2022'
+            toolset: CLangCL
+            arch: arm64
+            # Oldest version available on arm runner.
+            java-version: '21'
+            #vcpkg_install_options: --debug
+            options: {
+              config: 'Debug,Release',
+              doc: ON, jni: ON, loadtests: OpenGL+Vulkan, py: ON, tests: ON, tools: ON, tools_cts: ON,
               package: YES
             }
     runs-on: ${{ matrix.os }}
     env:
-      # Skip downloading necessities for the load tests and source and golden
-      # images for the other tests since we can't run arm64 tests on the x64
-      # build host.
+      # To avoid bandwidth charges skip downloading source and golden images
+      # for texturetests etc., loadtests and legacy tool tests. They will be
+      # pulled later as necessary
       GIT_LFS_SKIP_SMUDGE: 1
 
       BUILD_DIR: "build"
@@ -114,7 +131,14 @@ jobs:
       PACKAGE: ${{ matrix.options.package }}
       SUPPORT_OPENCL: ${{ matrix.options.opencl }}
       SUPPORT_SSE: ${{ matrix.options.sse }}
+      PY_USE_VENV: ${{ matrix.options.py.use_venv && matrix.options.py_use_venv || 'OFF' }}
       WERROR: ON
+
+      VCPKG_INSTALL_OPTIONS: ${{ matrix.vcpkg_install_options && matrix.vcpkg_install_options || '' }}
+      # This is set to avoid the compiler running out of heap space
+      # when vcpkg is compiling glew. Default is logical cores + 1.
+      # Runners have 1 thread per core and 2 cores.
+      VCPKG_MAX_CONCURRENCY: 2
 
       CODE_SIGN_TIMESTAMP_URL: "http://timestamp.digicert.com"
       AZURE_KEY_VAULT_URL: ${{ secrets.AZURE_KEY_VAULT_URL }}
@@ -128,13 +152,8 @@ jobs:
       OPENGL_ES_EMULATOR: C:/Imagination/Windows_x86_64
       OPENGL_ES_EMULATOR_WIN: C:\Imagination\Windows_x86_64
       PVR_SDK_HOME: https://github.com/powervr-graphics/Native_SDK/raw/master/lib/Windows_x86_64/
-      PYTHON: C:\hostedtoolcache\windows\Python\3.11.4\x64\python.exe
       PYTHON_DIST_DIR: interface/python_binding/dist
-      # This is set to avoid the compiler running out of heap space
-      # when vcpkg is compiling glew. Default is logical cores + 1.
-      # Runners have 1 thread per core and 2 cores.
-      VCPKG_MAX_CONCURRENCY: 2
-      VULKAN_SDK_VER: 1.3.290.0
+      VULKAN_SDK_VERSION: 1.4.313.2
 
     steps:
     - uses: actions/checkout@v4
@@ -143,7 +162,16 @@ jobs:
         # included (used for version creation)
         fetch-depth: 0
 
+    - name: Install NSIS
+      # NSIS was removed from windows-2025 (windows-latest as of this writing).
+      # Earlier runner images only have NSIS 3.08 so install latest everywhere.
+      if: matrix.check_mkvk != 'ONLY'
+      uses: repolevedavaj/install-nsis@v1.0.3
+      with:
+        nsis-version: '3.11'
+
     - name: Install NSIS with large string support
+      # This replaces some items in the full NSIS installation.
       if: matrix.check_mkvk != 'ONLY'
       shell: bash
       run: |
@@ -151,11 +179,11 @@ jobs:
         success=0
         for i in $(seq $retryCount) ; do
             echo "Attempt no: $i"
-            stack exec -- wget -O nsis-3.08-strlen_8192.zip https://downloads.sourceforge.net/nsis/NSIS%203/3.08/nsis-3.08-strlen_8192.zip
+            stack exec -- wget -O nsis-3.11-strlen_8192.zip https://sourceforge.net/projects/nsis/files/NSIS%203/3.11/nsis-3.11-strlen_8192.zip
             if [[ $? -eq 0 ]] ; then
                 success=1
-                7z x -aoa -o"/c/Program Files (x86)/NSIS" nsis-3.08-strlen_8192.zip
-                rm nsis-3.08-strlen_8192.zip
+                7z x -aoa -o"/c/Program Files (x86)/NSIS" nsis-3.11-strlen_8192.zip
+                rm nsis-3.11-strlen_8192.zip
                 echo "Installation successful."
                 break
             else
@@ -173,6 +201,10 @@ jobs:
       if: github.ref_type == 'tag' && matrix.check_mkvk != 'ONLY'
       run: git fetch -f origin ${{ github.ref }}:${{ github.ref }}
 
+    - name: Install Git LFS
+      if: matrix.os == 'windows-11-arm'
+      run: git lfs install
+
     - name: Install Doxygen
       uses: ssciwr/doxygen-install@v1
 
@@ -188,41 +220,79 @@ jobs:
           echo "CODE_SIGN_KEY_VAULT=Azure" >> $env:GITHUB_ENV
         }
 
-    - name: Export GitHub Actions cache and vcpkg environment variables
+    - name: Export environment variables for vcpkg binary caching
       if: matrix.options.loadtests != 'OFF'
+      # actions/github-script is used primarily because it is the only
+      # way to access VCPKG_INSTALLATION_ROOT outside of the runner's shell.
+      # Maintaining cross-platform access is desirable so the code can be
+      # easily copied to a multi-platform workflow. NUGET_FEED_URL is set
+      # here to keep the vcpkg cache environment variables together.
       uses: actions/github-script@v7
       with:
-        # Caution. JSON in use. "#core" breaks the build.
+        # JSON in use here. #<comments> in the script will break it.
+        # Pre-installed vcpkg location is indicated by a non-standard env.
+        # var.
         script: |
-          core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
-          core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
-          core.exportVariable('VCPKG_BINARY_SOURCES', "clear;x-gha,readwrite");
           core.exportVariable('VCPKG_ROOT', process.env.VCPKG_INSTALLATION_ROOT || '');
+          core.exportVariable('VCPKG_EXE', process.env.VCPKG_INSTALLATION_ROOT + '/vcpkg' || '');
+          core.exportVariable('NUGET_FEED_URL', 'https://nuget.pkg.github.com/KhronosGroup/index.json' || '');
+
+    - name: Add NuGet sources for vcpkg binary caching
+      if: matrix.options.loadtests != 'OFF'
+      env:
+        USERNAME: KhronosGroup
+      shell: pwsh
+      # `vcpkg fetch nuget` fetches nuget and outputs the location of
+      # the fetched command.
+      run: |
+        .$(${{ env.VCPKG_EXE }} fetch nuget) `
+          sources add `
+          -Source "${{ env.NUGET_FEED_URL }}" `
+          -StorePasswordInClearText `
+          -Name GitHubPackages `
+          -UserName "${{ env.USERNAME }}" `
+          -Password "${{ secrets.GITHUB_TOKEN }}"
+        .$(${{ env.VCPKG_EXE }} fetch nuget) `
+          setapikey "${{ secrets.GITHUB_TOKEN }}" `
+          -Source "${{ env.NUGET_FEED_URL }}"
 
     - name: Install Dependencies
       if: matrix.check_mkvk != 'ONLY'
       # This script only installs what's needed by ON FEATUREs.
       run: scripts/install_win.ps1
 
-    - name: Set up JDK 17.
+    - name: Set up JDK.
       if: matrix.options.jni == 'ON' && matrix.check_mkvk != 'ONLY'
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
-        java-version: '17'
+        java-version: ${{ matrix.java-version }}
 
-    - name: Set up Python 3.11
+    # Pre-installed Python in Windows Server 2022 is 3.9. However
+    # CMake finds the latest on the runner (3.13.5 now). Should a
+    # a specific version of Python ever be wanted, use this.
+    # A bug in 3.13.4 for Windows
+    # (https://github.com/python/cpython/issues/135151) means it looks
+    # like a free-threaded (whatever that means) version to CPython leading
+    # to an error that the "limited API" (whatever that is) is not supported
+    # by free-threaded Python. This is fixed in 3.13.5. Not all the runners
+    # have been updated (see https://github.com/actions/runner-images/issues/12377).
+    # Install a version that works.
+    - name: Set up Python 3.12
       if: matrix.options.py == 'ON' && matrix.check_mkvk != 'ONLY'
       uses: actions/setup-python@v5
       with:
-        python-version: '3.11.4'
+        python-version: '3.12'
 
     # virtualenv is no longer included as of 20240929.1 runner so
     # install it ourselves. See
     # https://github.com/actions/runner-images/issues/10749.
     #
-    # Note that it is the builds of sdist and wheel that require virtualenv
-    # not the explicit dependencies of pyktx.
+    # Note that the builds, via sdist and wheel, require a virtual env.
+    # regardless of whether the in-use Python is externally managed.
+    # Installing the explicit dependencies of pyktx only needs virtualenv
+    # and PY_USE_VENV: ON when Python is externally managed. The packages
+    # on the Windows runners are not externally managed.
     - name: Install Python virtualenv
       if: matrix.options.py == 'ON' && matrix.check_mkvk != 'ONLY'
       run: pip install virtualenv
@@ -232,6 +302,10 @@ jobs:
       run:
         git submodule update --init --recursive tests/cts
 
+    - name: Pull LFS files
+      if: matrix.options.tests == 'ON'
+      run: git lfs pull --include=tests/srcimages,tests/testimages
+
     - name: Smudge embedded dates
       if: matrix.options.doc == 'ON'
       run: |
@@ -240,6 +314,8 @@ jobs:
 
     - name: Build Windows
       if: matrix.check_mkvk != 'ONLY'
+      env:
+        VCPKG_BINARY_SOURCES: clear;nuget,${{ env.NUGET_FEED_URL }},readwrite
       #   The installers run as part of "Install Dependencies" add
       # environment variables to the registry and augment $Path there.
       # Although each step gets a new Powershell instance, that instance
@@ -266,12 +342,12 @@ jobs:
 
     - name: Test Windows build
       # Tests built for arm64 can't be run as the CI runners are all x64.
-      if: matrix.arch == 'x64' && matrix.options.tests == 'ON'
+      if: matrix.options.tests == 'ON'
       run: ctest --output-on-failure --test-dir $env:BUILD_DIR -C Release
 
-    - name: Upload test log
-      if: ${{ failure() }}
-      run: scripts/on_failure.ps1
+#    - name: Upload test log
+#      if: ${{ failure() }}
+#      run: scripts/on_failure.ps1
 
     - name: Get KTX version
       if: matrix.options.package == 'YES'

@@ -13,7 +13,7 @@
  *
  * @brief Test loading of 2D textures.
  *
- * @author Mark Callow, www.edgewise-consulting.com.
+ * @author Mark Callow, github.com/MarkCallow.
  *
  * @par Acknowledgement
  * Thanks to Sascha Willems' - www.saschawillems.de - for the concept,
@@ -587,7 +587,10 @@ Texture::preparePipelines()
 {
     vk::PipelineInputAssemblyStateCreateInfo inputAssemblyState(
             {},
-            vk::PrimitiveTopology::eTriangleStrip);
+            vk::PrimitiveTopology::eTriangleStrip,
+            // primmitiveRestartEnable not needed but disabling it results in a MoltenVK
+            // feature not present warning.
+            true);
 
     vk::PipelineRasterizationStateCreateInfo rasterizationState;
     // Must be false because we haven't enabled the depthClamp device feature.

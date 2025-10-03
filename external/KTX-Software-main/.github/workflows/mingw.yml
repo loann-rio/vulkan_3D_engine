@@ -47,6 +47,9 @@ jobs:
       run:
         shell: bash
     env:
+      # To avoid bandwidth charges skip downloading source and golden images
+      # for texturetests etc., loadtests and legacy tool tests. They will be
+      # pulled later as necessary
       GIT_LFS_SKIP_SMUDGE: 1
       WERROR: ON
 
@@ -76,7 +79,7 @@ jobs:
       run: cmake --build build --config Release
     - name: Test Mingw build
       run: ctest --output-on-failure --test-dir build -C Release
-    - name: Upload test log
-      shell: pwsh
-      if: ${{ failure() }}
-      run: scripts/on_failure.ps1
+#    - name: Upload test log
+#      shell: pwsh
+#      if: ${{ failure() }}
+#      run: scripts/on_failure.ps1

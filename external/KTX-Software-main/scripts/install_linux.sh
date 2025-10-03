@@ -13,6 +13,7 @@ for i in $@; do
 done
 
 ARCH=${ARCH:-$(uname -m)}  # Architecture to install tools for.
+FEATURE_DOC=${FEATURE_DOC:-ON}
 FEATURE_GL_UPLOAD=${FEATURE_GL_UPLOAD:-ON}
 FEATURE_VK_UPLOAD=${FEATURE_VK_UPLOAD:-ON}
 if [ "$ARCH" = "x86_64" ]; then
@@ -21,7 +22,7 @@ else
   # No Vulkan SDK yet for Linux/arm64.
   FEATURE_LOADTESTS=${FEATURE_LOADTESTS:-OpenGL}
 fi
-VULKAN_SDK_VER=${VULKAN_SDK_VER:-1.3.290}
+VULKAN_SDK_VER=${VULKAN_SDK_VER:-1.4.313}
 
 sudo apt-get -qq update
 
@@ -34,7 +35,10 @@ sudo apt-get -qq update
 # LFS is not preinstalled in the arm64 image.
 sudo apt-get -qq install git-lfs:native
 sudo apt-get -qq install ninja-build:native
-sudo apt-get -qq install doxygen:native
+if [ "$FEATURE_DOC" = "ON" ]; then
+  sudo apt-get -qq install doxygen:native
+  sudo apt-get -qq install graphviz:native
+fi
 sudo apt-get -qq install rpm:native
 
 if [ "$ARCH" = "$(uname -m)" ]; then
@@ -63,14 +67,10 @@ fi
 sudo apt-get -qq install opencl-c-headers:$dpkg_arch
 sudo apt-get -qq install mesa-opencl-icd:$dpkg_arch
 if [[ "$FEATURE_GL_UPLOAD" = "ON" || "$FEATURE_LOADTESTS" =~ "OpenGL" ]]; then
-  sudo apt-get -qq install libgl1-mesa-glx:$dpkg_arch libgl1-mesa-dev:$dpkg_arch
+  sudo apt-get -qq install libgl1:$dpkg_arch libgl1-mesa-dev:$dpkg_arch
 fi
 if [[ "$FEATURE_VK_UPLOAD" = "ON" || "$FEATURE_LOADTESTS" =~ "Vulkan" ]]; then
   sudo apt-get -qq install libvulkan1 libvulkan-dev:$dpkg_arch
-fi
-if [[ -n "$FEATURE_LOADTESTS" && "$FEATURE_LOADTESTS" != "OFF" ]]; then
-  sudo apt-get -qq install libsdl2-dev:$dpkg_arch
-  sudo apt-get -qq install libassimp5 libassimp-dev:$dpkg_arch
 fi
 
 if [[ "$FEATURE_LOADTESTS" =~ "Vulkan" ]]; then
