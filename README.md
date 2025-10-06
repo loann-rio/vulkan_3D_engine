@@ -116,9 +116,13 @@ REGISTER_BEHAVIOR(MyBehavior)
 
 
 ``` cpp
+std::shared_ptr<Model> cube = Model::createModelFromFile(device, "model/myModel.obj", "textures/myTexture.jpg"); 
+
 auto myObject = GameObjectFactory::createGameObject<GameObject>(device);
 myObject->setAttachedClass(std::make_unique<MyBehavior>(device));
 myObject->setName("myObject");
+myObject->setModel(model);
+myObject->createDescriptorSet(pool);
 objectManager.pushGameObject(std::move(myObject));
 ```
 
