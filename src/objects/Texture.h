@@ -18,19 +18,10 @@
 class Texture
 {
 public:
-	static std::unique_ptr<Texture> create(Device& device, const char* path);
+	static std::unique_ptr<Texture> create(Device& device, const char* path, bool isCubeMap = false);
 	static std::unique_ptr<Texture> create(Device& device, std::vector<std::vector<glm::vec2>> imageArray);
 
-	static std::unique_ptr<Texture> createCubeMap(Device& device, const char* path) {
-		auto tex = std::unique_ptr<Texture>(new Texture(device, path, true)); 
-		if (!tex->isLoaded) {
-			return nullptr;
-		}
-		return tex; 
-	}
-
 	Texture(Device& device, const char* filePathTexture, bool isCubeMap);
-	
 	Texture(Device& device, unsigned char* rgbaPixels, const uint32_t fontWidth, const uint32_t fontHeight, VkDeviceSize imageSize = 0, uint32_t mipLevel = 1);
 	Texture(Device& device, VkImageView textureImageView) : device { device }, textureImageView { textureImageView } { isLoaded = true; }
 	Texture(Device& device) : device{ device } { isLoaded = true; }
@@ -65,8 +56,6 @@ private:
 	void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
 		VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory, uint32_t arrayLayer = 1, VkImageCreateFlags flags = 0);
 
-	void createTextureImageView();
-
 	void createTextureSampler();
 
 	VkImageView createTextureCubeMapImageView();
@@ -75,7 +64,7 @@ private:
 
 	void bind(VkImage& image, VkMemoryPropertyFlags properties, VkDeviceMemory& imageMemory);
 	
-	VkImageView createImageView(VkImage image, VkFormat format);
+	VkImageView createImageView(VkImage image, VkFormat format, bool isCubeMap);
 	
 	VkImageView textureImageView;
 	VkSampler textureSampler;

@@ -25,32 +25,53 @@ namespace std {
 	};
 }
 
-Model::Model(Device& device, const Model::Builder& builder, const std::string filePathTexture) : device{ device } {
-	createVertexBuffers(builder.vertices);
-	createIndexBuffers(builder.indices);
-
-	if (!filePathTexture.empty()) {
-		texture = Texture::create(device, filePathTexture.c_str()); 
-		if (texture != nullptr)
-			hasTexture = true;
-		else
-			std::cout << "failed loading " << filePathTexture << "\n";
-	}
-}
-
-Model::~Model() {}
-
-std::unique_ptr<Model> Model::createModelFromFile(Device& device, const std::string& filePath, const char* filePathTexture = "textures\\whiteTexture.jpg")
+std::unique_ptr<Model> Model::createModelFromFile(Device& device, const std::string& filePath, const char* filePathTexture)
 {
-	Builder builder{}; 
-	if (builder.loadOBJModel(filePath)) { 
-		std::cout << "vertex count: " << builder.vertices.size() << "\n"; 
-		std::unique_ptr<Model> m = std::make_unique<Model>(device, builder, filePathTexture); 
-		return m;
+	Builder builder{};
+	if (builder.loadOBJModel(filePath)) {
+		std::unique_ptr<Model> m = std::make_unique<Model>(device, builder, filePathTexture);
+		if (m) return m;
 	}
 
 	return nullptr;
 }
+
+std::unique_ptr<Model> Model::createModelFromFile(Device& device, const std::string& filePath)
+{
+	Builder builder{};
+	if (builder.loadOBJModel(filePath)) {
+		std::unique_ptr<Model> m = std::make_unique<Model>(device, builder);
+		if (m) return m;
+	}
+	return nullptr;
+}
+
+
+
+Model::Model(Device& device, const Model::Builder& builder, const std::string filePathTexture) : device{ device } {
+	if (!filePathTexture.empty()) {
+		texture = Texture::create(device, filePathTexture.c_str());
+		if (texture != nullptr)
+			hasTexture = true;
+		else {
+			std::cout << "failed loading " << filePathTexture << "\n";
+			texture = Texture::create(device, "textures/whiteTexture.jpg");
+		}
+	}
+	else return;
+
+	createVertexBuffers(builder.vertices);
+	createIndexBuffers(builder.indices);
+}
+
+Model::Model(Device& device, const Model::Builder& builder) : device{ device }
+{
+	createVertexBuffers(builder.vertices);
+	createIndexBuffers(builder.indices);
+}
+
+Model::~Model() {}
+
 
 void Model::bind(VkCommandBuffer& commandBuffer, Buffer* instancesBuffer) 
 {

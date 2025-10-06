@@ -45,7 +45,8 @@ enum class ModelType {
 	UNDEFINED_MODEL = 0,
 	OBJ_MODEL = 1,
 	GLTF_MODEL = 2,
-	PREBUILT_MODEL = 3
+	PREBUILT_MODEL = 3,
+	
 };
 
 enum class PrimitivesModelType {
@@ -60,6 +61,7 @@ enum class PrimitivesModelType {
 enum class ModelSubType { 
 	NONE = 0,
 	TERRAIN = 1,
+	SKYBOX = 2,
 };
 
 enum class GameObjectType { 

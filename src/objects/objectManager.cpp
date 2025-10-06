@@ -11,12 +11,25 @@
 #include <chrono>
 #include <stdlib.h>
 
-void ObjectManager::startLoadModel(DescriptorPool& pool){}
+void ObjectManager::startLoadModel(DescriptorPool& pool)
+{
+	std::shared_ptr<Model> cube = Model::createModelFromFile(device, "model/cube.obj"); 
+	cube->setTexture(Texture::create(device, "skybox/cubemap_vulkan.ktx", true)); 
+
+    auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
+    gameObject->setName("cubemap");
+    gameObject->setModelType(ModelType::OBJ_MODEL);
+	gameObject->setModelSubType(ModelSubType::SKYBOX);
+	gameObject->setModel(cube);
+	gameObject->saveable = false;
+	gameObject->createDescriptorSet(pool);
+    pushGameObject(std::move(gameObject));
+}
 
 void ObjectManager::createPrimitive(PrimitivesModelType type, int detail, TransformComponent transform, const std::string& name, const std::string& filePathTexture)
 {
     auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
-    gameObject->transform = transform;
+    gameObject->transform = transform; 
     gameObject->setName(name.empty() ? "primitive_" + std::to_string(gameObject->getId()) : name);
 	gameObject->setModelType(ModelType::OBJ_MODEL);
     gameObject->setPrimitivesModelType(type);
@@ -47,7 +60,6 @@ void ObjectManager::createPrimitive(PrimitivesModelType type, int detail, Transf
             std::cerr << "Unknown primitive type\n";
             break;
         }
-
 
         return std::vector<futureObject>{ futureObject{ primitive, primitive ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id } };
         })
@@ -161,8 +173,7 @@ void ObjectManager::loadScene(std::string name)
 
         if (element.value().contains("behavior_type")) {
             std::string classType = element.value()["behavior_type"];
-            behavior = GameObjectBehavior::createBehaviorFromType(classType, device);
-               
+            behavior = GameObjectBehavior::createBehaviorFromType(classType, device);       
         }
 
         if (objType == static_cast<int>(GameObjectType::MODEL)) {
@@ -408,12 +419,6 @@ void ObjectManager::loadObjectAsync(Device& device, const std::string& filePath,
         return std::vector<futureObject>{ futureObject{ model, model ? ModelType::GLTF_MODEL : ModelType::UNDEFINED_MODEL, id }};
         }) 
 	);
-
-    /*futureGameObjects.push_back(std::async(std::launch::async, [filePath, &device, id]() {
-        std::shared_ptr<GlTFModel::ModelGltf> model = GlTFModel::createModelFromFile(device, filePath);
-        return futureObject{ model, model ? ModelType::GLTF_MODEL : ModelType::UNDEFINED_MODEL, id };
-        }) 
-    );*/
 }
 
 void ObjectManager::loadObjectAsyncObj(Device& device, const std::string& filePath, const std::string filePathTexture, TransformComponent transform, const std::string& name)
@@ -434,10 +439,4 @@ void ObjectManager::loadObjectAsyncObj(Device& device, const std::string& filePa
         return std::vector<futureObject> {futureObject{ model, model ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id }};
         }) 
      );
-
-    /*futureGameObjects.push_back(std::async(std::launch::async, [filePath, filePathTexture, &device, id]() { 
-        std::shared_ptr<Model> model = Model::createModelFromFile(device, filePath, filePathTexture.c_str());
-        return futureObject{ model, model ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id };
-        })
-    );*/
 }

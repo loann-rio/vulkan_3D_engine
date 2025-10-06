@@ -73,6 +73,12 @@ struct SpotLight {
 	vec4 orientation;
 	mat4 lightMatrix;
 };
+
+layout(push_constant) uniform Push {
+	
+	mat4 nodeMatrix;
+	int materialIndex;
+} push;
 			
 layout(set = 0, binding = 0) uniform GlobalUbo {
 	
@@ -90,28 +96,21 @@ layout(set = 0, binding = 0) uniform GlobalUbo {
 	PointLight pointLight[10]; 
 } ubo;
 
-layout(push_constant) uniform Push {
-	
-	mat4 nodeMatrix;
-	int materialIndex;
-} push;
-
-// shadow layout
-layout(set = 1, binding = 1) uniform sampler2DShadow shadowMap[MAX_NUM_SPOT_LIGHT];
-
 layout(set = 1, binding = 0) uniform SpotLightUbo {
 	SpotLight spotLight[MAX_NUM_SPOT_LIGHT];
 	int numLights;
 } spotLightUbo;
 
+layout(set = 1, binding = 1) uniform sampler2DShadow shadowMap[MAX_NUM_SPOT_LIGHT];
 
+layout(set = 2, binding = 0) uniform samplerCube skybox;
 
-layout(std430, set = 2, binding = 2) readonly buffer SSBO
+layout(set = 3, binding = 1) uniform sampler2D textures[];
+
+layout(std430, set = 3, binding = 2) readonly buffer SSBO
 {
    ShaderMaterial materials[ ];
 };
-
-layout(set = 2, binding = 1) uniform sampler2D textures[];
 
 
 vec4 compute_shadow_factor(vec4 light_space_pos, uint indexSpotLight, vec3 surfaceNormal)
@@ -226,24 +225,6 @@ vec4 SRGBtoLINEAR(vec4 srgbIn)
 void main() {
 
 
-	//vec4 color = (texture(textures[nonuniformEXT(materials[push.materialIndex].baseColorTextureIndex)], inUV0)); 
-	//outColor =  color;
-
-	vec3 surfaceNormal = normalize(inNormal);
-	/*vec3 directionToLight = normalize(ubo.globalLightDir.xyz);
-	float cosAngOfIncidence = max(dot(surfaceNormal, directionToLight), 0);
-	vec3 intencity = ubo.ambientLightColor.xyz * ubo.globalLightDir.w;
-
-	vec4 spotLightLight = {0.0, 0.0, 0.0 , 0.0};
-
-	for (uint indexSpotLight = 0; indexSpotLight < spotLightUbo.numLights && indexSpotLight < MAX_NUM_SPOT_LIGHT; ++indexSpotLight) {
-		spotLightLight += compute_shadow_factor(inPosShadow[indexSpotLight], indexSpotLight, surfaceNormal);
-	}
-
-	//vec4 color = inColor0;
-	//vec4 color = (texture(colorMap, inUV0) * texture(aoMap, inUV0)) * (cosAngOfIncidence * ubo.globalLightDir.w + spotLightLight) + texture(emissiveMap, inUV0); 
-	*/
-
 	ShaderMaterial material = materials[push.materialIndex];
 
 	float perceptualRoughness;
@@ -268,6 +249,7 @@ void main() {
 		// Metallic and Roughness material properties are packed together
 		// In glTF, these factors can be specified by fixed scalar values
 		// or from a metallic-roughness map
+
 		perceptualRoughness = material.roughnessFactor;
 		metallic = material.metallicFactor; 
 		if (material.physicalDescriptorTextureSet > -1) { 
@@ -317,7 +299,7 @@ void main() {
 	baseColor *= inColor0;
 
 	diffuseColor = baseColor.rgb * (vec3(1.0) - f0);
-	diffuseColor *= 1.0 - metallic * 0.5;
+	diffuseColor *= 1.0 - metallic ; // *0.5
 		
 	float alphaRoughness = perceptualRoughness * perceptualRoughness;
 
@@ -334,6 +316,8 @@ void main() {
 
 	vec3 n = (material.normalTextureSet > -1) ? getNormal(material) : normalize(inNormal);
 	n.y *= -1.0f;
+
+	vec3 surfaceNormal = normalize(inNormal);
 
 	vec3 v = normalize(ubo.camPos - inWorldPos);    // Vector from surface point to camera
 	vec3 l = normalize(ubo.globalLightDir.xyz);     // Vector from surface point to light
@@ -387,7 +371,7 @@ void main() {
 		emissive *= SRGBtoLINEAR(texture(textures[nonuniformEXT(material.emissiveTextureIndex)], material.emissiveTextureSet == 0 ? inUV0 : inUV1)).rgb;
 	};
 
-
+	
 	// apply spotlight shadow map
 	vec4 spotLightLight = {0.0, 0.0, 0.0 , 0.0};
 
@@ -395,7 +379,11 @@ void main() {
 		spotLightLight += compute_shadow_factor(inPosShadow[indexSpotLight], indexSpotLight, surfaceNormal);
 	}
 
+	// skybox reflexion
+	vec3 reflection2 = normalize(reflect(-v, surfaceNormal));
+	vec3 skyColor = texture(skybox, reflection2).rgb;
 	
+	color += skyColor * metallic * 0.5;
 	color += ubo.ambientLightColor.w * ubo.ambientLightColor.rgb * diffuseColor;
 	color += spotLightLight.rgb * diffuseColor;// * spotLightLight.w;
 	color += emissive;

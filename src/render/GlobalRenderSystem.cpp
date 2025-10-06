@@ -13,8 +13,8 @@ GlobalRenderSystem::GlobalRenderSystem(Device& device, VkRenderPass renderPass,
 	std::vector<VkDescriptorSetLayout> globalSetLayout, std::vector<DescriptorSetObject> bindings,
 	const std::string& vertFilepath, const std::string& fragFilepath,
 	ModelType modelType, ModelSubType subModelType,
-	std::vector<VkVertexInputBindingDescription> bindingDescription, std::vector<VkVertexInputAttributeDescription> attributeDescription, bool isShadow)
-	: device{ device }, modelType{ modelType }, isShadow{ isShadow }, modelSubType{ subModelType }
+	std::vector<VkVertexInputBindingDescription> bindingDescription, std::vector<VkVertexInputAttributeDescription> attributeDescription, bool isShadow, bool isSkyBox)
+	: device{ device }, modelType{ modelType }, isShadow{ isShadow }, modelSubType{ subModelType }, isSkyBox{ isSkyBox }
 {
 	std::vector<std::unique_ptr<DescriptorSetLayout>> layouts;  // to hold the unique ptr of the descriptor set layouts
 
@@ -132,6 +132,13 @@ void GlobalRenderSystem::createPipeline(VkRenderPass renderPass, const std::stri
 		pipelineConfig.rasterizationInfo.depthBiasSlopeFactor = 1.5f;
 	}
 
+	if (isSkyBox) {
+		pipelineConfig.depthStencilInfo.depthTestEnable = VK_TRUE;
+		pipelineConfig.depthStencilInfo.depthWriteEnable = VK_FALSE;
+		pipelineConfig.depthStencilInfo.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+		pipelineConfig.rasterizationInfo.cullMode = VK_CULL_MODE_BACK_BIT;
+	}
+
 	// create the pipeline
 	pipeline = std::make_unique<Pipeline>(
 		device,
@@ -187,9 +194,10 @@ void GlobalRenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, Frame
 {
 	bind(commandBuffer, globalDescriptorSets);
 	
-	for (auto obj : frameInfo.listGameObjects)
+	for (auto& obj : frameInfo.listGameObjects)
 	{
 		if (obj->show && !obj->toBeRemoved && obj->getModelType() == modelType && obj->getModelSubType() == modelSubType)
+
 			renderModel(commandBuffer, frameInfo, obj);	
 	}
 }

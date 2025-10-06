@@ -1,14 +1,12 @@
 #include "App.h"
 
 // local
-
 #include "base/Buffer.h"
 #include "base/Frame_info.h"
 #include "objects/Texture.h"
 #include "objects/KeyboardMovementController.h"
 #include "render/Camera.h"
 #include "model/GlTFModel.h"
-
 
 // glm
 #define GLM_FORCE_RADIANS
@@ -63,16 +61,13 @@ void App::run()
     GlobalUbo ubo{};
     SpotLightUbo spotLightUbo{};
     TerrainUbo terrainUbo{};
-
-
-    //std::unique_ptr<Texture> cubeMap = Texture::createCubeMap(device, "skybox\\cubemap_space.ktx");
     
     // start timer
     auto currentTime = std::chrono::high_resolution_clock::now();
 
     int frame = 0;
 	while (!window.shouldClose())
-	{
+	{   
 		glfwPollEvents();
 
         // add loaded async model to gameObjectmap 
@@ -115,25 +110,29 @@ void App::run()
             std::vector<GameObject::id_t> toRemove;
 
             for (auto& [id, obj] : *objects) {
-                if (obj->toBeRemoved) {
-                    // if it model first hide the remove to avoid issues with descriptor set still in use
-                    if (obj->getType() == GameObjectType::MODEL) {
-                        auto* modelObj = dynamic_cast<GameObjectModel*>(obj.get());
-                        if (modelObj->show) {
-                            modelObj->show = false; // hide the model
-                        }
-                        else {
-                            toRemove.push_back(id); // remove the object
-						}
+                if (!obj->toBeRemoved) {
+                    obj->loop(&objectManager);
+                    continue;
+                }
+
+                // Handle removal
+                if (obj->getType() == GameObjectType::MODEL) {
+                    auto* modelObj = dynamic_cast<GameObjectModel*>(obj.get());
+                    if (modelObj->show) {
+                        modelObj->show = false; // Hide first to avoid descriptor issues
+                        continue;
                     }
                 }
-                else
-                    obj->loop(&objectManager);
+
+                // Either not a model, or already hidden — safe to remove
+                toRemove.push_back(id);
             }
 
+            // Remove after iteration
             for (auto id : toRemove) {
                 objectManager.removeGameObject(id);
             }
+
         }
 
         // update GLTF game objects
@@ -179,7 +178,6 @@ void App::run()
             terrainBuffers[frameIndex]->flush();
 		}
 
-
         // update spotLight
         {
             uint16_t i = 0; 
@@ -220,15 +218,17 @@ void App::run()
                 // render
                 renderer.beginSwapChainRenderPass(commandBuffer); 
                  
-                gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo, descriptorSets); 
+                gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo, { globalDescriptorSet[frameIndex], shadowDescriptorSet[renderer.getDepthIndex()], skyboxDescriptorSet[frameIndex] });
                 objRenderSystem->renderGameObjects(commandBuffer, frameInfo, descriptorSets); 
 
                 std::vector<VkDescriptorSet> terrainDescriptorSets{ globalDescriptorSet[frameIndex], shadowDescriptorSet[renderer.getDepthIndex()], terrainDescriptorSet[frameIndex] };
                 terrainRenderSystem->renderGameObjects(commandBuffer, frameInfo, terrainDescriptorSets);
 
-                textOverlay.renderText(commandBuffer, frameInfo); 
+				skyboxRenderSystem->renderGameObjects(commandBuffer, frameInfo, { globalDescriptorSet[frameIndex] });
 
-                imgui.drawUI(commandBuffer, &objectManager, terrainUbo);
+                //textOverlay.renderText(commandBuffer, frameInfo); 
+
+                imgui.drawUI(commandBuffer, &objectManager, terrainUbo, frameTimeSum);
 
                 renderer.endSwapChainRenderPass(commandBuffer); 
                 renderer.endFrame();
@@ -236,7 +236,7 @@ void App::run()
         }   
 	}
 
-        vkQueueWaitIdle(device.presentQueue());
+    vkQueueWaitIdle(device.presentQueue());
 }
  
  
@@ -338,15 +338,33 @@ void App::createRenderSystems()
     }
 
 
+    /// skybox 
+
+    auto skyboxSetLayout = DescriptorSetLayout::Builder(device)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) 
+        .build();
+
+
+    skyboxDescriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
+    for (int i = 0; i < skyboxDescriptorSet.size() && i < 2; i++)
+    {
+        auto textInfo = skyboxTexture->getImageInfo();
+
+        DescriptorWriter(*skyboxSetLayout, *globalPool)
+            .writeImage(0, &textInfo)
+            .build(skyboxDescriptorSet[i]);
+    }
+
+
     /// render systems
 
 	RenderSystemBuilder gltfBuilder{};
 	gltfBuilder.fragFilepath = "shaders\\GlTFshader.frag.spv";
 	gltfBuilder.vertFilepath = "shaders\\GlTFshader.vert.spv";
-    gltfBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
+    gltfBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout(), skyboxSetLayout->getDescriptorSetLayout() };
 	gltfBuilder.renderPass = renderer.getSwapChainRenderPass();
 
-    gltfRenderSystem = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, gltfBuilder); 
+    gltfRenderSystem = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, gltfBuilder);
 
     RenderSystemBuilder objBuilder{};
     objBuilder.fragFilepath = "shaders\\simple_shader.frag.spv";
@@ -382,6 +400,17 @@ void App::createRenderSystems()
     terrainBuilder.subModelType = ModelSubType::TERRAIN;
 
     terrainRenderSystem = GlobalRenderSystem::create<Model>(device, terrainBuilder);
+
+	RenderSystemBuilder skyboxBuilder{};
+
+	skyboxBuilder.fragFilepath = "shaders\\skybox.frag.spv";
+	skyboxBuilder.vertFilepath = "shaders\\skybox.vert.spv";
+	skyboxBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout() };
+    skyboxBuilder.renderPass = renderer.getSwapChainRenderPass();
+	skyboxBuilder.subModelType = ModelSubType::SKYBOX; 
+	skyboxBuilder.isSkyBox = true;
+    
+	skyboxRenderSystem = GlobalRenderSystem::create<Model>(device, skyboxBuilder);
 
 }
 

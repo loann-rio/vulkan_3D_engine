@@ -19,4 +19,7 @@ C:\VulkanSDK\1.4.313.2\Bin\glslc.exe depthView.frag -o depthView.frag.spv --targ
 C:\VulkanSDK\1.4.313.2\Bin\glslc.exe terrainShader.frag -o terrainShader.frag.spv --target-env=vulkan1.2
 C:\VulkanSDK\1.4.313.2\Bin\glslc.exe terrainShader.vert -o terrainShader.vert.spv --target-env=vulkan1.2
 
+C:\VulkanSDK\1.4.313.2\Bin\glslc.exe skybox.frag -o skybox.frag.spv --target-env=vulkan1.2
+C:\VulkanSDK\1.4.313.2\Bin\glslc.exe skybox.vert -o skybox.vert.spv --target-env=vulkan1.2
+
 pause

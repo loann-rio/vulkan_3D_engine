@@ -25,16 +25,18 @@ public:
 	BasicUI(Device& device, GLFWwindow* window, VkRenderPass renderPass);
 	~BasicUI();
 
-	void drawUI(VkCommandBuffer commandBuffer, ObjectManager* manager, TerrainUbo& terrainUbo);
+	void drawUI(VkCommandBuffer commandBuffer, ObjectManager* manager, TerrainUbo& terrainUbo, float fps);
 
 	bool isWindowSelected = false; 
 private:
 
 	void gameObjectWindow(GameObject* gameObject, ObjectManager* manager); 
-	void objectSelectionWindow(std::vector<std::string> listObjectsName, ObjectManager* manager);
+	void objectSelectionWindow(std::vector<std::string> listObjectsName, ObjectManager* manager, float fps);
 	void terrainUboWindow(TerrainUbo& terrainUbo);
 	void createObjWindow(ObjectManager* manager);
 	void createGLTFWindow(ObjectManager* manager);
+	void createSkyboxWindow(ObjectManager* manager);
+
 	void createCameraWindow(ObjectManager* manager, bool isSpotLight);
 	std::string openFileDialog(const char* filter);
 

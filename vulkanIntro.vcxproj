@@ -199,7 +199,6 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="external\json.hpp" />
-    <ClInclude Include="external\nativefiledialog-master\src\common.h" />
     <ClInclude Include="external\nativefiledialog-master\src\include\nfd.h" />
     <ClInclude Include="external\nativefiledialog-master\src\nfd_common.h" />
     <ClInclude Include="external\nativefiledialog-master\src\simple_exec.h" />
@@ -236,6 +235,7 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <None Include="shaders\compile.bat" />
     <None Include="shaders\depthView.frag" />
     <None Include="shaders\depthView.vert" />
+    <None Include="shaders\global_ubo.minc" />
     <None Include="shaders\GlTFshader.frag" />
     <None Include="shaders\GlTFshader.vert" />
     <None Include="shaders\point_light.frag" />
@@ -243,13 +243,14 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <None Include="shaders\shadowmap.vert" />
     <None Include="shaders\shadowmapgltf.vert" />
     <None Include="shaders\simple_shader.frag" />
+    <None Include="shaders\simple_shader.mfrag" />
     <None Include="shaders\simple_shader.vert" />
+    <None Include="shaders\skybox.frag" />
+    <None Include="shaders\skybox.vert" />
     <None Include="shaders\terrainShader.frag" />
     <None Include="shaders\terrainShader.vert" />
     <None Include="shaders\text.frag" />
     <None Include="shaders\text.vert" />
-    <None Include="skybox.frag" />
-    <None Include="skybox.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

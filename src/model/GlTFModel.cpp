@@ -810,7 +810,7 @@ void GlTFModel::ModelGltf::drawNode(Node* node, VkCommandBuffer& commandBuffer, 
 				commandBuffer,
 				VK_PIPELINE_BIND_POINT_GRAPHICS,
 				pipelineLayout,
-				3, 1,
+				4, 1,
 				&node->mesh->descriptorSet[0],
 				0, nullptr
 			);

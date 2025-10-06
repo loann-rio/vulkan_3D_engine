@@ -18,6 +18,7 @@ struct RenderSystemBuilder {
 	VkRenderPass renderPass;
 	bool hasMultipleInstance = false;
 	ModelSubType subModelType = ModelSubType::NONE;
+	bool isSkyBox = false;
 };
 
 class GlobalRenderSystem
@@ -33,7 +34,7 @@ public:
 		const std::string& vertFilepath, const std::string& fragFilepath,
 		ModelType modelType, ModelSubType subModelType, 
 		std::vector<VkVertexInputBindingDescription> bindingDescription, std::vector<VkVertexInputAttributeDescription> attributeDescription,
-		bool isShadow = false
+		bool isShadow = false, bool isSkyBox = false
 	);
 
 	~GlobalRenderSystem();
@@ -65,6 +66,7 @@ private:
 	ModelType modelType = ModelType::UNDEFINED_MODEL;
 	ModelSubType modelSubType = ModelSubType::NONE;
 	const bool isShadow = false;
+	const bool isSkyBox = false;
 
 	uint16_t modelDescriptorSetIndex; // start after global, shadow add additional descriptor set
 		
@@ -105,6 +107,6 @@ inline std::shared_ptr<GlobalRenderSystem> GlobalRenderSystem::create(Device& de
 		builder.vertFilepath, builder.fragFilepath,
 		modelType, builder.subModelType, 
 		bindingDescription, attributeDescription, 
-		isShadow);
+		isShadow, builder.isSkyBox);
 }
 

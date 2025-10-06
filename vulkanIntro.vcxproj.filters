@@ -114,6 +114,12 @@
     <ClCompile Include="src\GameObjectClassAssets\TerrainGenerator.cpp">
       <Filter>GameObjectClassAssets</Filter>
     </ClCompile>
+    <ClCompile Include="external\nativefiledialog-master\src\nfd_common.c">
+      <Filter>Fichiers de ressources</Filter>
+    </ClCompile>
+    <ClCompile Include="external\nativefiledialog-master\src\nfd_win.cpp">
+      <Filter>Fichiers de ressources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tiny_gltf.h">
@@ -201,6 +207,15 @@
     <ClInclude Include="external\json.hpp">
       <Filter>Fichiers de ressources</Filter>
     </ClInclude>
+    <ClInclude Include="external\nativefiledialog-master\src\include\nfd.h">
+      <Filter>Fichiers de ressources</Filter>
+    </ClInclude>
+    <ClInclude Include="external\nativefiledialog-master\src\nfd_common.h">
+      <Filter>Fichiers de ressources</Filter>
+    </ClInclude>
+    <ClInclude Include="external\nativefiledialog-master\src\simple_exec.h">
+      <Filter>Fichiers de ressources</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\compile.bat">
@@ -242,13 +257,23 @@
     <None Include="shaders\text.vert">
       <Filter>shaders</Filter>
     </None>
-    <None Include="skybox.vert">
+    <None Include="shaders\skybox.vert">
       <Filter>shaders</Filter>
     </None>
-    <None Include="skybox.frag">
+    <None Include="shaders\skybox.frag">
       <Filter>shaders</Filter>
     </None>
-    <None Include="shaders\terrainShader.frag" />
-    <None Include="shaders\terrainShader.vert" />
+    <None Include="shaders\terrainShader.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\terrainShader.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\global_ubo.minc">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\simple_shader.mfrag">
+      <Filter>shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

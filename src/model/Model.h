@@ -29,6 +29,9 @@ class Model
 {
 public:
 
+	static std::unique_ptr<Model> createModelFromFile(Device& device, const std::string& filePath, const char* filePathTexture);
+	static std::unique_ptr<Model> createModelFromFile(Device& device, const std::string& filePath);
+
 	struct Instance {
 		glm::vec3 position;
 		glm::vec3 rotation;
@@ -57,13 +60,12 @@ public:
 		bool loadOBJModel(const std::string& filepath);
 	};
 
-	Model(Device& device, const Model::Builder &builder, const std::string filePathTexture = "");
+	Model(Device& device, const Model::Builder& builder, const std::string filePathTexture);
+	Model(Device& device, const Model::Builder& builder);
 	~Model(); 
 
 	Model(const Model&) = delete;
 	Model& operator=(const Model&) = delete;
-
-	static std::unique_ptr<Model> createModelFromFile(Device &device, const std::string &filePath, const char* filePathTexture);
 
 	void bind(VkCommandBuffer& commandBuffer, Buffer* instancesBuffer);
 	void draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, glm::mat4 modelMatrix, glm::mat4 normalMatrix, uint32_t instanceCount);

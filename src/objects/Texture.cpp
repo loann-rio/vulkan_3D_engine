@@ -8,9 +8,9 @@
 #include <stdexcept>
 
 
-std::unique_ptr<Texture> Texture::create(Device& device, const char* path)
+std::unique_ptr<Texture> Texture::create(Device& device, const char* path, bool isCubeMap)
 {
-    auto tex = std::unique_ptr<Texture>(new Texture(device, path, false));
+    auto tex = std::unique_ptr<Texture>(new Texture(device, path, isCubeMap));
     if (!tex->isLoaded) {
         return nullptr;
     }
@@ -63,30 +63,33 @@ Texture::Texture(Device& device, const char* filePathTexture, bool isCubeMap) : 
 {
     const std::string path = filePathTexture;
 
-    bool isKtx2 = false;
+	// Get file extension
+	std::string extension;
     if (path.find_last_of(".") != std::string::npos) {
-        if (path.substr(path.find_last_of(".") + 1) == "ktx2") {
-            isKtx2 = true;
-        }
+		extension = path.substr(path.find_last_of(".") + 1);
     }
 
     bool result = false;
 
-    if (isKtx2) {}
-        //result = createTextureImageKtx2(path, isCubeMap); 
-    else if (!isCubeMap) 
+	// Load texture according to file extension
+    if (extension == "ktx") {
+        result = createTextureImageKtx(path, isCubeMap);
+    }
+    else if (extension == "ktx2") {
+        result = createTextureImageKtx2(path, isCubeMap);
+    }
+    else if (!isCubeMap) {
         result = createTextureImage(filePathTexture);
+    }
 
+	// Error check
     if (!result) {
         std::cerr << "could not load texture image \n";
         return;
     }
 
-    if (!isCubeMap)
-        createTextureImageView();
-    else
-        textureImageView = createTextureCubeMapImageView(); 
-
+	// create image view and sampler
+    textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, isCubeMap);
     createTextureSampler(); 
 
     isLoaded = true;
@@ -95,10 +98,9 @@ Texture::Texture(Device& device, const char* filePathTexture, bool isCubeMap) : 
 Texture::Texture(Device& device, unsigned char* rgbaPixels, const uint32_t fontWidth, const uint32_t fontHeight, VkDeviceSize imageSize, uint32_t mipLevel) : device{ device }
 {
     createTextureImage(rgbaPixels, fontWidth, fontHeight, mipLevel, imageSize);
-    createTextureImageView();
+    textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, false);
     createTextureSampler();
     isLoaded = true;
-
 }
 
 void Texture::createTextureImage(unsigned char* rgbaPixels, const uint32_t fontWidth, const uint32_t fontHeight, uint32_t mipLevel, VkDeviceSize imageSize) { 
@@ -139,7 +141,6 @@ void Texture::createTextureImage(unsigned char* rgbaPixels, const uint32_t fontW
     vkFreeMemory(device.device(), stagingBufferMemory, nullptr);
 }
 
-
 bool Texture::createTextureImage(const char* path)
 {
     // create image from file
@@ -148,7 +149,6 @@ bool Texture::createTextureImage(const char* path)
     
 
     if (!pixels) {
-        //throw std::runtime_error("failed to load texture image!");
         std::cerr << "failed to load texture image! \n";
         return false;
     }
@@ -411,7 +411,9 @@ bool Texture::createTextureImageKtx2(const std::string path, bool isCubeMap)
 bool Texture::createTextureImageKtx(const std::string path, bool isCubeMap)
 {
     
-    VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
+    assert(!path.empty() && "Texture path is empty");
+
+    VkFormat format = VK_FORMAT_R8G8B8A8_SRGB;
 
     // open save file
     std::ifstream ifs(path, std::ios::binary | std::ios::in | std::ios::ate);
@@ -424,6 +426,8 @@ bool Texture::createTextureImageKtx(const std::string path, bool isCubeMap)
 
     ifs.seekg(0, std::ios::beg);
     ifs.read(inputData, inputDataSize); // write to buffer
+
+
 
     // init transcoder
     ktxTexture* kTexture;
@@ -442,11 +446,22 @@ bool Texture::createTextureImageKtx(const std::string path, bool isCubeMap)
     uint32_t height = kTexture->baseHeight;
     mipLevel = kTexture->numLevels;
 
+    assert(width > 0 && height > 0 && "Invalid texture size");
+
+
     ktx_uint8_t* ktxTextureData = ktxTexture_GetData(kTexture);
     ktx_size_t ktxTextureSize = ktxTexture_GetElementSize(kTexture);
+    ktx_size_t totalSize = ktxTexture_GetDataSize(kTexture);
 
     uint32_t faceCount = kTexture->numFaces;
     uint32_t layerCount = kTexture->numLayers;
+
+    std::cout << "face count " << faceCount << "\n";
+    std::cout << "layer count " << layerCount << "\n";
+
+    uint32_t arrayLayers = isCubeMap ? (faceCount * layerCount) : layerCount;
+
+    //return false;
 
     createImage(
         width, height,
@@ -456,50 +471,88 @@ bool Texture::createTextureImageKtx(const std::string path, bool isCubeMap)
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         textureImage,
         textureImageMemory,
-        layerCount,
+        arrayLayers,
         isCubeMap ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0);
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
-    device.createBuffer(ktxTextureSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+    device.createBuffer(totalSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
 
     // transfer to device and copy from staging
     void* data;
-    vkMapMemory(device.device(), stagingBufferMemory, 0, ktxTextureSize, 0, &data);
-    memcpy(data, ktxTextureData, static_cast<size_t>(ktxTextureSize));
+    vkMapMemory(device.device(), stagingBufferMemory, 0, totalSize, 0, &data);
+    memcpy(data, ktxTextureData, static_cast<size_t>(totalSize));
     vkUnmapMemory(device.device(), stagingBufferMemory);
 
-    std::vector<VkBufferImageCopy> bufferCopyRegions;
-    uint32_t offset = 0;
+    //std::vector<VkBufferImageCopy> bufferCopyRegions;
+    //uint32_t offset = 0;
 
-    for (uint32_t face = 0; face < 6; face++)
-    {
-        for (uint32_t level = 0; level < mipLevel; level++)
-        {
-            // Calculate offset into staging buffer for the current mip level and face
-            ktx_size_t offset;
-            KTX_error_code ret = ktxTexture_GetImageOffset(kTexture, level, 0, face, &offset);
-            assert(ret == KTX_SUCCESS);
-            VkBufferImageCopy bufferCopyRegion = {};
-            bufferCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            bufferCopyRegion.imageSubresource.mipLevel = level;
-            bufferCopyRegion.imageSubresource.baseArrayLayer = face;
-            bufferCopyRegion.imageSubresource.layerCount = 1;
-            bufferCopyRegion.imageExtent.width = kTexture->baseWidth >> level;
-            bufferCopyRegion.imageExtent.height = kTexture->baseHeight >> level;
-            bufferCopyRegion.imageExtent.depth = 1;
-            bufferCopyRegion.bufferOffset = offset;
-            bufferCopyRegions.push_back(bufferCopyRegion);
+    //for (uint32_t face = 0; face < 6; face++)
+    //{
+    //    for (uint32_t level = 0; level < mipLevel; level++)
+    //    {
+    //        uint32_t mipW = std::max(1u, width >> level);
+    //        uint32_t mipH = std::max(1u, height >> level);
+
+    //        // Calculate offset into staging buffer for the current mip level and face
+    //        ktx_size_t offset;
+    //        KTX_error_code ret = ktxTexture_GetImageOffset(kTexture, level, 0, face, &offset);
+    //        assert(ret == KTX_SUCCESS);
+    //        VkBufferImageCopy bufferCopyRegion = {};
+    //        bufferCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    //        bufferCopyRegion.imageSubresource.mipLevel = level;
+    //        bufferCopyRegion.imageSubresource.baseArrayLayer = face;
+    //        bufferCopyRegion.imageSubresource.layerCount = 1;
+    //        bufferCopyRegion.imageExtent.width = mipW;
+    //        bufferCopyRegion.imageExtent.height = mipH;
+    //        bufferCopyRegion.imageExtent.depth = 1;
+    //        bufferCopyRegion.bufferOffset = offset;
+    //        bufferCopyRegions.push_back(bufferCopyRegion);
+    //    }
+    //}
+
+    std::vector<VkBufferImageCopy> bufferCopyRegions;
+    for (uint32_t layer = 0; layer < layerCount; ++layer) {
+        for (uint32_t face = 0; face < faceCount; ++face) {
+            for (uint32_t level = 0; level < mipLevel; ++level) {
+                ktx_size_t imgOffset = 0;
+                KTX_error_code rc = ktxTexture_GetImageOffset(kTexture, level, layer, face, &imgOffset);
+                assert(rc == KTX_SUCCESS);
+
+                ktx_size_t imgSize = ktxTexture_GetImageSize(kTexture, level);
+                assert(imgSize > 0 && "Invalid image size");
+
+                uint32_t mipW = std::max(1u, width >> level);
+                uint32_t mipH = std::max(1u, height >> level);
+
+                VkBufferImageCopy region{};
+                region.bufferOffset = static_cast<VkDeviceSize>(imgOffset);
+                region.bufferRowLength = 0;
+                region.bufferImageHeight = 0;
+                region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                region.imageSubresource.mipLevel = level;
+                // baseArrayLayer must index layers of the Vulkan image.
+                // If arrayLayers = faceCount * layerCount, then layout is typically:
+                // for layerIndex in [0..layerCount-1]:
+                //   arrayLayer = layerIndex*faceCount + face
+                region.imageSubresource.baseArrayLayer = layer * faceCount + face;
+                region.imageSubresource.layerCount = 1;
+                region.imageExtent = { mipW, mipH, 1 };
+                bufferCopyRegions.push_back(region);
+            }
         }
     }
 
-    device.transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevel, layerCount);
+    device.transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevel, layerCount * faceCount);
     device.copyBufferToImage(stagingBuffer, textureImage, bufferCopyRegions);
-    device.transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevel, layerCount);
+    device.transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevel, layerCount * faceCount);
 
     vkDestroyBuffer(device.device(), stagingBuffer, nullptr);
     vkFreeMemory(device.device(), stagingBufferMemory, nullptr);
+
+    ktxTexture_Destroy(kTexture);
+    delete[] inputData;
 
     return true;
 }
@@ -733,11 +786,6 @@ void Texture::setSampler(VkSamplerCreateInfo samplerInfo)
     }
 }
 
-void Texture::createTextureImageView()
-{
-    textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB);
-}
-
 VkImageView Texture::createTextureCubeMapImageView() 
 {
     assert(mipLevel > 0 && "miplevel cannot be zero");
@@ -761,20 +809,20 @@ VkImageView Texture::createTextureCubeMapImageView()
     return imageView;  
 }
 
-VkImageView Texture::createImageView(VkImage image, VkFormat format)
+VkImageView Texture::createImageView(VkImage image, VkFormat format, bool isCubeMap)
 {
     assert(mipLevel > 0 && "miplevel cannot be zero"); 
 
     VkImageViewCreateInfo viewInfo{};
     viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     viewInfo.image = image;
-    viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    viewInfo.viewType = isCubeMap? VK_IMAGE_VIEW_TYPE_CUBE : VK_IMAGE_VIEW_TYPE_2D;
     viewInfo.format = format;
     viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     viewInfo.subresourceRange.baseMipLevel = 0;
     viewInfo.subresourceRange.levelCount = mipLevel;
     viewInfo.subresourceRange.baseArrayLayer = 0;
-    viewInfo.subresourceRange.layerCount = 1;
+    viewInfo.subresourceRange.layerCount = isCubeMap ? 6 : 1;
 
     VkImageView imageView;
     if (vkCreateImageView(device.device(), &viewInfo, nullptr, &imageView) != VK_SUCCESS) {
