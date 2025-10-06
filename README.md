@@ -106,6 +106,20 @@ REGISTER_BEHAVIOR(MyBehavior)
 - Create, select, and modify objects at runtime.
 - Change scenes and inspect object properties live.
 
+## models and textures
+
+### supported model
+
+- obj model with external texture
+- GLTF
+
+### supported texture type
+
+- jpg
+- png
+- ktx
+- ktx2
+
 ## Extending the Engine
 
 - **Add new GameObject types**: Inherit from `GameObject` and register with the factory.
