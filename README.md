@@ -106,14 +106,14 @@ REGISTER_BEHAVIOR(MyBehavior)
 - Create, select, and modify objects at runtime.
 - Change scenes and inspect object properties live.
 
-## models and textures
+## Models and textures
 
-### supported model
+### Supported model
 
 - obj model with external texture
 - GLTF
 
-### supported texture type
+### Supported texture type
 
 - jpg
 - png
