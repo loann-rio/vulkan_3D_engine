@@ -7,7 +7,16 @@ What if I'm stupid enough to try to make a 3D engine (with vulkan!)?
 
 This project is a modular, reusable, and extensible game engine written in C++17, designed for learning, prototyping, and building games or interactive 3D applications. The engine is built around a component-based architecture, leveraging Vulkan for rendering, and is structured to maximize code reuse and flexibility.
 
+## screenshot
+
+ - basic scene with skybox
+<img width="1604" height="1247" alt="Capture d'écran 2025-10-06 234021" src="https://github.com/user-attachments/assets/2fc50107-f41b-411f-b071-604086106708" />
+
+- procedural generated terrain
+<img width="2880" height="1920" alt="Capture d'écran 2025-08-19 214310" src="https://github.com/user-attachments/assets/96e41443-29c1-4f14-b381-0c049259b4d2" />
+
 ## Features
+
 
 - **Component-based GameObject System**: Easily extendable with custom behaviors.
 - **Scene Management**: Save, load, and switch between scenes with JSON serialization.
@@ -106,6 +115,20 @@ REGISTER_BEHAVIOR(MyBehavior)
 - Create, select, and modify objects at runtime.
 - Change scenes and inspect object properties live.
 
+## Models and textures
+
+### Supported model
+
+- obj model with external texture
+- GLTF
+
+### Supported texture type
+
+- jpg
+- png
+- ktx
+- ktx2
+
 ## Extending the Engine
 
 - **Add new GameObject types**: Inherit from `GameObject` and register with the factory.
@@ -116,9 +139,13 @@ REGISTER_BEHAVIOR(MyBehavior)
 
 
 ``` cpp
+std::shared_ptr<Model> cube = Model::createModelFromFile(device, "model/myModel.obj", "textures/myTexture.jpg"); 
+
 auto myObject = GameObjectFactory::createGameObject<GameObject>(device);
 myObject->setAttachedClass(std::make_unique<MyBehavior>(device));
 myObject->setName("myObject");
+myObject->setModel(model);
+myObject->createDescriptorSet(pool);
 objectManager.pushGameObject(std::move(myObject));
 ```
 
