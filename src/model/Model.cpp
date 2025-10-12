@@ -85,8 +85,10 @@ void Model::bind(VkCommandBuffer& commandBuffer, Buffer* instancesBuffer)
 	}
 }
 
-void Model::draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& PipelineLayout, uint16_t frameIndex, glm::mat4 modelMatrix, glm::mat4 normalMatrix, uint32_t instanceCount = 1)
+void Model::draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& PipelineLayout, uint16_t frameIndex, glm::mat4 modelMatrix, glm::mat4 normalMatrix, const std::array<FrustumPlane, 6>& planes, uint32_t instanceCount = 1)
 {
+	if (!Camera::isAABBinFrustrum(aabb.getAABB(modelMatrix), planes)) return;
+
 	SimplePushConstantData push{};  
 	push.modelMatrix = modelMatrix;  
 	push.normalMatrix = normalMatrix; 

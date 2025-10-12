@@ -34,7 +34,6 @@ public:
 	}
 
 	VkDescriptorImageInfo getImageInfo();
-
 	VkImageView getImageView() const { return textureImageView; }
 	VkSampler getSampler() const { return textureSampler; }
 
@@ -48,6 +47,8 @@ public:
 private:
 
 	bool createTextureImage(const char* path);
+	bool createTextureImage(unsigned char* rgbaPixels, const uint32_t fontWidth, const uint32_t fontHeight, VkDeviceSize imSize = 0);
+
 	bool createTextureImageKtx2(const std::string path, bool isCubeMap);
 	bool createTextureImageKtx(const std::string path, bool isCubeMap);
 
@@ -60,7 +61,7 @@ private:
 
 	VkImageView createTextureCubeMapImageView();
 
-	void createTextureImage(unsigned char* rgbaPixels, const uint32_t fontWidth, const uint32_t fontHeight, uint32_t miplevel, VkDeviceSize imSize = 0);
+	
 
 	void bind(VkImage& image, VkMemoryPropertyFlags properties, VkDeviceMemory& imageMemory);
 	

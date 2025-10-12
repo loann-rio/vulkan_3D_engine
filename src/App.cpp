@@ -7,6 +7,7 @@
 #include "objects/KeyboardMovementController.h"
 #include "render/Camera.h"
 #include "model/GlTFModel.h"
+#include "base/FrameRateCounter.h"
 
 // glm
 #define GLM_FORCE_RADIANS
@@ -38,8 +39,6 @@ App::App() {
 
     objectManager.startLoadModel(*globalPool); 
     createRenderSystems();
-
-    frameTimeVector = std::vector<float>(50);
 }
 
 App::~App() {
@@ -62,10 +61,19 @@ void App::run()
     SpotLightUbo spotLightUbo{};
     TerrainUbo terrainUbo{};
     
-    // start timer
+    // frame counter
+    FrameRateCounter gpuFrameRate;
+    FrameRateCounter cpuFrameRate;
+
+
     auto currentTime = std::chrono::high_resolution_clock::now();
+	float frameTime = 0.1f;
+	float gpuTime = 0.0f;
+
 
     int frame = 0;
+
+    vkQueueWaitIdle(device.presentQueue());
 	while (!window.shouldClose())
 	{   
 		glfwPollEvents();
@@ -75,7 +83,7 @@ void App::run()
 
         // calculate frame time
         auto newTime = std::chrono::high_resolution_clock::now();
-        float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
+        frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
         currentTime = newTime;
         
         //// move camera on event ////
@@ -90,17 +98,18 @@ void App::run()
         
         int frameIndex = renderer.getFrameIndex();
 
-        {
+        /* {
             // show fps count on screen
-            getFrameRate(frameTime);
+            
+            cpuFrameRate.update(frameTime);
 
             std::stringstream ss("");
-            ss << std::fixed << std::setprecision(2) << frameTimeSum << " fps";
+            ss << std::fixed << std::setprecision(2) << cpuFrameRate.get() << " fps";
 
             textOverlay.beginTextUpdate(frameIndex);
             textOverlay.addText(frameIndex, ss.str(), 10, 10, TextOverlay::alignLeft, renderer.getWidth(), renderer.getHeight()); 
             textOverlay.endTextUpdate(frameIndex); 
-        }
+        }*/
 
         /////// update objects ///////
 
@@ -205,34 +214,41 @@ void App::run()
         /////// render frame ///////
         {
             std::vector<VkDescriptorSet> descriptorSets{ globalDescriptorSet[frameIndex], shadowDescriptorSet[renderer.getDepthIndex()]};
+			std::array<FrustumPlane, 6> frustrumPlanes = dynamic_cast<GameObjectCamera*>(objectManager.get(objectManager.mainCamera))->getFrustumPlanes();
 
             std::lock_guard<std::mutex> lock(device.getGraphicMutex());
 
             vkQueueWaitIdle(device.presentQueue());
-            if (frame == 0) {
-                renderer.renderDepthImage(frameInfo, { depthRenderSystem, depthRenderSystemGltf }, descriptorSets);
-            } 
+
+            auto newGpuTime = std::chrono::high_resolution_clock::now();
+           
+			// render shadow map
+            renderer.renderDepthImage(frameInfo, { depthRenderSystem, depthRenderSystemGltf }, descriptorSets);
 
             if (auto commandBuffer = renderer.beginFrame()) {
                  
                 // render
                 renderer.beginSwapChainRenderPass(commandBuffer); 
                  
-                gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo, { globalDescriptorSet[frameIndex], shadowDescriptorSet[renderer.getDepthIndex()], skyboxDescriptorSet[frameIndex] });
+                gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo, { globalDescriptorSet[frameIndex], shadowDescriptorSet[renderer.getDepthIndex()], skyboxDescriptorSet[frameIndex] }, frustrumPlanes );
                 objRenderSystem->renderGameObjects(commandBuffer, frameInfo, descriptorSets); 
 
                 std::vector<VkDescriptorSet> terrainDescriptorSets{ globalDescriptorSet[frameIndex], shadowDescriptorSet[renderer.getDepthIndex()], terrainDescriptorSet[frameIndex] };
-                terrainRenderSystem->renderGameObjects(commandBuffer, frameInfo, terrainDescriptorSets);
+                //terrainRenderSystem->renderGameObjects(commandBuffer, frameInfo, terrainDescriptorSets);
 
 				skyboxRenderSystem->renderGameObjects(commandBuffer, frameInfo, { globalDescriptorSet[frameIndex] });
 
                 //textOverlay.renderText(commandBuffer, frameInfo); 
 
-                imgui.drawUI(commandBuffer, &objectManager, terrainUbo, frameTimeSum);
+                imgui.drawUI(commandBuffer, &objectManager, terrainUbo, gpuFrameRate.get());
 
                 renderer.endSwapChainRenderPass(commandBuffer); 
                 renderer.endFrame();
             } 
+
+			auto endGpuTime = std::chrono::high_resolution_clock::now();
+			gpuTime = std::chrono::duration<float, std::chrono::seconds::period>(endGpuTime - newGpuTime).count();
+			gpuFrameRate.update(gpuTime);
         }   
 	}
 
@@ -412,14 +428,4 @@ void App::createRenderSystems()
     
 	skyboxRenderSystem = GlobalRenderSystem::create<Model>(device, skyboxBuilder);
 
-}
-
-void App::getFrameRate(float lastFrameTime)
-{
-    float v = 1 / (lastFrameTime * 50);
-    frameTimeSum += v;
-    frameTimeSum -= frameTimeVector[0];
-
-    frameTimeVector.push_back(v);
-    frameTimeVector.erase(frameTimeVector.begin()); 
 }

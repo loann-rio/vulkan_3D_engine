@@ -11,7 +11,8 @@
 #include "../objects/Texture.h"
 #include "../base/Swap_chain.h"
 #include "../base/descriptors.h"
-
+#include "../render/Camera.h"
+#include "../model/BoundingBox.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_ENABLE_EXPERIMENTAL
@@ -47,15 +48,6 @@ struct GltfPushConstant {
 class GlTFModel
 {
 	struct Node;
-
-	struct BoundingBox {
-		glm::vec3 min{};
-		glm::vec3 max{};
-		bool valid = false;
-		BoundingBox() {};
-		BoundingBox(glm::vec3 min, glm::vec3 max) : min{ min }, max{ max } {};
-		BoundingBox getAABB(glm::mat4 m);
-	};
 
 	struct TextureModel {		
 		uint32_t width, height;
@@ -342,11 +334,11 @@ class GlTFModel
 		static std::vector<DescriptorSetObject> getDescriptorType(); 
 		static int getModelType() { return 2; }
 		
-		void drawNode(Node* node, VkCommandBuffer& commandBuffer, uint16_t frameIndex, VkPipelineLayout& pipelineLayout, glm::mat4 modelMatrix, glm::mat4 normalMatrix);
+		void drawNode(Node* node, VkCommandBuffer& commandBuffer, uint16_t frameIndex, VkPipelineLayout& pipelineLayout, glm::mat4 modelMatrix, glm::mat4 normalMatrix, const std::array<FrustumPlane, 6>& planes);
 		void drawNodeDepth(Node* node, VkCommandBuffer& commandBuffer, uint16_t frameIndex, VkPipelineLayout& pipelineLayout, glm::mat4 modelMatrix, int lightIndex);
 		
 		void bind(VkCommandBuffer& commandBuffer, Buffer* instancesBuffer);
-		void draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout, uint16_t frameIndex, glm::mat4 modelMatrix, glm::mat4 normalMatrix, uint32_t instanceCount); 
+		void draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout, uint16_t frameIndex, glm::mat4 modelMatrix, glm::mat4 normalMatrix, const std::array<FrustumPlane, 6>& planes, uint32_t instanceCount);
 		void drawDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, glm::mat4 modelMatrix, uint32_t cameraIndex, uint32_t instanceCount);
 
 		bool updateAnimation(uint32_t index, float animationTimer);
@@ -356,10 +348,11 @@ class GlTFModel
 		void createDescriptorSet(DescriptorPool& pool, Device& device);
 		void createMaterialBuffer();
 
+		VkDescriptorImageInfo getTextureImageInfo() const { return VkDescriptorImageInfo{}; } 
 		//std::vector<Model::Instance> getInstanceList() { return instanceList; }
 
 		void calculateBoundingBox(Node* node, Node* parent);
-
+		//bool isAABBinFrustrum(const BoundingBox& aabb, const std::array<FrustumPlane, 6>& planes);
 		
 		GlTFModel::Node* findNode(Node* parent, uint32_t index);
 		GlTFModel::Node* nodeFromIndex(uint32_t index);

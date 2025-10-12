@@ -148,7 +148,7 @@ void GlobalRenderSystem::createPipeline(VkRenderPass renderPass, const std::stri
 	);
 }
 
-void GlobalRenderSystem::renderModel(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, GameObjectModel* obj)
+void GlobalRenderSystem::renderModel(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, GameObjectModel* obj, const std::array<FrustumPlane, 6>& frustrumPlanes)
 {
 
 	vkCmdBindDescriptorSets(
@@ -163,7 +163,7 @@ void GlobalRenderSystem::renderModel(VkCommandBuffer& commandBuffer, FrameInfo& 
 	
 	obj->bindModel(commandBuffer);
 
-	obj->drawModel(commandBuffer, pipelineLayout, frameInfo.frameIndex);
+	obj->drawModel(commandBuffer, pipelineLayout, frameInfo.frameIndex, frustrumPlanes);
 }
 
 void GlobalRenderSystem::renderModelDepth(VkCommandBuffer& commandBuffer, GameObjectModel* obj, int lightIndex, uint16_t frameIndex)
@@ -190,7 +190,7 @@ void GlobalRenderSystem::bind(VkCommandBuffer& commandBuffer, std::vector<VkDesc
 	}
 }
 
-void GlobalRenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, std::vector<VkDescriptorSet> globalDescriptorSets)
+void GlobalRenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, std::vector<VkDescriptorSet> globalDescriptorSets, const std::array<FrustumPlane, 6>& frustrumPlanes)
 {
 	bind(commandBuffer, globalDescriptorSets);
 	
@@ -198,7 +198,7 @@ void GlobalRenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, Frame
 	{
 		if (obj->show && !obj->toBeRemoved && obj->getModelType() == modelType && obj->getModelSubType() == modelSubType)
 
-			renderModel(commandBuffer, frameInfo, obj);	
+			renderModel(commandBuffer, frameInfo, obj, frustrumPlanes);
 	}
 }
 

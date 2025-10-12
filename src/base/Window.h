@@ -25,6 +25,8 @@ private:
 	std::string windowName;
 	GLFWwindow* window;
 
+	std::string windowConfigPath = "config/windowConfig.json";
+
 public:
 	Window(int w, int h, std::string n);
 	~Window();

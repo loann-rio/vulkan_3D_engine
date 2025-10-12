@@ -79,6 +79,9 @@ public:
     // camera
     std::string mainCamera = "mainCamera"; 
 
+    // main skybox
+    std::string mainSkybox = "cubemap";
+
 private:
     Device& device;
 

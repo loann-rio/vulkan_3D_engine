@@ -1,12 +1,14 @@
 #pragma once
 
 #include <vulkan/vulkan.h>
+
 #include "../base/Device.h"
 #include "../base/Buffer.h"
 #include "../base/Swap_chain.h"
 #include "../base/descriptors.h"
-
+#include "../render/Camera.h"
 #include "../objects/Texture.h"
+#include "../model/BoundingBox.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -68,13 +70,13 @@ public:
 	Model& operator=(const Model&) = delete;
 
 	void bind(VkCommandBuffer& commandBuffer, Buffer* instancesBuffer);
-	void draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, glm::mat4 modelMatrix, glm::mat4 normalMatrix, uint32_t instanceCount);
+	void draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, glm::mat4 modelMatrix, glm::mat4 normalMatrix, const std::array<FrustumPlane, 6>& planes, uint32_t instanceCount);
 	void drawDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, glm::mat4 modelMatrix, uint32_t cameraIndex, uint32_t instanceCount);
 
 	bool hasTexture = false;
 	std::unique_ptr<Texture> texture;
 	void setTexture(std::unique_ptr<Texture> newTexture) { texture = std::move(newTexture); }
-
+	VkDescriptorImageInfo getTextureImageInfo() const { return hasTexture ? texture->getImageInfo() : VkDescriptorImageInfo{}; }
 	
 	void createDescriptorSet(DescriptorPool& pool, Device& device);
 	std::vector<VkDescriptorSet> getDescriptorSets() { return descriptorSet; };
@@ -87,6 +89,8 @@ public:
 
 	std::vector<Model::Instance> instanceList = {};
 	std::vector<Model::Instance> getInstanceList() { return instanceList; }
+
+	BoundingBox aabb;
 
 private:
 	void createVertexBuffers(const std::vector<Vertex>& vertices);

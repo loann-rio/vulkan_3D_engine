@@ -88,8 +88,6 @@ void BasicUI::drawUI(VkCommandBuffer commandBuffer, ObjectManager* manager, Terr
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 }
 
-
-
 void BasicUI::gameObjectWindow(GameObject* gameObject, ObjectManager* manager)
 {
     ImGui::Begin("Object debug");
@@ -104,6 +102,11 @@ void BasicUI::gameObjectWindow(GameObject* gameObject, ObjectManager* manager)
     }
 
     gameObject->debugUI();
+
+    if (ImGui::Button("move to cam")) {
+		gameObject->transform.translation = manager->get(manager->mainCamera)->transform.translation;
+		gameObject->transform.rotation = manager->get(manager->mainCamera)->transform.rotation;
+	}
 
     if (ImGui::Button("remove object"))
         gameObject->toBeRemoved = true;
@@ -278,7 +281,6 @@ void BasicUI::createObjWindow(ObjectManager* manager)
 
     if (!show_create_go_window) selected = -1; 
 }
-
 
 void BasicUI::createGLTFWindow(ObjectManager* manager)
 {

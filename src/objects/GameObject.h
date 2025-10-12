@@ -207,6 +207,7 @@ public:
 	float getAspectRatio() const { return _aspect_ratio; }
 	float getNearClip() const { return _nearClip; }
 	float getFarClip() const { return _farClip; }
+	std::array<FrustumPlane, 6> getFrustumPlanes() const { return camera->getFrustum(); }
 
 private:
 
@@ -293,7 +294,7 @@ public:
 	void setPrimitivesModelType(PrimitivesModelType type) { primitivesModelType = type; }
 	PrimitivesModelType getPrimitivesModelType() const { return primitivesModelType; }
 
-
+	VkDescriptorImageInfo getTextureImageInfo() const;
 
 	void setMultipleInstances(std::vector<Model::Instance> instances);
 
@@ -304,7 +305,7 @@ public:
 	void update(float dtime);
 
 	void bindModel(VkCommandBuffer& commandBuffer) const;
-	void drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex);
+	void drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, const std::array<FrustumPlane, 6>& frustrumPlanes);
 	void drawModelDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, int cameraIndex, uint16_t frameIndex);
 
 	void debugUI(); 

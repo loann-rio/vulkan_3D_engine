@@ -35,7 +35,6 @@ public:
 
 private:
 	
-	void getFrameRate(float lastFrameTime);
 	void createRenderSystems();
 
 	Window window{ WIDTH, HEIGHT, "vulkan engine" };
@@ -43,9 +42,6 @@ private:
 	Renderer renderer{ window, device };
 
 	std::unique_ptr<DescriptorPool> globalPool{};
-
-	std::vector<float> frameTimeVector;
-	float frameTimeSum = 0;
 
 	// buffers
 	std::vector<std::unique_ptr<Buffer>> uboBuffers;
@@ -67,7 +63,6 @@ private:
 	std::vector<VkDescriptorSet> skyboxDescriptorSet;
 
 	std::unique_ptr<Texture> skyboxTexture = Texture::create(device, "skybox/cubemap_vulkan.ktx", true);
-
 
 	// object management:
 	ObjectManager objectManager{ device };

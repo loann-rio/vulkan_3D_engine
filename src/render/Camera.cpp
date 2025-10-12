@@ -112,3 +112,75 @@ void Camera::setViewYXZ(glm::vec3 position, glm::vec3 rotation) {
     inverseViewMatrix[3][1] = position.y;
     inverseViewMatrix[3][2] = position.z;
 }
+
+void Camera::updateFrustrumPlanes()
+{
+    glm::mat4 combo = projectionMatrix * viewMatrix;
+
+    // Left
+    frustrum[0].equation = glm::vec4(
+        combo[0][3] + combo[0][0],
+        combo[1][3] + combo[1][0],
+        combo[2][3] + combo[2][0],
+        combo[3][3] + combo[3][0]);
+
+    // Right
+    frustrum[1].equation = glm::vec4(
+        combo[0][3] - combo[0][0],
+        combo[1][3] - combo[1][0],
+        combo[2][3] - combo[2][0],
+        combo[3][3] - combo[3][0]);
+
+    // Bottom
+    frustrum[2].equation = glm::vec4(
+        combo[0][3] + combo[0][1],
+        combo[1][3] + combo[1][1],
+        combo[2][3] + combo[2][1],
+        combo[3][3] + combo[3][1]);
+
+    // Top
+    frustrum[3].equation = glm::vec4(
+        combo[0][3] - combo[0][1],
+        combo[1][3] - combo[1][1],
+        combo[2][3] - combo[2][1],
+        combo[3][3] - combo[3][1]);
+
+    // Near
+    frustrum[4].equation = glm::vec4(
+        combo[0][3] + combo[0][2],
+        combo[1][3] + combo[1][2],
+        combo[2][3] + combo[2][2],
+        combo[3][3] + combo[3][2]);
+
+    // Far
+    frustrum[5].equation = glm::vec4(
+        combo[0][3] - combo[0][2],
+        combo[1][3] - combo[1][2],
+        combo[2][3] - combo[2][2],
+        combo[3][3] - combo[3][2]);
+
+    // Normalize all planes
+    for (auto& p : frustrum) p.normalize();
+}
+
+const bool Camera::isAABBinFrustrum(const BoundingBox& aabb, const std::array<FrustumPlane, 6>& planes)
+{
+    glm::vec3 min = aabb.min;
+    glm::vec3 max = aabb.max;
+
+    // For each plane, check if any corner of the box is in front of it.
+    for (const auto& plane : planes) {
+        // Compute the positive vertex (the corner most in the direction of the plane normal)
+        glm::vec3 positiveVertex = min;
+
+        if (plane.equation.x >= 0) positiveVertex.x = max.x;
+        if (plane.equation.y >= 0) positiveVertex.y = max.y;
+        if (plane.equation.z >= 0) positiveVertex.z = max.z;
+
+        // If positive vertex is still behind the plane, the whole box is outside
+        if (plane.distanceToPoint(positiveVertex) < 0)
+            return false;
+    }
+
+    return true; // Box is at least partially inside
+}

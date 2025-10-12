@@ -207,6 +207,7 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClInclude Include="src\base\depthSwapChain.h" />
     <ClInclude Include="src\base\descriptors.h" />
     <ClInclude Include="src\base\Device.h" />
+    <ClInclude Include="src\base\FrameRateCounter.h" />
     <ClInclude Include="src\base\Frame_info.h" />
     <ClInclude Include="src\base\PerlinNoise.h" />
     <ClInclude Include="src\base\Pipeline.h" />
@@ -217,6 +218,7 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClInclude Include="src\GameObjectClassAssets\mainLightBehavior.h" />
     <ClInclude Include="src\GameObjectClassAssets\TerrainGenerator.h" />
     <ClInclude Include="src\GameObjectClassAssets\test.h" />
+    <ClInclude Include="src\model\BoundingBox.h" />
     <ClInclude Include="src\model\GlTFModel.h" />
     <ClInclude Include="src\model\Model.h" />
     <ClInclude Include="src\model\preBuild.h" />

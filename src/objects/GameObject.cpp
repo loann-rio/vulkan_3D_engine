@@ -115,6 +115,18 @@ std::string GameObject::getName() const
     return name;
 }
 
+VkDescriptorImageInfo GameObjectModel::getTextureImageInfo() const
+{
+    if (!hasModel) return VkDescriptorImageInfo{};
+
+    return std::visit([](const auto& modelInstance) -> VkDescriptorImageInfo {
+        if (modelInstance) {
+            return modelInstance->getTextureImageInfo();
+        }
+        return VkDescriptorImageInfo{};
+    }, model);
+}
+
 void GameObjectModel::setMultipleInstances(std::vector<Model::Instance> instances)
 {
     
@@ -195,11 +207,11 @@ void GameObjectModel::bindModel(VkCommandBuffer& commandBuffer) const
         }, model);
 }
 
-void GameObjectModel::drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frame_index)
+void GameObjectModel::drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frame_index, const std::array<FrustumPlane, 6>& frustrumPlanes)
 { 
     std::visit([&](const auto& modelInstance) {
         if (modelInstance) {
-            modelInstance->draw(commandBuffer, pipelineLayout, frame_index, getTransformMat(), getNormalMat(), instanceCount);
+            modelInstance->draw(commandBuffer, pipelineLayout, frame_index, getTransformMat(), getNormalMat(), frustrumPlanes, instanceCount);
         }
         }, model);
 }
@@ -251,7 +263,7 @@ void GameObjectCamera::debugUI()
     }
 }
 
-void GameObjectCamera::updateCameraView() { camera->setViewYXZ(transform.translation, transform.rotation); }
+void GameObjectCamera::updateCameraView() { camera->setViewYXZ(transform.translation, transform.rotation); camera->updateFrustrumPlanes(); }
 
 SpotLight GameObjectSpotLight::getSpotLightInfo(bool _updateCameraView)
 {

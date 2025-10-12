@@ -97,16 +97,22 @@ Texture::Texture(Device& device, const char* filePathTexture, bool isCubeMap) : 
 
 Texture::Texture(Device& device, unsigned char* rgbaPixels, const uint32_t fontWidth, const uint32_t fontHeight, VkDeviceSize imageSize, uint32_t mipLevel) : device{ device }
 {
-    createTextureImage(rgbaPixels, fontWidth, fontHeight, mipLevel, imageSize);
+    createTextureImage(rgbaPixels, fontWidth, fontHeight, imageSize);
     textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, false);
     createTextureSampler();
     isLoaded = true;
 }
 
-void Texture::createTextureImage(unsigned char* rgbaPixels, const uint32_t fontWidth, const uint32_t fontHeight, uint32_t mipLevel, VkDeviceSize imageSize) { 
+bool Texture::createTextureImage(unsigned char* rgbaPixels, const uint32_t fontWidth, const uint32_t fontHeight, VkDeviceSize imageSize) { 
+
+    if (!rgbaPixels) {
+        std::cerr << "failed to load texture image! \n";
+        return false;
+    }
 
     int texWidth = fontWidth;
     int texHeight = fontHeight;
+    mipLevel = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
 
     if (imageSize == 0)
         imageSize = texWidth * texHeight * 4;
@@ -115,6 +121,7 @@ void Texture::createTextureImage(unsigned char* rgbaPixels, const uint32_t fontW
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
     device.createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
     // transfer to device and copy from staging
     void* data;
     vkMapMemory(device.device(), stagingBufferMemory, 0, imageSize, 0, &data);
@@ -128,17 +135,24 @@ void Texture::createTextureImage(unsigned char* rgbaPixels, const uint32_t fontW
         texHeight,
         VK_FORMAT_R8G8B8A8_SRGB,
         VK_IMAGE_TILING_OPTIMAL,
-        VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+        VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         textureImage,
         textureImageMemory);
 
     device.transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevel);
-    device.copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1, mipLevel - 1);
-    device.transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevel);
+
+    device.copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1, 0);
+
+    if (mipLevel > 1)
+        generateMipChain(textureImage, mipLevel, texWidth, texHeight);
+    else
+        device.transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevel);
 
     vkDestroyBuffer(device.device(), stagingBuffer, nullptr);
     vkFreeMemory(device.device(), stagingBufferMemory, nullptr);
+
+	return true;
 }
 
 bool Texture::createTextureImage(const char* path)
@@ -146,59 +160,13 @@ bool Texture::createTextureImage(const char* path)
     // create image from file
     int texWidth, texHeight, texChannels;
     stbi_uc* pixels = stbi_load(path, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+
+	createTextureImage(pixels, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
     
-
-    if (!pixels) {
-        std::cerr << "failed to load texture image! \n";
-        return false;
-    }
-
-    //std::lock_guard<std::mutex> lock(device.getGraphicMutex());
-
-    //uint32_t mipLevel = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
-    mipLevel = 1;
-    VkDeviceSize imageSize = texWidth * texHeight * 4;
-
-    // create staging buffer
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
-    device.createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-    // transfer to device and copy from staging
-    void* data;
-    vkMapMemory(device.device(), stagingBufferMemory, 0, imageSize, 0, &data);
-    memcpy(data, pixels, static_cast<size_t>(imageSize));
-    vkUnmapMemory(device.device(), stagingBufferMemory);
-
     //// free local memory
     stbi_image_free(pixels);
 
-
-    createImage(
-        texWidth,
-        texHeight, 
-        VK_FORMAT_R8G8B8A8_SRGB, 
-        VK_IMAGE_TILING_OPTIMAL, 
-        VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
-        textureImage, 
-        textureImageMemory);
-
-    device.transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevel);
-
-    device.copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1, mipLevel - 1);
-
-    if (mipLevel > 1)
-        generateMipChain(textureImage, mipLevel, texWidth, texHeight);
-    else
-        device.transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevel);
-
-
-    vkDestroyBuffer(device.device(), stagingBuffer, nullptr);
-    vkFreeMemory(device.device(), stagingBufferMemory, nullptr);
-
     return true;
-
 }
 
 bool Texture::createTextureImageKtx2(const std::string path, bool isCubeMap) 
@@ -456,12 +424,7 @@ bool Texture::createTextureImageKtx(const std::string path, bool isCubeMap)
     uint32_t faceCount = kTexture->numFaces;
     uint32_t layerCount = kTexture->numLayers;
 
-    std::cout << "face count " << faceCount << "\n";
-    std::cout << "layer count " << layerCount << "\n";
-
     uint32_t arrayLayers = isCubeMap ? (faceCount * layerCount) : layerCount;
-
-    //return false;
 
     createImage(
         width, height,
@@ -484,33 +447,6 @@ bool Texture::createTextureImageKtx(const std::string path, bool isCubeMap)
     vkMapMemory(device.device(), stagingBufferMemory, 0, totalSize, 0, &data);
     memcpy(data, ktxTextureData, static_cast<size_t>(totalSize));
     vkUnmapMemory(device.device(), stagingBufferMemory);
-
-    //std::vector<VkBufferImageCopy> bufferCopyRegions;
-    //uint32_t offset = 0;
-
-    //for (uint32_t face = 0; face < 6; face++)
-    //{
-    //    for (uint32_t level = 0; level < mipLevel; level++)
-    //    {
-    //        uint32_t mipW = std::max(1u, width >> level);
-    //        uint32_t mipH = std::max(1u, height >> level);
-
-    //        // Calculate offset into staging buffer for the current mip level and face
-    //        ktx_size_t offset;
-    //        KTX_error_code ret = ktxTexture_GetImageOffset(kTexture, level, 0, face, &offset);
-    //        assert(ret == KTX_SUCCESS);
-    //        VkBufferImageCopy bufferCopyRegion = {};
-    //        bufferCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    //        bufferCopyRegion.imageSubresource.mipLevel = level;
-    //        bufferCopyRegion.imageSubresource.baseArrayLayer = face;
-    //        bufferCopyRegion.imageSubresource.layerCount = 1;
-    //        bufferCopyRegion.imageExtent.width = mipW;
-    //        bufferCopyRegion.imageExtent.height = mipH;
-    //        bufferCopyRegion.imageExtent.depth = 1;
-    //        bufferCopyRegion.bufferOffset = offset;
-    //        bufferCopyRegions.push_back(bufferCopyRegion);
-    //    }
-    //}
 
     std::vector<VkBufferImageCopy> bufferCopyRegions;
     for (uint32_t layer = 0; layer < layerCount; ++layer) {
@@ -594,7 +530,7 @@ void Texture::createTextureSampler()
     samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
     samplerInfo.mipLodBias = 0.0f;
     samplerInfo.minLod = 0.0f;
-    samplerInfo.maxLod = static_cast<float>(mipLevel);
+    samplerInfo.maxLod = mipLevel;
 
     if (vkCreateSampler(device.device(), &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS) {
         throw std::runtime_error("failed to create texture sampler!");
@@ -640,7 +576,6 @@ void Texture::createImage(uint32_t width, uint32_t height,
 
 void Texture::generateMipChain(VkImage image, uint32_t mipLevels, uint32_t width, uint32_t height)
 {
-
     // Generate the mip chain (glTF uses jpg and png, so we need to create this manually)
     VkCommandBuffer commandBuffer = device.beginSingleTimeCommands();
 
@@ -692,7 +627,7 @@ void Texture::generateMipChain(VkImage image, uint32_t mipLevels, uint32_t width
         imageBlit.srcSubresource.baseArrayLayer = 0;
 
         imageBlit.dstOffsets[0] = { 0, 0, 0 };
-        imageBlit.dstOffsets[1] = { int32_t(width >> i), int32_t(height >> i), 1 };
+        imageBlit.dstOffsets[1] = { int32_t(std::max(int32_t(1), int32_t(width >> i))), int32_t(std::max(int32_t(1), int32_t(height >> i))), 1 };
 
         imageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         imageBlit.dstSubresource.layerCount = 1;

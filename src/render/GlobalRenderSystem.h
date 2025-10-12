@@ -42,7 +42,7 @@ public:
 	GlobalRenderSystem(const GlobalRenderSystem&) = delete; 
 	GlobalRenderSystem& operator=(const GlobalRenderSystem&) = delete; 
 
-	void renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, std::vector<VkDescriptorSet> globalDescriptorSets); 
+	void renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, std::vector<VkDescriptorSet> globalDescriptorSets, const std::array<FrustumPlane, 6>& frustrumPlanes = {});
 	void renderGameObjectsDepth(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, std::vector<VkDescriptorSet> globalDescriptorSets, int lightIndex, uint16_t frameIndex);
 	
 private:
@@ -53,7 +53,7 @@ private:
 		std::vector<VkVertexInputBindingDescription> bindingDescription, 
 		std::vector<VkVertexInputAttributeDescription> attributeDescription);
 
-	void renderModel(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, GameObjectModel* obj);
+	void renderModel(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, GameObjectModel* obj, const std::array<FrustumPlane, 6>& frustrumPlanes);
 	void renderModelDepth(VkCommandBuffer& commandBuffer, GameObjectModel* obj, int lightIndex, uint16_t frameIndex);
 	
 	void bind(VkCommandBuffer& commandBuffer, std::vector<VkDescriptorSet> globalDescriptorSets); 

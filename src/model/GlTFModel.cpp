@@ -800,7 +800,7 @@ bool GlTFModel::ModelGltf::loadFromFile(std::string filename, float scale)
 	return true;
 }
 
-void GlTFModel::ModelGltf::drawNode(Node* node, VkCommandBuffer& commandBuffer, uint16_t frameIndex, VkPipelineLayout& pipelineLayout, glm::mat4 modelMatrix, glm::mat4 normalMatrix)
+void GlTFModel::ModelGltf::drawNode(Node* node, VkCommandBuffer& commandBuffer, uint16_t frameIndex, VkPipelineLayout& pipelineLayout, glm::mat4 modelMatrix, glm::mat4 normalMatrix, const std::array<FrustumPlane, 6>& planes)
 {	
 	if (node->mesh) {
 
@@ -817,7 +817,6 @@ void GlTFModel::ModelGltf::drawNode(Node* node, VkCommandBuffer& commandBuffer, 
 		}
 
 		for (Primitive* primitive : node->mesh->primitives) {
-			
 			push.indexMaterial = primitive->materialIndex;
 			push.nodeMatrix = modelMatrix;
 
@@ -831,11 +830,13 @@ void GlTFModel::ModelGltf::drawNode(Node* node, VkCommandBuffer& commandBuffer, 
 			);
 
 			vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
+
 		}
 	}
 
 	for (auto& child : node->children) {
-		drawNode(child, commandBuffer, frameIndex, pipelineLayout, modelMatrix, normalMatrix);  
+		if (Camera::isAABBinFrustrum(child->aabb.getAABB(modelMatrix), planes))
+			drawNode(child, commandBuffer, frameIndex, pipelineLayout, modelMatrix, normalMatrix, planes);  
 	}
 
 }
@@ -881,10 +882,11 @@ void GlTFModel::ModelGltf::drawNodeDepth(Node* node, VkCommandBuffer& commandBuf
 
 }
 
-void GlTFModel::ModelGltf::draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout, uint16_t frameIndex, glm::mat4 modelMatrix, glm::mat4 normalMatrix, uint32_t instanceCount = 1)
+void GlTFModel::ModelGltf::draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout, uint16_t frameIndex, glm::mat4 modelMatrix, glm::mat4 normalMatrix, const std::array<FrustumPlane, 6>& planes, uint32_t instanceCount = 1)
 {
 	for (auto& node : nodes) {
-		drawNode(node, commandBuffer, frameIndex, GlTFPipelineLayout, modelMatrix, normalMatrix); 
+		if (Camera::isAABBinFrustrum(node->aabb.getAABB(modelMatrix), planes))
+			drawNode(node, commandBuffer, frameIndex, GlTFPipelineLayout, modelMatrix, normalMatrix, planes);
 	}
 }
 
@@ -918,6 +920,7 @@ void GlTFModel::ModelGltf::calculateBoundingBox(Node* node, Node* parent)
 	}
 
 }
+
 
 void GlTFModel::ModelGltf::getSceneDimensions()
 {
@@ -1326,33 +1329,6 @@ GlTFModel::Node::~Node()
 	}
 }
 
-GlTFModel::BoundingBox GlTFModel::BoundingBox::getAABB(glm::mat4 m)
-{
-	glm::vec3 min = glm::vec3(m[3]);
-	glm::vec3 max = min;
-	glm::vec3 v0, v1;
-
-	glm::vec3 right = glm::vec3(m[0]);
-	v0 = right * this->min.x;
-	v1 = right * this->max.x;
-	min += glm::min(v0, v1);
-	max += glm::max(v0, v1);
-
-	glm::vec3 up = glm::vec3(m[1]);
-	v0 = up * this->min.y;
-	v1 = up * this->max.y;
-	min += glm::min(v0, v1);
-	max += glm::max(v0, v1);
-
-	glm::vec3 back = glm::vec3(m[2]);
-	v0 = back * this->min.z;
-	v1 = back * this->max.z;
-	min += glm::min(v0, v1);
-	max += glm::max(v0, v1);
-
-	return BoundingBox(min, max); 
-}
-
 std::unique_ptr<GlTFModel::ModelGltf> GlTFModel::createModelFromFile(Device& device, const std::string& filePath)
 {
 	std::cout << "start loading \n";
@@ -1410,165 +1386,8 @@ void GlTFModel::TextureModel::TextFromglTfImage(Device& device, tinygltf::Image&
 	VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
 
 	if (isKtx2) {
-
-		std::cout << "Ktx2\n";
 		// Image is KTX2 using basis universal compression. Those images need to be loaded from disk and will be transcoded to a native GPU format
-
 		texture = Texture::create(device, path.c_str()); 
-
-		/*basist::ktx2_transcoder ktxTranscoder;
-		const std::string filename = path + "\\" + gltfimage.uri;
-		std::ifstream ifs(filename, std::ios::binary | std::ios::in | std::ios::ate);
-		if (!ifs.is_open()) {
-			throw std::runtime_error("Could not load the requested image file " + filename);
-		}
-
-		uint32_t inputDataSize = static_cast<uint32_t>(ifs.tellg());// get size 
-		char* inputData = new char[inputDataSize]; // create local buffer
-
-		ifs.seekg(0, std::ios::beg);
-		ifs.read(inputData, inputDataSize); // write to buffer
-
-		bool success = ktxTranscoder.init(inputData, inputDataSize);
-		if (!success) {
-			throw std::runtime_error("Could not initialize ktx2 transcoder for image file " + filename);
-		}
-
-		// Select target format based on device features (use uncompressed if none supported)
-		auto targetFormat = basist::transcoder_texture_format::cTFRGBA32;
-
-		{
-			VkPhysicalDeviceFeatures pFeatures;
-
-			device.getPhysicalFeatures(&pFeatures);
-
-			// select available format
-			if (pFeatures.textureCompressionBC) {
-				// BC7 is the preferred block compression if available
-				if (device.isFormatSupported(VK_FORMAT_BC7_UNORM_BLOCK)) {
-					targetFormat = basist::transcoder_texture_format::cTFBC7_RGBA;
-					format = VK_FORMAT_BC7_UNORM_BLOCK;
-				}
-				else {
-					if (device.isFormatSupported(VK_FORMAT_BC3_SRGB_BLOCK)) {
-						targetFormat = basist::transcoder_texture_format::cTFBC3_RGBA;
-						format = VK_FORMAT_BC3_SRGB_BLOCK;
-					}
-				}
-			}
-
-			// Adaptive scalable texture compression
-			if (pFeatures.textureCompressionASTC_LDR) {
-				if (device.isFormatSupported(VK_FORMAT_ASTC_4x4_SRGB_BLOCK))
-				{
-					targetFormat = basist::transcoder_texture_format::cTFASTC_4x4_RGBA;
-					format = VK_FORMAT_ASTC_4x4_SRGB_BLOCK;
-				}
-			}
-
-			// Ericsson texture compression
-			if (pFeatures.textureCompressionETC2) {
-				if (device.isFormatSupported(VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK))
-				{
-					targetFormat = basist::transcoder_texture_format::cTFETC2_RGBA;
-					format = VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK;
-				}
-			}
-		}
-
-		// @todo PowerVR texture compression support needs to be checked via an extension (VK_IMG_FORMAT_PVRTC_EXTENSION_NAME)
-		const bool targetFormatIsUncompressed = basist::basis_transcoder_format_is_uncompressed(targetFormat);
-
-		std::vector<basist::ktx2_image_level_info> levelInfos(ktxTranscoder.get_levels());
-		mipLevels = ktxTranscoder.get_levels();
-
-		// Query image level information that we need later on for several calculations
-		// We only support 2D images (no cube maps or layered images)
-		for (uint32_t i = 0; i < mipLevels; i++) {
-			ktxTranscoder.get_image_level_info(levelInfos[i], i, 0, 0);
-		}
-
-		width = levelInfos[0].m_orig_width;
-		height = levelInfos[0].m_orig_height;
-
-		VkMemoryAllocateInfo memAllocInfo{};
-		memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		VkMemoryRequirements memReqs{};
-
-		// Create one staging buffer large enough to hold all uncompressed image levels
-		const uint32_t bytesPerBlockOrPixel = basist::basis_get_bytes_per_block_or_pixel(targetFormat);
-		uint32_t numBlocksOrPixels = 0;
-		VkDeviceSize totalBufferSize = 0;
-
-		for (uint32_t i = 0; i < mipLevels; i++) {
-			// Size calculations differ for compressed/uncompressed formats
-			numBlocksOrPixels = targetFormatIsUncompressed ? levelInfos[i].m_orig_width * levelInfos[i].m_orig_height : levelInfos[i].m_total_blocks;
-			totalBufferSize += numBlocksOrPixels * bytesPerBlockOrPixel;
-		}
-
-		Buffer stagingBufferMapped{ device, totalBufferSize, numBlocksOrPixels, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 0 };
-
-		unsigned char* buffer = new unsigned char[totalBufferSize];
-		unsigned char* bufferPtr = &buffer[0];
-
-		success = ktxTranscoder.start_transcoding();
-		if (!success) {
-			throw std::runtime_error("Could not start transcoding for image file " + filename);
-		}
-
-		// Transcode all mip levels into the staging buffer
-		for (uint32_t i = 0; i < mipLevels; i++) {
-			// Size calculations differ for compressed/uncompressed formats
-			numBlocksOrPixels = targetFormatIsUncompressed ? levelInfos[i].m_orig_width * levelInfos[i].m_orig_height : levelInfos[i].m_total_blocks;
-			uint32_t outputSize = numBlocksOrPixels * bytesPerBlockOrPixel;
-			if (!ktxTranscoder.transcode_image_level(i, 0, 0, bufferPtr, numBlocksOrPixels, targetFormat, 0)) {
-				throw std::runtime_error("Could not transcode the requested image file " + filename);
-			}
-			bufferPtr += outputSize;
-		}
-
-		VkBuffer stagingBuffer;
-		VkDeviceMemory stagingBufferMemory;
-		device.createBuffer(totalBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-
-		// transfer to device and copy from staging
-		void* data;
-		vkMapMemory(device.device(), stagingBufferMemory, 0, totalBufferSize, 0, &data);
-		memcpy(data, buffer, static_cast<size_t>(totalBufferSize));
-		vkUnmapMemory(device.device(), stagingBufferMemory);
-
-
-		std::shared_ptr<Texture> image = std::make_shared<Texture>(device);
-		image->createImage(
-			width, height, 
-			format, 
-			VK_IMAGE_TILING_OPTIMAL, 
-			VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-			image->textureImage, 
-			image->textureImageMemory, 
-			mipLevels);
-
-		
-		device.transitionImageLayout(image->textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
-		device.copyBufferToImage(stagingBuffer, image->textureImage, static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1, mipLevels - 1);
-		device.transitionImageLayout(image->textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevels);
-		
-
-		vkDestroyBuffer(device.device(), stagingBuffer, nullptr);
-		vkFreeMemory(device.device(), stagingBufferMemory, nullptr);
-
-		image->createTextureImageView(mipLevels);
-		image->createTextureSampler(mipLevels);
-		
-		texture = image;
-
-		delete[] buffer;
-		delete[] inputData;*/
-
-
 	}
 	else {
 		// Image is a basic glTF format like png or jpg and can be loaded directly via tinyglTF
