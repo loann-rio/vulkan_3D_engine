@@ -841,7 +841,7 @@ void GlTFModel::ModelGltf::drawNode(Node* node, VkCommandBuffer& commandBuffer, 
 
 }
 
-void GlTFModel::ModelGltf::drawNodeDepth(Node* node, VkCommandBuffer& commandBuffer, uint16_t frameIndex, VkPipelineLayout& pipelineLayout, glm::mat4 modelMatrix, int lightIndex)
+void GlTFModel::ModelGltf::drawNodeDepth(Node* node, VkCommandBuffer& commandBuffer, uint16_t frameIndex, VkPipelineLayout& pipelineLayout, glm::mat4 modelMatrix, int lightIndex, const std::array<FrustumPlane, 6>& planes)
 {
 
 	if (node->mesh) {
@@ -877,7 +877,8 @@ void GlTFModel::ModelGltf::drawNodeDepth(Node* node, VkCommandBuffer& commandBuf
 	}
 
 	for (auto& child : node->children) {
-		drawNodeDepth(child, commandBuffer, frameIndex, pipelineLayout, modelMatrix, lightIndex) ;
+		if (Camera::isAABBinFrustrum(child->aabb.getAABB(modelMatrix), planes))
+			drawNodeDepth(child, commandBuffer, frameIndex, pipelineLayout, modelMatrix, lightIndex, planes);
 	}
 
 }
@@ -890,10 +891,11 @@ void GlTFModel::ModelGltf::draw(VkCommandBuffer& commandBuffer, VkPipelineLayout
 	}
 }
 
-void GlTFModel::ModelGltf::drawDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, glm::mat4 modelMatrix, uint32_t cameraIndex, uint32_t instanceCount)
+void GlTFModel::ModelGltf::drawDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, glm::mat4 modelMatrix, uint32_t cameraIndex, const std::array<FrustumPlane, 6>& planes, uint32_t instanceCount)
 {
 	for (auto& node : nodes) { 
-		drawNodeDepth(node, commandBuffer, frameIndex, pipelineLayout, modelMatrix, cameraIndex); 
+		if (Camera::isAABBinFrustrum(node->aabb.getAABB(modelMatrix), planes))
+			drawNodeDepth(node, commandBuffer, frameIndex, pipelineLayout, modelMatrix, cameraIndex, planes);
 	}
 }
 

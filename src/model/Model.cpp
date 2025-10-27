@@ -48,7 +48,7 @@ std::unique_ptr<Model> Model::createModelFromFile(Device& device, const std::str
 
 
 
-Model::Model(Device& device, const Model::Builder& builder, const std::string filePathTexture) : device{ device } {
+Model::Model(Device& device, const Model::Builder& builder, const std::string filePathTexture) : device{ device }, aabb{ builder.aabb } {
 	if (!filePathTexture.empty()) {
 		texture = Texture::create(device, filePathTexture.c_str());
 		if (texture != nullptr)
@@ -64,8 +64,7 @@ Model::Model(Device& device, const Model::Builder& builder, const std::string fi
 	createIndexBuffers(builder.indices);
 }
 
-Model::Model(Device& device, const Model::Builder& builder) : device{ device }
-{
+Model::Model(Device& device, const Model::Builder& builder) : device{ device }, aabb{ builder.aabb } {
 	createVertexBuffers(builder.vertices);
 	createIndexBuffers(builder.indices);
 }
@@ -112,8 +111,13 @@ void Model::draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& PipelineLayou
 	}
 }
 
-void Model::drawDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, glm::mat4 modelMatrix, uint32_t cameraIndex, uint32_t instanceCount)
+void Model::drawDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, glm::mat4 modelMatrix, uint32_t cameraIndex, const std::array<FrustumPlane, 6>& planes, uint32_t instanceCount) 
 {
+
+
+	if (!Camera::isAABBinFrustrum(aabb.getAABB(modelMatrix), planes)) return;
+
+
 	DepthPushConstantData push{};   
 	push.modelMatrix = modelMatrix; 
 	push.indexDepthCamera = cameraIndex; 
@@ -279,7 +283,6 @@ bool Model::Builder::loadOBJModel(const std::string& filepath)
 	std::string warn, err;
 
 	if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filepath.c_str())) {
-		//throw std::runtime_error(warn + err);
 		std::cerr << warn + err << "\n";
 		return false;
 	}
@@ -299,6 +302,11 @@ bool Model::Builder::loadOBJModel(const std::string& filepath)
 					attrib.vertices[3 * index.vertex_index + 1],
 					attrib.vertices[3 * index.vertex_index + 2],
 				};
+
+				aabb.min.x = std::min(aabb.min.x, vertex.position.x);
+				aabb.min.y = std::min(aabb.min.y, vertex.position.y);
+				aabb.min.z = std::min(aabb.min.z, vertex.position.z);
+
 
 				vertex.color = {
 					attrib.colors[3 * index.vertex_index + 0],

@@ -13,7 +13,7 @@
 class PrebuiltModel {
 public:
     static std::shared_ptr<Model> createPlane(Device& device, float width, float depth, uint16_t widthDetail, uint16_t depthDetail, glm::vec3 color = { 1.0f, 1.0f, 1.0f }, float UVfactor = 1);
-    static std::unique_ptr<Model> createPlane(Device& device, const unsigned int detail, const float sizePlane, glm::vec3 color, const std::string path = "textures/floor.jpg");
+    static std::unique_ptr<Model> createPlane(Device& device, const unsigned int detail, const float sizePlane, glm::vec3 color, const std::string path = "textures/floor.jpg", float uvFactor = 1);
 
     static std::shared_ptr<Model> createIcoSphere(Device& device, uint16_t detail);
 

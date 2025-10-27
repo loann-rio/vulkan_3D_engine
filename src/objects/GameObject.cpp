@@ -215,11 +215,12 @@ void GameObjectModel::drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout
         }
         }, model);
 }
-void GameObjectModel::drawModelDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, int cameraIndex, uint16_t frame_index)
+
+void GameObjectModel::drawModelDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, int cameraIndex, uint16_t frame_index, const std::array<FrustumPlane, 6>& planes)
 {
     std::visit([&](const auto& modelInstance) { 
         if (modelInstance) {  
-            modelInstance->drawDepth(commandBuffer, pipelineLayout, frame_index, getTransformMat(), cameraIndex, instanceCount);
+            modelInstance->drawDepth(commandBuffer, pipelineLayout, frame_index, getTransformMat(), cameraIndex, planes, instanceCount);
         }
         }, model); 
 }

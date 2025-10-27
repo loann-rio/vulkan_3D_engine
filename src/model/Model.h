@@ -58,6 +58,7 @@ public:
 	struct Builder {
 		std::vector<Vertex> vertices{};
 		std::vector<uint32_t> indices{};
+		BoundingBox aabb;
 
 		bool loadOBJModel(const std::string& filepath);
 	};
@@ -71,7 +72,7 @@ public:
 
 	void bind(VkCommandBuffer& commandBuffer, Buffer* instancesBuffer);
 	void draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, glm::mat4 modelMatrix, glm::mat4 normalMatrix, const std::array<FrustumPlane, 6>& planes, uint32_t instanceCount);
-	void drawDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, glm::mat4 modelMatrix, uint32_t cameraIndex, uint32_t instanceCount);
+	void drawDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, glm::mat4 modelMatrix, uint32_t cameraIndex, const std::array<FrustumPlane, 6>& planes, uint32_t instanceCount);
 
 	bool hasTexture = false;
 	std::unique_ptr<Texture> texture;

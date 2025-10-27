@@ -71,14 +71,14 @@ std::shared_ptr<Model> PrebuiltModel::createPlane(Device& device, float width, f
 /// <param name="color"></param>
 /// <returns> pointer to a new model </returns>
 /// 
-std::unique_ptr<Model> PrebuiltModel::createPlane(Device& device, const unsigned int detail, const float sizePlane, glm::vec3 color, const std::string texturePath)
+std::unique_ptr<Model> PrebuiltModel::createPlane(Device& device, const unsigned int detail, const float sizePlane, glm::vec3 color, const std::string texturePath, float uvFactor)
 {
     Model::Builder modelBuilder{};
 
     for (unsigned int i = 0; i < detail + 1; i++) {
         for (unsigned int j = 0; j < detail + 1; j++)
         {
-            modelBuilder.vertices.push_back({ {i * sizePlane / detail, 0.f, j * sizePlane / detail}, {1, 1, 1}, {0, -1, 0}, {(float)(i * 20) / (float)detail , (float)(j * 20) / (float)detail } });
+            modelBuilder.vertices.push_back({ {i * sizePlane / detail, 0.f, j * sizePlane / detail}, {1, 1, 1}, {0, -1, 0}, {(float)(i * uvFactor) / (float)detail , (float)(j * uvFactor) / (float)detail } });
         }
     }
 

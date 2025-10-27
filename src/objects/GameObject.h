@@ -257,6 +257,8 @@ public:
 	float getNearClip() const { return _nearClip; }
 	float getFarClip() const { return _farClip; }
 
+	std::array<FrustumPlane, 6> getFrustumPlanes() const { return camera->getFrustum(); }
+
 private:
 	void updateCameraView();
 
@@ -306,7 +308,7 @@ public:
 
 	void bindModel(VkCommandBuffer& commandBuffer) const;
 	void drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, const std::array<FrustumPlane, 6>& frustrumPlanes);
-	void drawModelDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, int cameraIndex, uint16_t frameIndex);
+	void drawModelDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, int cameraIndex, uint16_t frameIndex, const std::array<FrustumPlane, 6>& planes);
 
 	void debugUI(); 
 

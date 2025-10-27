@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Device.h"
+#include "../objects/Texture.h"
 
 // vulkan headers
 #include <vulkan/vulkan.h>
@@ -29,6 +30,7 @@ public:
     size_t imageCount() { return swapChainImages.size(); }
     VkFormat getSwapChainImageFormat() { return swapChainImageFormat; }
     VkExtent2D getSwapChainExtent() { return swapChainExtent; }
+
     uint32_t width() { return swapChainExtent.width; }
     uint32_t height() { return swapChainExtent.height; }
 
@@ -73,10 +75,11 @@ private:
 
     VkRenderPass renderPass;
 
-    std::vector<VkImage> depthImages;
+    /*std::vector<VkImage> depthImages;
     std::vector<VkDeviceMemory> depthImageMemorys;
-    std::vector<VkImageView> depthImageViews; 
+    std::vector<VkImageView> depthImageViews; */
 
+    std::vector<std::unique_ptr<Texture>> depthTextures;
 
     std::vector<VkImage> swapChainImages;
     std::vector<VkImageView> swapChainImageViews;

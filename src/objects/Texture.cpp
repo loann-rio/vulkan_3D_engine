@@ -59,6 +59,32 @@ std::unique_ptr<Texture> Texture::create(Device& device, std::vector<std::vector
     return tex;
 }
 
+std::unique_ptr<Texture> Texture::createEmpty(Device& device, uint32_t width, uint32_t height, VkFormat format, bool isCubeMap)
+{
+
+    // usage can be :
+    // classic texture
+    // cube map
+    // depth
+
+    auto tex = std::unique_ptr<Texture>(new Texture(device, width, height, format, isCubeMap));
+    if (!tex->isLoaded) {
+        return nullptr;
+    }
+    return tex;
+}
+
+std::unique_ptr<Texture> Texture::createEmpty(Device& device, VkImageCreateInfo imageInfo, VkImageViewCreateInfo viewInfo, VkSamplerCreateInfo samplerInfo, VkImageLayout initImageLayout, uint32_t layerCount)
+{
+    auto tex = std::unique_ptr<Texture>(new Texture(device, imageInfo, viewInfo, samplerInfo, initImageLayout, layerCount));
+    if (!tex->isLoaded) {
+        return nullptr;
+    }
+    return tex;
+}
+
+
+
 Texture::Texture(Device& device, const char* filePathTexture, bool isCubeMap) : device{device}
 {
     const std::string path = filePathTexture;
@@ -68,6 +94,8 @@ Texture::Texture(Device& device, const char* filePathTexture, bool isCubeMap) : 
     if (path.find_last_of(".") != std::string::npos) {
 		extension = path.substr(path.find_last_of(".") + 1);
     }
+
+    bool isHdr = stbi_is_hdr(filePathTexture);
 
     bool result = false;
 
@@ -89,7 +117,7 @@ Texture::Texture(Device& device, const char* filePathTexture, bool isCubeMap) : 
     }
 
 	// create image view and sampler
-    textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, isCubeMap);
+    textureImageView = createImageView(textureImage, (isHdr) ? VK_FORMAT_R32G32B32A32_SFLOAT : VK_FORMAT_R8G8B8A8_SRGB, mipLevel, VK_IMAGE_ASPECT_COLOR_BIT, isCubeMap);
     createTextureSampler(); 
 
     isLoaded = true;
@@ -98,8 +126,49 @@ Texture::Texture(Device& device, const char* filePathTexture, bool isCubeMap) : 
 Texture::Texture(Device& device, unsigned char* rgbaPixels, const uint32_t fontWidth, const uint32_t fontHeight, VkDeviceSize imageSize, uint32_t mipLevel) : device{ device }
 {
     createTextureImage(rgbaPixels, fontWidth, fontHeight, imageSize);
-    textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, false);
+    textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, mipLevel, VK_IMAGE_ASPECT_COLOR_BIT, false);
     createTextureSampler();
+    isLoaded = true;
+}
+
+Texture::Texture(Device& device, uint32_t width, uint32_t height, VkFormat format, bool isCubeMap) : device{ device }
+{
+    createImage(
+        width,
+        height,
+        format,
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        textureImage,
+        textureImageMemory);
+
+    textureImageView = createImageView(textureImage, format, 1, VK_IMAGE_ASPECT_DEPTH_BIT, false);
+    createTextureSampler();
+
+    isLoaded = true;
+
+}
+
+Texture::Texture(Device& device, VkImageCreateInfo imageInfo, VkImageViewCreateInfo viewInfo, VkSamplerCreateInfo samplerInfo, VkImageLayout initImageLayout, uint32_t layerCount) : device{ device }
+{
+    // create image
+    device.createImageWithInfo(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
+    // create image view
+    viewInfo.image = textureImage;
+    if (vkCreateImageView(device.device(), &viewInfo, nullptr, &textureImageView) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create texture image view!");
+    }
+
+    // create sampler
+    if (vkCreateSampler(device.device(), &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create texture sampler!");
+    }
+
+    if (initImageLayout != VK_IMAGE_LAYOUT_UNDEFINED)
+        device.transitionImageLayout(textureImage, imageInfo.format,
+            VK_IMAGE_LAYOUT_UNDEFINED, initImageLayout, layerCount);
+
     isLoaded = true;
 }
 
@@ -155,18 +224,84 @@ bool Texture::createTextureImage(unsigned char* rgbaPixels, const uint32_t fontW
 	return true;
 }
 
+bool Texture::createTextureImage(float* rgbaPixels, const uint32_t fontWidth, const uint32_t fontHeight, VkDeviceSize imageSize)
+{
+    if (!rgbaPixels) {
+        std::cerr << "failed to load texture image! \n";
+        return false;
+    }
+
+    int texWidth = fontWidth;
+    int texHeight = fontHeight;
+    mipLevel = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
+
+    if (imageSize == 0)
+        imageSize = texWidth * texHeight * 4 * sizeof(float);
+
+    // create staging buffer
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+    device.createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+    // transfer to device and copy from staging
+    void* data;
+    vkMapMemory(device.device(), stagingBufferMemory, 0, imageSize, 0, &data);
+    memcpy(data, rgbaPixels, static_cast<size_t>(imageSize));
+    vkUnmapMemory(device.device(), stagingBufferMemory);
+    // free local memory
+    //delete[] rgbaPixels;
+
+    createImage(
+        texWidth,
+        texHeight,
+        VK_FORMAT_R32G32B32A32_SFLOAT,
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        textureImage,
+        textureImageMemory);
+
+
+    device.transitionImageLayout(textureImage, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevel);
+
+    device.copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1, 0);
+
+    if (mipLevel > 1)
+        generateMipChain(textureImage, mipLevel, texWidth, texHeight);
+    else
+        device.transitionImageLayout(textureImage, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevel);
+
+    vkDestroyBuffer(device.device(), stagingBuffer, nullptr);
+    vkFreeMemory(device.device(), stagingBufferMemory, nullptr);
+
+    return true;
+}
+
+
+
 bool Texture::createTextureImage(const char* path)
 {
     // create image from file
     int texWidth, texHeight, texChannels;
-    stbi_uc* pixels = stbi_load(path, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+    bool result = false;
 
-	createTextureImage(pixels, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-    
-    //// free local memory
-    stbi_image_free(pixels);
+    if (stbi_is_hdr(path)) { /// if the image is hdr, we need to store the image in float and not char
+        float* pixels = stbi_loadf(path, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+        result = createTextureImage(pixels, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 
-    return true;
+        //// free local memory
+        stbi_image_free(pixels);
+    }
+    else
+    {
+        stbi_uc* pixels = stbi_load(path, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+        result = createTextureImage(pixels, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+
+        //// free local memory
+        stbi_image_free(pixels);
+    }
+
+    return result;
 }
 
 bool Texture::createTextureImageKtx2(const std::string path, bool isCubeMap) 

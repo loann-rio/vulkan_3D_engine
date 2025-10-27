@@ -187,6 +187,7 @@ void App::run()
             terrainBuffers[frameIndex]->flush();
 		}
 
+        std::vector<std::array<FrustumPlane, 6>> frustrumPlanesList;
         // update spotLight
         {
             uint16_t i = 0; 
@@ -194,6 +195,9 @@ void App::run()
             for (auto lightObj : spotLigths) {
                 if (lightObj->transform.color.w != 0)
                     spotLightUbo.spotLight[i++] = lightObj->getSpotLightInfo(true);
+
+                lightObj->camera->updateFrustrumPlanes();
+                frustrumPlanesList.push_back(lightObj->getFrustumPlanes());
                 if (i >= DepthSwapChain::MAX_DEPTH_RENDER_COUNT) break;
             }
             spotLightUbo.numLights = i;
@@ -207,7 +211,8 @@ void App::run()
             frameTime,
             spotLightUbo.numLights,
             objectManager.get(objectManager.mainCamera)->transform.translation,
-            objectManager.getByType<GameObjectModel>()
+            objectManager.getByType<GameObjectModel>(),
+            frustrumPlanesList
         };
 
 		
