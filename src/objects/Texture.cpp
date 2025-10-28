@@ -628,24 +628,7 @@ bool Texture::createTextureImageKtx(const std::string path, bool isCubeMap)
     return true;
 }
 
-void Texture::bind(VkImage& image, VkMemoryPropertyFlags properties, VkDeviceMemory& imageMemory)
-{
-    VkMemoryRequirements memRequirements;
-    vkGetImageMemoryRequirements(device.device(), image, &memRequirements);
-
-    VkMemoryAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = device.findMemoryType(memRequirements.memoryTypeBits, properties);
-
-    if (vkAllocateMemory(device.device(), &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
-        throw std::runtime_error("failed to allocate image memory!");
-    }
-
-    vkBindImageMemory(device.device(), image, imageMemory, 0);
-}
-
-void Texture::createTextureSampler()
+void Texture::createTextureSampler(VkSamplerAddressMode uvMode) 
 {
 
     VkSamplerCreateInfo samplerInfo{};
@@ -701,12 +684,7 @@ void Texture::createImage(uint32_t width, uint32_t height,
 
     imageInfo.flags = flags;
        
-
-    if (vkCreateImage(device.device(), &imageInfo, nullptr, &image) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create image!");
-    }
-
-    bind(image, properties, imageMemory);
+    device.createImageWithInfo(imageInfo, properties, image, imageMemory);
 }
 
 void Texture::generateMipChain(VkImage image, uint32_t mipLevels, uint32_t width, uint32_t height)
@@ -830,30 +808,9 @@ void Texture::generateMipChain(VkImage image, uint32_t mipLevels, uint32_t width
     device.endSingleTimeCommands(commandBuffer);
 }
 
-VkDescriptorImageInfo Texture::getImageInfo()
+VkDescriptorImageInfo Texture::getImageInfo() const
 {
     return { textureSampler, textureImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
-}
-
-void Texture::setSampler(VkSamplerCreateInfo samplerInfo) 
-{
-    samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-   
-    samplerInfo.anisotropyEnable = VK_TRUE;
-    samplerInfo.maxAnisotropy = device.properties.limits.maxSamplerAnisotropy;
-    samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-    samplerInfo.unnormalizedCoordinates = VK_FALSE;
-    samplerInfo.compareEnable = VK_FALSE;
-    samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-
-    samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-    samplerInfo.mipLodBias = 0.0f;
-    samplerInfo.minLod = 0.0f;
-    samplerInfo.maxLod = static_cast<float>(mipLevel);
-
-    if (vkCreateSampler(device.device(), &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create texture sampler!");
-    }
 }
 
 VkImageView Texture::createTextureCubeMapImageView() 
@@ -879,18 +836,18 @@ VkImageView Texture::createTextureCubeMapImageView()
     return imageView;  
 }
 
-VkImageView Texture::createImageView(VkImage image, VkFormat format, bool isCubeMap)
+VkImageView Texture::createImageView(VkImage image, VkFormat format, uint32_t mipmapLevel, VkImageAspectFlagBits aspectFlag, bool isCubeMap) 
 {
-    assert(mipLevel > 0 && "miplevel cannot be zero"); 
+    assert(mipmapLevel > 0 && "miplevel cannot be zero");
 
     VkImageViewCreateInfo viewInfo{};
     viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     viewInfo.image = image;
     viewInfo.viewType = isCubeMap? VK_IMAGE_VIEW_TYPE_CUBE : VK_IMAGE_VIEW_TYPE_2D;
     viewInfo.format = format;
-    viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    viewInfo.subresourceRange.aspectMask = aspectFlag;
     viewInfo.subresourceRange.baseMipLevel = 0;
-    viewInfo.subresourceRange.levelCount = mipLevel;
+    viewInfo.subresourceRange.levelCount = mipmapLevel;
     viewInfo.subresourceRange.baseArrayLayer = 0;
     viewInfo.subresourceRange.layerCount = isCubeMap ? 6 : 1;
 

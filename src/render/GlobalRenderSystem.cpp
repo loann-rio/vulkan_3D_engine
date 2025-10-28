@@ -166,10 +166,10 @@ void GlobalRenderSystem::renderModel(VkCommandBuffer& commandBuffer, FrameInfo& 
 	obj->drawModel(commandBuffer, pipelineLayout, frameInfo.frameIndex, frustrumPlanes);
 }
 
-void GlobalRenderSystem::renderModelDepth(VkCommandBuffer& commandBuffer, GameObjectModel* obj, int lightIndex, uint16_t frameIndex)
+void GlobalRenderSystem::renderModelDepth(VkCommandBuffer& commandBuffer, GameObjectModel* obj, int lightIndex, uint16_t frameIndex, const std::array<FrustumPlane, 6>& planes) 
 {
 	obj->bindModel(commandBuffer); 
-	obj->drawModelDepth(commandBuffer, pipelineLayout, lightIndex, frameIndex);
+	obj->drawModelDepth(commandBuffer, pipelineLayout, lightIndex, frameIndex, planes);
 }
 
 void GlobalRenderSystem::bind(VkCommandBuffer& commandBuffer, std::vector<VkDescriptorSet> globalDescriptorSets)
@@ -211,6 +211,6 @@ void GlobalRenderSystem::renderGameObjectsDepth(VkCommandBuffer& commandBuffer, 
 	for (auto obj : frameInfo.listGameObjects)
 	{
 		if (obj->show && obj->getModelType() == modelType && obj->getModelSubType() == modelSubType)
-			renderModelDepth(commandBuffer, obj, lightIndex, frameIndex);
+			renderModelDepth(commandBuffer, obj, lightIndex, frameIndex, frameInfo.listFrustrumPlanes[lightIndex]);
 	}
 }

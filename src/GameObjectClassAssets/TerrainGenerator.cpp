@@ -5,9 +5,6 @@ void TerrainGenerator::loop(Device& device, ObjectManager* objManager, GameObjec
 	//int posX = object->transform.translation.x / chunkWorldSide;
 	//int posY = object->transform.translation.y / chunkWorldSide;
 
-	return;
-
-
 	int posX = objManager->get("mainCamera")->transform.translation.x / chunkWorldSide;
 	int posY = objManager->get("mainCamera")->transform.translation.z / chunkWorldSide;
 

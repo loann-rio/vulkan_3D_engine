@@ -45,7 +45,7 @@ void ObjectManager::createPrimitive(PrimitivesModelType type, int detail, Transf
 
         switch (type) {
         case PrimitivesModelType::PLANE:
-            primitive = PrebuiltModel::createPlane(this->device, detail, 1, { 0, 0, 0 }, filePathTexture.empty() ? "textures/whiteTexture.jpg" : filePathTexture);
+            primitive = PrebuiltModel::createPlane(this->device, detail, 1, { 0, 0, 0 }, filePathTexture.empty() ? "textures/whiteTexture.jpg" : filePathTexture, 20);
             break;
         case PrimitivesModelType::CUBE:
             primitive = PrebuiltModel::createCube(this->device);
