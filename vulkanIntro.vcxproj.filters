@@ -120,6 +120,12 @@
     <ClCompile Include="external\nativefiledialog-master\src\nfd_win.cpp">
       <Filter>Fichiers de ressources</Filter>
     </ClCompile>
+    <ClCompile Include="src\base\SecondarySwapchain.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="src\base\SingleRenderSwap.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tiny_gltf.h">
@@ -216,6 +222,14 @@
     <ClInclude Include="external\nativefiledialog-master\src\simple_exec.h">
       <Filter>Fichiers de ressources</Filter>
     </ClInclude>
+    <ClInclude Include="src\base\FrameRateCounter.h" />
+    <ClInclude Include="src\model\BoundingBox.h" />
+    <ClInclude Include="src\base\SecondarySwapchain.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="src\base\SingleRenderSwap.h">
+      <Filter>base</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\compile.bat">
@@ -273,6 +287,18 @@
       <Filter>shaders</Filter>
     </None>
     <None Include="shaders\simple_shader.mfrag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\fullscreen.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\equirectangular_to_cube.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\testRed.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\test.vert">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>

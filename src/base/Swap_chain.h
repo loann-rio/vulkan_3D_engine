@@ -68,21 +68,15 @@ private:
     VkFormat swapChainImageFormat;
     VkFormat swapChainDepthFormat;
 
-    VkExtent2D swapChainExtent;
-
-    std::vector<VkFramebuffer> swapChainFramebuffers;
-    std::vector<VkFramebuffer> depthFramebuffers;
-
     VkRenderPass renderPass;
 
-    /*std::vector<VkImage> depthImages;
-    std::vector<VkDeviceMemory> depthImageMemorys;
-    std::vector<VkImageView> depthImageViews; */
 
-    std::vector<std::unique_ptr<Texture>> depthTextures;
+    std::vector<std::shared_ptr<Texture>> depthTextures;
 
     std::vector<VkImage> swapChainImages;
     std::vector<VkImageView> swapChainImageViews;
+    VkExtent2D swapChainExtent;
+    std::vector<VkFramebuffer> swapChainFramebuffers;
 
 
     Device& device;

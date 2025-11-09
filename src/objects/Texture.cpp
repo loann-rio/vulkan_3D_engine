@@ -8,16 +8,16 @@
 #include <stdexcept>
 
 
-std::unique_ptr<Texture> Texture::create(Device& device, const char* path, bool isCubeMap)
+std::shared_ptr<Texture> Texture::create(Device& device, const char* path, bool isCubeMap)
 {
-    auto tex = std::unique_ptr<Texture>(new Texture(device, path, isCubeMap));
+    auto tex = std::shared_ptr<Texture>(new Texture(device, path, isCubeMap));
     if (!tex->isLoaded) {
         return nullptr;
     }
     return tex;
 }
 
-std::unique_ptr<Texture> Texture::create(Device& device, std::vector<std::vector<glm::vec2>> imageArray)
+std::shared_ptr<Texture> Texture::create(Device& device, std::vector<std::vector<glm::vec2>> imageArray)
 {
     // Validate input
     if (imageArray.empty() || imageArray[0].empty()) {
@@ -48,7 +48,7 @@ std::unique_ptr<Texture> Texture::create(Device& device, std::vector<std::vector
         }
     }
 
-    auto tex = std::unique_ptr<Texture>(new Texture(device, rgba, width, height, imageSize, mipLevel));
+    auto tex = std::shared_ptr<Texture>(new Texture(device, rgba, width, height, imageSize, mipLevel));
 
     delete[] rgba;
 
@@ -59,7 +59,7 @@ std::unique_ptr<Texture> Texture::create(Device& device, std::vector<std::vector
     return tex;
 }
 
-std::unique_ptr<Texture> Texture::createEmpty(Device& device, uint32_t width, uint32_t height, VkFormat format, bool isCubeMap)
+std::shared_ptr<Texture> Texture::createEmpty(Device& device, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage, VkImageAspectFlagBits aspect, bool isCubeMap)
 {
 
     // usage can be :
@@ -67,16 +67,16 @@ std::unique_ptr<Texture> Texture::createEmpty(Device& device, uint32_t width, ui
     // cube map
     // depth
 
-    auto tex = std::unique_ptr<Texture>(new Texture(device, width, height, format, isCubeMap));
+    auto tex = std::shared_ptr<Texture>(new Texture(device, width, height, format, usage, aspect, isCubeMap));
     if (!tex->isLoaded) {
         return nullptr;
     }
     return tex;
 }
 
-std::unique_ptr<Texture> Texture::createEmpty(Device& device, VkImageCreateInfo imageInfo, VkImageViewCreateInfo viewInfo, VkSamplerCreateInfo samplerInfo, VkImageLayout initImageLayout, uint32_t layerCount)
+std::shared_ptr<Texture> Texture::createEmpty(Device& device, VkImageCreateInfo imageInfo, VkImageViewCreateInfo viewInfo, VkSamplerCreateInfo samplerInfo, VkImageLayout initImageLayout, uint32_t layerCount)
 {
-    auto tex = std::unique_ptr<Texture>(new Texture(device, imageInfo, viewInfo, samplerInfo, initImageLayout, layerCount));
+    auto tex = std::shared_ptr<Texture>(new Texture(device, imageInfo, viewInfo, samplerInfo, initImageLayout, layerCount));
     if (!tex->isLoaded) {
         return nullptr;
     }
@@ -131,19 +131,20 @@ Texture::Texture(Device& device, unsigned char* rgbaPixels, const uint32_t fontW
     isLoaded = true;
 }
 
-Texture::Texture(Device& device, uint32_t width, uint32_t height, VkFormat format, bool isCubeMap) : device{ device }
+Texture::Texture(Device& device, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage, VkImageAspectFlagBits aspect, bool isCubeMap) : device{ device }
 {
     createImage(
         width,
         height,
         format,
         VK_IMAGE_TILING_OPTIMAL,
-        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+        usage,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         textureImage,
-        textureImageMemory);
+        textureImageMemory,
+        isCubeMap ? 6 : 1, isCubeMap ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0);
 
-    textureImageView = createImageView(textureImage, format, 1, VK_IMAGE_ASPECT_DEPTH_BIT, false);
+    textureImageView = createImageView(textureImage, format, 1, aspect, isCubeMap);
     createTextureSampler();
 
     isLoaded = true;
@@ -660,14 +661,14 @@ void Texture::createImage(uint32_t width, uint32_t height,
     VkFormat format, VkImageTiling tiling, 
     VkImageUsageFlags usage, VkMemoryPropertyFlags properties, 
     VkImage& image, VkDeviceMemory& imageMemory, 
-    uint32_t arrayLayer, VkImageCreateFlags flags)
+    uint32_t arrayLayer, VkImageCreateFlags flags, VkImageType imageType)
 {
 
     assert(arrayLayer > 0 && "array layer cannot be zero");
 
     VkImageCreateInfo imageInfo{};
     imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    imageInfo.imageType = VK_IMAGE_TYPE_2D;
+    imageInfo.imageType = imageType;
     
     imageInfo.mipLevels = mipLevel;
     imageInfo.arrayLayers = arrayLayer; 
@@ -683,6 +684,9 @@ void Texture::createImage(uint32_t width, uint32_t height,
     imageInfo.extent.depth = 1;
 
     imageInfo.flags = flags;
+
+    createdArrayLayers = arrayLayer;
+    createdImageFlags = flags;
        
     device.createImageWithInfo(imageInfo, properties, image, imageMemory);
 }
@@ -813,7 +817,15 @@ VkDescriptorImageInfo Texture::getImageInfo() const
     return { textureSampler, textureImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
 }
 
-VkImageView Texture::createTextureCubeMapImageView() 
+void Texture::recreateImageView(bool isCubeMap, bool isHdr)
+{
+    if (isCubeMap)
+        textureImageView = createTextureCubeMapImageView((isHdr) ? VK_FORMAT_R32G32B32A32_SFLOAT : VK_FORMAT_R8G8B8A8_SRGB);
+    else
+        textureImageView = createImageView(textureImage, (isHdr) ? VK_FORMAT_R32G32B32A32_SFLOAT : VK_FORMAT_R8G8B8A8_SRGB, mipLevel, VK_IMAGE_ASPECT_COLOR_BIT, isCubeMap);
+}
+
+VkImageView Texture::createTextureCubeMapImageView(VkFormat format)
 {
     assert(mipLevel > 0 && "miplevel cannot be zero");
 
@@ -821,7 +833,7 @@ VkImageView Texture::createTextureCubeMapImageView()
     viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO; 
     viewInfo.image = textureImage; 
     viewInfo.viewType = VK_IMAGE_VIEW_TYPE_CUBE; 
-    viewInfo.format = VK_FORMAT_R8G8B8A8_SRGB; 
+    viewInfo.format = format;
     viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     viewInfo.subresourceRange.baseMipLevel = 0;
     viewInfo.subresourceRange.levelCount = mipLevel; 

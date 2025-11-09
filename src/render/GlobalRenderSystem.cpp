@@ -9,13 +9,19 @@
 #include <cassert>
 
 
-GlobalRenderSystem::GlobalRenderSystem(Device& device, VkRenderPass renderPass, 
+GlobalRenderSystem::GlobalRenderSystem(Device& device, VkRenderPass renderPass,
 	std::vector<VkDescriptorSetLayout> globalSetLayout, std::vector<DescriptorSetObject> bindings,
 	const std::string& vertFilepath, const std::string& fragFilepath,
 	ModelType modelType, ModelSubType subModelType,
-	std::vector<VkVertexInputBindingDescription> bindingDescription, std::vector<VkVertexInputAttributeDescription> attributeDescription, bool isShadow, bool isSkyBox)
-	: device{ device }, modelType{ modelType }, isShadow{ isShadow }, modelSubType{ subModelType }, isSkyBox{ isSkyBox }
+	std::vector<VkVertexInputBindingDescription> bindingDescription, std::vector<VkVertexInputAttributeDescription> attributeDescription, VkShaderStageFlagBits pushStage_in, bool isShadow, bool isSkyBox, bool isFullsceenrender)
+	: device{ device }, modelType{ modelType }, isShadow{ isShadow }, modelSubType{ subModelType }, isSkyBox{ isSkyBox }, isFullscreenRender{ isFullsceenrender }
 {
+	if (pushStage_in) {
+		pushStage = pushStage_in;
+		customPushStage = true;
+	}
+
+
 	std::vector<std::unique_ptr<DescriptorSetLayout>> layouts;  // to hold the unique ptr of the descriptor set layouts
 
 	modelDescriptorSetIndex = static_cast<uint32_t>(globalSetLayout.size()); // index of the model descriptor set in the pipeline layout
@@ -65,6 +71,7 @@ void GlobalRenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout>
 
 
 	// find the size and flag of push constant depending on type of obj/render
+	
 	if (isShadow) { 
 		pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 		pushConstantRange.size = sizeof(DepthPushConstantData);
@@ -77,11 +84,12 @@ void GlobalRenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout>
 			pushConstantRange.size = sizeof(GltfPushConstant); 
 		}
 		else {
-			
 			pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 			pushConstantRange.size = sizeof(SimplePushConstantData);
 		}
 	}
+
+	if (customPushStage) pushConstantRange.stageFlags = pushStage;
 
 	VkDescriptorBindingFlags descriptorBindingFlags[] = {
 	0,  // For non-dynamic descriptor sets
@@ -117,9 +125,15 @@ void GlobalRenderSystem::createPipeline(VkRenderPass renderPass, const std::stri
 	if (!bindingDescription.empty()) {
 		pipelineConfig.bindingDescription = bindingDescription;
 	}
+	else {
+		pipelineConfig.bindingDescription.clear();
+	}
 
 	if (!attributeDescription.empty()) {
 		pipelineConfig.attributeDescription = attributeDescription;
+	}
+	else {
+		pipelineConfig.attributeDescription.clear();
 	}
 
 	pipelineConfig.renderPass = renderPass;
@@ -137,6 +151,12 @@ void GlobalRenderSystem::createPipeline(VkRenderPass renderPass, const std::stri
 		pipelineConfig.depthStencilInfo.depthWriteEnable = VK_FALSE;
 		pipelineConfig.depthStencilInfo.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
 		pipelineConfig.rasterizationInfo.cullMode = VK_CULL_MODE_BACK_BIT;
+	}
+
+	if (isFullscreenRender) {
+		pipelineConfig.depthStencilInfo.depthTestEnable = VK_FALSE;
+		pipelineConfig.depthStencilInfo.depthWriteEnable = VK_FALSE;
+		pipelineConfig.rasterizationInfo.cullMode = VK_CULL_MODE_NONE;
 	}
 
 	// create the pipeline
@@ -213,4 +233,23 @@ void GlobalRenderSystem::renderGameObjectsDepth(VkCommandBuffer& commandBuffer, 
 		if (obj->show && obj->getModelType() == modelType && obj->getModelSubType() == modelSubType)
 			renderModelDepth(commandBuffer, obj, lightIndex, frameIndex, frameInfo.listFrustrumPlanes[lightIndex]);
 	}
+}
+
+void GlobalRenderSystem::renderFullScreen(VkCommandBuffer& commandBuffer, std::vector<VkDescriptorSet> globalDescriptorSets, glm::mat4 view, glm::mat4 proj)
+{
+
+	bind(commandBuffer, {});
+
+	struct Push { glm::mat4 view; glm::mat4 proj; } push;
+
+	push.view = view;
+	push.proj = proj;
+
+	vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(push), &push);
+	
+	// bind descriptor for equirectangular map (staged earlier)
+	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, globalDescriptorSets.data(), 0, nullptr);
+	
+	// draw fullscreen triangle
+	vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 }

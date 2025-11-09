@@ -4,6 +4,29 @@
 #include "../base/perlinNoise.h"
 #include "../base/VoronoiNoise.h"
 
+std::shared_ptr<Model> PrebuiltModel::createFullScreenQuad(Device& device)
+{
+    Model::Builder modelBuilder{};
+
+    // Fullscreen quad directly in clip-space (-1..1)
+    modelBuilder.vertices = {
+        // position           // color  // normal     // uv
+        {{-1.0f, -1.0f, 0.0f}, {1,1,1}, {0,0,1}, {0.0f, 0.0f}},  // bottom-left
+        {{ 1.0f, -1.0f, 0.0f}, {1,1,1}, {0,0,1}, {1.0f, 0.0f}},  // bottom-right
+        {{ 1.0f,  1.0f, 0.0f}, {1,1,1}, {0,0,1}, {1.0f, 1.0f}},  // top-right
+        {{-1.0f,  1.0f, 0.0f}, {1,1,1}, {0,0,1}, {0.0f, 1.0f}},  // top-left
+    };
+
+    // Two triangles
+    modelBuilder.indices = {
+        0, 1, 2,
+        0, 2, 3
+    };
+
+    return std::make_shared<Model>(device, modelBuilder, "textures/whiteTexture.jpg");
+}
+
+
 std::shared_ptr<Model> PrebuiltModel::createPlane(Device& device, float width, float depth, uint16_t widthDetail, uint16_t depthDetail, glm::vec3 color, float UVfactor)
 {
     Model::Builder modelBuilder{};
@@ -90,12 +113,14 @@ std::unique_ptr<Model> PrebuiltModel::createPlane(Device& device, const unsigned
         }
 
         modelBuilder.indices.push_back(i);
-        modelBuilder.indices.push_back(i + 1);
         modelBuilder.indices.push_back(i + detail + 1);
+        modelBuilder.indices.push_back(i + 1);
+        
 
         modelBuilder.indices.push_back(i + 1);
-        modelBuilder.indices.push_back(i + detail + 2);
         modelBuilder.indices.push_back(i + detail + 1);
+        modelBuilder.indices.push_back(i + detail + 2);
+        
 
         modelBuilder.vertices[i].normal = -glm::normalize(glm::cross(modelBuilder.vertices[i].position - modelBuilder.vertices[i + 1].position, modelBuilder.vertices[i].position - modelBuilder.vertices[i + detail + 1].position));
     }

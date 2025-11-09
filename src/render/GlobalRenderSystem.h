@@ -19,6 +19,8 @@ struct RenderSystemBuilder {
 	bool hasMultipleInstance = false;
 	ModelSubType subModelType = ModelSubType::NONE;
 	bool isSkyBox = false;
+	bool isFullscreenRender = false;
+	VkShaderStageFlagBits pushStage;
 };
 
 class GlobalRenderSystem
@@ -34,7 +36,7 @@ public:
 		const std::string& vertFilepath, const std::string& fragFilepath,
 		ModelType modelType, ModelSubType subModelType, 
 		std::vector<VkVertexInputBindingDescription> bindingDescription, std::vector<VkVertexInputAttributeDescription> attributeDescription,
-		bool isShadow = false, bool isSkyBox = false
+		VkShaderStageFlagBits pushStage, bool isShadow = false, bool isSkyBox = false, bool isFullscreenrender = false
 	);
 
 	~GlobalRenderSystem();
@@ -44,7 +46,8 @@ public:
 
 	void renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, std::vector<VkDescriptorSet> globalDescriptorSets, const std::array<FrustumPlane, 6>& frustrumPlanes = {});
 	void renderGameObjectsDepth(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, std::vector<VkDescriptorSet> globalDescriptorSets, int lightIndex, uint16_t frameIndex);
-	
+	void renderFullScreen(VkCommandBuffer& commandBuffer, std::vector<VkDescriptorSet> globalDescriptorSets, glm::mat4 view, glm::mat4 proj);
+
 private:
 
 	void createPipelineLayout(std::vector<VkDescriptorSetLayout> descriptorSetLayout);
@@ -67,6 +70,10 @@ private:
 	ModelSubType modelSubType = ModelSubType::NONE;
 	const bool isShadow = false;
 	const bool isSkyBox = false;
+	const bool isFullscreenRender = false;
+
+	bool customPushStage = false;
+	VkShaderStageFlagBits pushStage;
 
 	uint16_t modelDescriptorSetIndex; // start after global, shadow add additional descriptor set
 		
@@ -85,28 +92,40 @@ inline std::shared_ptr<GlobalRenderSystem> GlobalRenderSystem::create(Device& de
 {
 	std::vector<DescriptorSetObject> bindings;
 	std::vector<VkVertexInputAttributeDescription> attributeDescription;
-	std::vector<VkVertexInputBindingDescription> bindingDescription = T::Vertex::getBindingDescriptions(builder.hasMultipleInstance);
-	
+	std::vector<VkVertexInputBindingDescription> bindingDescription; 
+
 	ModelType modelType = static_cast<ModelType>(T::getModelType());
 
+	bool isFullscreen = builder.isFullscreenRender;
 	bool isShadow = (builder.fragFilepath == "");
-	if (isShadow) {
-		bindings = T::getDescriptorType();
-		attributeDescription = T::Vertex::getAttributeDescriptionsShadow(builder.hasMultipleInstance);
+
+	// Only populate vertex binding/attribute descriptions if the pipeline needs vertex input
+	if (!isFullscreen) {
+		bindingDescription = T::Vertex::getBindingDescriptions(builder.hasMultipleInstance);
+
+		if (isShadow) {
+			bindings = T::getDescriptorType();
+			attributeDescription = T::Vertex::getAttributeDescriptionsShadow(builder.hasMultipleInstance);
+		}
+		else {
+			bindings = T::getDescriptorType();
+			attributeDescription = T::Vertex::getAttributeDescriptions(builder.hasMultipleInstance);
+		}
 	}
 	else {
+		// fullscreen: still may need descriptor bindings
 		bindings = T::getDescriptorType();
-		attributeDescription = T::Vertex::getAttributeDescriptions(builder.hasMultipleInstance);
+		// leave bindingDescription and attributeDescription empty
 	}
 
 	return std::make_shared<GlobalRenderSystem>(
-		device, 
+		device,
 		builder.renderPass,
-		builder.globalSetLayout, 
+		builder.globalSetLayout,
 		bindings,
 		builder.vertFilepath, builder.fragFilepath,
-		modelType, builder.subModelType, 
-		bindingDescription, attributeDescription, 
-		isShadow, builder.isSkyBox);
+		modelType, builder.subModelType,
+		bindingDescription, attributeDescription, builder.pushStage,
+		isShadow, builder.isSkyBox, builder.isFullscreenRender);
 }
 

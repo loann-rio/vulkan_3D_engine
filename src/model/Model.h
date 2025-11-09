@@ -75,8 +75,8 @@ public:
 	void drawDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, glm::mat4 modelMatrix, uint32_t cameraIndex, const std::array<FrustumPlane, 6>& planes, uint32_t instanceCount);
 
 	bool hasTexture = false;
-	std::unique_ptr<Texture> texture;
-	void setTexture(std::unique_ptr<Texture> newTexture) { texture = std::move(newTexture); }
+	std::shared_ptr<Texture> texture;
+	void setTexture(std::shared_ptr<Texture> newTexture) { texture = std::move(newTexture); }
 	VkDescriptorImageInfo getTextureImageInfo() const { return hasTexture ? texture->getImageInfo() : VkDescriptorImageInfo{}; }
 	
 	void createDescriptorSet(DescriptorPool& pool, Device& device);

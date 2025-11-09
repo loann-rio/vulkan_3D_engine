@@ -11,6 +11,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <cassert>
+#include "SecondarySwapchain.h"
 
 #ifndef VK_SUBPASS_EXTERNAL
 #define VK_SUBPASS_EXTERNAL (~0U)
@@ -48,19 +49,10 @@ Swap_chain::~Swap_chain() {
         swapChain = nullptr;
     }   
 
-    /*for (int i = 0; i < depthImages.size(); i++) {
-        vkDestroyImageView(device.device(), depthImageViews[i], nullptr);
-        vkDestroyImage(device.device(), depthImages[i], nullptr);
-        vkFreeMemory(device.device(), depthImageMemorys[i], nullptr);
-    }*/
-
     for (auto framebuffer : swapChainFramebuffers) {
         vkDestroyFramebuffer(device.device(), framebuffer, nullptr);
     }
 
-    for (auto framebuffer : depthFramebuffers) {
-        vkDestroyFramebuffer(device.device(), framebuffer, nullptr);
-    }
 
     vkDestroyRenderPass(device.device(), renderPass, nullptr);
 
@@ -190,6 +182,7 @@ void Swap_chain::submitDepthCommandBuffer(const std::vector<VkCommandBuffer> dep
     renderingDepthDuringFrame = true;
 }
 
+
 void Swap_chain::createSwapChain() {
     SwapChainSupportDetails swapChainSupport = device.getSwapChainSupport();
 
@@ -312,15 +305,11 @@ void Swap_chain::createRenderPass() {
 
     VkSubpassDependency dependency = {};
     dependency.dstSubpass = 0;
-    dependency.dstAccessMask =
-        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-    dependency.dstStageMask =
-        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    
+    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
     dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
     dependency.srcAccessMask = 0;
-    dependency.srcStageMask =
-        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 
    
 
@@ -372,58 +361,10 @@ void Swap_chain::createDepthResources() {
     swapChainDepthFormat = depthFormat;
     VkExtent2D swapChainExtent = getSwapChainExtent();
 
-    /*depthImages.resize(imageCount());
-    depthImageMemorys.resize(imageCount());
-    depthImageViews.resize(imageCount());
-
-    std::cout << "image count = " << imageCount() << "\n";
-
-    for (int i = 0; i < depthImages.size(); i++) {
-        VkImageCreateInfo imageInfo{};
-        imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-        imageInfo.imageType = VK_IMAGE_TYPE_2D;
-        imageInfo.extent.width = swapChainExtent.width;
-        imageInfo.extent.height = swapChainExtent.height;
-        imageInfo.extent.depth = 1;
-        imageInfo.mipLevels = 1;
-        imageInfo.arrayLayers = 1;
-        imageInfo.format = depthFormat;
-        imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-        imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT; 
-        imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-        imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        imageInfo.flags = 0;
-        imageInfo.pNext = NULL;
-
-        device.createImageWithInfo( 
-            imageInfo,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            depthImages[i],
-            depthImageMemorys[i]);
-       
-
-        VkImageViewCreateInfo viewInfo{};
-        viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        viewInfo.image = depthImages[i];
-        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        viewInfo.format = depthFormat;
-        viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-        viewInfo.subresourceRange.baseMipLevel = 0;
-        viewInfo.subresourceRange.levelCount = 1;
-        viewInfo.subresourceRange.baseArrayLayer = 0;
-        viewInfo.subresourceRange.layerCount = 1;
-
-        if (vkCreateImageView(device.device(), &viewInfo, nullptr, &depthImageViews[i]) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create texture image view!");
-        }
-
-    }*/
-
     depthTextures.resize(imageCount());
 
     for (int i = 0; i < depthTextures.size(); i++)
-        depthTextures[i] = Texture::createEmpty(device, swapChainExtent.width, swapChainExtent.height, depthFormat, false);
+        depthTextures[i] = Texture::createEmpty(device, swapChainExtent.width, swapChainExtent.height, depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_DEPTH_BIT, false);
 }
 
 void Swap_chain::createSyncObjects() {

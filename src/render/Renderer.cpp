@@ -4,12 +4,18 @@
 #include <array>
 #include <cassert>
 
-
 Renderer::Renderer(Window& window, Device& device) : window{window} , device{device}
 {
 	isDepthStarted.resize(DepthSwapChain::MAX_DEPTH_RENDER_COUNT);
 	recreateSwapChain();
 	depthSwapChain = std::make_unique<DepthSwapChain>(device, VkExtent2D{ 2048, 2048 });
+
+	/*SwapChainBuilder builder{};
+	builder.colorTarget = target;
+	builder.imageFormat = VK_FORMAT_R8G8B8A8_SRGB;
+	builder.windowExtent = { 1024, 1024 };
+
+	skyboxRenderSwapchain = std::make_unique<SecondarySwapchain>(device, builder);*/
 
 	createDepthCommandBuffer();
 	createCommandBuffer();
@@ -212,6 +218,43 @@ void Renderer::endShadowRenderPass(VkCommandBuffer commandBuffer, int depthComma
 	vkCmdEndRenderPass(commandBuffer);
 }
 
+
+void Renderer::beginSingleTimeRender(VkCommandBuffer commandBuffer)
+{
+	VkRenderPassBeginInfo renderPassInfo{};
+	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	renderPassInfo.renderPass = swap.getRenderPass();
+	renderPassInfo.framebuffer = swap.getFrameBuffer();
+
+	renderPassInfo.renderArea.offset = { 0, 0 };
+	renderPassInfo.renderArea.extent = swap.getSwapChainExtent();
+
+	std::array<VkClearValue, 2> clearValues{};
+	clearValues[0].color = { 0.23f, 0.5f, 0.92f, 1.f };
+	clearValues[1].depthStencil = { 1.0f, 0 };
+
+	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+	renderPassInfo.pClearValues = clearValues.data();
+
+	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+	VkViewport viewport{};
+	viewport.x = 0.0f;
+	viewport.y = 0.0f;
+	viewport.width = static_cast<float>(swap.getSwapChainExtent().width);
+	viewport.height = static_cast<float>(swap.getSwapChainExtent().height);
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+	VkRect2D scissor{ {0, 0}, swap.getSwapChainExtent() };
+	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+}
+
+void Renderer::endSingleTimeRender(VkCommandBuffer commandBuffer)
+{
+	vkCmdEndRenderPass(commandBuffer);
+}
+
 bool Renderer::aquireNextImage()
 {
 	auto result = swapChain->acquireNextImage(&currentImageIndex);
@@ -254,6 +297,198 @@ void Renderer::renderDepthImage(FrameInfo& frameInfo, std::vector<std::shared_pt
 		isDepthStarted[i] = false;  
 
 	currentDepthFrameIndex = (currentDepthFrameIndex + 1) % Swap_chain::MAX_FRAMES_IN_FLIGHT; 
+}
+
+std::shared_ptr<Texture> Renderer::renderSingleTotexture(std::shared_ptr<GlobalRenderSystem> renderSystem, GameObjectModel* textureObject, std::vector<VkDescriptorSet> descriptorSets)
+{
+
+	glm::mat4 captureViews[] = {
+		glm::lookAt(glm::vec3(0), glm::vec3(1, 0, 0), glm::vec3(0, -1, 0)), // +X
+		glm::lookAt(glm::vec3(0), glm::vec3(-1, 0, 0), glm::vec3(0, -1, 0)),// -X
+		glm::lookAt(glm::vec3(0), glm::vec3(0, 1, 0), glm::vec3(0, 0, 1)),  // +Y
+		glm::lookAt(glm::vec3(0), glm::vec3(0, -1, 0), glm::vec3(0, 0, -1)),// -Y
+		glm::lookAt(glm::vec3(0), glm::vec3(0, 0, 1), glm::vec3(0, -1, 0)), // +Z
+		glm::lookAt(glm::vec3(0), glm::vec3(0, 0, -1), glm::vec3(0, -1, 0)) // -Z
+	};
+		 
+	glm::mat4 captureProj = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+	captureProj[1][1] *= -1.0f;
+
+	if (auto commandBuffer = device.beginSingleTimeCommands()) {
+		beginSingleTimeRender(commandBuffer);
+
+		FrameInfo info{};
+		info.listGameObjects = { textureObject };
+
+		//renderSystem->renderGameObjects(commandBuffer, info, descriptorSets);
+		renderSystem->renderFullScreen(commandBuffer, textureObject->getDescriptorSets(), captureViews[0], captureProj);
+
+
+		endSingleTimeRender(commandBuffer);
+		device.endSingleTimeCommands(commandBuffer);
+	}
+		
+	return swap.getTextureColor();
+
+	//// create view + proj matrices
+	//glm::mat4 captureViews[] = {
+	//	glm::lookAt(glm::vec3(0), glm::vec3(1, 0, 0), glm::vec3(0, -1, 0)), // +X
+	//	glm::lookAt(glm::vec3(0), glm::vec3(-1, 0, 0), glm::vec3(0, -1, 0)),// -X
+	//	glm::lookAt(glm::vec3(0), glm::vec3(0, 1, 0), glm::vec3(0, 0, 1)),  // +Y
+	//	glm::lookAt(glm::vec3(0), glm::vec3(0, -1, 0), glm::vec3(0, 0, -1)),// -Y
+	//	glm::lookAt(glm::vec3(0), glm::vec3(0, 0, 1), glm::vec3(0, -1, 0)), // +Z
+	//	glm::lookAt(glm::vec3(0), glm::vec3(0, 0, -1), glm::vec3(0, -1, 0)) // -Z
+	//};
+     //
+	//glm::mat4 captureProj = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+	//captureProj[1][1] *= -1.0f;
+	//
+	//// create render image view
+	//std::vector<VkImageView> cubeFaceViews{ 6 };
+	//for (uint32_t face = 0; face < 6; face++) {
+	//	VkImageViewCreateInfo viewInfo{};
+	//	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	//	viewInfo.image = textTarget->getImage();
+	//	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D; 
+	//	viewInfo.format = VK_FORMAT_R32G32B32A32_SFLOAT;
+	//	viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	//	viewInfo.subresourceRange.baseMipLevel = 0;
+	//	viewInfo.subresourceRange.levelCount = 1;
+	//	viewInfo.subresourceRange.baseArrayLayer = face;
+	//	viewInfo.subresourceRange.layerCount = 1;
+	//
+	//	vkCreateImageView(device.device(), &viewInfo, nullptr, &cubeFaceViews[face]);
+	//}
+	//
+	//// create swapchain
+	//SwapChainBuilder builder{};
+	//
+	//builder.additionalImageView = cubeFaceViews;
+	//builder.windowExtent = { 1000, 1000 };
+	//builder.imageFormat = VK_FORMAT_R32G32B32A32_SFLOAT;
+	//
+	//VkClearValue clearValues[2];
+	//uint32_t clearCount = 0;
+	//
+	//if (builder.colorTarget || !builder.additionalImageView.empty()) {
+	//	clearValues[clearCount].color = { 0.0f, 0.0f, 0.0f, 1.0f };
+	//	clearCount++;
+	//}
+	//
+	//if (builder.depthTarget) {
+	//	clearValues[clearCount].depthStencil = { 1.0f, 0 };
+	//	clearCount++;
+	//}
+	//
+	//// view port and scissor
+	//VkViewport viewport{};
+	//viewport.x = 0.0f;
+	//viewport.y = 0.0f;
+	//viewport.width = static_cast<float>(builder.windowExtent.width);
+	//viewport.height = static_cast<float>(builder.windowExtent.height);
+	//viewport.minDepth = 0.0f;
+	//viewport.maxDepth = 1.0f;
+	//VkRect2D scissor{ {0, 0}, builder.windowExtent };
+	//
+	//auto transitionFaceToColor = [&](VkCommandBuffer cmd, uint32_t face) {
+	//	VkImageMemoryBarrier barrier{};
+	//	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	//	barrier.oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL; // or current layout if known
+	//	barrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	//	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	//	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	//	barrier.image = textTarget->getImage(); // whole image - but we restrict layers below
+	//	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	//	barrier.subresourceRange.baseMipLevel = 0;
+	//	barrier.subresourceRange.levelCount = 1;
+	//	barrier.subresourceRange.baseArrayLayer = face;
+	//	barrier.subresourceRange.layerCount = 1;
+	//	barrier.srcAccessMask = 0;
+	//	barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	//
+	//	vkCmdPipelineBarrier(
+	//		cmd,
+	//		VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+	//		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+	//		0,
+	//		0, nullptr,
+	//		0, nullptr,
+	//		1, &barrier
+	//	);
+	//	};
+	//
+	//auto transitionFaceToShaderRead = [&](VkCommandBuffer cmd, uint32_t face) {
+	//	VkImageMemoryBarrier barrier{};
+	//	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	//	barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	//	barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	//	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	//	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	//	barrier.image = textTarget->getImage();
+	//	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	//	barrier.subresourceRange.baseMipLevel = 0;
+	//	barrier.subresourceRange.levelCount = 1;
+	//	barrier.subresourceRange.baseArrayLayer = face;
+	//	barrier.subresourceRange.layerCount = 1;
+	//	barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	//	barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+	//
+	//	vkCmdPipelineBarrier(
+	//		cmd,
+	//		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+	//		VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+	//		0,
+	//		0, nullptr,
+	//		0, nullptr,
+	//		1, &barrier
+	//	);
+	//	};
+	//
+	//// render all 6 faces:
+	//SecondarySwapchain swap{ device, builder };
+	//
+	//for (int faceIndex = 0; faceIndex < 6; faceIndex++) {
+	//	
+	//	auto commandBuffer = device.beginSingleTimeCommands();
+	//
+	//	VkRenderPassBeginInfo renderPassInfo{};
+	//	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	//	renderPassInfo.renderPass = swap.getRenderPass();
+	//	renderPassInfo.framebuffer = swap.getFrameBuffer(faceIndex);
+	//	renderPassInfo.renderArea.offset = { 0, 0 };
+	//	renderPassInfo.renderArea.extent = builder.windowExtent;
+	//	renderPassInfo.clearValueCount = clearCount;
+	//	renderPassInfo.pClearValues = clearValues;
+	//
+	//	transitionFaceToColor(commandBuffer, faceIndex);
+	//
+	//	// Then start recording
+	//	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+	//	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+	//	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+	//
+	//	// render here
+	//	renderSystem->renderFullScreen(commandBuffer, textureObject->getDescriptorSets(), captureViews[faceIndex], captureProj);
+	//
+	//	vkCmdEndRenderPass(commandBuffer);
+	//
+	//	transitionFaceToShaderRead(commandBuffer, faceIndex);
+	//
+	//	device.endSingleTimeCommands(commandBuffer);
+	//
+	//	vkQueueWaitIdle(device.presentQueue());
+	//}
+	//
+	//textTarget->recreateImageView(true, true);
+	//
+	//{
+	//	uint32_t layers = textTarget->getCreatedArrayLayers();
+	//	VkImageCreateFlags flags = textTarget->getCreatedImageFlags();
+	//	bool cubeFlag = (flags & VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT) != 0;
+	//	std::cerr << "[Renderer] cubemap image layers = " << layers << ", cubeCompatibleFlag = " << (cubeFlag ? "YES" : "NO") << "\n";
+	//}
+	//
+	//return textTarget;
 }
 
 

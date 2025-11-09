@@ -106,8 +106,8 @@ public:
 		float minHeight = FLT_MAX;
 
 
-		float halfWidth = width / 2;
-		float halfHeight = height / 2;
+		float halfWidth = (float) width / 2;
+		float halfHeight = (float) height / 2;
 
 		std::vector<std::vector<float>> noiseMap(width, std::vector<float>(height));
 

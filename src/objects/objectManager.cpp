@@ -13,17 +13,47 @@
 
 void ObjectManager::startLoadModel(DescriptorPool& pool)
 {
-	std::shared_ptr<Model> cube = Model::createModelFromFile(device, "model/cube.obj"); 
-	cube->setTexture(Texture::create(device, "skybox/cubemap_vulkan.ktx", true)); 
+    {
+        std::shared_ptr<Model> cube = Model::createModelFromFile(device, "model/cube.obj");
+        cube->setTexture(Texture::create(device, "skybox/cubemap_vulkan.ktx", true));
 
-    auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
-    gameObject->setName("cubemap");
-    gameObject->setModelType(ModelType::OBJ_MODEL);
-	gameObject->setModelSubType(ModelSubType::SKYBOX);
-	gameObject->setModel(cube);
-	gameObject->saveable = false;
-	gameObject->createDescriptorSet(pool);
-    pushGameObject(std::move(gameObject));
+        auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
+        gameObject->setName("cubemap");
+        gameObject->setModelType(ModelType::OBJ_MODEL);
+        gameObject->setModelSubType(ModelSubType::SKYBOX);
+        gameObject->setModel(cube);
+        gameObject->saveable = false;
+        gameObject->createDescriptorSet(pool);
+        pushGameObject(std::move(gameObject));
+    }
+
+    /*{
+        std::shared_ptr<Model> cubemap = Model::createModelFromFile(device, "model/cube.obj");
+        cubemap->setTexture(Texture::create(device, "skybox/citrus_orchard_puresky_4k.hdr"));
+
+        auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
+        gameObject->setName("cubemapTextureBuilder");
+        gameObject->setModel(cubemap);
+        gameObject->setModelType(ModelType::UNDEFINED_MODEL);
+        gameObject->show = false;
+        gameObject->saveable = false;
+        gameObject->createDescriptorSet(pool);
+        pushGameObject(std::move(gameObject));
+    }*/
+
+    {
+        std::shared_ptr<Model> plane = PrebuiltModel::createFullScreenQuad(device);
+        plane->setTexture(Texture::create(device, "skybox/citrus_orchard_puresky_4k.hdr"));
+
+        auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
+        gameObject->setName("textPlane");
+        gameObject->setModel(plane);
+        gameObject->transform.translation = { 5, -0.1, 5 };
+        gameObject->saveable = false;
+        gameObject->createDescriptorSet(pool);
+        pushGameObject(std::move(gameObject));
+    }
+
 }
 
 void ObjectManager::createPrimitive(PrimitivesModelType type, int detail, TransformComponent transform, const std::string& name, const std::string& filePathTexture)

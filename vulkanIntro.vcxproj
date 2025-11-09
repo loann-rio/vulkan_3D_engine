@@ -180,6 +180,8 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClCompile Include="src\base\descriptors.cpp" />
     <ClCompile Include="src\base\Device.cpp" />
     <ClCompile Include="src\base\Pipeline.cpp" />
+    <ClCompile Include="src\base\SecondarySwapchain.cpp" />
+    <ClCompile Include="src\base\SingleRenderSwap.cpp" />
     <ClCompile Include="src\base\Swap_chain.cpp" />
     <ClCompile Include="src\base\Window.cpp" />
     <ClCompile Include="src\GameObjectClassAssets\TerrainGenerator.cpp" />
@@ -211,6 +213,8 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClInclude Include="src\base\Frame_info.h" />
     <ClInclude Include="src\base\PerlinNoise.h" />
     <ClInclude Include="src\base\Pipeline.h" />
+    <ClInclude Include="src\base\SecondarySwapchain.h" />
+    <ClInclude Include="src\base\SingleRenderSwap.h" />
     <ClInclude Include="src\base\Swap_chain.h" />
     <ClInclude Include="src\base\Utils.h" />
     <ClInclude Include="src\base\VoronoiNoise.h" />
@@ -237,6 +241,8 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <None Include="shaders\compile.bat" />
     <None Include="shaders\depthView.frag" />
     <None Include="shaders\depthView.vert" />
+    <None Include="shaders\equirectangular_to_cube.frag" />
+    <None Include="shaders\fullscreen.vert" />
     <None Include="shaders\global_ubo.minc" />
     <None Include="shaders\GlTFshader.frag" />
     <None Include="shaders\GlTFshader.vert" />
@@ -251,6 +257,8 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <None Include="shaders\skybox.vert" />
     <None Include="shaders\terrainShader.frag" />
     <None Include="shaders\terrainShader.vert" />
+    <None Include="shaders\test.vert" />
+    <None Include="shaders\testRed.frag" />
     <None Include="shaders\text.frag" />
     <None Include="shaders\text.vert" />
   </ItemGroup>

@@ -24,13 +24,6 @@ DepthSwapChain::~DepthSwapChain()
 		vkDestroyRenderPass(device.device(), depthRenderPass, nullptr);
 	}
 
-	for (int i = 0; i < depthImages.size(); i++) {
-		vkDestroyImageView( device.device(), depthImageViews[i],   nullptr);
-		vkDestroyImage(     device.device(), depthImages[i],       nullptr);
-		vkDestroySampler(   device.device(), depthSampler[i],      nullptr); 
-		vkFreeMemory(       device.device(), depthImageMemorys[i], nullptr);
-	}
-
 	for (auto framebuffer : depthFramebuffers) {
 		vkDestroyFramebuffer(device.device(), framebuffer, nullptr);
 	}
@@ -58,10 +51,7 @@ void DepthSwapChain::createDepthResources()
 {
     swapChainDepthFormat = findDepthFormat(); 
 
-    depthImages         .resize(MAX_DEPTH_RENDER_COUNT * Swap_chain::MAX_FRAMES_IN_FLIGHT); 
-    depthImageMemorys   .resize(MAX_DEPTH_RENDER_COUNT * Swap_chain::MAX_FRAMES_IN_FLIGHT); 
-    depthImageViews     .resize(MAX_DEPTH_RENDER_COUNT * Swap_chain::MAX_FRAMES_IN_FLIGHT); 
-    depthSampler        .resize(MAX_DEPTH_RENDER_COUNT * Swap_chain::MAX_FRAMES_IN_FLIGHT); 
+    textureTarget.resize(MAX_DEPTH_RENDER_COUNT * Swap_chain::MAX_FRAMES_IN_FLIGHT); 
 
     for (int i = 0; i < MAX_DEPTH_RENDER_COUNT * Swap_chain::MAX_FRAMES_IN_FLIGHT; i++) { 
         VkImageCreateInfo imageInfo{};
@@ -81,15 +71,8 @@ void DepthSwapChain::createDepthResources()
         imageInfo.flags = 0;
         imageInfo.pNext = NULL;
 
-        device.createImageWithInfo(
-            imageInfo,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            depthImages[i],
-            depthImageMemorys[i]);
-
         VkImageViewCreateInfo viewInfo{};
         viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        viewInfo.image = depthImages[i];
         viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
         viewInfo.format = swapChainDepthFormat;
         viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
@@ -97,10 +80,6 @@ void DepthSwapChain::createDepthResources()
         viewInfo.subresourceRange.levelCount = 1;
         viewInfo.subresourceRange.baseArrayLayer = 0;
         viewInfo.subresourceRange.layerCount = 1;
-
-        if (vkCreateImageView(device.device(), &viewInfo, nullptr, &depthImageViews[i]) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create texture image view!");
-        }
 
         VkSamplerCreateInfo samplerInfo{};
         samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -121,14 +100,7 @@ void DepthSwapChain::createDepthResources()
         samplerInfo.minLod = 0.0f;
         samplerInfo.maxLod = 100.0f;
 
-
-        if (vkCreateSampler(device.device(), &samplerInfo, nullptr, &depthSampler[i]) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create texture sampler!");
-        }
-
-       
-       device.transitionImageLayout(depthImages[i], swapChainDepthFormat,
-            VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1);
+        textureTarget[i] = std::make_unique<Texture>(device, imageInfo, viewInfo, samplerInfo, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
        
     }
 }
@@ -185,7 +157,10 @@ void DepthSwapChain::createDepthbuffers()
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         framebufferInfo.renderPass = depthRenderPass;
         framebufferInfo.attachmentCount = 1; 
-        framebufferInfo.pAttachments = &depthImageViews[i]; // Depth only 
+
+        VkImageView imageView = textureTarget[i]->getImageView();
+        framebufferInfo.pAttachments = &imageView;
+
         framebufferInfo.width = depthExtent.width; 
         framebufferInfo.height = depthExtent.height;  
         framebufferInfo.layers = 1; 
@@ -207,11 +182,7 @@ void DepthSwapChain::createDepthImageInfo()
         std::array<VkDescriptorImageInfo, MAX_DEPTH_RENDER_COUNT> imageInfo;
 
         for (uint16_t j = 0; j < MAX_DEPTH_RENDER_COUNT; ++j) 
-        { 
-            imageInfo[j].sampler = depthSampler[i * MAX_DEPTH_RENDER_COUNT + j];
-            imageInfo[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo[j].imageView = depthImageViews[i * MAX_DEPTH_RENDER_COUNT + j];
-        }
+            imageInfo[j] = textureTarget[i * MAX_DEPTH_RENDER_COUNT + j]->getImageInfo();
 
         descriptorImageInfo.push_back(imageInfo);
     }

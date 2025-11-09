@@ -22,4 +22,10 @@ C:\VulkanSDK\1.4.313.2\Bin\glslc.exe terrainShader.vert -o terrainShader.vert.sp
 C:\VulkanSDK\1.4.313.2\Bin\glslc.exe skybox.frag -o skybox.frag.spv --target-env=vulkan1.2
 C:\VulkanSDK\1.4.313.2\Bin\glslc.exe skybox.vert -o skybox.vert.spv --target-env=vulkan1.2
 
+C:\VulkanSDK\1.4.313.2\Bin\glslc.exe equirectangular_to_cube.frag -o equirectangular_to_cube.frag.spv --target-env=vulkan1.2
+C:\VulkanSDK\1.4.313.2\Bin\glslc.exe fullscreen.vert -o fullscreen.vert.spv --target-env=vulkan1.2
+
+C:\VulkanSDK\1.4.313.2\Bin\glslc.exe testRed.frag -o testRed.frag.spv --target-env=vulkan1.2
+C:\VulkanSDK\1.4.313.2\Bin\glslc.exe test.vert -o test.vert.spv --target-env=vulkan1.2
+
 pause
