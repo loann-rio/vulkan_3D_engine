@@ -26,7 +26,7 @@ public:
 	VkImageView getColorImageView() { return textureTargetColor->getImageView(); }
 	VkImageView getDepthImageView() { return textureTargetDepth->getImageView(); }
 
-	VkFramebuffer getFrameBuffer() const { return frameBuffer; }
+	VkFramebuffer getFrameBuffer(int index = 0) const { return frameBuffer[index]; }
 	
 	std::shared_ptr<Texture> getTextureColor() { return textureTargetColor; }
 	std::shared_ptr<Texture> getTextureDepth() { return textureTargetDepth; }
@@ -51,11 +51,16 @@ private:
 	void createRenderPass();
 	void createFrameBuffers();
 
+	bool isCubeMap = true;
+	bool hasDepth = false;
+	bool isHdr = true;
+
 	VkFormat swapChainDepthFormat;
 		
 	VkExtent2D textureExtent;
 
-	VkFramebuffer frameBuffer;
+	std::vector<VkFramebuffer> frameBuffer;
+	std::vector<VkImageView> imageViews;
 
 	VkRenderPass renderPass;
 

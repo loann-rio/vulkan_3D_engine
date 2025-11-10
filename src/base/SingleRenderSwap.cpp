@@ -24,8 +24,17 @@ SingleSwapChain::~SingleSwapChain()
         vkDestroyRenderPass(device.device(), renderPass, nullptr);
     }
 
-    if (frameBuffer != VK_NULL_HANDLE) {
-        vkDestroyFramebuffer(device.device(), frameBuffer, nullptr);
+    for (VkFramebuffer fb : frameBuffer)
+    {
+        if (fb != VK_NULL_HANDLE) {
+            vkDestroyFramebuffer(device.device(), fb, nullptr);
+        }
+    }
+
+    for (VkImageView imageView : imageViews) {
+        if (imageView != VK_NULL_HANDLE) {
+            vkDestroyImageView(device.device(), imageView, nullptr);
+        }
     }
 }
 
@@ -33,7 +42,7 @@ void SingleSwapChain::init()
 {
     createRenderPass();
 
-    createDepthResources();
+    if (hasDepth) createDepthResources();
     createColorResources();
 
     createFrameBuffers();
@@ -109,25 +118,25 @@ void SingleSwapChain::createColorResources()
     imageInfo.extent.height = textureExtent.height;
     imageInfo.extent.depth = 1;
     imageInfo.mipLevels = 1;
-    imageInfo.arrayLayers = 1;
-    imageInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
+    imageInfo.arrayLayers = isCubeMap ? 6 : 1; // maybe more??????
+    imageInfo.format = isHdr ? VK_FORMAT_R32G32B32A32_SFLOAT : VK_FORMAT_R8G8B8A8_SRGB;
     imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
     imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     imageInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
     imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
     imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    imageInfo.flags = 0;
+    imageInfo.flags = isCubeMap ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0;
     imageInfo.pNext = NULL;
 
     VkImageViewCreateInfo viewInfo{};
     viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    viewInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
+    viewInfo.viewType = isCubeMap ? VK_IMAGE_VIEW_TYPE_CUBE : VK_IMAGE_VIEW_TYPE_2D;
+    viewInfo.format = isHdr ? VK_FORMAT_R32G32B32A32_SFLOAT : VK_FORMAT_R8G8B8A8_SRGB;
     viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     viewInfo.subresourceRange.baseMipLevel = 0;
     viewInfo.subresourceRange.levelCount = 1;
     viewInfo.subresourceRange.baseArrayLayer = 0;
-    viewInfo.subresourceRange.layerCount = 1;
+    viewInfo.subresourceRange.layerCount = isCubeMap ? 6 : 1;
 
     VkSamplerCreateInfo samplerInfo{};
     samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -168,7 +177,7 @@ void SingleSwapChain::createRenderPass()
     depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
     VkAttachmentDescription colorAttachment = {};
-    colorAttachment.format = VK_FORMAT_R8G8B8A8_SRGB;
+    colorAttachment.format = isHdr ? VK_FORMAT_R32G32B32A32_SFLOAT : VK_FORMAT_R8G8B8A8_SRGB;
     colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
     colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -185,7 +194,9 @@ void SingleSwapChain::createRenderPass()
     subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     subpass.colorAttachmentCount = 1;
     subpass.pColorAttachments = &colorAttachmentRef;
-    subpass.pDepthStencilAttachment = &depthAttachmentRef;
+
+    if (hasDepth)
+        subpass.pDepthStencilAttachment = &depthAttachmentRef;
 
     VkSubpassDependency dependency = {};
     dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -195,7 +206,10 @@ void SingleSwapChain::createRenderPass()
     dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
     dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
-    std::array<VkAttachmentDescription, 2> attachments = { colorAttachment, depthAttachment };
+    std::vector<VkAttachmentDescription> attachments = { colorAttachment };
+
+    if (hasDepth) attachments.push_back(depthAttachment);
+
     VkRenderPassCreateInfo renderPassInfo = {};
 
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -213,22 +227,44 @@ void SingleSwapChain::createRenderPass()
 
 void SingleSwapChain::createFrameBuffers()
 {
-    VkImageView attachments[2];
-    attachments[0] = textureTargetColor->getImageView();
-    attachments[1] = textureTargetDepth->getImageView();
+    frameBuffer.resize(isCubeMap ? 6 : 1);
+    imageViews.resize(isCubeMap ? 6 : 1);
 
-    VkFramebufferCreateInfo framebufferInfo{};
-    framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-    framebufferInfo.renderPass = renderPass;
-    framebufferInfo.attachmentCount = 2;
-    framebufferInfo.pAttachments = attachments;
-    framebufferInfo.width = textureExtent.width;
-    framebufferInfo.height = textureExtent.height;
-    framebufferInfo.layers = 1;
+    for (size_t layer = 0; layer < frameBuffer.size(); layer++)
+    {
+        // create image view
+        VkImageViewCreateInfo viewInfo{};
+        viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        viewInfo.image = textureTargetColor->getImage();
+        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        viewInfo.format = isHdr ? VK_FORMAT_R32G32B32A32_SFLOAT : VK_FORMAT_R8G8B8A8_SRGB;
+        viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        viewInfo.subresourceRange.baseMipLevel = 0;
+        viewInfo.subresourceRange.levelCount = 1;
+        viewInfo.subresourceRange.baseArrayLayer = layer;
+        viewInfo.subresourceRange.layerCount = 1;
 
-    // create a single framebuffer that contains both attachments
-    if (vkCreateFramebuffer(device.device(), &framebufferInfo, nullptr, &frameBuffer) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create framebuffer with color+depth attachments!");
+        vkCreateImageView(device.device(), &viewInfo, nullptr, &imageViews[layer]);
+
+        std::vector<VkImageView> attachments;
+        attachments.push_back(imageViews[layer]);
+
+        if (hasDepth)
+            attachments.push_back(textureTargetDepth->getImageView());
+
+        VkFramebufferCreateInfo framebufferInfo{};
+        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebufferInfo.renderPass = renderPass;
+        framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+        framebufferInfo.pAttachments = attachments.data();
+        framebufferInfo.width = textureExtent.width;
+        framebufferInfo.height = textureExtent.height;
+        framebufferInfo.layers = 1;
+
+        // create a single framebuffer that contains both attachments
+        if (vkCreateFramebuffer(device.device(), &framebufferInfo, nullptr, &frameBuffer[layer]) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create framebuffer with color+depth attachments!");
+        }
     }
 }
 

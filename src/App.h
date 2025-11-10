@@ -62,9 +62,9 @@ private:
 	std::vector<VkDescriptorSet> globalDescriptorSet;
 	std::vector<VkDescriptorSet> shadowDescriptorSet;
 	std::vector<VkDescriptorSet> terrainDescriptorSet;
-	std::vector<VkDescriptorSet> skyboxDescriptorSet;
+	//std::vector<VkDescriptorSet> skyboxDescriptorSet;
 
-	std::shared_ptr<Texture> skyboxTexture = Texture::create(device, "skybox/cubemap_vulkan.ktx", true);
+	//std::shared_ptr<Texture> skyboxTexture = Texture::create(device, "skybox/cubemap_vulkan.ktx", true);
 
 	// object management:
 	ObjectManager objectManager{ device };

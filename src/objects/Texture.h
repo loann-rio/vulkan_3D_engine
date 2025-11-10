@@ -45,8 +45,8 @@ public:
 	uint32_t getCreatedArrayLayers() const { return createdArrayLayers; }
 	VkImageCreateFlags getCreatedImageFlags() const { return createdImageFlags; }
 
-
 	void recreateImageView(bool isCubeMap, bool isHdr = false);
+	void saveTexture(std::string format, const std::string& outputDir);
 
 	bool isLoaded = false; 
 
@@ -75,6 +75,8 @@ private:
 
 	VkImageView textureImageView;
 	VkSampler textureSampler;
+
+	VkExtent2D extent;
 
 	VkImage textureImage;
 	VkDeviceMemory textureImageMemory;

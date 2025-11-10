@@ -61,16 +61,19 @@ void App::run()
         auto* textureObject = dynamic_cast<GameObjectModel*>(objectManager.get("textPlane"));
 
         // render new texture
-        renderer.renderSingleTotexture(objRenderSystembis, textureObject, {});
+        auto resultTexture = renderer.renderSingleTotexture(objRenderSystembis, textureObject, {});
 
         // create go with new texture
-        std::shared_ptr<Model> plane = PrebuiltModel::createPlane(device, 10, 2, { 1, 1, 1 });
-        plane->setTexture(renderer.getSingleTexture());
+        std::shared_ptr<Model> cube = Model::createModelFromFile(device, "model/cube.obj");
+
+        cube->setTexture(resultTexture);
 
         auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
         gameObject->setName("testPlane");
-        gameObject->transform.translation = { 2.5, -0.1, 5 };
-        gameObject->setModel(plane);
+        //gameObject->transform.translation = { 2.5, -0.1, 5 };
+        gameObject->setModel(cube);
+        gameObject->setModelType(ModelType::OBJ_MODEL);
+        gameObject->setModelSubType(ModelSubType::SKYBOX);
         gameObject->saveable = false;
         gameObject->createDescriptorSet(*globalPool);
         objectManager.pushGameObject(std::move(gameObject));
@@ -257,8 +260,17 @@ void App::run()
                  
                 // render
                 renderer.beginSwapChainRenderPass(commandBuffer); 
+
+                auto* textureObject = dynamic_cast<GameObjectModel*>(objectManager.get("testPlane"));
                  
-                gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo, { globalDescriptorSet[frameIndex], shadowDescriptorSet[renderer.getDepthIndex()], skyboxDescriptorSet[frameIndex] }, frustrumPlanes );
+                gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo, 
+                    { 
+                        globalDescriptorSet[frameIndex], 
+                        shadowDescriptorSet[renderer.getDepthIndex()], 
+                        textureObject->getDescriptorSets()[frameIndex]
+                    }, 
+                    frustrumPlanes );
+
                 objRenderSystem->renderGameObjects(commandBuffer, frameInfo, descriptorSets); 
 
                 std::vector<VkDescriptorSet> terrainDescriptorSets{ globalDescriptorSet[frameIndex], shadowDescriptorSet[renderer.getDepthIndex()], terrainDescriptorSet[frameIndex] };
@@ -387,18 +399,6 @@ void App::createRenderSystems()
     auto skyboxSetLayout = DescriptorSetLayout::Builder(device)
         .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) 
         .build();
-
-
-    skyboxDescriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
-    for (int i = 0; i < skyboxDescriptorSet.size() && i < 2; i++)
-    {
-        auto textInfo = skyboxTexture->getImageInfo();
-
-        DescriptorWriter(*skyboxSetLayout, *globalPool)
-            .writeImage(0, &textInfo)
-            .build(skyboxDescriptorSet[i]);
-    }
-
 
     /// render systems
 

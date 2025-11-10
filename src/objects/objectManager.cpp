@@ -23,6 +23,7 @@ void ObjectManager::startLoadModel(DescriptorPool& pool)
         gameObject->setModelSubType(ModelSubType::SKYBOX);
         gameObject->setModel(cube);
         gameObject->saveable = false;
+        gameObject->show = false;
         gameObject->createDescriptorSet(pool);
         pushGameObject(std::move(gameObject));
     }
@@ -380,6 +381,10 @@ void ObjectManager::pushFuture(std::future<std::vector<futureObject>> futures)
 /// <param name="pool">global model pool</param>
 void ObjectManager::pushModel(DescriptorPool& pool)
 {
+
+
+
+    // load futures
     auto it = futureGameObjectslist.begin();
     while (it != futureGameObjectslist.end()) { // iter over futures
         if (it->wait_for(std::chrono::seconds(0)) == std::future_status::ready) { // check if future is ready

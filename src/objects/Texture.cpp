@@ -5,6 +5,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "../../external/stb/stb_image.h"
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "../../external/stb/stb_image_write.h"
+
 #include <stdexcept>
 
 
@@ -153,6 +156,8 @@ Texture::Texture(Device& device, uint32_t width, uint32_t height, VkFormat forma
 
 Texture::Texture(Device& device, VkImageCreateInfo imageInfo, VkImageViewCreateInfo viewInfo, VkSamplerCreateInfo samplerInfo, VkImageLayout initImageLayout, uint32_t layerCount) : device{ device }
 {
+    extent = { imageInfo.extent.width, imageInfo.extent.height };
+
     // create image
     device.createImageWithInfo(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
     // create image view
@@ -179,6 +184,8 @@ bool Texture::createTextureImage(unsigned char* rgbaPixels, const uint32_t fontW
         std::cerr << "failed to load texture image! \n";
         return false;
     }
+
+    extent = { fontWidth, fontHeight };
 
     int texWidth = fontWidth;
     int texHeight = fontHeight;
@@ -232,6 +239,8 @@ bool Texture::createTextureImage(float* rgbaPixels, const uint32_t fontWidth, co
         return false;
     }
 
+    extent = { fontWidth, fontHeight };
+
     int texWidth = fontWidth;
     int texHeight = fontHeight;
     mipLevel = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
@@ -278,8 +287,6 @@ bool Texture::createTextureImage(float* rgbaPixels, const uint32_t fontWidth, co
     return true;
 }
 
-
-
 bool Texture::createTextureImage(const char* path)
 {
     // create image from file
@@ -301,6 +308,8 @@ bool Texture::createTextureImage(const char* path)
         //// free local memory
         stbi_image_free(pixels);
     }
+
+    extent = { (unsigned int) texWidth, (unsigned int) texHeight };
 
     return result;
 }
@@ -385,6 +394,8 @@ bool Texture::createTextureImageKtx2(const std::string path, bool isCubeMap)
 
     uint32_t width = levelInfos[0].m_orig_width;
     uint32_t height = levelInfos[0].m_orig_height;
+
+    extent = { width, height };
 
     VkMemoryAllocateInfo memAllocInfo{};
     memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -548,6 +559,9 @@ bool Texture::createTextureImageKtx(const std::string path, bool isCubeMap)
 
     uint32_t width = kTexture->baseWidth;
     uint32_t height = kTexture->baseHeight;
+
+    extent = { width, height };
+
     mipLevel = kTexture->numLevels;
 
     assert(width > 0 && height > 0 && "Invalid texture size");
@@ -823,6 +837,91 @@ void Texture::recreateImageView(bool isCubeMap, bool isHdr)
         textureImageView = createTextureCubeMapImageView((isHdr) ? VK_FORMAT_R32G32B32A32_SFLOAT : VK_FORMAT_R8G8B8A8_SRGB);
     else
         textureImageView = createImageView(textureImage, (isHdr) ? VK_FORMAT_R32G32B32A32_SFLOAT : VK_FORMAT_R8G8B8A8_SRGB, mipLevel, VK_IMAGE_ASPECT_COLOR_BIT, isCubeMap);
+}
+
+void Texture::saveTexture(std::string format, const std::string& outputDir)
+{
+
+    return; //pls dont use
+
+    bool isHdri = false;
+    bool isCubeMap = false;
+
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+
+    const uint32_t numFaces = isCubeMap ? 6 : 1;
+    const uint32_t bytesPerPixel = 4 * (isHdri ? sizeof(float) : 1);
+    const VkDeviceSize faceSize = extent.width * extent.height * bytesPerPixel;
+    const VkDeviceSize totalSize = faceSize * numFaces;
+    const VkFormat imageFormat = isHdri ? VK_FORMAT_R32G32B32A32_SFLOAT : VK_FORMAT_R8G8B8A8_SRGB;
+
+    device.createBuffer(
+        totalSize,                                     // total bytes
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,              // used as transfer source
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |          // CPU visible
+        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,          // no need to flush
+        stagingBuffer,
+        stagingBufferMemory
+    );
+
+    device.transitionImageLayout(textureImage, imageFormat, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 0, isCubeMap ? 6 : 1);
+    
+    
+    std::vector<VkBufferImageCopy> regions( numFaces );
+
+    for (uint32_t face = 0; face < regions.size(); ++face) {
+        regions[face].bufferOffset = face * faceSize;
+        regions[face].bufferRowLength = 0;
+        regions[face].bufferImageHeight = 0;
+        regions[face].imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        regions[face].imageSubresource.mipLevel = 0;
+        regions[face].imageSubresource.baseArrayLayer = face;
+        regions[face].imageSubresource.layerCount = 1;
+        regions[face].imageOffset = { 0, 0, 0 };
+        regions[face].imageExtent = { extent.width, extent.height, 1 };
+    }
+
+    device.copyImageToBuffer(textureImage, stagingBuffer, regions);
+    device.transitionImageLayout(textureImage, imageFormat, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 0, isCubeMap ? 6 : 1);
+
+    void* data;
+    vkMapMemory(device.device(), stagingBufferMemory, 0, totalSize, 0, &data);
+    std::vector<uint8_t> pixels(totalSize);
+    memcpy(pixels.data(), data, static_cast<size_t>(totalSize));
+    vkUnmapMemory(device.device(), stagingBufferMemory);
+
+    if (format == "ktx") {
+
+    }
+    else if (format == "png") {
+     
+        for (uint32_t face = 0; face < numFaces; ++face) {
+            std::string filename = outputDir + "/face_" + std::to_string(face) + ".png";
+
+            
+            uint8_t* faceData = pixels.data() + face * faceSize;
+
+
+            if (isHdri) {
+                std::vector<uint8_t> facePixels(extent.width * extent.height * 4);
+                float* src = reinterpret_cast<float*>(faceData);
+                for (size_t i = 0; i < extent.width * extent.height * 4; ++i) {
+                    facePixels[i] = static_cast<uint8_t>(std::clamp(src[i] * 255.0f, 0.0f, 255.0f));
+                }
+                stbi_write_png(filename.c_str(), extent.width, extent.height, 4, facePixels.data(), extent.width * 4);
+            }
+            else {
+                stbi_write_png(filename.c_str(), extent.width, extent.height, 4, faceData, extent.width * 4);
+            }
+
+
+            std::cout << "Saved " << filename << std::endl;
+        }
+    }
+
+    vkDestroyBuffer(device.device(), stagingBuffer, nullptr);
+    vkFreeMemory(device.device(), stagingBufferMemory, nullptr);
 }
 
 VkImageView Texture::createTextureCubeMapImageView(VkFormat format)

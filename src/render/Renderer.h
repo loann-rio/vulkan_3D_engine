@@ -49,7 +49,7 @@ public:
 	void beginSwapChainRenderPass(VkCommandBuffer commandBuffer);
 	void endSwapChainRenderPass(VkCommandBuffer commandBuffer);
 
-	void beginSingleTimeRender(VkCommandBuffer commandBuffer);
+	void beginSingleTimeRender(VkCommandBuffer commandBuffer, int buffer_index = 0);
 	void endSingleTimeRender(VkCommandBuffer commandBuffer);
 
 	bool aquireNextImage();

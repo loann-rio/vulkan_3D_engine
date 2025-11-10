@@ -219,12 +219,12 @@ void Renderer::endShadowRenderPass(VkCommandBuffer commandBuffer, int depthComma
 }
 
 
-void Renderer::beginSingleTimeRender(VkCommandBuffer commandBuffer)
+void Renderer::beginSingleTimeRender(VkCommandBuffer commandBuffer, int buffer_index)
 {
 	VkRenderPassBeginInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	renderPassInfo.renderPass = swap.getRenderPass();
-	renderPassInfo.framebuffer = swap.getFrameBuffer();
+	renderPassInfo.framebuffer = swap.getFrameBuffer(buffer_index);
 
 	renderPassInfo.renderArea.offset = { 0, 0 };
 	renderPassInfo.renderArea.extent = swap.getSwapChainExtent();
@@ -303,33 +303,45 @@ std::shared_ptr<Texture> Renderer::renderSingleTotexture(std::shared_ptr<GlobalR
 {
 
 	glm::mat4 captureViews[] = {
-		glm::lookAt(glm::vec3(0), glm::vec3(1, 0, 0), glm::vec3(0, -1, 0)), // +X
-		glm::lookAt(glm::vec3(0), glm::vec3(-1, 0, 0), glm::vec3(0, -1, 0)),// -X
-		glm::lookAt(glm::vec3(0), glm::vec3(0, 1, 0), glm::vec3(0, 0, 1)),  // +Y
-		glm::lookAt(glm::vec3(0), glm::vec3(0, -1, 0), glm::vec3(0, 0, -1)),// -Y
-		glm::lookAt(glm::vec3(0), glm::vec3(0, 0, 1), glm::vec3(0, -1, 0)), // +Z
-		glm::lookAt(glm::vec3(0), glm::vec3(0, 0, -1), glm::vec3(0, -1, 0)) // -Z
+	glm::lookAt(glm::vec3(0), glm::vec3(1,  0,  0), glm::vec3(0, -1,  0)), // +X
+	glm::lookAt(glm::vec3(0), glm::vec3(-1, 0,  0), glm::vec3(0, -1,  0)), // -X
+	glm::lookAt(glm::vec3(0), glm::vec3(0, -1,  0), glm::vec3(0,  0, -1)), // +Y
+	glm::lookAt(glm::vec3(0), glm::vec3(0,  1,  0), glm::vec3(0,  0,  1)), // -Y
+	glm::lookAt(glm::vec3(0), glm::vec3(0,  0,  1), glm::vec3(0, -1,  0)), // +Z
+	glm::lookAt(glm::vec3(0), glm::vec3(0,  0, -1), glm::vec3(0, -1,  0))  // -Z
 	};
+
 		 
 	glm::mat4 captureProj = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
 	captureProj[1][1] *= -1.0f;
 
-	if (auto commandBuffer = device.beginSingleTimeCommands()) {
-		beginSingleTimeRender(commandBuffer);
+	for (size_t face = 0; face < 6; face++)
+	{
+		if (auto commandBuffer = device.beginSingleTimeCommands()) {
+			beginSingleTimeRender(commandBuffer, face);
 
-		FrameInfo info{};
-		info.listGameObjects = { textureObject };
+			FrameInfo info{};
+			info.listGameObjects = { textureObject };
 
-		//renderSystem->renderGameObjects(commandBuffer, info, descriptorSets);
-		renderSystem->renderFullScreen(commandBuffer, textureObject->getDescriptorSets(), captureViews[0], captureProj);
+			renderSystem->renderFullScreen(commandBuffer, textureObject->getDescriptorSets(), captureViews[face], captureProj);
 
 
-		endSingleTimeRender(commandBuffer);
-		device.endSingleTimeCommands(commandBuffer);
+			endSingleTimeRender(commandBuffer);
+			device.endSingleTimeCommands(commandBuffer);
+		}
+
 	}
-		
-	return swap.getTextureColor();
 
+	device.transitionImageLayout(
+		swap.getTextureColor()->getImage(),
+		VK_FORMAT_R8G8B8A8_SRGB,
+		VK_IMAGE_LAYOUT_UNDEFINED,
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		1,
+		6
+	);
+
+	return swap.getTextureColor();
 	//// create view + proj matrices
 	//glm::mat4 captureViews[] = {
 	//	glm::lookAt(glm::vec3(0), glm::vec3(1, 0, 0), glm::vec3(0, -1, 0)), // +X

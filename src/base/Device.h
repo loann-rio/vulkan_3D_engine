@@ -97,6 +97,10 @@ public:
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount, uint32_t mipLevel = 0, uint32_t bufferOffset = 0);
     void copyBufferToImage(VkBuffer buffer, VkImage image, std::vector<VkBufferImageCopy> regions);
 
+    void copyImageToBuffer(VkImage image, VkBuffer buffer, uint32_t width, uint32_t height, uint32_t layerCount, uint32_t mipLevel = 0, uint32_t bufferOffset = 0);
+    void copyImageToBuffer(VkImage image, VkBuffer buffer, std::vector<VkBufferImageCopy> regions);
+
+
     void createImageWithInfo(
         const VkImageCreateInfo& imageInfo,
         VkMemoryPropertyFlags properties,

@@ -670,6 +670,51 @@ void Device::copyBufferToImage(VkBuffer buffer, VkImage image, std::vector<VkBuf
 
 }
 
+void Device::copyImageToBuffer(VkImage image, VkBuffer buffer, uint32_t width, uint32_t height, uint32_t layerCount, uint32_t mipLevel, uint32_t bufferOffset)
+{
+    VkCommandBuffer commandBuffer = beginSingleTimeTransferCommands();
+    VkBufferImageCopy region{};
+    region.bufferOffset = bufferOffset;
+    region.bufferRowLength = 0;
+    region.bufferImageHeight = 0;
+
+    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    region.imageSubresource.mipLevel = mipLevel;
+    region.imageSubresource.baseArrayLayer = 0;
+    region.imageSubresource.layerCount = layerCount;
+
+    uint32_t mipWidth = std::max(1u, width >> (mipLevel));
+    uint32_t mipHeight = std::max(1u, height >> (mipLevel));
+
+
+    region.imageOffset = { 0, 0, 0 };
+    region.imageExtent = { mipWidth, mipHeight, 1 };
+
+    vkCmdCopyImageToBuffer(
+        commandBuffer,
+        image,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        buffer,
+        1,
+        &region);
+
+    endSingleTimeTransferCommands(commandBuffer);
+}
+
+void Device::copyImageToBuffer(VkImage image, VkBuffer buffer, std::vector<VkBufferImageCopy> regions)
+{
+    VkCommandBuffer commandBuffer = beginSingleTimeTransferCommands();
+    vkCmdCopyBufferToImage(
+        commandBuffer,
+        buffer,
+        image,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        regions.size(),
+        regions.data());
+
+    endSingleTimeTransferCommands(commandBuffer);
+}
+
 void Device::createImageWithInfo(
     const VkImageCreateInfo& imageInfo,
     VkMemoryPropertyFlags properties,
@@ -791,6 +836,13 @@ void Device::transitionImageLayout(VkCommandBuffer& commandBuffer, VkImage image
 
         sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
         destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    }
+    else if (oldLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) {
+        barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+
+        sourceStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
     }
 
     else {

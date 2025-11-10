@@ -24,7 +24,9 @@ void main() {
     // we render a fullscreen triangle where vertex shader provided uv, but
     // we can compute direction by using view inverse * direction.
     // Simpler: compute a direction from gl_FragCoord via normalized device coords:
-    vec2 ndc = uv * 2.0 - 1.0;
+    vec2 uv_in = uv;
+    uv_in.x = 1 - uv_in.x;
+    vec2 ndc = uv_in * 2.0 - 1.0;
     // We need a direction for the cube face: use push.view inverse to transform
     vec4 dir = inverse(push.view) * vec4(normalize(vec3(ndc.x, ndc.y, 1.0)), 0.0);
     vec3 direction = normalize(dir.xyz);
