@@ -136,6 +136,7 @@ void BasicUI::objectSelectionWindow(std::vector<std::string> listObjectsName, Ob
         if (ImGui::Selectable("Model")) { open_sub_popup = true; }
         if (ImGui::Selectable("Camera")) { selected = 2; }
         if (ImGui::Selectable("SpotLight")) { selected = 3; }
+        if (ImGui::Selectable("Skybox")) selected = 4;
 
         ImGui::EndPopup(); 
     }
@@ -153,9 +154,7 @@ void BasicUI::objectSelectionWindow(std::vector<std::string> listObjectsName, Ob
 
         if (ImGui::Selectable("OBJ")) selected = 0;  
         if (ImGui::Selectable("GLTF")) selected = 1;  
-        if (ImGui::Selectable("SKYBOX")) selected = 4;
-
-
+        
         ImGui::EndPopup(); 
     }
 
@@ -319,34 +318,32 @@ void BasicUI::createGLTFWindow(ObjectManager* manager)
 
 void BasicUI::createSkyboxWindow(ObjectManager* manager)
 {
-  //  ImGui::Begin("createObject", &show_create_go_window);
+    ImGui::Begin("create skybox", &show_create_go_window);
 
-  //  isWindowSelected = (isWindowSelected || ImGui::IsWindowFocused());
+    isWindowSelected = (isWindowSelected || ImGui::IsWindowFocused());
 
-  //  ImGui::SeparatorText("create skybox model");
+    ImGui::SeparatorText("create skybox model");
 
-  //  ImGui::Text("cubemap path");
-  //  static char path[128] = "";
-  //  ImGui::InputTextWithHint("##path", "enter model path", path, IM_ARRAYSIZE(path));
+    ImGui::Text("cubemap path");
+    static char path[128] = "";
+    ImGui::InputTextWithHint("##path", "enter texture path", path, IM_ARRAYSIZE(path));
 
-  //  if (ImGui::Button("open dialog")) {
-  //      std::string filePath = openFileDialog("ktx");
+    if (ImGui::Button("open dialog")) {
+        std::string filePath = openFileDialog("ktx, hdr");
 
-  //      if (!filePath.empty())
-  //          strcpy_s(path, filePath.c_str());
-  //  }
+        if (!filePath.empty())
+            strcpy_s(path, filePath.c_str());
+    }
+    
+    if (ImGui::Button("create"))
+    {
+        manager->loadSkyboxtexture(device, path, "skyboxtexture");
+        show_create_go_window = false;
+    }
 
-  //  if (ImGui::Button("create"))
-  //  {
-		//manager->removeGameObject("cubemap");
-  //      manager->loadObjectAsync(device, path, TransformComponent{}, "cubemap");
-  //      show_create_go_window = false;
-  //      //std::memset(path, 0, sizeof(path));
-  //  }
+    ImGui::End();
 
-  //  ImGui::End();
-
-  //  if (!show_create_go_window) selected = -1;
+    if (!show_create_go_window) selected = -1;
 }
 
 void BasicUI::createCameraWindow(ObjectManager* manager, bool isSpotLight = false)

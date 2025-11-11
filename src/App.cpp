@@ -56,28 +56,28 @@ void App::run()
     textOverlay.prepareResources(*globalPool);
 
     // test single render
-    {
-        // get texture to use to render
-        auto* textureObject = dynamic_cast<GameObjectModel*>(objectManager.get("textPlane"));
+    //if (false)
+    //{
+    //    // get texture to use to render
+    //    auto* textureObject = dynamic_cast<GameObjectModel*>(objectManager.get("testPlane"));
 
-        // render new texture
-        auto resultTexture = renderer.renderSingleTotexture(objRenderSystembis, textureObject, {});
+    //    // render new texture
+    //    auto resultTexture = renderer.renderHdriToCubeTexture(skyboxCreationRenderSystem, textureObject, {});
 
-        // create go with new texture
-        std::shared_ptr<Model> cube = Model::createModelFromFile(device, "model/cube.obj");
+    //    // create go with new texture
+    //    std::shared_ptr<Model> cube = Model::createModelFromFile(device, "model/cube.obj");
 
-        cube->setTexture(resultTexture);
+    //    cube->setTexture(resultTexture);
 
-        auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
-        gameObject->setName("testPlane");
-        //gameObject->transform.translation = { 2.5, -0.1, 5 };
-        gameObject->setModel(cube);
-        gameObject->setModelType(ModelType::OBJ_MODEL);
-        gameObject->setModelSubType(ModelSubType::SKYBOX);
-        gameObject->saveable = false;
-        gameObject->createDescriptorSet(*globalPool);
-        objectManager.pushGameObject(std::move(gameObject));
-    }
+    //    auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
+    //    gameObject->setName("skybox");
+    //    gameObject->setModel(cube);
+    //    gameObject->setModelType(ModelType::OBJ_MODEL);
+    //    gameObject->setModelSubType(ModelSubType::SKYBOX);
+    //    gameObject->saveable = false;
+    //    gameObject->createDescriptorSet(*globalPool);
+    //    objectManager.pushGameObject(std::move(gameObject));
+    //}
 
     // user inputs
     KeyboardMovementController cameraController{};
@@ -261,15 +261,15 @@ void App::run()
                 // render
                 renderer.beginSwapChainRenderPass(commandBuffer); 
 
-                auto* textureObject = dynamic_cast<GameObjectModel*>(objectManager.get("testPlane"));
-                 
-                gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo, 
-                    { 
-                        globalDescriptorSet[frameIndex], 
-                        shadowDescriptorSet[renderer.getDepthIndex()], 
-                        textureObject->getDescriptorSets()[frameIndex]
-                    }, 
-                    frustrumPlanes );
+                auto* textureObject = dynamic_cast<GameObjectModel*>(objectManager.get("cubemap"));
+                if (textureObject)
+                    gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo, 
+                        { 
+                            globalDescriptorSet[frameIndex], 
+                            shadowDescriptorSet[renderer.getDepthIndex()], 
+                            textureObject->getDescriptorSets()[frameIndex]
+                        }, 
+                        frustrumPlanes );
 
                 objRenderSystem->renderGameObjects(commandBuffer, frameInfo, descriptorSets); 
 
@@ -395,7 +395,6 @@ void App::createRenderSystems()
 
 
     /// skybox 
-
     auto skyboxSetLayout = DescriptorSetLayout::Builder(device)
         .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) 
         .build();
@@ -455,28 +454,15 @@ void App::createRenderSystems()
         terrainRenderSystem = GlobalRenderSystem::create<Model>(device, terrainBuilder);
     }
 
-    {
-        RenderSystemBuilder skyboxBuilder{};
-
-        skyboxBuilder.fragFilepath = "shaders\\skybox.frag.spv";
-        skyboxBuilder.vertFilepath = "shaders\\skybox.vert.spv";
-        skyboxBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout() };
-        skyboxBuilder.renderPass = renderer.getSwapChainRenderPass();
-        skyboxBuilder.subModelType = ModelSubType::SKYBOX;
-        skyboxBuilder.isSkyBox = true;
-
-        skyboxRenderSystem = GlobalRenderSystem::create<Model>(device, skyboxBuilder);
-    }
-
     /// single time render
     {
-        RenderSystemBuilder objBuilder{};
-        objBuilder.fragFilepath = "shaders\\equirectangular_to_cube.frag.spv";
-        objBuilder.vertFilepath = "shaders\\fullscreen.vert.spv";
-        objBuilder.renderPass = renderer.getSecondarySwapRenderPass();
-        objBuilder.isFullscreenRender = true;
-        objBuilder.pushStage = static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_FRAGMENT_BIT);
-        objRenderSystembis = GlobalRenderSystem::create<Model>(device, objBuilder);
+        RenderSystemBuilder skyboxBuilder{};
+        skyboxBuilder.fragFilepath = "shaders\\equirectangular_to_cube.frag.spv";
+        skyboxBuilder.vertFilepath = "shaders\\fullscreen.vert.spv";
+        skyboxBuilder.renderPass = renderer.getSecondarySwapRenderPass();
+        skyboxBuilder.isFullscreenRender = true;
+        skyboxBuilder.pushStage = static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_FRAGMENT_BIT);
+        skyboxCreationRenderSystem = GlobalRenderSystem::create<Model>(device, skyboxBuilder);
     }
 
 }

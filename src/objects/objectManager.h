@@ -12,6 +12,8 @@
 
 
 #include "GameObject.h"
+#include "../render/Renderer.h"
+#include "../render/GlobalRenderSystem.h" 
 
 #include <../json.hpp>
 using json = nlohmann::json;
@@ -43,7 +45,7 @@ public:
     ~ObjectManager() { saveFullScene(); }
 	
 	void startLoadModel(DescriptorPool& pool); 
-	void pushModel(DescriptorPool& pool); 
+	void pushModel(DescriptorPool& pool);
     void pushGameObject(std::unique_ptr<GameObject> gameObject);
 
 	// create primitive object
@@ -63,6 +65,7 @@ public:
 
     void loadObjectAsync(Device& device, const std::string& filePath, TransformComponent transform, const std::string& name = "");
     void loadObjectAsyncObj(Device& device, const std::string& filePath, const std::string filePathTexture, TransformComponent transform, const std::string& name = "");
+    void loadSkyboxtexture(Device& device, const std::string& filePath, const std::string& name = "");
 
     void pushFuture(std::future<std::vector<futureObject>> futures);
 
@@ -96,6 +99,7 @@ private:
     std::unordered_map<std::type_index, std::vector<GameObject*>> gameObjectsByType; 
 
     void addObjectToScene(GameObject* gameObject);
+    void generateSkybox(GameObjectModel* texturegameObject, Renderer* renderer, std::shared_ptr<GlobalRenderSystem> skyboxRenedrSystem);
 };
 
 /// <summary>

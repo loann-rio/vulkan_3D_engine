@@ -56,15 +56,11 @@ private:
 	std::shared_ptr<GlobalRenderSystem> terrainRenderSystem;
 	std::shared_ptr<GlobalRenderSystem> skyboxRenderSystem;
 	std::shared_ptr<GlobalRenderSystem> skyboxCreationRenderSystem;
-	std::shared_ptr<GlobalRenderSystem> objRenderSystembis;
 
 	// global descriptor sets
 	std::vector<VkDescriptorSet> globalDescriptorSet;
 	std::vector<VkDescriptorSet> shadowDescriptorSet;
 	std::vector<VkDescriptorSet> terrainDescriptorSet;
-	//std::vector<VkDescriptorSet> skyboxDescriptorSet;
-
-	//std::shared_ptr<Texture> skyboxTexture = Texture::create(device, "skybox/cubemap_vulkan.ktx", true);
 
 	// object management:
 	ObjectManager objectManager{ device };

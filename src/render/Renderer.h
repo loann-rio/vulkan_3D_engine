@@ -56,7 +56,7 @@ public:
 
 	void renderDepthImage(FrameInfo& frameInfo, std::vector<std::shared_ptr<GlobalRenderSystem>> renderSystems, std::vector<VkDescriptorSet> globalDescriptorSets);
 	
-	std::shared_ptr<Texture> renderSingleTotexture(std::shared_ptr<GlobalRenderSystem> renderSystem, GameObjectModel* textureObject, std::vector<VkDescriptorSet> descriptorSets);
+	std::shared_ptr<Texture> renderHdriToCubeTexture(std::shared_ptr<GlobalRenderSystem> renderSystem, GameObjectModel* textureObject, std::vector<VkDescriptorSet> descriptorSets);
 
 
 	VkCommandBuffer getCurrentCommandBuffer() const {
