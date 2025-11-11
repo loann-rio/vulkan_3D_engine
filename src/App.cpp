@@ -263,13 +263,16 @@ void App::run()
 
                 auto* textureObject = dynamic_cast<GameObjectModel*>(objectManager.get("cubemap"));
                 if (textureObject)
-                    gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo, 
-                        { 
-                            globalDescriptorSet[frameIndex], 
-                            shadowDescriptorSet[renderer.getDepthIndex()], 
+                {
+                    gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo,
+                        {
+                            globalDescriptorSet[frameIndex],
+                            shadowDescriptorSet[renderer.getDepthIndex()],
                             textureObject->getDescriptorSets()[frameIndex]
-                        }, 
-                        frustrumPlanes );
+                        },
+                        frustrumPlanes);
+                }
+                
 
                 objRenderSystem->renderGameObjects(commandBuffer, frameInfo, descriptorSets); 
 
@@ -452,6 +455,17 @@ void App::createRenderSystems()
         terrainBuilder.subModelType = ModelSubType::TERRAIN;
 
         terrainRenderSystem = GlobalRenderSystem::create<Model>(device, terrainBuilder);
+    }
+
+    {
+        RenderSystemBuilder skyboxBuilder{};
+        skyboxBuilder.fragFilepath = "shaders\\skybox.frag.spv";
+        skyboxBuilder.vertFilepath = "shaders\\skybox.vert.spv";
+        skyboxBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout() };
+        skyboxBuilder.renderPass = renderer.getSwapChainRenderPass();
+        skyboxBuilder.subModelType = ModelSubType::SKYBOX;
+        skyboxBuilder.isSkyBox = true;
+        skyboxRenderSystem = GlobalRenderSystem::create<Model>(device, skyboxBuilder);
     }
 
     /// single time render
