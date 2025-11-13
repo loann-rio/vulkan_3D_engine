@@ -299,7 +299,7 @@ void Renderer::renderDepthImage(FrameInfo& frameInfo, std::vector<std::shared_pt
 	currentDepthFrameIndex = (currentDepthFrameIndex + 1) % Swap_chain::MAX_FRAMES_IN_FLIGHT; 
 }
 
-std::shared_ptr<Texture> Renderer::renderHdriToCubeTexture(std::shared_ptr<GlobalRenderSystem> renderSystem, GameObjectModel* textureObject, std::vector<VkDescriptorSet> descriptorSets)
+std::shared_ptr<Texture> Renderer::renderHdriToCubeTexture(std::shared_ptr<GlobalRenderSystem> renderSystem, VkDescriptorSet descriptorSet)
 {
 
 	glm::mat4 captureViews[] = {
@@ -319,10 +319,7 @@ std::shared_ptr<Texture> Renderer::renderHdriToCubeTexture(std::shared_ptr<Globa
 		if (auto commandBuffer = device.beginSingleTimeCommands()) {
 			beginSingleTimeRender(commandBuffer, face);
 
-			FrameInfo info{};
-			info.listGameObjects = { textureObject };
-
-			renderSystem->renderFullScreen(commandBuffer, textureObject->getDescriptorSets(), captureViews[face], captureProj);
+			renderSystem->renderFullScreen(commandBuffer, descriptorSet, captureViews[face], captureProj);
 
 
 			endSingleTimeRender(commandBuffer);
@@ -352,7 +349,7 @@ void Renderer::createCommandBuffer()
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandPool = device.getCommandPool();
+	allocInfo.commandPool = device.getThreadCommandPool();
 	allocInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
 
 
@@ -369,7 +366,7 @@ void Renderer::createDepthCommandBuffer()
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandPool = device.getCommandPool();
+	allocInfo.commandPool = device.getThreadCommandPool();
 	allocInfo.commandBufferCount = static_cast<uint32_t>(depthCommandBuffers.size());
 
 	if (vkAllocateCommandBuffers(device.device(), &allocInfo, depthCommandBuffers.data()) !=
@@ -380,10 +377,10 @@ void Renderer::createDepthCommandBuffer()
 
 void Renderer::freeCommandBuffers()
 {
-	vkFreeCommandBuffers(device.device(), device.getCommandPool(), static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+	vkFreeCommandBuffers(device.device(), device.getThreadCommandPool(), static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
 	commandBuffers.clear();
 
-	vkFreeCommandBuffers(device.device(), device.getCommandPool(), static_cast<uint32_t>(depthCommandBuffers.size()), depthCommandBuffers.data());
+	vkFreeCommandBuffers(device.device(), device.getThreadCommandPool(), static_cast<uint32_t>(depthCommandBuffers.size()), depthCommandBuffers.data());
 	depthCommandBuffers.clear();
 }
 

@@ -37,15 +37,12 @@ public:
     ObjectManager(const ObjectManager&) = delete;
     ObjectManager& operator=(const ObjectManager&) = delete;
 
-    ObjectManager(Device& device) : device{ device } {
-        gameObjects = std::make_shared<GameObject::Map>();
-        loadScene("default"); 
-    };
+    ObjectManager(Device& device);
 
-    ~ObjectManager() { saveFullScene(); }
+    ~ObjectManager() { saveFullScene(); globalPool = nullptr; }
 	
-	void startLoadModel(DescriptorPool& pool); 
-	void pushModel(DescriptorPool& pool);
+	void startLoadModel(); 
+	void pushModel();
     void pushGameObject(std::unique_ptr<GameObject> gameObject);
 
 	// create primitive object
@@ -64,7 +61,7 @@ public:
     std::shared_ptr<GameObject::Map> getGameObjects() const { return gameObjects; } 
 
     void loadObjectAsync(Device& device, const std::string& filePath, TransformComponent transform, const std::string& name = "");
-    void loadObjectAsyncObj(Device& device, const std::string& filePath, const std::string filePathTexture, TransformComponent transform, const std::string& name = "");
+    void loadObjectAsync(Device& device, const std::string& filePath, const std::string filePathTexture, TransformComponent transform, const std::string& name = "");
     void loadSkyboxtexture(Device& device, const std::string& filePath, const std::string& name = "");
 
     void pushFuture(std::future<std::vector<futureObject>> futures);
@@ -79,6 +76,10 @@ public:
     void createScene(std::string name);
 	void saveFullScene();
 
+    DescriptorPool* getPool() const { return globalPool.get(); }
+
+    void generateSkybox(const std::string pathTexture, const std::string goName, Renderer* renderer, std::shared_ptr<GlobalRenderSystem> skyboxRenedrSystem);
+
     // camera
     std::string mainCamera = "mainCamera"; 
 
@@ -87,8 +88,6 @@ public:
 
 private:
     Device& device;
-
-    std::mutex gameObjectsMutex;
 
     std::vector<std::future<futureObject>> futureGameObjects;
     std::vector<std::future<std::vector<futureObject>>> futureGameObjectslist;
@@ -99,8 +98,12 @@ private:
     std::unordered_map<std::type_index, std::vector<GameObject*>> gameObjectsByType; 
 
     void addObjectToScene(GameObject* gameObject);
-    void generateSkybox(GameObjectModel* texturegameObject, Renderer* renderer, std::shared_ptr<GlobalRenderSystem> skyboxRenedrSystem);
+
+    std::unique_ptr<DescriptorPool> globalPool{};
 };
+
+
+
 
 /// <summary>
 /// Retrieves all managed objects of a specified type.

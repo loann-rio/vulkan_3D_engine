@@ -32,52 +32,20 @@
 
 
 App::App() { 
-    globalPool = DescriptorPool::Builder(device)
-        .setMaxSets(Swap_chain::MAX_FRAMES_IN_FLIGHT * 320)
-        .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Swap_chain::MAX_FRAMES_IN_FLIGHT * 640)
-        .addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, Swap_chain::MAX_FRAMES_IN_FLIGHT * 640)
-        .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Swap_chain::MAX_FRAMES_IN_FLIGHT * 640)
-        .build();
-
-    objectManager.startLoadModel(*globalPool); 
+    objectManager.startLoadModel(); 
     createRenderSystems();
 }
 
-App::~App() {
-    globalPool = nullptr; 
-}
 
 void App::run()
 {
     // ui
     BasicUI imgui{ device, window.getGLFWwindow(), renderer.getSwapChainRenderPass() };
 
-    TextOverlay textOverlay(device, renderer.getSwapChainRenderPass());
-    textOverlay.prepareResources(*globalPool);
+    //TextOverlay textOverlay(device, renderer.getSwapChainRenderPass());
+    //textOverlay.prepareResources(*globalPool);
 
-    // test single render
-    //if (false)
-    //{
-    //    // get texture to use to render
-    //    auto* textureObject = dynamic_cast<GameObjectModel*>(objectManager.get("testPlane"));
-
-    //    // render new texture
-    //    auto resultTexture = renderer.renderHdriToCubeTexture(skyboxCreationRenderSystem, textureObject, {});
-
-    //    // create go with new texture
-    //    std::shared_ptr<Model> cube = Model::createModelFromFile(device, "model/cube.obj");
-
-    //    cube->setTexture(resultTexture);
-
-    //    auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
-    //    gameObject->setName("skybox");
-    //    gameObject->setModel(cube);
-    //    gameObject->setModelType(ModelType::OBJ_MODEL);
-    //    gameObject->setModelSubType(ModelSubType::SKYBOX);
-    //    gameObject->saveable = false;
-    //    gameObject->createDescriptorSet(*globalPool);
-    //    objectManager.pushGameObject(std::move(gameObject));
-    //}
+    objectManager.generateSkybox("skybox/citrus_orchard_puresky_4k.hdr", "testSkybox", &renderer, skyboxCreationRenderSystem);
 
     // user inputs
     KeyboardMovementController cameraController{};
@@ -98,14 +66,15 @@ void App::run()
 
     int frame = 0;
 
+    auto* textureObject = dynamic_cast<GameObjectModel*>(objectManager.get("cubemap"));
+
     vkQueueWaitIdle(device.presentQueue());
 	while (!window.shouldClose())
 	{   
-        frame++;
 		glfwPollEvents();
 
         // add loaded async model to gameObjectmap 
-        objectManager.pushModel(*globalPool);
+        objectManager.pushModel();
 
         // calculate frame time
         auto newTime = std::chrono::high_resolution_clock::now();
@@ -247,8 +216,6 @@ void App::run()
             std::vector<VkDescriptorSet> descriptorSets{ globalDescriptorSet[frameIndex], shadowDescriptorSet[renderer.getDepthIndex()]};
 			std::array<FrustumPlane, 6> frustrumPlanes = dynamic_cast<GameObjectCamera*>(objectManager.get(objectManager.mainCamera))->getFrustumPlanes();
 
-            std::lock_guard<std::mutex> lock(device.getGraphicMutex());
-
             vkQueueWaitIdle(device.presentQueue());
 
             auto newGpuTime = std::chrono::high_resolution_clock::now();
@@ -261,18 +228,14 @@ void App::run()
                 // render
                 renderer.beginSwapChainRenderPass(commandBuffer); 
 
-                auto* textureObject = dynamic_cast<GameObjectModel*>(objectManager.get("cubemap"));
-                if (textureObject)
+                /*gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo,
                 {
-                    gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo,
-                        {
-                            globalDescriptorSet[frameIndex],
-                            shadowDescriptorSet[renderer.getDepthIndex()],
-                            textureObject->getDescriptorSets()[frameIndex]
-                        },
-                        frustrumPlanes);
-                }
-                
+                    globalDescriptorSet[frameIndex],
+                    shadowDescriptorSet[renderer.getDepthIndex()],
+                    textureObject->getDescriptorSets()[frameIndex]
+                },
+                frustrumPlanes);*/
+              
 
                 objRenderSystem->renderGameObjects(commandBuffer, frameInfo, descriptorSets); 
 
@@ -327,7 +290,7 @@ void App::createRenderSystems()
     {
         auto bufferInfo = uboBuffers[i]->descriptorInfo();
 
-        DescriptorWriter(*globalSetLayout, *globalPool)
+        DescriptorWriter(*globalSetLayout, *objectManager.getPool())
             .writeBuffer(0, &bufferInfo)
             .build(globalDescriptorSet[i]); 
     } 
@@ -358,7 +321,7 @@ void App::createRenderSystems()
     {
         auto bufferInfo = terrainBuffers[i]->descriptorInfo();
 
-        DescriptorWriter(*terrainSetLayout, *globalPool)
+        DescriptorWriter(*terrainSetLayout, *objectManager.getPool())
             .writeBuffer(1, &bufferInfo)
             .build(terrainDescriptorSet[i]);
     }
@@ -390,7 +353,7 @@ void App::createRenderSystems()
         auto bufferInfo = shadowUboBuffer[i]->descriptorInfo();
         auto depthInfo = renderer.getShadowImageInfo(i);
 
-        DescriptorWriter(*shadowSetLayout, *globalPool)
+        DescriptorWriter(*shadowSetLayout, *objectManager.getPool())
             .writeBuffer(0, &bufferInfo)
             .writeImage(1, depthInfo, DepthSwapChain::MAX_DEPTH_RENDER_COUNT)
             .build(shadowDescriptorSet[i]); 

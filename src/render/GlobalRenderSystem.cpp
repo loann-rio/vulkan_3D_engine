@@ -235,7 +235,7 @@ void GlobalRenderSystem::renderGameObjectsDepth(VkCommandBuffer& commandBuffer, 
 	}
 }
 
-void GlobalRenderSystem::renderFullScreen(VkCommandBuffer& commandBuffer, std::vector<VkDescriptorSet> globalDescriptorSets, glm::mat4 view, glm::mat4 proj)
+void GlobalRenderSystem::renderFullScreen(VkCommandBuffer& commandBuffer, VkDescriptorSet& globalDescriptorSets, glm::mat4 view, glm::mat4 proj)
 {
 
 	bind(commandBuffer, {});
@@ -248,7 +248,7 @@ void GlobalRenderSystem::renderFullScreen(VkCommandBuffer& commandBuffer, std::v
 	vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(push), &push);
 	
 	// bind descriptor for equirectangular map (staged earlier)
-	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, globalDescriptorSets.data(), 0, nullptr);
+	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &globalDescriptorSets, 0, nullptr);
 	
 	// draw fullscreen triangle
 	vkCmdDraw(commandBuffer, 3, 1, 0, 0);

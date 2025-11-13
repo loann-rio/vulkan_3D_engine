@@ -271,7 +271,7 @@ void BasicUI::createObjWindow(ObjectManager* manager)
 
     if (ImGui::Button("create"))
     {
-        manager->loadObjectAsyncObj(device, path, pathTexture ? pathTexture : "textures\\whiteTexture.jpg", TransformComponent{}, name);
+        manager->loadObjectAsync(device, path, pathTexture ? pathTexture : "textures\\whiteTexture.jpg", TransformComponent{}, name);
         show_create_go_window = false; 
       
     }

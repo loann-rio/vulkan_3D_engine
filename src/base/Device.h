@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <mutex>
+#include <unordered_map>
 #include <vulkan/vulkan.h>
 
 // Im Gui
@@ -57,6 +58,8 @@ public:
     Device& operator=(Device&&) = delete;
     
     VkCommandPool getCommandPool() const { return commandPool; }
+    VkCommandPool getThreadCommandPool();
+
     VkDevice device() const { return device_; }
     VkSurfaceKHR surface() const { return surface_; }
     VkQueue graphicsQueue() const { return graphicsQueue_; }
@@ -71,7 +74,10 @@ public:
     void getPhysicalFeatures(VkPhysicalDeviceFeatures* pFeatures) { vkGetPhysicalDeviceFeatures(physicalDevice, pFeatures); }
     bool isFormatSupported(const VkFormat candidate);
 
+    void submitToTransferQueue(VkSubmitInfo& submitInfo, VkFence fence);
     void submitToGraphicQueue(VkSubmitInfo& submitInfo, VkFence fence);
+    VkResult present(const VkPresentInfoKHR* presentInfo);
+	VkResult submitAndPresent(VkSubmitInfo& submitInfo, VkFence fence, const VkPresentInfoKHR* presentInfo);
 
     std::mutex& getTransferMutex() { return transferQueueMutex; }
     std::mutex& getGraphicMutex()  { return graphicQueueMutex;  }
@@ -143,6 +149,10 @@ private:
     Window& window;
     VkCommandPool commandPool;
     VkCommandPool transferPool;
+    uint32_t graphicsQueueFamilyIndex;
+
+    std::unordered_map<std::thread::id, VkCommandPool> threadCommandPools;
+    std::mutex threadCommandPoolsMutex;
 
     VkDevice device_;
     VkSurfaceKHR surface_;

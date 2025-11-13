@@ -124,7 +124,7 @@ VkResult Swap_chain::submitCommandBuffers(
 
     vkResetFences(device.device(), 1, &inFlightFences[currentFrame]);
 
-    device.submitToGraphicQueue(submitInfo, inFlightFences[currentFrame]);
+    
      
     VkPresentInfoKHR presentInfo = {};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -138,7 +138,7 @@ VkResult Swap_chain::submitCommandBuffers(
 
     presentInfo.pImageIndices = imageIndex;
 
-    auto result = vkQueuePresentKHR(device.presentQueue(), &presentInfo);
+	auto result = device.submitAndPresent(submitInfo, inFlightFences[currentFrame], &presentInfo);
 
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 

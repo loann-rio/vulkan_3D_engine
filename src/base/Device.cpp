@@ -60,6 +60,18 @@ Device::Device(Window& window) : window{ window } {
 Device::~Device() {
     vkDestroyCommandPool(device_, commandPool , nullptr);
     vkDestroyCommandPool(device_, transferPool, nullptr);
+
+    {
+        std::lock_guard<std::mutex> lock(threadCommandPoolsMutex);
+        for (auto& kv : threadCommandPools) {
+            if (kv.second != VK_NULL_HANDLE) {
+                vkDestroyCommandPool(device_, kv.second, nullptr);
+            }
+        }
+
+        threadCommandPools.clear();
+    }
+
     vkDestroyDevice(device_, nullptr);
 
     if (enableValidationLayers) {
@@ -191,6 +203,9 @@ void Device::createLogicalDevice() {
     vkGetDeviceQueue(device_, indices.transferFamily, 0, &transferQueue_);
     vkGetDeviceQueue(device_, indices.graphicsFamily, 0, &graphicsQueue_);
     vkGetDeviceQueue(device_, indices.presentFamily, 0, &presentQueue_);
+
+    graphicsQueueFamilyIndex = indices.graphicsFamily;
+
 }
 
 void Device::createCommandPool() {
@@ -397,6 +412,7 @@ QueueFamilyIndices Device::findQueueFamilies(VkPhysicalDevice device) {
         indices.transferFamilyHasValue = true;
     }
 
+
     return indices;
 }
 
@@ -451,11 +467,41 @@ bool Device::isFormatSupported(const VkFormat candidate)
     return ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_TRANSFER_DST_BIT) && (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT));
 }
 
+void Device::submitToTransferQueue(VkSubmitInfo& submitInfo, VkFence fence)
+{
+    std::lock_guard<std::mutex> lock(transferQueueMutex);
+    if (vkQueueSubmit(transferQueue_, 1, &submitInfo, fence) != VK_SUCCESS) {
+        throw std::runtime_error("failed to submit command buffer!");
+    }
+}
+
 void Device::submitToGraphicQueue(VkSubmitInfo& submitInfo, VkFence fence)
 {
+    std::lock_guard<std::mutex> lock(graphicQueueMutex);
     if (vkQueueSubmit(graphicsQueue_, 1, &submitInfo, fence) != VK_SUCCESS) {
         throw std::runtime_error("failed to submit command buffer!");
     }
+}
+
+VkResult Device::present(const VkPresentInfoKHR* presentInfo)
+{
+    std::lock_guard<std::mutex> lock(graphicQueueMutex);
+    return vkQueuePresentKHR(presentQueue_, presentInfo);
+}
+
+VkResult Device::submitAndPresent(VkSubmitInfo& submitInfo, VkFence fence, const VkPresentInfoKHR* presentInfo)
+{
+    std::lock_guard<std::mutex> lock(graphicQueueMutex);
+
+    if (vkQueueSubmit(graphicsQueue_, 1, &submitInfo, fence) != VK_SUCCESS) {
+        throw std::runtime_error("failed to submit command buffer!");
+    }
+
+    if (presentInfo) {
+        return vkQueuePresentKHR(presentQueue_, presentInfo);
+    }
+
+    return VK_SUCCESS;
 }
 
 ImGui_ImplVulkan_InitInfo Device::getImGuiInitInfo()
@@ -468,16 +514,46 @@ ImGui_ImplVulkan_InitInfo Device::getImGuiInitInfo()
     init_info.Device = device_;
     init_info.QueueFamily = queue.graphicsFamily;
     init_info.Queue = graphicsQueue_;
-    //init_info.PipelineCache = YOUR_PIPELINE_CACHE;
-    //init_info.DescriptorPool = YOUR_DESCRIPTOR_POOL;
     init_info.Subpass = 0;
     init_info.MinImageCount = 3;
     init_info.ImageCount = 3;
     init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-    //init_info.Allocator = YOUR_ALLOCATOR;
     init_info.CheckVkResultFn = check_vk_result;
 
     return init_info;
+}
+
+VkCommandPool Device::getThreadCommandPool()
+{
+    if (device_ == VK_NULL_HANDLE || graphicsQueueFamilyIndex == ~0u) {
+        throw std::runtime_error("Device not initialized or graphicsQueueFamilyIndex not set");
+        
+    }
+    
+    // fast path: thread-local pool handle (no destructor that destroys the pool)
+    thread_local VkCommandPool localPool = VK_NULL_HANDLE;
+    if (localPool != VK_NULL_HANDLE) {
+        return localPool;
+    }
+    
+    // create pool for this thread
+    VkCommandPoolCreateInfo poolInfo{};
+    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    poolInfo.queueFamilyIndex = graphicsQueueFamilyIndex;
+    poolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    
+    if (vkCreateCommandPool(device_, &poolInfo, nullptr, &localPool) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create thread-local command pool");
+    }
+    
+    // register created pool so Device destructor can destroy it
+    {
+        std::lock_guard<std::mutex> lock(threadCommandPoolsMutex);
+        threadCommandPools[std::this_thread::get_id()] = localPool;
+    }
+    
+    return localPool;
+    
 }
 
 uint32_t Device::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
@@ -541,7 +617,7 @@ VkCommandBuffer Device::beginSingleTimeCommands() {
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandPool = commandPool;
+    allocInfo.commandPool = getThreadCommandPool();
     allocInfo.commandBufferCount = 1;
         
     VkCommandBuffer commandBuffer;
@@ -566,10 +642,11 @@ void Device::endSingleTimeCommands(VkCommandBuffer commandBuffer)
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &commandBuffer;
 
-    vkQueueSubmit(graphicsQueue_, 1, &submitInfo, VK_NULL_HANDLE);
+	submitToGraphicQueue(submitInfo, VK_NULL_HANDLE);
+    //vkQueueSubmit(graphicsQueue_, 1, &submitInfo, VK_NULL_HANDLE);
     vkQueueWaitIdle(graphicsQueue_);
 
-    vkFreeCommandBuffers(device_, commandPool, 1, &commandBuffer);
+    vkFreeCommandBuffers(device_, getThreadCommandPool(), 1, &commandBuffer);
 }
 
 VkCommandBuffer Device::beginSingleTimeTransferCommands() {
@@ -578,8 +655,6 @@ VkCommandBuffer Device::beginSingleTimeTransferCommands() {
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     allocInfo.commandPool = transferPool;
     allocInfo.commandBufferCount = 1;
-
-    std::lock_guard<std::mutex> lock(transferQueueMutex);
 
     VkCommandBuffer commandBuffer;
     vkAllocateCommandBuffers(device_, &allocInfo, &commandBuffer);
@@ -596,8 +671,6 @@ VkCommandBuffer Device::beginSingleTimeTransferCommands() {
 
 void Device::endSingleTimeTransferCommands(VkCommandBuffer commandBuffer) {
 
-    std::lock_guard<std::mutex> lock(transferQueueMutex);
-
     vkEndCommandBuffer(commandBuffer);
 
     VkSubmitInfo submitInfo{};
@@ -605,7 +678,7 @@ void Device::endSingleTimeTransferCommands(VkCommandBuffer commandBuffer) {
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &commandBuffer;
 
-    vkQueueSubmit(transferQueue_, 1, &submitInfo, VK_NULL_HANDLE);
+	submitToTransferQueue(submitInfo, VK_NULL_HANDLE);
     vkQueueWaitIdle(transferQueue_);
 
     vkFreeCommandBuffers(device_, transferPool, 1, &commandBuffer);
@@ -704,11 +777,11 @@ void Device::copyImageToBuffer(VkImage image, VkBuffer buffer, uint32_t width, u
 void Device::copyImageToBuffer(VkImage image, VkBuffer buffer, std::vector<VkBufferImageCopy> regions)
 {
     VkCommandBuffer commandBuffer = beginSingleTimeTransferCommands();
-    vkCmdCopyBufferToImage(
+    vkCmdCopyImageToBuffer(
         commandBuffer,
-        buffer,
         image,
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        buffer,
         regions.size(),
         regions.data());
 
@@ -745,7 +818,6 @@ void Device::createImageWithInfo(
 
 void Device::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevel, uint32_t layerCount) 
 {
-    std::lock_guard<std::mutex> lock(graphicQueueMutex);
     VkCommandBuffer commandBuffer = beginSingleTimeCommands();
     transitionImageLayout(commandBuffer, image, format, oldLayout, newLayout, mipLevel, layerCount);
     endSingleTimeCommands(commandBuffer);

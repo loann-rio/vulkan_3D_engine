@@ -46,7 +46,7 @@ public:
 
 	void renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, std::vector<VkDescriptorSet> globalDescriptorSets, const std::array<FrustumPlane, 6>& frustrumPlanes = {});
 	void renderGameObjectsDepth(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, std::vector<VkDescriptorSet> globalDescriptorSets, int lightIndex, uint16_t frameIndex);
-	void renderFullScreen(VkCommandBuffer& commandBuffer, std::vector<VkDescriptorSet> globalDescriptorSets, glm::mat4 view, glm::mat4 proj);
+	void renderFullScreen(VkCommandBuffer& commandBuffer, VkDescriptorSet& globalDescriptorSets, glm::mat4 view, glm::mat4 proj);
 
 private:
 

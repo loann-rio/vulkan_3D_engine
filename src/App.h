@@ -26,7 +26,7 @@ public:
 	static constexpr int HEIGHT = 1200;
 
 	App();
-	~App();
+	~App() {};
 
 	App(const App&) = delete;
 	App& operator=(const App&) = delete;
