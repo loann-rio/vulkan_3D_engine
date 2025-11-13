@@ -37,7 +37,7 @@ layout(set = 0, binding = 0) uniform GlobalUbo {
 	PointLight pointLight[10]; 
 } ubo;
 
-layout(set = 2, binding = 1) uniform TerrainUbo {
+layout(set = 2, binding = 0) uniform TerrainUbo {
 	float clif_slop;
 	float height_grass;
 	float slope_snow;
@@ -52,7 +52,7 @@ layout(push_constant) uniform Push {
 } push;
 
 // Define the texture sampler 
-layout(set = 3, binding = 1) uniform sampler2D texSampler;
+layout(set = 3, binding = 0) uniform sampler2D texSampler;
 layout(set = 1, binding = 1) uniform sampler2DShadow shadowMap[MAX_NUM_SPOT_LIGHT];
 
 layout(set = 1, binding = 0) uniform SpotLightUbo {

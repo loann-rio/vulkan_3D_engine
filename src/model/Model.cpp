@@ -144,14 +144,14 @@ void Model::drawDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipeline
 void Model::createDescriptorSet(DescriptorPool& pool, Device& device)
 {
 	auto textureSetLayout = DescriptorSetLayout::Builder(device)
-		.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+		.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.build();
 
 	for (int i = 0; i < descriptorSet.size(); i++)
 	{
 		auto imageInfo = texture->getImageInfo();
 		DescriptorWriter(*textureSetLayout, pool)
-			.writeImage(1, &imageInfo)
+			.writeImage(0, &imageInfo)
 			.build(descriptorSet[i]);
 	}
 }

@@ -1,6 +1,6 @@
 #version 450
 
-layout(binding = 1) uniform sampler2D equirectMap;
+layout(binding = 0) uniform sampler2D equirectMap;
 
 layout(push_constant) uniform Push {
     mat4 view;   // view for the current face (rot)

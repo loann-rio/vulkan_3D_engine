@@ -1040,8 +1040,8 @@ void GlTFModel::ModelGltf::createDescriptorSet(DescriptorPool& pool, Device& dev
 	}
 
 	auto textureSetLayout = DescriptorSetLayout::Builder(device)
-		.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, MAX_TEXTURES)
-		.addBinding(2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT) 
+		.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, MAX_TEXTURES)
+		.addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT) 
 		.build();
 
 	VkDescriptorBufferInfo materialBufferInfo = materialBuffer->descriptorInfo();
@@ -1050,8 +1050,8 @@ void GlTFModel::ModelGltf::createDescriptorSet(DescriptorPool& pool, Device& dev
 	for (int i = 0; i < descriptorSet.size(); i++) 
 	{
 		DescriptorWriter(*textureSetLayout, pool)
-			.writeImage(1, texturesInfo, MAX_TEXTURES)
-			.writeBuffer(2, &materialBufferInfo) 
+			.writeImage(0, texturesInfo, MAX_TEXTURES)
+			.writeBuffer(1, &materialBufferInfo) 
 			.build(descriptorSet[i]); 
 	}
 
@@ -1216,7 +1216,7 @@ void GlTFModel::Mesh::createBuffer(bool hasSkin)
 void GlTFModel::Mesh::createDescriptorSet(DescriptorPool& pool, Device& device)
 {
 	auto textureSetLayout = DescriptorSetLayout::Builder(device) 
-		.addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+		.addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
 		.build(); 
 
 	VkDescriptorBufferInfo skinBufferInfo = uniformBuffer->descriptorInfo(); 
@@ -1224,7 +1224,7 @@ void GlTFModel::Mesh::createDescriptorSet(DescriptorPool& pool, Device& device)
 	for (int i = 0; i < descriptorSet.size(); i++)
 	{
 		DescriptorWriter(*textureSetLayout, pool) 
-			.writeBuffer(1, &skinBufferInfo)
+			.writeBuffer(0, &skinBufferInfo)
 			.build(descriptorSet[i]); 
 	}
 

@@ -228,18 +228,18 @@ void App::run()
                 // render
                 renderer.beginSwapChainRenderPass(commandBuffer); 
 
-                /*gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo,
+                gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo,
                 {
                     globalDescriptorSet[frameIndex],
                     shadowDescriptorSet[renderer.getDepthIndex()],
                     textureObject->getDescriptorSets()[frameIndex]
                 },
-                frustrumPlanes);*/
-              
-
+                frustrumPlanes);
+                
+                
                 objRenderSystem->renderGameObjects(commandBuffer, frameInfo, descriptorSets); 
 
-                std::vector<VkDescriptorSet> terrainDescriptorSets{ globalDescriptorSet[frameIndex], shadowDescriptorSet[renderer.getDepthIndex()], terrainDescriptorSet[frameIndex] };
+                //std::vector<VkDescriptorSet> terrainDescriptorSets{ globalDescriptorSet[frameIndex], shadowDescriptorSet[renderer.getDepthIndex()], terrainDescriptorSet[frameIndex] };
                 //terrainRenderSystem->renderGameObjects(commandBuffer, frameInfo, terrainDescriptorSets);
 
 				skyboxRenderSystem->renderGameObjects(commandBuffer, frameInfo, { globalDescriptorSet[frameIndex] });
@@ -407,7 +407,7 @@ void App::createRenderSystems()
         depthRenderSystemGltf = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, gltfShadowBuilder);
     }
 
-    {
+    /*{
         RenderSystemBuilder terrainBuilder{};
 
         terrainBuilder.vertFilepath = "shaders\\terrainShader.vert.spv";
@@ -418,7 +418,7 @@ void App::createRenderSystems()
         terrainBuilder.subModelType = ModelSubType::TERRAIN;
 
         terrainRenderSystem = GlobalRenderSystem::create<Model>(device, terrainBuilder);
-    }
+    }*/
 
     {
         RenderSystemBuilder skyboxBuilder{};
@@ -441,5 +441,4 @@ void App::createRenderSystems()
         skyboxBuilder.pushStage = static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_FRAGMENT_BIT);
         skyboxCreationRenderSystem = GlobalRenderSystem::create<Model>(device, skyboxBuilder);
     }
-
 }

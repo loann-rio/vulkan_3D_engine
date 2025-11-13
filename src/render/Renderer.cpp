@@ -223,11 +223,11 @@ void Renderer::beginSingleTimeRender(VkCommandBuffer commandBuffer, int buffer_i
 {
 	VkRenderPassBeginInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	renderPassInfo.renderPass = swap.getRenderPass();
-	renderPassInfo.framebuffer = swap.getFrameBuffer(buffer_index);
+	renderPassInfo.renderPass = skyboxSwapChain.getRenderPass();
+	renderPassInfo.framebuffer = skyboxSwapChain.getFrameBuffer(buffer_index);
 
 	renderPassInfo.renderArea.offset = { 0, 0 };
-	renderPassInfo.renderArea.extent = swap.getSwapChainExtent();
+	renderPassInfo.renderArea.extent = skyboxSwapChain.getSwapChainExtent();
 
 	std::array<VkClearValue, 2> clearValues{};
 	clearValues[0].color = { 0.23f, 0.5f, 0.92f, 1.f };
@@ -241,11 +241,11 @@ void Renderer::beginSingleTimeRender(VkCommandBuffer commandBuffer, int buffer_i
 	VkViewport viewport{};
 	viewport.x = 0.0f;
 	viewport.y = 0.0f;
-	viewport.width = static_cast<float>(swap.getSwapChainExtent().width);
-	viewport.height = static_cast<float>(swap.getSwapChainExtent().height);
+	viewport.width = static_cast<float>(skyboxSwapChain.getSwapChainExtent().width);
+	viewport.height = static_cast<float>(skyboxSwapChain.getSwapChainExtent().height);
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
-	VkRect2D scissor{ {0, 0}, swap.getSwapChainExtent() };
+	VkRect2D scissor{ {0, 0}, skyboxSwapChain.getSwapChainExtent() };
 	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 }
@@ -329,7 +329,7 @@ std::shared_ptr<Texture> Renderer::renderHdriToCubeTexture(std::shared_ptr<Globa
 	}
 
 	device.transitionImageLayout(
-		swap.getTextureColor()->getImage(),
+		skyboxSwapChain.getTextureColor()->getImage(),
 		VK_FORMAT_R8G8B8A8_SRGB,
 		VK_IMAGE_LAYOUT_UNDEFINED,
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
@@ -337,7 +337,7 @@ std::shared_ptr<Texture> Renderer::renderHdriToCubeTexture(std::shared_ptr<Globa
 		6
 	);
 
-	return swap.getTextureColor();
+	return skyboxSwapChain.getTextureColor();
 
 }
 

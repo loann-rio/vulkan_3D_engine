@@ -492,7 +492,7 @@ void ObjectManager::loadObjectAsync(Device& device, const std::string& filePath,
 void ObjectManager::generateSkybox(const std::string pathTexture, const std::string goName, Renderer* renderer, std::shared_ptr<GlobalRenderSystem> skyboxRenedrSystem)
 {
     auto textureSetLayout = DescriptorSetLayout::Builder(device)
-        .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .build();
   
     auto texture = Texture::create(device, pathTexture.c_str());
@@ -500,7 +500,7 @@ void ObjectManager::generateSkybox(const std::string pathTexture, const std::str
 
     VkDescriptorSet descriptorSet;
     DescriptorWriter(*textureSetLayout, *globalPool)
-        .writeImage(1, &imageInfo)
+        .writeImage(0, &imageInfo)
         .build(descriptorSet);
 
     // render new texture

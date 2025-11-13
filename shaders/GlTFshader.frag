@@ -105,9 +105,9 @@ layout(set = 1, binding = 1) uniform sampler2DShadow shadowMap[MAX_NUM_SPOT_LIGH
 
 layout(set = 2, binding = 0) uniform samplerCube skybox;
 
-layout(set = 3, binding = 1) uniform sampler2D textures[];
+layout(set = 3, binding = 0) uniform sampler2D textures[];
 
-layout(std430, set = 3, binding = 2) readonly buffer SSBO
+layout(std430, set = 3, binding = 1) readonly buffer SSBO
 {
    ShaderMaterial materials[ ];
 };

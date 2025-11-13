@@ -23,7 +23,7 @@ class Renderer
 public:
 
 	std::shared_ptr<Texture> getDepthTexture() { return depthSwapChain->getTexture(0); }
-	std::shared_ptr<Texture> getSingleTexture() { return swap.getTextureColor(); }
+	std::shared_ptr<Texture> getSingleTexture() { return skyboxSwapChain.getTextureColor(); }
 
 	Renderer(Window& window, Device& device);
 	~Renderer();
@@ -33,7 +33,7 @@ public:
 
 	VkRenderPass getSwapChainRenderPass() const { return swapChain->getRenderPass(); }
 	VkRenderPass getDepthRenderPass() const { return depthSwapChain->getDepthRenderPass(); }
-	VkRenderPass getSecondarySwapRenderPass() const { return swap.getRenderPass(); }
+	VkRenderPass getSecondarySwapRenderPass() const { return skyboxSwapChain.getRenderPass(); }
 	float getAspectRatio() const { return swapChain->extentAspectRatio(); }
 
 	uint32_t getWidth() const { return swapChain->width(); }
@@ -91,12 +91,8 @@ private:
 
 	std::unique_ptr<Swap_chain> swapChain;
 	std::unique_ptr<DepthSwapChain> depthSwapChain;
-	//std::unique_ptr<SecondarySwapchain> skyboxRenderSwapchain;
 
-	std::shared_ptr<Texture> textTarget = Texture::createEmpty(device, 1000, 1000, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_IMAGE_ASPECT_COLOR_BIT, true);
-	std::shared_ptr<Texture> target = Texture::createEmpty(device, 1024, 1024, VK_FORMAT_R8G8B8A8_SRGB,
-		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-		VK_IMAGE_ASPECT_COLOR_BIT, false);
+	SingleSwapChain skyboxSwapChain{ device, {2000, 2000} };
 
 	std::vector<VkCommandBuffer> commandBuffers;
 	std::vector<VkCommandBuffer> depthCommandBuffers;
@@ -110,6 +106,5 @@ private:
 	bool isFrameStarted = false; 
 	std::vector<bool> isDepthStarted;
 
-	SingleSwapChain swap{ device, {2000, 2000} };
 };
 

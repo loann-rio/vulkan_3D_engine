@@ -32,7 +32,7 @@ GlobalRenderSystem::GlobalRenderSystem(Device& device, VkRenderPass renderPass,
 
 		// add binding for each descriptor in the set
 		for (int i = 0; i < bindings[j].descriptorSet.size(); i++) {
-			builder.addBinding(i + 1, bindings[j].descriptorSet[i].descriptorType, bindings[j].descriptorSet[i].stage, bindings[j].descriptorSet[i].count);
+			builder.addBinding(i, bindings[j].descriptorSet[i].descriptorType, bindings[j].descriptorSet[i].stage, bindings[j].descriptorSet[i].count);
 		}
 
 		auto newLayout = builder.build(); 

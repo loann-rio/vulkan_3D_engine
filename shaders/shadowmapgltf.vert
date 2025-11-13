@@ -20,7 +20,7 @@ layout(set = 1, binding = 0) uniform SpotLightUbo {
 	int numLights;
 } spotLightUbo;
 
-layout (std430, set = 3, binding = 1) readonly buffer UBONode {
+layout (std430, set = 3, binding = 0) readonly buffer UBONode {
 	mat4 matrix;
 	mat4 jointMatrix[MAX_NUM_JOINTS];
 	uint jointCount;

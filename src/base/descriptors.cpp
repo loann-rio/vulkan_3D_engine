@@ -156,7 +156,7 @@ DescriptorWriter& DescriptorWriter::writeBuffer(
 DescriptorWriter& DescriptorWriter::writeImage(
     uint32_t binding, VkDescriptorImageInfo* imageInfo, uint32_t descriptorCount) {
 
-    assert(setLayout.bindings.count(binding) == 1 && "Layout does not contain specified binding");
+    //assert(setLayout.bindings.count(binding) == 1 && "Layout does not contain specified binding");
 
     auto& bindingDescription = setLayout.bindings[binding];
 

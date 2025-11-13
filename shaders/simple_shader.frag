@@ -38,7 +38,7 @@ layout(set = 0, binding = 0) uniform GlobalUbo {
 } ubo;
 
 // Define the texture sampler 
-layout(set = 2, binding = 1) uniform sampler2D texSampler;
+layout(set = 2, binding = 0) uniform sampler2D texSampler;
 layout(set = 1, binding = 1) uniform sampler2DShadow shadowMap[MAX_NUM_SPOT_LIGHT];
 
 layout(set = 1, binding = 0) uniform SpotLightUbo {
