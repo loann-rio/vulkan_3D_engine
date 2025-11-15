@@ -41,7 +41,7 @@ public:
 	std::vector<std::vector<glm::vec2>> generateChunck(float Xoffset, float Yoffset);
 	std::vector<Model::Instance> placeTrees(std::vector<std::vector<glm::vec2>> heightMap, float Xoffset, float Yoffset) const;
 
-	const uint32_t sizeWorldInChunck = 1;
+	const uint32_t sizeWorldInChunck = 5;
 	const uint16_t chunkSize = 158;
 	const int treeProbability = 20; // between 0 - 100
 

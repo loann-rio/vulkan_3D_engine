@@ -60,6 +60,10 @@ Model::Model(Device& device, const Model::Builder& builder, const std::string fi
 	}
 	else return;
 
+	if (builder.aabb.valid == false) {
+		createAABB(builder.vertices);
+	}
+
 	createVertexBuffers(builder.vertices);
 	createIndexBuffers(builder.indices);
 }
@@ -113,10 +117,7 @@ void Model::draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& PipelineLayou
 
 void Model::drawDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, glm::mat4 modelMatrix, uint32_t cameraIndex, const std::array<FrustumPlane, 6>& planes, uint32_t instanceCount) 
 {
-
-
-	if (!Camera::isAABBinFrustrum(aabb.getAABB(modelMatrix), planes)) return;
-
+	
 
 	DepthPushConstantData push{};   
 	push.modelMatrix = modelMatrix; 
@@ -229,6 +230,28 @@ void Model::createIndexBuffers(const std::vector<uint32_t>& indices)
 	device.copyBuffer(stagingBuffer.getBuffer(), indexBuffer->getBuffer(), bufferSize);
 }
 
+void Model::createAABB(const std::vector<Vertex>& vertices)
+{
+	if (vertices.size() == 0) {
+		aabb.valid = false;
+		return;
+	}
+
+	aabb.min = vertices[0].position;
+	aabb.max = vertices[0].position;
+
+	for (const auto& vertex : vertices) {
+		aabb.min.x = std::min(aabb.min.x, vertex.position.x);
+		aabb.min.y = std::min(aabb.min.y, vertex.position.y);
+		aabb.min.z = std::min(aabb.min.z, vertex.position.z);
+
+		aabb.max.x = std::max(aabb.max.x, vertex.position.x);
+		aabb.max.y = std::max(aabb.max.y, vertex.position.y);
+		aabb.max.z = std::max(aabb.max.z, vertex.position.z);
+	}
+	aabb.valid = true;
+}
+
 std::vector<VkVertexInputBindingDescription> Model::Vertex::getBindingDescriptions(bool hasMutipleInstances = false)
 {
 	std::vector<VkVertexInputBindingDescription> bindingDescription(1);
@@ -337,6 +360,8 @@ bool Model::Builder::loadOBJModel(const std::string& filepath)
 			indices.push_back(uniqueVertices[vertex]);
 		}
 	}
+
+	aabb.valid = true;
 
 	return true;
 }

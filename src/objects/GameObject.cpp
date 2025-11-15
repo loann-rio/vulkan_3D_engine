@@ -161,6 +161,7 @@ void GameObjectModel::setMultipleInstances(std::vector<Model::Instance> instance
 
 }
 
+
 void GameObjectModel::createDescriptorSet(DescriptorPool& pool) const
 {
     if (!hasModel) return;
@@ -224,7 +225,6 @@ void GameObjectModel::drawModelDepth(VkCommandBuffer& commandBuffer, VkPipelineL
         }
         }, model); 
 }
-
 
 void GameObjectSpotLight::updateCameraView() { camera->setViewYXZ(transform.translation, transform.rotation); }
 

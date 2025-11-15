@@ -54,6 +54,7 @@ private:
 	std::shared_ptr<GlobalRenderSystem> depthRenderSystem;
 	std::shared_ptr<GlobalRenderSystem> depthRenderSystemGltf;
 	std::shared_ptr<GlobalRenderSystem> terrainRenderSystem;
+	std::shared_ptr<GlobalRenderSystem> depthTerrainRenderSystem;
 	std::shared_ptr<GlobalRenderSystem> skyboxRenderSystem;
 	std::shared_ptr<GlobalRenderSystem> skyboxCreationRenderSystem;
 

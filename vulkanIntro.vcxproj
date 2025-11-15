@@ -250,6 +250,7 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <None Include="shaders\point_light.vert" />
     <None Include="shaders\shadowmap.vert" />
     <None Include="shaders\shadowmapgltf.vert" />
+    <None Include="shaders\shadowMapTerrain.vert" />
     <None Include="shaders\simple_shader.frag" />
     <None Include="shaders\simple_shader.mfrag" />
     <None Include="shaders\simple_shader.vert" />

@@ -97,6 +97,8 @@ private:
 	void createVertexBuffers(const std::vector<Vertex>& vertices);
 	void createIndexBuffers(const std::vector<uint32_t>& indices);
 
+	void createAABB(const std::vector<Vertex>& vertices);
+
 	Device& device;
 
 	std::unique_ptr<Buffer> vertexBuffer;
