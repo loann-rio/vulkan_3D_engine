@@ -170,7 +170,7 @@ void GlobalRenderSystem::createPipeline(VkRenderPass renderPass, const std::stri
 
 void GlobalRenderSystem::renderModel(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, GameObjectModel* obj, const std::array<FrustumPlane, 6>& frustrumPlanes)
 {
-	vkCmdBindDescriptorSets(
+	/*vkCmdBindDescriptorSets(
 		commandBuffer,
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
 		pipelineLayout,
@@ -178,16 +178,16 @@ void GlobalRenderSystem::renderModel(VkCommandBuffer& commandBuffer, FrameInfo& 
 		&obj->getDescriptorSets()[frameInfo.frameIndex],
 		0,
 		nullptr
-	);
+	);*/
 	
-	obj->bindModel(commandBuffer);
+	obj->bindModel(commandBuffer, true, pipelineLayout, frameInfo.frameIndex, modelDescriptorSetIndex);
 
 	obj->drawModel(commandBuffer, pipelineLayout, frameInfo.frameIndex, frustrumPlanes);
 }
 
 void GlobalRenderSystem::renderModelDepth(VkCommandBuffer& commandBuffer, GameObjectModel* obj, int lightIndex, uint16_t frameIndex, const std::array<FrustumPlane, 6>& planes) 
 {
-	obj->bindModel(commandBuffer); 
+	obj->bindModel(commandBuffer, false, pipelineLayout, 1, 1);
 	obj->drawModelDepth(commandBuffer, pipelineLayout, lightIndex, frameIndex, planes);
 }
 

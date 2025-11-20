@@ -77,7 +77,7 @@ void BasicUI::drawUI(VkCommandBuffer commandBuffer, ObjectManager* manager, Terr
 
     objectSelectionWindow(listObjectsName, manager, fps);
 
-	//terrainUboWindow(terrainUbo);
+	terrainUboWindow(terrainUbo);
 
     auto gameObject = manager->get(selected_object);
     if (gameObject != nullptr) {
@@ -133,10 +133,11 @@ void BasicUI::objectSelectionWindow(std::vector<std::string> listObjectsName, Ob
     {
         ImGui::SeparatorText("object type");
 
-        if (ImGui::Selectable("Model")) { open_sub_popup = true; }
-        if (ImGui::Selectable("Camera")) { selected = 2; }
-        if (ImGui::Selectable("SpotLight")) { selected = 3; }
-        if (ImGui::Selectable("Skybox")) selected = 4;
+        if (ImGui::Selectable("Model")) open_sub_popup = true;
+        if (ImGui::Selectable("Camera")) selected = 2;
+        if (ImGui::Selectable("SpotLight")) selected = 3; 
+        if (ImGui::Selectable("Skybox")) selected = 4; 
+        if (ImGui::Selectable("empty")) selected = 5;
 
         ImGui::EndPopup(); 
     }
@@ -175,6 +176,8 @@ void BasicUI::objectSelectionWindow(std::vector<std::string> listObjectsName, Ob
         break;
 	case 4: 
         createSkyboxWindow(manager);
+	case 5:
+		createEmptyObjectWindow(manager);
         break;
     default:
         show_create_go_window = false; 
@@ -337,7 +340,7 @@ void BasicUI::createSkyboxWindow(ObjectManager* manager)
     
     if (ImGui::Button("create"))
     {
-        manager->loadSkyboxtexture(device, path, "skyboxtexture");
+        //manager->loadSkyboxtexture(device, path, "skyboxtexture");
         show_create_go_window = false;
     }
 
@@ -400,6 +403,40 @@ void BasicUI::createCameraWindow(ObjectManager* manager, bool isSpotLight = fals
     ImGui::End();
 
     if (!show_create_go_window) selected = -1;
+}
+
+void BasicUI::createEmptyObjectWindow(ObjectManager* manager)
+{
+    ImGui::Begin("create empty object", &show_create_go_window);
+    isWindowSelected = (isWindowSelected || ImGui::IsWindowFocused());
+    ImGui::SeparatorText("create empty object");
+
+	// name
+    ImGui::Text("name");
+    static char name[128] = "";
+    ImGui::InputTextWithHint("##name", "enter name", name, IM_ARRAYSIZE(name));
+
+	// add game object behavior
+    ImGui::Text("Go behavior");
+    static char behaviorClass[128] = "";
+    ImGui::InputTextWithHint("##behavior", "enter class name", behaviorClass, IM_ARRAYSIZE(behaviorClass));
+
+	// create
+    if (ImGui::Button("create"))
+    {
+        auto emptyObject = GameObjectFactory::createGameObject<GameObject>(device);
+        emptyObject->setName(name);
+
+        auto behavior = GameObjectBehavior::createBehaviorFromType(behaviorClass, device);
+		if (behavior) emptyObject->setAttachedClass(std::move(behavior));
+
+        manager->pushGameObject(std::move(emptyObject));
+        show_create_go_window = false;
+    }
+
+    ImGui::End();
+
+	if (!show_create_go_window) selected = -1;
 }
 
 std::string BasicUI::openFileDialog(const char* filter)

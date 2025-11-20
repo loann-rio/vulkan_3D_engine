@@ -7,23 +7,12 @@
 
 #include "../GameObjectClassAssets/TerrainGenerator.h"
 #include "../GameObjectClassAssets/mainLightBehavior.h"
+#include "../GameObjectClassAssets/ChunkManager.h"
 
 #include <random>
 #include <chrono>
 #include <stdlib.h>
 
-ObjectManager::ObjectManager(Device& device) : device{ device } 
-{
-    globalPool = DescriptorPool::Builder(device)
-        .setMaxSets(Swap_chain::MAX_FRAMES_IN_FLIGHT * 320)
-        .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Swap_chain::MAX_FRAMES_IN_FLIGHT * 640)
-        .addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, Swap_chain::MAX_FRAMES_IN_FLIGHT * 640)
-        .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Swap_chain::MAX_FRAMES_IN_FLIGHT * 640)
-        .build();
-
-    gameObjects = std::make_shared<GameObject::Map>();
-    loadScene("default");
-};
 
 void ObjectManager::startLoadModel()
 {
@@ -42,32 +31,53 @@ void ObjectManager::startLoadModel()
     }
 
     /*{
-        std::shared_ptr<Model> cubemap = Model::createModelFromFile(device, "model/cube.obj");
-        cubemap->setTexture(Texture::create(device, "skybox/citrus_orchard_puresky_4k.hdr"));
-
-        auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
-        gameObject->setName("cubemapTextureBuilder");
-        gameObject->setModel(cubemap);
-        gameObject->setModelType(ModelType::UNDEFINED_MODEL);
-        gameObject->show = false;
-        gameObject->saveable = false;
-        gameObject->createDescriptorSet(pool);
-        pushGameObject(std::move(gameObject));
+        auto behavior = GameObjectBehavior::createBehaviorFromType("ChunkManager", device);
+		auto gameObject = GameObjectFactory::createGameObject<GameObject>(device);
+		gameObject->setName("terrainGenerator");
+		gameObject->setAttachedClass(std::move(behavior));
+		gameObject->saveable = false;
+		pushGameObject(std::move(gameObject));
     }*/
+ 
+    {
 
-    /*{
-        std::shared_ptr<Model> plane = PrebuiltModel::createFullScreenQuad(device);
-        plane->setTexture(Texture::create(device, "skybox/citrus_orchard_puresky_4k.hdr"));
+		std::vector<Model::Instance> instances;
+		for (int x = 0; x < 150; x++) {
+			for (int z = 0; z < 150; z++) {
+				Model::Instance instance;
+                instance.position = { x / 5.f - 15.f, 0.0f, z / 5.f - 15.f };
+				instance.rotation = { 0.0f, static_cast<float>(rand() % 360), 0.0f };
+                instance.scale = { 1, 1, 1 };
+				instances.push_back(instance);
+			}
+		}
+
+        std::shared_ptr<Model> cube = Model::createModelFromFile(device, {{"model/grassLOD/grassLod1.obj", "textures/whiteTexture.jpg"}, {"model/grassLOD/grassLod2.obj", ""} , {"model/grassLOD/grassLod3.obj", ""} , {"model/grassLOD/grassLod4.obj", "textures/GrassBillboard.png"} });
+        cube->computeShadow = false;
 
         auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
-        gameObject->setName("testPlane");
+        gameObject->setName("testlod");
+        gameObject->setModelType(ModelType::OBJ_MODEL);
+        gameObject->setModel(cube);
+        gameObject->saveable = false;
+		gameObject->setMultipleInstances(instances);
+        gameObject->createDescriptorSet(*globalPool);
+        pushGameObject(std::move(gameObject));
+    }
+
+    {
+		std::shared_ptr<Model> plane = PrebuiltModel::createPlane(device, 30, 30, 2, 2, { 0, 102.f/255.f, 0 }, 1);
+		plane->setTexture(Texture::create(device, "textures/whiteTexture.jpg"));
+
+        auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
+        gameObject->setName("ground");
+        gameObject->setModelType(ModelType::OBJ_MODEL);
         gameObject->setModel(plane);
-        gameObject->transform.translation = { 5, -0.1, 5 };
-        gameObject->saveable = false;
-        gameObject->show = false;
-        gameObject->createDescriptorSet(pool);
+        gameObject->saveable = true;
+        gameObject->createDescriptorSet(*globalPool);
+		gameObject->transform.translation = { -15.f, 0.f, -15.f };
         pushGameObject(std::move(gameObject));
-    }*/
+    }
 
 }
 
@@ -172,6 +182,9 @@ void ObjectManager::switchScene(std::string name)
     for (auto obj = gameObjects->begin(); obj != gameObjects->end(); obj++) {
         obj->second->toBeRemoved = true;
 	}
+
+	// keep skybox
+    get("cubemap")->toBeRemoved = false;
 
 	// keep main camera
     get("mainCamera")->toBeRemoved = false;
@@ -531,62 +544,15 @@ void ObjectManager::generateSkybox(const std::string pathTexture, const std::str
 }
 
 
-void ObjectManager::loadSkyboxtexture(Device& device, const std::string& filePath, const std::string& name)
+ObjectManager::ObjectManager(Device& device) : device{ device }
 {
+    globalPool = DescriptorPool::Builder(device)
+        .setMaxSets(Swap_chain::MAX_FRAMES_IN_FLIGHT * 320)
+        .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Swap_chain::MAX_FRAMES_IN_FLIGHT * 640)
+        .addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, Swap_chain::MAX_FRAMES_IN_FLIGHT * 640)
+        .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Swap_chain::MAX_FRAMES_IN_FLIGHT * 640)
+        .build();
 
-    // get extention type
-    //std::string extension;
-    //if (filePath.find_last_of(".") != std::string::npos) {
-    //    extension = filePath.substr(filePath.find_last_of(".") + 1);
-    //}
-
-    //// if ktx: can directly load but if hdri, we have to first render in a usable texture
-
-    //if (extension == "ktx" || extension == "ktx2") {
-    //    auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
-    //    gameObject->setName(name.empty() ? "primitive_" + std::to_string(gameObject->getId()) : name);
-
-    //    gameObject->setModelType(ModelType::OBJ_MODEL);
-    //    gameObject->setModelSubType(ModelSubType::SKYBOX);
-    //    gameObject->setPrimitivesModelType(PrimitivesModelType::CUBE);
-
-    //    gameObject->texturePath = filePath;
-    //    gameObject->saveable = false;
-    //    gameObject->show = false;
-
-    //    GameObject::id_t id = gameObject->getId();
-
-    //    pushGameObject(std::move(gameObject));
-
-    //    pushFuture(std::async(std::launch::async, [filePath, &device, id]() {
-    //        std::shared_ptr<Model> cube = PrebuiltModel::createCube(device);
-    //        cube->setTexture(Texture::create(device, filePath.c_str(), true));
-    //        return std::vector<futureObject> {futureObject{ cube, cube ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id, {}, false }};
-    //        })
-    //    );
-    //}
-    //else if (extension == "hdr") {
-    //    // first, create an object with the target texture to use to create the actual texture, then we will render the texture and create an other gameObject for the actual skybox
-
-    //    auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
-    //    gameObject->setName("constructor_skybox");
-
-    //    gameObject->setModelType(ModelType::OBJ_MODEL);
-    //    gameObject->setPrimitivesModelType(PrimitivesModelType::PLANE);
-
-    //    gameObject->texturePath = filePath;
-    //    gameObject->show = false;
-
-    //    GameObject::id_t id = gameObject->getId();
-
-    //    pushGameObject(std::move(gameObject));
-
-    //    pushFuture(std::async(std::launch::async, [filePath, &device, id]() {
-    //        std::shared_ptr<Model> plane = PrebuiltModel::createFullScreenQuad(device);
-    //        plane->setTexture(Texture::create(device, filePath.c_str(), true));
-    //        return std::vector<futureObject> {futureObject{ plane, plane ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id, {}, false }};
-    //        })
-    //    );
-    //}
-
-}
+    gameObjects = std::make_shared<GameObject::Map>();
+    loadScene(currentScene);
+};

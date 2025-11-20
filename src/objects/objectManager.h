@@ -62,14 +62,13 @@ public:
 
     void loadObjectAsync(Device& device, const std::string& filePath, TransformComponent transform, const std::string& name = "");
     void loadObjectAsync(Device& device, const std::string& filePath, const std::string filePathTexture, TransformComponent transform, const std::string& name = "");
-    void loadSkyboxtexture(Device& device, const std::string& filePath, const std::string& name = "");
 
     void pushFuture(std::future<std::vector<futureObject>> futures);
 
     // scene 
 	json currentSceneJson;
-    std::string currentScene = "default";
-	std::string scenePath = "scenes/default.json";
+    std::string currentScene = "test5";
+	std::string scenePath = "scenes/test5.json";
 
     void switchScene(std::string name); 
     void loadScene(std::string name);

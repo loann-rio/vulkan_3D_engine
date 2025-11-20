@@ -1133,8 +1133,19 @@ void GlTFModel::ModelGltf::createMaterialBuffer()
 	device.copyBuffer(stagingBuffer.getBuffer(), materialBuffer->getBuffer(), bufferSize); 
 }
 
-void GlTFModel::ModelGltf::bind(VkCommandBuffer& commandBuffer, Buffer* instancesBuffer = nullptr)
+void GlTFModel::ModelGltf::bind(VkCommandBuffer& commandBuffer, bool bindTexture, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, uint16_t modelDescriptorSetIndex, Buffer* instancesBuffer = nullptr)
 {
+	if (bindTexture)
+	{
+		vkCmdBindDescriptorSets(commandBuffer,
+			VK_PIPELINE_BIND_POINT_GRAPHICS,
+			pipelineLayout,
+			modelDescriptorSetIndex, 1,
+			&descriptorSet[frameIndex],
+			0,
+			nullptr);
+	}
+
 	VkBuffer buffers[] = { vertexBuffer->getBuffer() };
 	VkDeviceSize offsets[] = { 0 };
 

@@ -228,13 +228,14 @@ void App::run()
                 // render
                 renderer.beginSwapChainRenderPass(commandBuffer); 
 
-                gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo,
-                {
-                    globalDescriptorSet[frameIndex],
-                    shadowDescriptorSet[renderer.getDepthIndex()],
-                    textureObject->getDescriptorSets()[frameIndex]
-                },
-                frustrumPlanes);
+                if (textureObject)
+                    gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo,
+                    {
+                        globalDescriptorSet[frameIndex],
+                        shadowDescriptorSet[renderer.getDepthIndex()],
+                        textureObject->getDescriptorSets()[frameIndex]
+                    },
+                    frustrumPlanes);
                 
                 
                 objRenderSystem->renderGameObjects(commandBuffer, frameInfo, descriptorSets); 

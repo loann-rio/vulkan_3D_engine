@@ -118,7 +118,9 @@ void main() {
 		spotLightLight += compute_shadow_factor(fragPosShadow[indexSpotLight], indexSpotLight, surfaceNormal);
 	}
 
-	float slope = abs(normalize(fragNormalWorld).y);
+	outColor = vec4(texture(texSampler, fragTexCoord).rgb, 1.0);
+
+	/*float slope = abs(normalize(fragNormalWorld).y);
 	float height = -fragPositionWorld.y;
 
 	color = vec3(0, 0, 1);
@@ -163,5 +165,5 @@ void main() {
 
 
 	// sum colors
-	outColor = (vec4(diffuseLight, 1.0) +  cosAngOfIncidence * ubo.globalLightDir.w + spotLightLight) * vec4(color, 255);
+	outColor = (vec4(diffuseLight, 1.0) +  cosAngOfIncidence * ubo.globalLightDir.w + spotLightLight) * vec4(color, 255);*/
 }

@@ -13,6 +13,9 @@
 #include <array>
 
 
+class TerrainGenerator : public GameObjectBehavior 
+{
+
 enum RegionType {
 	Montain = 0,
 	Sea = 1,
@@ -29,8 +32,6 @@ struct RegionVariables {
 };
 
 
-class TerrainGenerator : public GameObjectBehavior 
-{
 public:
 	REGISTER_BEHAVIOR(TerrainGenerator);
 
@@ -45,8 +46,14 @@ public:
 	const uint16_t chunkSize = 158;
 	const int treeProbability = 20; // between 0 - 100
 
+	float hashFunction(int x, int y) const {
+		const unsigned int prime1 = 73856093;
+		const unsigned int prime2 = 19349663;
+		return (x * prime1) ^ (y * prime2);
+	}
+
 private:
-	const unsigned int seed = 314151;
+	const unsigned int seed = 7653456789;
 	float globalScale = 200.f;
 
 	Device& device;
@@ -61,15 +68,16 @@ private:
 
 	const float chunkWorldSide = 4.f;
 
-	std::map<int, std::array<GameObject::id_t, 2>> loadedChunk{};
+	std::map<int, GameObject::id_t> loadedChunk;
 
 	RegionVariables montains{ Montain, 8, 0.45f, 2, 4400, 6 };	
 	RegionVariables planes{ Planes, 3, 0.35f, 2, 0, 1.5 };
-	//RegionVariables planes{ Planes, 6, 0.35f, 2, 4400, 1.5 };
 	
 	std::vector<RegionVariables> regions = { montains, planes };
 
 	PerlinNoise pn{ seed };
+
+	glm::vec2 getNoiseSample(float x, float y, glm::vec2 octaveOffset, float frequency);
 
 	std::vector<std::vector<glm::vec3>> generatecolorMap(std::vector<std::vector<glm::vec2>> heightMap);
 

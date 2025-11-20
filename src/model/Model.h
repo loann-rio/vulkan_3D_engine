@@ -16,6 +16,7 @@
 
 #include <vector>
 #include <memory>
+#include <array>
 
 struct alignas(16) SimplePushConstantData {
 	glm::mat4 modelMatrix{ 1.f }; 
@@ -33,6 +34,10 @@ public:
 
 	static std::unique_ptr<Model> createModelFromFile(Device& device, const std::string& filePath, const char* filePathTexture);
 	static std::unique_ptr<Model> createModelFromFile(Device& device, const std::string& filePath);
+	
+	///  model with LOD
+	static std::unique_ptr<Model> createModelFromFile(Device& device, std::vector<std::array<std::string, 2>> filesPath);
+
 
 	struct Instance {
 		glm::vec3 position;
@@ -55,29 +60,41 @@ public:
 		}
 	};
 
+	struct LodInfo {
+		uint32_t vertexOffset; // In vertices
+		uint32_t indexOffset;  // In indices
+		uint32_t indexCount;   // size of indices used
+		size_t   textureIndex = 0; // index of texture used for this LOD
+	};
+
+
 	struct Builder {
 		std::vector<Vertex> vertices{};
 		std::vector<uint32_t> indices{};
+
+		std::vector<LodInfo> lods{};
+
 		BoundingBox aabb;
 
 		bool loadOBJModel(const std::string& filepath);
 	};
 
-	Model(Device& device, const Model::Builder& builder, const std::string filePathTexture);
 	Model(Device& device, const Model::Builder& builder);
 	~Model(); 
 
 	Model(const Model&) = delete;
 	Model& operator=(const Model&) = delete;
 
-	void bind(VkCommandBuffer& commandBuffer, Buffer* instancesBuffer);
+	void bind(VkCommandBuffer& commandBuffer, bool bindTexture, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, uint16_t modelDescriptorSetIndex, Buffer* instancesBuffer);
 	void draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, glm::mat4 modelMatrix, glm::mat4 normalMatrix, const std::array<FrustumPlane, 6>& planes, uint32_t instanceCount);
 	void drawDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, glm::mat4 modelMatrix, uint32_t cameraIndex, const std::array<FrustumPlane, 6>& planes, uint32_t instanceCount);
 
-	bool hasTexture = false;
-	std::shared_ptr<Texture> texture;
-	void setTexture(std::shared_ptr<Texture> newTexture) { texture = std::move(newTexture); }
-	VkDescriptorImageInfo getTextureImageInfo() const { return hasTexture ? texture->getImageInfo() : VkDescriptorImageInfo{}; }
+	// textures should be ordered by lod levels if there are multiple, each lod have the use index 
+	void setTexture(std::shared_ptr<Texture> newTexture) { texture[0] = std::move(newTexture); }
+	void setTexture(std::vector<std::shared_ptr<Texture>> newTextures) { texture = std::move(newTextures); }
+	void addTexture(std::shared_ptr<Texture> newTexture) { texture.push_back(std::move(newTexture)); }
+
+	VkDescriptorImageInfo getTextureImageInfo(size_t index = 0) const { return texture[0]->getImageInfo(); }
 	
 	void createDescriptorSet(DescriptorPool& pool, Device& device);
 	std::vector<VkDescriptorSet> getDescriptorSets() { return descriptorSet; };
@@ -86,31 +103,41 @@ public:
 	void update() {};
 
 	static std::vector<DescriptorSetObject> getDescriptorType();
-	static int getModelType() { return 1; }
+	static const int getModelType() { return 1; }
 
 	std::vector<Model::Instance> instanceList = {};
 	std::vector<Model::Instance> getInstanceList() { return instanceList; }
 
-	BoundingBox aabb;
+	bool computeShadow = true;
 
 private:
-	void createVertexBuffers(const std::vector<Vertex>& vertices);
-	void createIndexBuffers(const std::vector<uint32_t>& indices);
-
+	
+	// Axis Aligned Bounding Box
+	BoundingBox aabb;
 	void createAABB(const std::vector<Vertex>& vertices);
 
-	Device& device;
+	// LODs
+	std::vector<LodInfo> lods{};
+	bool hasLODs = false;
+	size_t lodIndex = 0;
+	void debugValidateLODs() const;
 
+	// Vertex Buffer
 	std::unique_ptr<Buffer> vertexBuffer;
 	uint32_t vertexCount;
+	void createVertexBuffers(const std::vector<Vertex>& vertices);
 
+	// Index Buffer
 	bool hasIndexBuffer = false;
 	std::unique_ptr<Buffer> indexBuffer;
 	uint32_t indexCount;
+	void createIndexBuffers(const std::vector<uint32_t>& indices);
 
-	std::vector<VkDescriptorSet> descriptorSet{ Swap_chain::MAX_FRAMES_IN_FLIGHT };
+	// Texture and descriptor set
+	std::vector<std::shared_ptr<Texture>> texture;
+	std::vector<VkDescriptorSet> descriptorSet;
 
-	static std::vector<VkDescriptorType> bindingDescription;
+	Device& device;
 
 };
 

@@ -49,19 +49,16 @@ public:
 		return out;
 	}
 
-	static std::vector<std::vector<glm::vec2>> generate2DVornoiMap(uint16_t width, uint16_t height, float sizeFactor) {
-
-		float maxHeight = -FLT_MAX;
-		float minHeight = FLT_MAX;
+	static std::vector<std::vector<glm::vec2>> generate2DVornoiMap(int offsetX, int offsetY, uint16_t width, uint16_t height, float sizeFactor) {
 
 		std::vector<std::vector<glm::vec2>> noiseMap(width, std::vector<glm::vec2>(height));
 
-		for (int y = 0; y < height; y++) {
-			for (int x = 0; x < width; x++) {
-				auto noiseHeight = voronoi({ x, y }, sizeFactor);
+		for (int y = 0; y < height; y++)
+		for (int x = 0; x < width; x++) 
+		{
+			auto noiseHeight = voronoi({ offsetY + y,  offsetX + x }, sizeFactor);
 
-				noiseMap[x][y] = glm::vec2{ std::min(1.f, noiseHeight[0].x / 1.18f), noiseHeight[0].y };
-			}
+			noiseMap[y][x] = glm::vec2{ std::min(1.f, noiseHeight[0].x / 1.18f), noiseHeight[0].y };
 		}
 
 		return noiseMap;

@@ -23,7 +23,9 @@ std::shared_ptr<Model> PrebuiltModel::createFullScreenQuad(Device& device)
         0, 2, 3
     };
 
-    return std::make_shared<Model>(device, modelBuilder, "textures/whiteTexture.jpg");
+    auto model = std::make_unique<Model>(device, modelBuilder);
+    model->setTexture(Texture::create(device, "textures/whiteTexture.jpg"));
+    return model;
 }
 
 
@@ -82,7 +84,9 @@ std::shared_ptr<Model> PrebuiltModel::createPlane(Device& device, float width, f
         modelBuilder.vertices[i].normal = glm::normalize(accumulatedNormals[i]);
     }
 
-    return std::make_shared<Model>(device, modelBuilder, "textures/whiteTexture.jpg");
+    auto model = std::make_unique<Model>(device, modelBuilder);
+    model->setTexture(Texture::create(device, "textures/whiteTexture.jpg"));
+    return model;
 }
 
 /// <summary>
@@ -125,7 +129,9 @@ std::unique_ptr<Model> PrebuiltModel::createPlane(Device& device, const unsigned
         modelBuilder.vertices[i].normal = -glm::normalize(glm::cross(modelBuilder.vertices[i].position - modelBuilder.vertices[i + 1].position, modelBuilder.vertices[i].position - modelBuilder.vertices[i + detail + 1].position));
     }
 
-    return std::make_unique<Model>(device, modelBuilder, texturePath);
+	auto model = std::make_unique<Model>(device, modelBuilder);
+    model->setTexture(Texture::create(device, texturePath.c_str()));
+    return model;
 }
 
 std::shared_ptr<Model> PrebuiltModel::createIcoSphere(Device& device, uint16_t detail)
@@ -175,7 +181,9 @@ std::shared_ptr<Model> PrebuiltModel::createIcoSphere(Device& device, uint16_t d
     };
 
 
-    return std::make_shared<Model>(device, modelBuilder, "textures/floor.jpg"); 
+    auto model = std::make_unique<Model>(device, modelBuilder);
+    model->setTexture(Texture::create(device, "textures/floor.jpg"));
+    return model;
 }
 
 std::shared_ptr<Model> PrebuiltModel::createCube(Device& device, uint16_t detail)
@@ -232,7 +240,9 @@ std::shared_ptr<Model> PrebuiltModel::createCube(Device& device)
         modelBuilder.vertices[i].normal = glm::normalize(accum[i]);
     }
 
-    return std::make_shared<Model>(device, modelBuilder, "textures/whiteTexture.jpg");
+    auto model = std::make_unique<Model>(device, modelBuilder);
+    model->setTexture(Texture::create(device, "textures/whiteTexture.jpg"));
+    return model;
 }
 
 
@@ -320,7 +330,9 @@ std::shared_ptr<Model> PrebuiltModel::createTerrain(Device& device,
         }
     }
 
-    return std::make_shared<Model>(device, modelBuilder, "textures/whiteTexture.jpg");
+    auto model = std::make_unique<Model>(device, modelBuilder);
+    model->setTexture(Texture::create(device, "textures/whiteTexture.jpg"));
+    return model;
 }
 
 std::shared_ptr<Model> PrebuiltModel::createTerrain(Device& device, float width, float depth, std::vector<std::vector<float>> heightMap, float UVfactor)
@@ -429,5 +441,7 @@ std::shared_ptr<Model> PrebuiltModel::createTerrain(Device& device, float width,
         modelBuilder.vertices[i].color = color;
     }
 
-    return std::make_shared<Model>(device, modelBuilder, "textures/whiteTexture.jpg");
+    auto model = std::make_unique<Model>(device, modelBuilder);
+    model->setTexture(Texture::create(device, "textures/whiteTexture.jpg"));
+    return model;
 }

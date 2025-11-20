@@ -125,7 +125,13 @@ void main() {
 
 
 	// get texture color
-	vec4 color = texture(texSampler, fragTexCoord) * vec4(fragColor, 1.0);
+	vec4 color = texture(texSampler, fragTexCoord);
+
+	if (color.a < 0.9)
+		discard;
+
+	color = color * vec4(fragColor, 1.0);
+
 
 	// spot light mapping
 	vec4 spotLightLight = {0.0, 0.0, 0.0 , 0.0};

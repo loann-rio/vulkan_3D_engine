@@ -2,15 +2,13 @@
 
 void TerrainGenerator::loop(Device& device, ObjectManager* objManager, GameObject* object)
 {
-	//int posX = object->transform.translation.x / chunkWorldSide;
-	//int posY = object->transform.translation.z / chunkWorldSide;
+	int posX = object->transform.translation.x / chunkWorldSide;
+	int posY = object->transform.translation.z / chunkWorldSide;
 
-	int posX = 0;
-	int posY = 0;
+	//int posX = 0;
+	//int posY = 0;
 
-	//int posX = objManager->get("mainCamera")->transform.translation.x / chunkWorldSide;
-	//int posY = objManager->get("mainCamera")->transform.translation.z / chunkWorldSide;
-
+	
 	
 	for (int i = posX - int(sizeWorldInChunck / 2); i <= posX + int(sizeWorldInChunck / 2); i++)
 	for (int j = posY - int(sizeWorldInChunck / 2); j <= posY + int(sizeWorldInChunck / 2); j++)
@@ -18,26 +16,18 @@ void TerrainGenerator::loop(Device& device, ObjectManager* objManager, GameObjec
 		int hash = i * 5463 + j * 9875;
 
 		if (loadedChunk.count(hash) == 0) {
-			
 			std::cout << "chunk not found, creating chunk \n";
-			
 			
 			// push terrain
 			auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
 			gameObject->transform.translation = { i * chunkWorldSide, 4, j * chunkWorldSide };
 			gameObject->setModelSubType(ModelSubType::TERRAIN);
-			gameObject->setParent(objManager->get("terrain G"));
+			//gameObject->setParent(objManager->get("terrain G"));
+			gameObject->saveable = false;
+
 			GameObject::id_t id_terrain = gameObject->getId();
-
 			objManager->pushGameObject(std::move(gameObject));
-
-			// push Tree
-			//auto treesObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
-			//treesObject->transform.translation = { j * chunkWorldSide, 0, i * chunkWorldSide };
-			//treesObject->setName("trees");
-			//GameObject::id_t id_tree = treesObject->getId();
-
-			//objManager->pushGameObject(std::move(treesObject));
+			loadedChunk[hash] = id_terrain;
 
 			// create terrain and place trees
 			objManager->pushFuture(std::async(std::launch::async, [this, id_terrain, i, j]() {
@@ -49,36 +39,18 @@ void TerrainGenerator::loop(Device& device, ObjectManager* objManager, GameObjec
 				std::vector<std::vector<float>> map = std::vector<std::vector<float>>(this->chunkSize, std::vector<float>(this->chunkSize));
 				for (int x = 0; x < this->chunkSize; x++) for (int y = 0; y < this->chunkSize; y++) map[y][x] = heightMap[x][y].x;
 
-				// create color map
-
-
 				// create plane object
 				std::shared_ptr<Model> plane = PrebuiltModel::createTerrain(this->device, 4, 4, map);
-
 				std::shared_ptr<Texture> text = Texture::create(this->device, heightMap);
-				//std::unique_ptr<Texture> text = Texture::create(this->device, "textures\\floor.jpg");
-				if (text != nullptr) {
-					plane->setTexture(std::move(text));
-					std::cout << "texture loaded \n";
-				}
-				else std::cout << "texture not loaded \n";
-				
-
-				// place tree
-				//std::vector<Model::Instance> treeList = this->placeTrees(heightMap, i, j);
-
-				// load tree model
-				//std::shared_ptr<Model> trees = Model::createModelFromFile(this->device, "model\\coloredTree1.obj", "textures\\whiteTexture.jpg");
-
-				return std::vector<futureObject>{futureObject{ plane, plane ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id_terrain, {}, false }};// , futureObject{ trees, trees ? OBJ_MODEL : UNDEFINED_MODEL, id_tree, treeList }};
+				plane->setTexture(std::move(text));
+					
+				return std::vector<futureObject>{futureObject{ plane, plane ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id_terrain, {}, false }};
 				}));
-
-			loadedChunk[hash] = { id_terrain };
-
 		}
 	}
 
-	std::unordered_set<int> validHashes; 
+	
+	std::unordered_set<int> validHashes;
 	validHashes.reserve(sizeWorldInChunck * sizeWorldInChunck);
 
 	for (int i = posX - int(sizeWorldInChunck / 2 + 1); i <= posX + int(sizeWorldInChunck / 2 + 1); i++) {
@@ -90,22 +62,17 @@ void TerrainGenerator::loop(Device& device, ObjectManager* objManager, GameObjec
 
 	// Iterate loaded chunks and remove invalid ones
 	for (auto it = loadedChunk.begin(); it != loadedChunk.end();) {
-		if (validHashes.find(it->first) == validHashes.end()) {
-			for (auto id : it->second) {
-				objManager->removeGameObject(id);
-				std::cout << "unload chunck \n";
-			}
-
+		if (validHashes.find(it->first) == validHashes.end()) { // id is not in valid chunk, remove it
+			objManager->removeGameObject(it->second);
 			it = loadedChunk.erase(it);
+
+			std::cout << "unload chunck \n";
 		}
 		else {
-			dynamic_cast<GameObjectModel*>(objManager->get(it->second.at(1)))->show = false;
 			++it;
 		}
 	}
 
-	int hash = posX * 5463 + posY * 9875;
-	dynamic_cast<GameObjectModel*>(objManager->get(loadedChunk.at(hash).at(1)))->show = true; 
 }
 
 TerrainGenerator::TerrainGenerator(Device& device) : device(device)
@@ -139,6 +106,10 @@ std::vector<std::vector<glm::vec2>> TerrainGenerator::generateChunck(float Xoffs
 			float slope = 0;
 
 			std::vector<glm::vec2> lookupVoronoi = VoronoiNoise::voronoi({ (int)((x + Xoffset)), (int)((y + Yoffset)) }, biomeScale, 1);
+			std::vector<glm::vec2> lookupVoronoi1 = VoronoiNoise::voronoi({ (int)((x + 1 + Xoffset)), (int)((y + Yoffset)) }, biomeScale, 1);
+			std::vector<glm::vec2> lookupVoronoi2 = VoronoiNoise::voronoi({ (int)((x - 1 + Xoffset)), (int)((y + Yoffset)) }, biomeScale, 1);
+			std::vector<glm::vec2> lookupVoronoi3 = VoronoiNoise::voronoi({ (int)((x + Xoffset)), (int)((y + 1 + Yoffset)) }, biomeScale, 1);
+			std::vector<glm::vec2> lookupVoronoi4 = VoronoiNoise::voronoi({ (int)((x + Xoffset)), (int)((y - 1 + Yoffset)) }, biomeScale, 1);
 
 			for (int i = 0; i < maxOctaves; i++) {
 				float sampleX = ((float)x + (float)octavesOffsets[i].x) / globalScale * frequency;
@@ -160,8 +131,21 @@ std::vector<std::vector<glm::vec2>> TerrainGenerator::generateChunck(float Xoffs
 
 				noiseHeight += (perlinValue + .5f) * amplitude / (1 + m * weightedRegionValue(lookupVoronoi, &RegionVariables::gradientFactor));
 				
-				amplitude *= weightedRegionValue(lookupVoronoi, &RegionVariables::persistance);  // persistance : [0, 1]
-				frequency *= weightedRegionValue(lookupVoronoi, &RegionVariables::lacunarity);
+				float amplitude1 = weightedRegionValue(lookupVoronoi, &RegionVariables::persistance);  // persistance : [0, 1]
+				amplitude1 += weightedRegionValue(lookupVoronoi1, &RegionVariables::persistance);  // persistance : [0, 1]
+				amplitude1 += weightedRegionValue(lookupVoronoi2, &RegionVariables::persistance);  // persistance : [0, 1]
+				amplitude1 += weightedRegionValue(lookupVoronoi3, &RegionVariables::persistance);  // persistance : [0, 1]
+				amplitude1 += weightedRegionValue(lookupVoronoi4, &RegionVariables::persistance);  // persistance : [0, 1]
+
+				amplitude *= (amplitude1 / 5.f);  // average persistance
+
+				float frequency1 = weightedRegionValue(lookupVoronoi, &RegionVariables::lacunarity);  // lacunarity : > 1
+				frequency1 += weightedRegionValue(lookupVoronoi1, &RegionVariables::lacunarity);  // lacunarity : > 1
+				frequency1 += weightedRegionValue(lookupVoronoi2, &RegionVariables::lacunarity);  // lacunarity : > 1
+				frequency1 += weightedRegionValue(lookupVoronoi3, &RegionVariables::lacunarity);  // lacunarity : > 1
+				frequency1 += weightedRegionValue(lookupVoronoi4, &RegionVariables::lacunarity);  // lacunarity : > 1
+				frequency *= (frequency1 / 5.f);  // average lacunarity
+				//frequency *= weightedRegionValue(lookupVoronoi, &RegionVariables::lacunarity);
 			}
 
 			noiseMap[x][y] = glm::vec2(globalHeightMultiplier * weightedRegionValue(lookupVoronoi, &RegionVariables::heightMultiplier) * noiseHeight, slope);

@@ -33,11 +33,13 @@ private:
 	void gameObjectWindow(GameObject* gameObject, ObjectManager* manager); 
 	void objectSelectionWindow(std::vector<std::string> listObjectsName, ObjectManager* manager, float fps);
 	void terrainUboWindow(TerrainUbo& terrainUbo);
+
 	void createObjWindow(ObjectManager* manager);
 	void createGLTFWindow(ObjectManager* manager);
 	void createSkyboxWindow(ObjectManager* manager);
-
 	void createCameraWindow(ObjectManager* manager, bool isSpotLight);
+	void createEmptyObjectWindow(ObjectManager* manager);
+
 	std::string openFileDialog(const char* filter);
 
 	VkDescriptorPool imguiPool; 

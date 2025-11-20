@@ -126,6 +126,10 @@
     <ClCompile Include="src\base\SingleRenderSwap.cpp">
       <Filter>base</Filter>
     </ClCompile>
+    <ClCompile Include="src\GameObjectClassAssets\finiteSizedTerrainGeneration.cpp">
+      <Filter>GameObjectClassAssets</Filter>
+    </ClCompile>
+    <ClCompile Include="src\GameObjectClassAssets\ChunkManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tiny_gltf.h">
@@ -231,6 +235,12 @@
     <ClInclude Include="src\base\FrameRateCounter.h" />
     <ClInclude Include="src\model\BoundingBox.h">
       <Filter>model</Filter>
+    </ClInclude>
+    <ClInclude Include="src\GameObjectClassAssets\finiteSizedTerrainGeneration.h">
+      <Filter>GameObjectClassAssets</Filter>
+    </ClInclude>
+    <ClInclude Include="src\GameObjectClassAssets\ChunkManager.h">
+      <Filter>GameObjectClassAssets</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

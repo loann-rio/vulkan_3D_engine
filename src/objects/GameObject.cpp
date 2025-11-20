@@ -199,11 +199,11 @@ void GameObjectModel::update(float dtime)
     }
 }
 
-void GameObjectModel::bindModel(VkCommandBuffer& commandBuffer) const
+void GameObjectModel::bindModel(VkCommandBuffer& commandBuffer, bool bindTexture, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, uint16_t modelDescriptorSetIndex) const
 {
     std::visit([&](const auto& modelInstance) {  
         if (modelInstance) {
-            modelInstance->bind(commandBuffer, instancesBuffer.get()); 
+            modelInstance->bind(commandBuffer, bindTexture, pipelineLayout, frameIndex, modelDescriptorSetIndex, instancesBuffer.get());
         }
         }, model);
 }
