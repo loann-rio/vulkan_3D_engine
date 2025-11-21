@@ -13,6 +13,7 @@
 #include "../base/descriptors.h"
 #include "../render/Camera.h"
 #include "../model/BoundingBox.h"
+#include "Model.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_ENABLE_EXPERIMENTAL
@@ -297,7 +298,8 @@ class GlTFModel
 
 		std::vector<std::string> extensions; 
 
-		//std::vector<Model::Instance> instanceList = {};
+		std::vector<Model::Instance> instanceList = {};
+		std::vector<Model::Instance> getInstanceList() { return instanceList; }
 
 		std::vector<VkDescriptorSet> descriptorSet{ Swap_chain::MAX_FRAMES_IN_FLIGHT };
 
@@ -334,8 +336,8 @@ class GlTFModel
 		static std::vector<DescriptorSetObject> getDescriptorType(); 
 		static int getModelType() { return 2; }
 		
-		void drawNode(Node* node, VkCommandBuffer& commandBuffer, uint16_t frameIndex, VkPipelineLayout& pipelineLayout, glm::mat4 modelMatrix, glm::mat4 normalMatrix, const std::array<FrustumPlane, 6>& planes);
-		void drawNodeDepth(Node* node, VkCommandBuffer& commandBuffer, uint16_t frameIndex, VkPipelineLayout& pipelineLayout, glm::mat4 modelMatrix, int lightIndex, const std::array<FrustumPlane, 6>& planes);
+		void drawNode(Node* node, VkCommandBuffer& commandBuffer, uint16_t frameIndex, VkPipelineLayout& pipelineLayout, glm::mat4 modelMatrix, glm::mat4 normalMatrix, const std::array<FrustumPlane, 6>& planes, uint32_t instanceCount);
+		void drawNodeDepth(Node* node, VkCommandBuffer& commandBuffer, uint16_t frameIndex, VkPipelineLayout& pipelineLayout, glm::mat4 modelMatrix, int lightIndex, const std::array<FrustumPlane, 6>& planes, uint32_t instanceCount);
 		
 		void bind(VkCommandBuffer& commandBuffer, bool bindTexture, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, uint16_t modelDescriptorSetIndex, Buffer* instancesBuffer);
 		void draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& GlTFPipelineLayout, uint16_t frameIndex, glm::mat4 modelMatrix, glm::mat4 normalMatrix, const std::array<FrustumPlane, 6>& planes, uint32_t instanceCount);

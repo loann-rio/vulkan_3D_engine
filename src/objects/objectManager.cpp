@@ -39,7 +39,7 @@ void ObjectManager::startLoadModel()
 		pushGameObject(std::move(gameObject));
     }*/
  
-    {
+    /*{
 
 		std::vector<Model::Instance> instances;
 		for (int x = 0; x < 150; x++) {
@@ -61,6 +61,27 @@ void ObjectManager::startLoadModel()
         gameObject->setModel(cube);
         gameObject->saveable = false;
 		gameObject->setMultipleInstances(instances);
+        gameObject->createDescriptorSet(*globalPool);
+        pushGameObject(std::move(gameObject));
+    }*/
+
+    {
+        std::vector<Model::Instance> instances;
+        for (int x = 0; x < 10; x++) {
+            Model::Instance instance;
+            instance.position = { x * 2, 0.0f, 0.0f };
+            instance.rotation = { 0.0f, x * 10, 0.0f };
+            instance.scale = { 1, 1, 1 };
+            instances.push_back(instance);
+        }
+
+        std::shared_ptr<GlTFModel::ModelGltf> cube = GlTFModel::createModelFromFile(device, "model/DamagedHelmet.gltf");
+
+        auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
+        gameObject->setName("testlodgltf");
+        gameObject->setModel(cube);
+        gameObject->saveable = false;
+        gameObject->setMultipleInstances(instances);
         gameObject->createDescriptorSet(*globalPool);
         pushGameObject(std::move(gameObject));
     }

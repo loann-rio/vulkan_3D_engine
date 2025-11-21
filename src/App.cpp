@@ -375,6 +375,7 @@ void App::createRenderSystems()
             gltfBuilder.vertFilepath = "shaders\\GlTFshader.vert.spv";
             gltfBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout(), skyboxSetLayout->getDescriptorSetLayout() };
             gltfBuilder.renderPass = renderer.getSwapChainRenderPass();
+			gltfBuilder.hasMultipleInstance = true;
 
             gltfRenderSystem = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, gltfBuilder);
         }
@@ -384,6 +385,7 @@ void App::createRenderSystems()
             gltfShadowBuilder.vertFilepath = "shaders\\shadowmapgltf.vert.spv";
             gltfShadowBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
             gltfShadowBuilder.renderPass = renderer.getDepthRenderPass();
+			gltfShadowBuilder.hasMultipleInstance = true;
 
             depthRenderSystemGltf = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, gltfShadowBuilder);
         }

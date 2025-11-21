@@ -198,7 +198,7 @@ void Model::draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& PipelineLayou
 	}
 
 	if (hasIndexBuffer) {
-		vkCmdDrawIndexed(commandBuffer, drawIndexCount, instanceCount, firstIndex, 0, firstIndex);
+		vkCmdDrawIndexed(commandBuffer, drawIndexCount, instanceCount, firstIndex, 0, firstInstance);
 	}
 	else {
 		vkCmdDraw(commandBuffer, vertexCount, instanceCount, 0, firstInstance);

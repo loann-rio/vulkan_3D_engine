@@ -11,6 +11,10 @@ layout (location = 4) in vec2 inUV0;
 layout (location = 5) in vec2 inUV1;
 layout (location = 6) in vec4 inColor0;
 
+layout(location = 7) in vec3 instancePosition;
+layout(location = 8) in vec3 instanceRotation;
+layout(location = 9) in vec3 instanceScale; 
+
 
 layout (location = 0) out vec3 outWorldPos;
 layout (location = 1) out vec3 outNormal;
@@ -64,8 +68,33 @@ layout(push_constant) uniform Push {
 } push;
 
 
+mat4 composeModelMatrix(vec3 translation, vec3 rotation, vec3 scale) { 
+    float c3 = cos(rotation.z);
+    float s3 = sin(rotation.z);
+    float c2 = cos(rotation.x);
+    float s2 = sin(rotation.x);
+    float c1 = cos(rotation.y);
+    float s1 = sin(rotation.y);
+
+    return mat4(
+        vec4(scale.x * (c1 * c3 + s1 * s2 * s3), scale.x * (c2 * s3), scale.x * (c1 * s2 * s3 - c3 * s1), 0.0),
+        vec4(scale.y * (c3 * s1 * s2 - c1 * s3), scale.y * (c2 * c3), scale.y * (c1 * c3 * s2 + s1 * s3), 0.0),
+        vec4(scale.z * (c2 * s1), scale.z * (-s2), scale.z * (c1 * c2), 0.0),
+        vec4(translation, 1.0)
+    );
+}
+
+
 void main() 
 {
+
+	mat4 modelMat;
+
+	if (gl_InstanceIndex > 0) {
+		modelMat = push.nodeMatrix * composeModelMatrix(instancePosition, instanceRotation, instanceScale);
+	} else {
+		modelMat = push.nodeMatrix ;
+	}
 
 	vec4 locPos;
 	if (node.jointCount > 0) {
@@ -76,11 +105,11 @@ void main()
 			inWeight0.z * node.jointMatrix[inJoint0.z] +
 			inWeight0.w * node.jointMatrix[inJoint0.w];
 
-		locPos = push.nodeMatrix * node.matrix * skinMat * vec4(inPos, 1.0);
-		outNormal = normalize(transpose(inverse(mat3(push.nodeMatrix * node.matrix * skinMat))) * inNormal);
+		locPos = modelMat * node.matrix * skinMat * vec4(inPos, 1.0);
+		outNormal = normalize(transpose(inverse(mat3(modelMat * node.matrix * skinMat))) * inNormal);
 	} else {
-		locPos = push.nodeMatrix * node.matrix * vec4(inPos, 1.0);
-		outNormal = normalize(transpose(inverse(mat3(push.nodeMatrix * node.matrix))) * inNormal);
+		locPos = modelMat * node.matrix * vec4(inPos, 1.0);
+		outNormal = normalize(transpose(inverse(mat3(modelMat * node.matrix))) * inNormal);
 	}
 
 	outWorldPos = locPos.xyz / locPos.w;
