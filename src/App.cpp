@@ -8,27 +8,20 @@
 #include "render/Camera.h"
 #include "model/GlTFModel.h"
 #include "base/FrameRateCounter.h"
-#include "model/preBuild.h"
 
 // glm
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
-#include <glm/gtc/constants.hpp>
 
 // imgui
 #include "objects/BasicUI.h"
 
 // std
-#include <stdexcept>
 #include <array>
-#include <cassert>
-#include <iostream>
 #include <chrono>
 #include <string>
-#include <sstream>
 #include <thread>
-#include <iomanip>
 
 
 App::App() { 

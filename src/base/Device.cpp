@@ -788,6 +788,13 @@ void Device::copyImageToBuffer(VkImage image, VkBuffer buffer, std::vector<VkBuf
     endSingleTimeTransferCommands(commandBuffer);
 }
 
+/// <summary>
+/// Creates a Vulkan image using the provided VkImageCreateInfo, allocates device memory with the requested properties, and binds that memory to the image. Throws std::runtime_error if any Vulkan call (creation, allocation, or binding) fails.
+/// </summary>
+/// <param name="imageInfo">VkImageCreateInfo describing the image to create</param>
+/// <param name="properties">VkMemoryPropertyFlags indicating required memory properties for the allocation</param>
+/// <param name="image">Output parameter that will be set to the created VkImage on success</param>
+/// <param name="imageMemory">Output VkDeviceMemory</param>
 void Device::createImageWithInfo(
     const VkImageCreateInfo& imageInfo,
     VkMemoryPropertyFlags properties,

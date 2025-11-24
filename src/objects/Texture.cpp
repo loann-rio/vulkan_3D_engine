@@ -87,7 +87,6 @@ std::shared_ptr<Texture> Texture::createEmpty(Device& device, VkImageCreateInfo 
 }
 
 
-
 Texture::Texture(Device& device, const char* filePathTexture, bool isCubeMap) : device{device}
 {
     const std::string path = filePathTexture;

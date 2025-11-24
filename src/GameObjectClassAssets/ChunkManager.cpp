@@ -2,7 +2,6 @@
 
 void ChunkManager::loop(Device& device, ObjectManager* objManager, GameObject* object)
 {
-	return;
 
 	// determine current chunk position
 	int posX = object->transform.translation.x / chunkWorldSize;

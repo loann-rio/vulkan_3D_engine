@@ -212,7 +212,6 @@ void GlTFModel::ModelGltf::drawNodeDepth(Node* node, VkCommandBuffer& commandBuf
 			);
 
 			uint32_t firstInstance = (instanceCount == 1) ? 0 : 1;
-			std::cout << instanceCount << std::endl;
 			vkCmdDrawIndexed(commandBuffer, primitive->indexCount, instanceCount, primitive->firstIndex, 0, firstInstance);
 		}
 	}
@@ -241,6 +240,16 @@ void GlTFModel::ModelGltf::drawDepth(VkCommandBuffer& commandBuffer, VkPipelineL
 }
 
 //// create ////
+
+std::unique_ptr<GlTFModel::ModelGltf> GlTFModel::createModelFromFile(Device& device, const std::string& filePath)
+{
+	std::cout << "start loading \n";
+	std::unique_ptr<GlTFModel::ModelGltf> model = std::make_unique<GlTFModel::ModelGltf>(device);
+	if (model->loadFromFile(filePath))
+		return model;
+	return nullptr;
+}
+
 
 void GlTFModel::ModelGltf::calculateBoundingBox(Node* node, Node* parent)
 {
@@ -1407,15 +1416,6 @@ GlTFModel::Node::~Node()
 	for (auto& child : children) {
 		delete child;
 	}
-}
-
-std::unique_ptr<GlTFModel::ModelGltf> GlTFModel::createModelFromFile(Device& device, const std::string& filePath)
-{
-	std::cout << "start loading \n";
-	std::unique_ptr<GlTFModel::ModelGltf> model = std::make_unique<GlTFModel::ModelGltf>(device);
-	if (model->loadFromFile(filePath)) 
-		return model;
-	return nullptr;
 }
 
 void GlTFModel::TextureModel::TextFromglTfImage(Device& device, tinygltf::Image& gltfimage, std::string path)

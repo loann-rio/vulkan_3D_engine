@@ -6,16 +6,10 @@
 
 Renderer::Renderer(Window& window, Device& device) : window{window} , device{device}
 {
-	isDepthStarted.resize(DepthSwapChain::MAX_DEPTH_RENDER_COUNT);
 	recreateSwapChain();
+
+	isDepthStarted.resize(DepthSwapChain::MAX_DEPTH_RENDER_COUNT);
 	depthSwapChain = std::make_unique<DepthSwapChain>(device, VkExtent2D{ 2048, 2048 });
-
-	/*SwapChainBuilder builder{};
-	builder.colorTarget = target;
-	builder.imageFormat = VK_FORMAT_R8G8B8A8_SRGB;
-	builder.windowExtent = { 1024, 1024 };
-
-	skyboxRenderSwapchain = std::make_unique<SecondarySwapchain>(device, builder);*/
 
 	createDepthCommandBuffer();
 	createCommandBuffer();

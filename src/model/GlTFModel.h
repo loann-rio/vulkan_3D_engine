@@ -335,6 +335,7 @@ class GlTFModel
 		std::vector<VkDescriptorSet>& getDescriptorSets() { return descriptorSet; }
 		static std::vector<DescriptorSetObject> getDescriptorType(); 
 		static int getModelType() { return 2; }
+		BoundingBox getAABB() const { return nodes[0]->aabb; }
 		
 		void drawNode(Node* node, VkCommandBuffer& commandBuffer, uint16_t frameIndex, VkPipelineLayout& pipelineLayout, glm::mat4 modelMatrix, glm::mat4 normalMatrix, const std::array<FrustumPlane, 6>& planes, uint32_t instanceCount);
 		void drawNodeDepth(Node* node, VkCommandBuffer& commandBuffer, uint16_t frameIndex, VkPipelineLayout& pipelineLayout, glm::mat4 modelMatrix, int lightIndex, const std::array<FrustumPlane, 6>& planes, uint32_t instanceCount);
@@ -354,7 +355,6 @@ class GlTFModel
 		//std::vector<Model::Instance> getInstanceList() { return instanceList; }
 
 		void calculateBoundingBox(Node* node, Node* parent);
-		//bool isAABBinFrustrum(const BoundingBox& aabb, const std::array<FrustumPlane, 6>& planes);
 		
 		GlTFModel::Node* findNode(Node* parent, uint32_t index);
 		GlTFModel::Node* nodeFromIndex(uint32_t index);

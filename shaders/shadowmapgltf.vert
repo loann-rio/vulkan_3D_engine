@@ -55,9 +55,7 @@ void main()
 	mat4 model;
 	if (gl_InstanceIndex > 0) {
 		model = push.nodeMatrix * composeModelMatrix(instancePosition, instanceRotation, instanceScale);
-	} 
-	else
-	{
+	} else {
 		model = push.nodeMatrix ;
 	}
 	

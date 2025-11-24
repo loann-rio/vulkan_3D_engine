@@ -226,6 +226,17 @@ void GameObjectModel::drawModelDepth(VkCommandBuffer& commandBuffer, VkPipelineL
         }, model); 
 }
 
+BoundingBox GameObjectModel::getAABB() const
+{
+    BoundingBox aabb;
+    std::visit([&](const auto& modelInstance) {
+        if (modelInstance) {
+            aabb = modelInstance->getAABB();
+        }
+        }, model);
+    return aabb;
+}
+
 void GameObjectSpotLight::updateCameraView() { camera->setViewYXZ(transform.translation, transform.rotation); }
 
 void GameObjectSpotLight::debugUI()

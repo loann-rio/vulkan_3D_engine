@@ -105,6 +105,8 @@ public:
 	static std::vector<DescriptorSetObject> getDescriptorType();
 	static const int getModelType() { return 1; }
 
+	BoundingBox getAABB() const { return aabb; }
+
 	std::vector<Model::Instance> instanceList = {};
 	std::vector<Model::Instance> getInstanceList() { return instanceList; }
 

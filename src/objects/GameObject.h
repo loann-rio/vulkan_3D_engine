@@ -297,12 +297,13 @@ public:
 	PrimitivesModelType getPrimitivesModelType() const { return primitivesModelType; }
 
 	VkDescriptorImageInfo getTextureImageInfo() const;
+	std::vector<VkDescriptorSet> getDescriptorSets() const;
 
 	void setMultipleInstances(std::vector<Model::Instance> instances);
 
 	void createDescriptorSet(DescriptorPool& pool) const; 
 
-	std::vector<VkDescriptorSet> getDescriptorSets() const;
+	BoundingBox getAABB() const;
 
 	void update(float dtime);
 

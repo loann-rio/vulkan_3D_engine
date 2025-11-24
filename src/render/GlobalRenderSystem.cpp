@@ -170,15 +170,7 @@ void GlobalRenderSystem::createPipeline(VkRenderPass renderPass, const std::stri
 
 void GlobalRenderSystem::renderModel(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, GameObjectModel* obj, const std::array<FrustumPlane, 6>& frustrumPlanes)
 {
-	/*vkCmdBindDescriptorSets(
-		commandBuffer,
-		VK_PIPELINE_BIND_POINT_GRAPHICS,
-		pipelineLayout,
-		modelDescriptorSetIndex, 1,
-		&obj->getDescriptorSets()[frameInfo.frameIndex],
-		0,
-		nullptr
-	);*/
+	if (!Camera::isAABBinFrustrum(obj->getAABB().getAABB(obj->getTransformMat()), frustrumPlanes)) return;
 	
 	obj->bindModel(commandBuffer, true, pipelineLayout, frameInfo.frameIndex, modelDescriptorSetIndex);
 
