@@ -43,6 +43,6 @@ private:
 
 	uint16_t maxOctaves = 8;
 
-	int sum(int n) { return (n == 0) || (n == 1) ? 1 : n + sum(n - 1); }
+	int sum(int n) { return (n * (n - 1) / 2); }
 
 };

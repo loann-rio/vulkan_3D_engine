@@ -23,6 +23,12 @@
     <Filter Include="GameObjectClassAssets">
       <UniqueIdentifier>{9b2807f5-ae6a-4571-b71c-f0ea345f4d71}</UniqueIdentifier>
     </Filter>
+    <Filter Include="textures">
+      <UniqueIdentifier>{21b7c67e-89bc-4793-9371-0cf751107dfb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="textures\Decoder">
+      <UniqueIdentifier>{7d99d3eb-f7e3-4108-a225-779a731569ff}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="external\basisu\transcoder\basisu_transcoder.cpp">
@@ -129,7 +135,33 @@
     <ClCompile Include="src\GameObjectClassAssets\finiteSizedTerrainGeneration.cpp">
       <Filter>GameObjectClassAssets</Filter>
     </ClCompile>
-    <ClCompile Include="src\GameObjectClassAssets\ChunkManager.cpp" />
+    <ClCompile Include="src\GameObjectClassAssets\ChunkManager.cpp">
+      <Filter>GameObjectClassAssets</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Textures\TextureLoader.cpp">
+      <Filter>textures</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Textures\TextureUploader.cpp">
+      <Filter>textures</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Textures\TextureObject.cpp">
+      <Filter>textures</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Textures\Decoder\HDRDecoder.cpp">
+      <Filter>textures\Decoder</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Textures\Decoder\KTX2Decoder.cpp">
+      <Filter>textures\Decoder</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Textures\Decoder\STBDecoder.cpp">
+      <Filter>textures\Decoder</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Textures\TextureBuilder.cpp">
+      <Filter>textures</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Textures\Decoder\KTXDecoder.cpp">
+      <Filter>textures\Decoder</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tiny_gltf.h">
@@ -241,6 +273,33 @@
     </ClInclude>
     <ClInclude Include="src\GameObjectClassAssets\ChunkManager.h">
       <Filter>GameObjectClassAssets</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Textures\TextureLoader.h">
+      <Filter>textures</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Textures\TextureUploader.h">
+      <Filter>textures</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Textures\TextureObject.h">
+      <Filter>textures</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Textures\Decoder\HDRDecoder.h">
+      <Filter>textures\Decoder</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Textures\Decoder\ImageDecoder.h">
+      <Filter>textures\Decoder</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Textures\Decoder\KTX2Decoder.h">
+      <Filter>textures\Decoder</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Textures\Decoder\STBDecoder.h">
+      <Filter>textures\Decoder</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Textures\TextureBuilder.h">
+      <Filter>textures</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Textures\Decoder\KTXDecoder.h">
+      <Filter>textures\Decoder</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

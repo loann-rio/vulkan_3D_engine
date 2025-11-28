@@ -9,6 +9,8 @@
 #include "model/GlTFModel.h"
 #include "base/FrameRateCounter.h"
 
+#include "Textures/TextureObject.h"
+
 // glm
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE

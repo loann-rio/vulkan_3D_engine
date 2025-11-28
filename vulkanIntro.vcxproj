@@ -200,6 +200,14 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClCompile Include="src\render\GlobalRenderSystem.cpp" />
     <ClCompile Include="src\render\Renderer.cpp" />
     <ClCompile Include="src\render\TextOverlay.cpp" />
+    <ClCompile Include="src\Textures\Decoder\HDRDecoder.cpp" />
+    <ClCompile Include="src\Textures\Decoder\KTX2Decoder.cpp" />
+    <ClCompile Include="src\Textures\Decoder\KTXDecoder.cpp" />
+    <ClCompile Include="src\Textures\Decoder\STBDecoder.cpp" />
+    <ClCompile Include="src\Textures\TextureObject.cpp" />
+    <ClCompile Include="src\Textures\TextureBuilder.cpp" />
+    <ClCompile Include="src\Textures\TextureLoader.cpp" />
+    <ClCompile Include="src\Textures\TextureUploader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="external\json.hpp" />
@@ -239,6 +247,15 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClInclude Include="src\render\GlobalRenderSystem.h" />
     <ClInclude Include="src\render\Renderer.h" />
     <ClInclude Include="src\render\TextOverlay.h" />
+    <ClInclude Include="src\Textures\Decoder\HDRDecoder.h" />
+    <ClInclude Include="src\Textures\Decoder\ImageDecoder.h" />
+    <ClInclude Include="src\Textures\Decoder\KTX2Decoder.h" />
+    <ClInclude Include="src\Textures\Decoder\KTXDecoder.h" />
+    <ClInclude Include="src\Textures\Decoder\STBDecoder.h" />
+    <ClInclude Include="src\Textures\TextureObject.h" />
+    <ClInclude Include="src\Textures\TextureBuilder.h" />
+    <ClInclude Include="src\Textures\TextureLoader.h" />
+    <ClInclude Include="src\Textures\TextureUploader.h" />
     <ClInclude Include="tiny_gltf.h" />
   </ItemGroup>
   <ItemGroup>

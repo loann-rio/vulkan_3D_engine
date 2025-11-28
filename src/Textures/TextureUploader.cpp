@@ -1,6 +1,6 @@
 #include "TextureUploader.h"
 
-#include "Texture.h"
+#include "TextureObject.h"
 
 #include "Decoder/ImageDecoder.h"
 
@@ -15,132 +15,146 @@
 
 //// helper functions ////
 
-/// <summary>
-/// Calculates the number of mipmap levels required for a texture of the given dimensions
-/// </summary>
-uint32_t TextureUploader::calculateMipLevels(int width, int height) {
-    return static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
-}
-
-/// <summary>
-/// Validates that the six cubemap faces have identical dimensions and the same pixel format
-/// </summary>
-/// <param name="faces">Array of six DecodedImage objects representing the cubemap faces</param>
-void TextureUploader::validateCubemapFaces(
-    const std::array<DecodedImage, 6>& faces)
+namespace
 {
-    const int w = faces[0].width;
-    const int h = faces[0].height;
-    const bool isFloat = faces[0].isFloat;
-
-    for (int i = 1; i < 6; i++) {
-        if (faces[i].width != w ||
-            faces[i].height != h)
-        {
-            throw std::runtime_error("All cubemap faces must have identical dimensions");
-        }
-
-        if (faces[i].isFloat != isFloat) {
-            throw std::runtime_error("All cubemap faces must have the same pixel format");
-        }
-    }
-}
-
-/// <summary>
-/// Validates a decoded image for correctness, format, and integrity
-/// </summary>
-/// <param name="img">The decoded image to validate</param>
-void TextureUploader::validateImage(const DecodedImage& img)
-{
-    if (img.width <= 0 || img.height <= 0)
-        throw std::runtime_error("Image dimensions must be positive");
-
-    if (!img.isFloat && img.pixels8.empty())
-        throw std::runtime_error("pixels8 data missing for 8-bit image");
-
-    if (img.isFloat && img.pixels32.empty())
-        throw std::runtime_error("pixels32 data missing for float image");
-}
-
-
-/// <summary>
-/// Selects a Vulkan VkFormat for a texture based on if it uses float components and if it should be sRGB
-/// </summary>
-VkFormat TextureUploader::selectFormat(bool isFloat, bool srgb)
-{
-    if (isFloat) return VK_FORMAT_R32G32B32A32_SFLOAT;
-    return srgb ? VK_FORMAT_R8G8B8A8_SRGB : VK_FORMAT_R8G8B8A8_UNORM;
-}
-
-
-/// <summary>
-/// Calculates the total pixel data size in bytes for a cubemap made of six faces
-/// </summary>
-/// <param name="faces">An array of six DecodedImage objects representing the cubemap faces</param>
-/// <returns>The total size in bytes of the pixel data for all six faces</returns>
-size_t TextureUploader::calculateCubemapPixelSize(
-    const std::array<DecodedImage, 6>& faces)
-{
-    const bool isFloat = faces[0].isFloat;
-
-    const size_t perFace = isFloat
-        ? faces[0].pixels32.size() * sizeof(float)
-        : faces[0].pixels8.size();
-
-    return perFace * 6;
-}
-
-/// <summary>
-/// Compute the size in bytes of the decoded image pixel data
-/// </summary>
-/// <returns>number of bytes required to hold the image pixel data</returns>
-size_t TextureUploader::calculatePixelSize(const DecodedImage& img)
-{
-    return img.isFloat
-        ? img.pixels32.size() * sizeof(float)
-        : img.pixels8.size();
-}
-
-
-/// <summary>
-/// Copies six cubemap face pixel data into staging memory
-/// </summary>
-/// <param name="faces">array of six DecodedImage objects representing the cubemap faces</param>
-void TextureUploader::copyCubemapToMemory(
-    Device& device,
-    VkDeviceMemory stagingMemory,
-    const std::array<DecodedImage, 6>& faces)
-{
-    uint8_t* dst = nullptr;
-    vkMapMemory(device.device(), stagingMemory, 0, VK_WHOLE_SIZE, 0, (void**)&dst);
-
-    size_t faceSize = calculateCubemapPixelSize({ faces }) / 6;
-
-    for (uint32_t i = 0; i < 6; i++) {
-        const void* src = faces[i].isFloat
-            ? (const void*)faces[i].pixels32.data()
-            : (const void*)faces[i].pixels8.data();
-
-        std::memcpy(dst + i * faceSize, src, faceSize);
+    /// <summary>
+    /// Calculates the number of mipmap levels required for a texture of the given dimensions
+    /// </summary>
+    uint32_t calculateMipLevels(int width, int height) {
+        return static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
     }
 
-    vkUnmapMemory(device.device(), stagingMemory);
-}
+    /// <summary>
+    /// Selects a Vulkan VkFormat for a texture based on if it uses float components and if it should be sRGB
+    /// </summary>
+    VkFormat selectFormat(bool isFloat, bool srgb)
+    {
+        if (isFloat) return VK_FORMAT_R32G32B32A32_SFLOAT;
+        return srgb ? VK_FORMAT_R8G8B8A8_SRGB : VK_FORMAT_R8G8B8A8_UNORM;
+    }
+
+    /// <summary>
+    /// Compute the size in bytes of the decoded image pixel data
+    /// </summary>
+    /// <returns>number of bytes required to hold the image pixel data</returns>
+    size_t calculatePixelSize(const DecodedImage& img)
+    {
+        return img.isFloat
+            ? img.pixels32.size() * sizeof(float)
+            : img.pixels8.size();
+    }
+
+    /// <summary>
+    /// Calculates the total pixel data size in bytes for a cubemap made of six faces
+    /// </summary>
+    /// <param name="faces">An array of six DecodedImage objects representing the cubemap faces</param>
+    /// <returns>The total size in bytes of the pixel data for all six faces</returns>
+    size_t calculateCubemapPixelSize(
+        const std::array<DecodedImage, 6>& faces)
+    {
+        const bool isFloat = faces[0].isFloat;
+
+        const size_t perFace = isFloat
+            ? faces[0].pixels32.size() * sizeof(float)
+            : faces[0].pixels8.size();
+
+        return perFace * 6;
+    }
 
 
+    /// <summary>
+    /// Validates that the six cubemap faces have identical dimensions and the same pixel format
+    /// </summary>
+    /// <param name="faces">Array of six DecodedImage objects representing the cubemap faces</param>
+    void validateCubemapFaces(
+        const std::array<DecodedImage, 6>& faces)
+    {
+        const int w = faces[0].width;
+        const int h = faces[0].height;
+        const bool isFloat = faces[0].isFloat;
 
-/// <summary>
-/// copies provided data into mapped Vulkan device memory
-/// </summary>
-/// <param name="device">Reference to the Device wrapper used to obtain the VkDevice for vkMapMemory/vkUnmapMemory operations</param>
-/// <param name="memory">VkDeviceMemory handle that identifies the device memory to map and write to</param>
-/// <param name="size">Number of bytes to copy into the mapped memory (the mapping range length)</param>
-/// <param name="data">Pointer to the source buffer containing at least size bytes to be copied into device memory</param>
-void TextureUploader::copyToMemory(Device& device, VkDeviceMemory memory, size_t size, const void* data) {
-    void* mapped = nullptr;
-    vkMapMemory(device.device(), memory, 0, size, 0, &mapped);
-    std::memcpy(mapped, data, size);
-    vkUnmapMemory(device.device(), memory);
+        for (int i = 1; i < 6; i++) {
+            if (faces[i].width != w ||
+                faces[i].height != h)
+            {
+                throw std::runtime_error("All cubemap faces must have identical dimensions");
+            }
+
+            if (faces[i].isFloat != isFloat) {
+                throw std::runtime_error("All cubemap faces must have the same pixel format");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Validates a decoded image for correctness, format, and integrity
+    /// </summary>
+    /// <param name="img">The decoded image to validate</param>
+    void validateImage(const DecodedImage& img)
+    {
+        if (img.width <= 0 || img.height <= 0)
+            throw std::runtime_error("Image dimensions must be positive");
+
+        if (!img.isFloat && img.pixels8.empty())
+            throw std::runtime_error("pixels8 data missing for 8-bit image");
+
+        if (img.isFloat && img.pixels32.empty())
+            throw std::runtime_error("pixels32 data missing for float image");
+    }
+
+    /// <summary>
+    /// Validates a decoded image for correctness, format, and integrity
+    /// </summary>
+    /// <param name="img">The decoded image to validate</param>
+    void validateCompressedImage(const DecodedImage& img)
+    {
+        if (!img.isCompressed) {
+            throw std::runtime_error("uploadCompressed2D: DecodedImage is not compressed");
+        }
+        if (img.mipLevels == 0) {
+            throw std::runtime_error("uploadCompressed2D: Invalid mip level count");
+        }
+    }
+
+    /// <summary>
+    /// Copies six cubemap face pixel data into staging memory
+    /// </summary>
+    /// <param name="faces">array of six DecodedImage objects representing the cubemap faces</param>
+    void copyCubemapToMemory(
+        Device& device,
+        VkDeviceMemory stagingMemory,
+        const std::array<DecodedImage, 6>& faces)
+    {
+        uint8_t* dst = nullptr;
+        vkMapMemory(device.device(), stagingMemory, 0, VK_WHOLE_SIZE, 0, (void**)&dst);
+
+        size_t faceSize = calculateCubemapPixelSize({ faces }) / 6;
+
+        for (uint32_t i = 0; i < 6; i++) {
+            const void* src = faces[i].isFloat
+                ? (const void*)faces[i].pixels32.data()
+                : (const void*)faces[i].pixels8.data();
+
+            std::memcpy(dst + i * faceSize, src, faceSize);
+        }
+
+        vkUnmapMemory(device.device(), stagingMemory);
+    }
+
+    /// <summary>
+    /// copies provided data into mapped Vulkan device memory
+    /// </summary>
+    /// <param name="device">Reference to the Device wrapper used to obtain the VkDevice for vkMapMemory/vkUnmapMemory operations</param>
+    /// <param name="memory">VkDeviceMemory handle that identifies the device memory to map and write to</param>
+    /// <param name="size">Number of bytes to copy into the mapped memory (the mapping range length)</param>
+    /// <param name="data">Pointer to the source buffer containing at least size bytes to be copied into device memory</param>
+    void copyToMemory(Device& device, VkDeviceMemory memory, size_t size, const void* data) {
+        void* mapped = nullptr;
+        vkMapMemory(device.device(), memory, 0, size, 0, &mapped);
+        std::memcpy(mapped, data, size);
+        vkUnmapMemory(device.device(), memory);
+    }
+
 }
 
 /// <summary>
@@ -215,7 +229,7 @@ VkImageView TextureUploader::createImageView(Device& device,
 }
 
 /// <summary>
-/// Creates and returns VkSampler configured for the given device and number of mipmap levels
+/// Creates and returns a standard VkSampler configured for the given device and number of mipmap levels
 /// </summary>
 VkSampler TextureUploader::createSampler(Device& device, uint32_t mipLevels) {
     VkSamplerCreateInfo info{};
@@ -345,7 +359,7 @@ void TextureUploader::generateMipmaps(
 
 //// Texture Uploading ////
 
-std::unique_ptr<Texture> TextureUploader::upload2D(
+std::unique_ptr<TextureObject> TextureUploader::upload2D(
     Device& device,
     const DecodedImage& img,
     bool srgb)
@@ -357,7 +371,7 @@ std::unique_ptr<Texture> TextureUploader::upload2D(
 
     const VkFormat format = selectFormat(isFloat, srgb);
 
-	const size_t pixelSize = calculatePixelSize(img)    ;
+	const size_t pixelSize = calculatePixelSize(img);
 
     // staging buffer
     VkBuffer stagingBuffer;
@@ -373,9 +387,15 @@ std::unique_ptr<Texture> TextureUploader::upload2D(
     // GPU image
     VkDeviceMemory imageMemory;
     VkImage image = createImage(
-        device, w, h, format, VK_IMAGE_TILING_OPTIMAL,
+        device, 
+        w, h, 
+        format, VK_IMAGE_TILING_OPTIMAL,
         VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, imageMemory, 1, 0, VK_IMAGE_TYPE_2D, mipLevels
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
+        imageMemory, 
+        1, 0, 
+        VK_IMAGE_TYPE_2D, 
+        mipLevels
         );
 
     // transitions + copy
@@ -399,28 +419,30 @@ std::unique_ptr<Texture> TextureUploader::upload2D(
     VkImageView   view    = createImageView(device, image, format, mipLevels, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D, 1);
     VkSampler     sampler = createSampler(device, mipLevels);
 
-    return std::make_unique<Texture>(
-        device,
-        image,
-        imageMemory,
-        view,
-        sampler,
-        w, h,
-        mipLevels,
-        format);
+    return std::unique_ptr<TextureObject>(
+        new TextureObject(
+            device,
+            image,
+            imageMemory,
+            view,
+            sampler,
+            w, h,
+            mipLevels,
+            1, 0)
+    );
 }
 
-std::unique_ptr<Texture> TextureUploader::uploadCubemap(Device& device, const std::array<DecodedImage, 6>& faces)
+std::unique_ptr<TextureObject> TextureUploader::uploadCubemap(Device& device, const DecodedCubemap& cubeMap)
 {
-    validateCubemapFaces(faces);
+    validateCubemapFaces(cubeMap.faces);
 
-    const int width = faces[0].width;
-    const int height = faces[0].height;
-    const bool isFloat = faces[0].isFloat;
+    const int width = cubeMap.faces[0].width;
+    const int height = cubeMap.faces[0].height;
+    const bool isFloat = cubeMap.faces[0].isFloat;
     const uint32_t mipLevels = calculateMipLevels(width, height);
 
     const VkFormat format = selectFormat(isFloat, /*srgb:*/ true);
-    const size_t   totalSize = calculateCubemapPixelSize(faces);
+    const size_t   totalSize = calculateCubemapPixelSize(cubeMap.faces);
 
 
 	// staging buffer
@@ -429,7 +451,7 @@ std::unique_ptr<Texture> TextureUploader::uploadCubemap(Device& device, const st
 	device.createBuffer(totalSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
     // Copy all 6 images into one contiguous block
-    copyCubemapToMemory(device, stagingBufferMemory, faces);
+    copyCubemapToMemory(device, stagingBufferMemory, cubeMap.faces);
 
     VkDeviceMemory imageMemory;
 
@@ -446,7 +468,7 @@ std::unique_ptr<Texture> TextureUploader::uploadCubemap(Device& device, const st
         mipLevels);
 
     // create copy regions
-    const size_t faceSize =  calculateCubemapPixelSize(faces) / 6;
+    const size_t faceSize =  calculateCubemapPixelSize(cubeMap.faces) / 6;
     std::vector<VkBufferImageCopy> bufferCopyRegions(6);
 
     for (uint32_t face = 0; face < 6; face++) {
@@ -457,8 +479,8 @@ std::unique_ptr<Texture> TextureUploader::uploadCubemap(Device& device, const st
         r.imageSubresource.baseArrayLayer = face;
         r.imageSubresource.layerCount = 1;
         r.imageExtent = {
-            (uint32_t)faces[0].width,
-            (uint32_t)faces[0].height,
+            (uint32_t)cubeMap.faces[0].width,
+            (uint32_t)cubeMap.faces[0].height,
             1 };
     }
 
@@ -482,14 +504,113 @@ std::unique_ptr<Texture> TextureUploader::uploadCubemap(Device& device, const st
     VkImageView   view    = createImageView(device, image, format, mipLevels, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_CUBE, 6);
     VkSampler     sampler = createSampler(device, mipLevels);
 
-    return std::make_unique<Texture>(
-        device,
-        image,
-        imageMemory,
-        view,
-        sampler,
-        width, height,
-        mipLevels,
-		format);
+    return std::unique_ptr<TextureObject>(
+        new TextureObject(
+            device,
+            image,
+            imageMemory,
+            view,
+            sampler,
+            width, height,
+            mipLevels,
+            1, VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT)
+    );
 
+}
+
+std::unique_ptr<TextureObject> TextureUploader::uploadCompressed2D(Device& device, const DecodedImage& imageData)
+{
+	validateCompressedImage(imageData);
+
+    const uint32_t width = imageData.width;
+    const uint32_t height = imageData.height;
+    const uint32_t mipCount = imageData.mipLevels;
+    const VkFormat format = imageData.format;
+	const size_t dataSize = imageData.dataSize;
+
+	// staging buffer
+    VkBuffer stagingBuffer = VK_NULL_HANDLE;
+    VkDeviceMemory stagingMemory = VK_NULL_HANDLE;
+
+    device.createBuffer(
+        dataSize,
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        stagingBuffer,
+        stagingMemory);
+
+	copyToMemory(device, stagingMemory, dataSize, imageData.compressedData.data());
+
+    VkDeviceMemory imageMemory;
+    VkImage image = createImage(
+        device,
+        width, height,
+        format, VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        imageMemory,
+        1,
+        0,
+        VK_IMAGE_TYPE_2D,
+        mipCount);
+
+    device.transitionImageLayout(
+        image,
+        format,
+        VK_IMAGE_LAYOUT_UNDEFINED,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        mipCount);
+
+  
+
+    std::vector<VkBufferImageCopy> regions(imageData.mipLevels);
+
+    for (uint32_t mip = 0; mip < imageData.mipLevels; mip++)
+    {
+        regions[mip].bufferOffset = imageData.mipOffsets[mip];
+        regions[mip].bufferRowLength = 0;
+        regions[mip].bufferImageHeight = 0;
+
+        uint32_t w = std::max(1, imageData.width >> mip);
+        uint32_t h = std::max(1, imageData.height >> mip);
+
+        regions[mip].imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        regions[mip].imageSubresource.mipLevel = mip;
+        regions[mip].imageSubresource.baseArrayLayer = 0;
+        regions[mip].imageSubresource.layerCount = 1;
+
+        regions[mip].imageOffset = { 0, 0, 0 };
+        regions[mip].imageExtent = { w, h, 1 };
+    }
+
+
+    device.copyBufferToImage(stagingBuffer, image, regions);
+
+    device.transitionImageLayout(
+        image,
+        format,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        mipCount);
+
+    // Cleanup staging buffer 
+    vkDestroyBuffer(device.device(), stagingBuffer, nullptr);
+    vkFreeMemory(device.device(), stagingMemory, nullptr);
+
+    // create view and sampler
+    VkImageView   view = createImageView(device, image, format, mipCount, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_CUBE, 6);
+    VkSampler     sampler = createSampler(device, mipCount);
+
+
+    return std::unique_ptr<TextureObject>(
+        new TextureObject(
+            device,
+            image,
+            imageMemory,
+            view,
+            sampler,
+            width, height,
+            mipCount,
+            1, 0)
+    );
 }

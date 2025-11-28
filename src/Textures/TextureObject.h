@@ -5,28 +5,25 @@
 
 class Device;
 
-struct DecodedImage; 
-
-class Texture {
+class TextureObject {
 public:
-    Texture(Device& device);
-    ~Texture();
+    explicit TextureObject(Device& device);
+    ~TextureObject();
 
-    // Move only
-    Texture(Texture&&) noexcept = delete;
-    Texture& operator=(Texture&&) noexcept = delete;
+    TextureObject(TextureObject&&) noexcept = delete;
+    TextureObject& operator=(TextureObject&&) noexcept = delete;
+    TextureObject(const TextureObject&) = delete;
+    TextureObject& operator=(const TextureObject&) = delete;
 
-    // non-copyable
-    Texture(const Texture&) = delete;
-    Texture& operator=(const Texture&) = delete;
-
-    // Convenience getter
+    // Descriptor helper for writes
     VkDescriptorImageInfo getImageInfo() const;
 
-    // Recreate view if format / type changed
+    // When the texture type changes
     void recreateImageView(bool isCubeMap, bool isHdr);
 
-    // Basic getters
+	void updateSampler(VkFilter minFilter, VkFilter magFilter, VkSamplerAddressMode addressMode);
+
+    // Getters
     VkImage image() const { return textureImage; }
     VkImageView view() const { return textureImageView; }
     VkSampler sampler() const { return textureSampler; }
@@ -35,30 +32,31 @@ public:
     bool loaded() const { return isLoaded; }
 
 private:
-    // private constructor used by createFromGpu
-    Texture(Device& device,
+    // Private constructor used only by TextureUploader
+    TextureObject(Device&,
         VkImage image,
         VkDeviceMemory memory,
         VkImageView view,
         VkSampler sampler,
-        uint32_t width, uint32_t height,
+        uint32_t width,
+        uint32_t height,
         uint32_t mipLevels,
         uint32_t arrayLayers,
         VkImageCreateFlags flags);
 
-    // helpers used by recreateImageView
-    VkImageView createTextureCubeMapImageView(VkFormat format);
-    VkImageView createImageView(VkImage image, VkFormat format, uint32_t mipmapLevel, VkImageAspectFlagBits aspectFlag, bool isCubeMap);
+    // Helpers called by recreateImageView()
+    VkImageView createImageView(VkImage image,
+        VkFormat format,
+        uint32_t mipmapLevel,
+        VkImageAspectFlagBits aspect,
+        bool isCube) const;
 
+    VkImageView createCubeMapView(VkFormat format) const;
+
+    // Internal Vulkan resource creators (used by uploader only)
+    void destroyResources();
 private:
-    friend class TextureUploader;
 
-    void createImage();
-    void allocateMemory();
-    void createImageView();
-    void createSampler();
-
-private:
     Device& device;
 
     VkImage textureImage = VK_NULL_HANDLE;
@@ -66,10 +64,12 @@ private:
     VkImageView textureImageView = VK_NULL_HANDLE;
     VkSampler textureSampler = VK_NULL_HANDLE;
 
-    VkExtent2D textureExtent{ 0,0 };
+    VkExtent2D textureExtent{ 0, 0 };
     uint32_t mipLevel = 1;
     uint32_t createdArrayLayers = 1;
     VkImageCreateFlags createdImageFlags = 0;
 
     bool isLoaded = false;
+
+    friend class TextureUploader;
 };
