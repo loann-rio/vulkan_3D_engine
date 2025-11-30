@@ -1,23 +1,17 @@
 #include "TextureBuilder.h"
 
 #include "../base/Device.h"
+#include "Decoder/ImageDecoder.h"
 
 #include "TextureLoader.h"
 
-#include "Decoder/STBDecoder.h"
-#include "Decoder/HDRDecoder.h"
-#include "Decoder/KTX2Decoder.h"
-#include "Decoder/KTXDecoder.h"
+#include "TextureObject.h"
 
 #include <stdexcept>
-#include <algorithm>
-#include <cctype>
-
 
 TextureBuilder::TextureBuilder(Device& device)
     : device(device)
-{
-}
+{}
 
 //// Input sources ////
 
@@ -121,7 +115,7 @@ std::unique_ptr<TextureObject> TextureBuilder::build2D()
     if (path.empty())
         throw std::runtime_error("TextureBuilder: No input path set");
 
-	auto texture = TextureLoader::load(device, path);
+	auto texture = TextureLoader::load(device, path, useMipmaps);
 
     // Update sampler parameters
     texture->updateSampler(minFilter, magFilter, wrapMode);

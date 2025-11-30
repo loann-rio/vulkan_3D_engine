@@ -362,12 +362,13 @@ void TextureUploader::generateMipmaps(
 std::unique_ptr<TextureObject> TextureUploader::upload2D(
     Device& device,
     const DecodedImage& img,
+    bool useMipmap,
     bool srgb)
 {
     const bool isFloat = img.isFloat;
     const uint32_t w = img.width;
     const uint32_t h = img.height;
-    const uint32_t mipLevels = calculateMipLevels(w, h);
+    const uint32_t mipLevels = useMipmap ? calculateMipLevels(w, h):1;
 
     const VkFormat format = selectFormat(isFloat, srgb);
 
@@ -406,10 +407,16 @@ std::unique_ptr<TextureObject> TextureUploader::upload2D(
 
     device.copyBufferToImage(stagingBuffer, image, w, h, 1, 0);
 
-    device.transitionImageLayout(image, format,
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-        mipLevels);
+    if (useMipmap) {
+        generateMipmaps(device, image, w, h, mipLevels, 1);
+    }
+    else {
+        device.transitionImageLayout(image, format,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            mipLevels);
+	}
+
 
     // cleanup staging
     vkDestroyBuffer(device.device(), stagingBuffer, nullptr);
@@ -439,7 +446,7 @@ std::unique_ptr<TextureObject> TextureUploader::uploadCubemap(Device& device, co
     const int width = cubeMap.faces[0].width;
     const int height = cubeMap.faces[0].height;
     const bool isFloat = cubeMap.faces[0].isFloat;
-    const uint32_t mipLevels = calculateMipLevels(width, height);
+    const uint32_t mipLevels = 1;// calculateMipLevels(width, height);
 
     const VkFormat format = selectFormat(isFloat, /*srgb:*/ true);
     const size_t   totalSize = calculateCubemapPixelSize(cubeMap.faces);

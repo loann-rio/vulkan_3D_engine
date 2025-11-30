@@ -808,7 +808,7 @@ void GlTFModel::ModelGltf::loadTextures(tinygltf::Model& gltfModel, Device& devi
 	}
 
 	if (!textures.size()) {
-		std::shared_ptr<Texture> nullTexture = Texture::create(device, "textures/nullTexture.png");//std::make_shared<Texture>(device, "textures/nullTexture.png");
+		std::shared_ptr<Texture> nullTexture = Texture::create(device, "textures/whiteTexture.jpg");
 		TextureModel texture;
 		texture.texture = nullTexture;
 		textures.push_back(texture);

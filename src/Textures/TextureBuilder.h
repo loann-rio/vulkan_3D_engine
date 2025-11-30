@@ -1,12 +1,14 @@
 #pragma once
 
+//#include "TextureObject.h"
+
+#include <vulkan/vulkan.h>
 #include <string>
+
 #include <memory>
-#include "TextureObject.h"
-#include "Decoder/ImageDecoder.h"
 
 class Device;
-class ImageDecoder;
+class TextureObject;
 
 class TextureBuilder {
     enum class SourceType { None, STB, HDR, KTX2, KTX };
@@ -43,8 +45,8 @@ private:
     std::string path;
 
     bool forceCubemap = false;
-    bool useSRGB = true;
-    bool useMipmaps = true;
+    bool useSRGB = false;
+    bool useMipmaps = false;
 
     VkFilter minFilter = VK_FILTER_LINEAR;
     VkFilter magFilter = VK_FILTER_LINEAR;

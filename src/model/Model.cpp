@@ -134,8 +134,9 @@ Model::Model(Device& device, const Model::Builder& builder) : device{ device }, 
 		hasLODs = true;
 	}
 
-	debugValidateLODs();
+	//debugValidateLODs();
 	texture.resize(1);	
+	
 
 }
 
@@ -147,15 +148,28 @@ void Model::bind(VkCommandBuffer& commandBuffer, bool bindTexture, VkPipelineLay
 	if (bindTexture)
 	{
 		int descriptorSetIndex = frameIndex;
-		if (hasLODs) descriptorSetIndex += Swap_chain::MAX_FRAMES_IN_FLIGHT * lods[lodIndex].textureIndex;
+		if (descriptorSetTextureObject.size() > 0)
+		{
+			vkCmdBindDescriptorSets(commandBuffer,
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				pipelineLayout,
+				modelDescriptorSetIndex, 1,
+				&descriptorSetTextureObject[descriptorSetIndex],
+				0,
+				nullptr);
+		}
+		else
+		{
+			if (hasLODs) descriptorSetIndex += Swap_chain::MAX_FRAMES_IN_FLIGHT * lods[lodIndex].textureIndex;
 
-		vkCmdBindDescriptorSets(commandBuffer, 
-			VK_PIPELINE_BIND_POINT_GRAPHICS, 
-			pipelineLayout, 
-			modelDescriptorSetIndex, 1,
-			&descriptorSet[descriptorSetIndex],
-			0, 
-			nullptr);
+			vkCmdBindDescriptorSets(commandBuffer,
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				pipelineLayout,
+				modelDescriptorSetIndex, 1,
+				&descriptorSet[descriptorSetIndex],
+				0,
+				nullptr);
+		}
 	}
 
 	VkBuffer buffers[] = { vertexBuffer->getBuffer(), instancesBuffer->getBuffer() };
@@ -256,6 +270,15 @@ void Model::createDescriptorSet(DescriptorPool& pool, Device& device)
 		DescriptorWriter(*textureSetLayout, pool)
 			.writeImage(0, &imageInfo)
 			.build(descriptorSet[i]);
+	}
+
+	descriptorSetTextureObject.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT * textureObject.size());
+	for (int i = 0; i < descriptorSetTextureObject.size(); i++)
+	{
+		auto imageInfo = textureObject[int(i / 2)]->getImageInfo();
+		DescriptorWriter(*textureSetLayout, pool)
+			.writeImage(0, &imageInfo)
+			.build(descriptorSetTextureObject[i]);
 	}
 }
 

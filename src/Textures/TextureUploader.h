@@ -15,7 +15,8 @@ public:
     // Upload a standard 2D image (8-bit or float)
     static std::unique_ptr<TextureObject> upload2D(
         Device& device,
-        const DecodedImage& img,
+        const DecodedImage& img, 
+        bool useMipmap,
         bool srgb
     );
 

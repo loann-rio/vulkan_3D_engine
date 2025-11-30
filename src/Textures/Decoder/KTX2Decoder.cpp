@@ -14,6 +14,8 @@ namespace {
     /// <param name="tex">Pointer to a ktxTexture2 whose vkFormat value will be mapped to a Vulkan VkFormat.</param>
     /// <returns>The matching VkFormat for the texture's vkFormat when it is supported.</returns>
     VkFormat mapKtxFormat(ktxTexture2* tex) {
+        return static_cast<VkFormat>(tex->vkFormat);
+        
         switch (tex->vkFormat) {
         case VK_FORMAT_BC7_SRGB_BLOCK:
         case VK_FORMAT_BC7_UNORM_BLOCK:

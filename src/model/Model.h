@@ -9,6 +9,7 @@
 #include "../render/Camera.h"
 #include "../objects/Texture.h"
 #include "../model/BoundingBox.h"
+#include "../textures/TextureObject.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -91,6 +92,7 @@ public:
 
 	// textures should be ordered by lod levels if there are multiple, each lod have the use index 
 	void setTexture(std::shared_ptr<Texture> newTexture) { texture[0] = std::move(newTexture); }
+	void setTexture(std::shared_ptr<TextureObject> newTexture) { textureObject.resize(1); textureObject[0] = std::move(newTexture); }
 	void setTexture(std::vector<std::shared_ptr<Texture>> newTextures) { texture = std::move(newTextures); }
 	void addTexture(std::shared_ptr<Texture> newTexture) { texture.push_back(std::move(newTexture)); }
 
@@ -136,6 +138,9 @@ private:
 	void createIndexBuffers(const std::vector<uint32_t>& indices);
 
 	// Texture and descriptor set
+	std::vector<std::shared_ptr<TextureObject>> textureObject;
+	std::vector<VkDescriptorSet> descriptorSetTextureObject;
+
 	std::vector<std::shared_ptr<Texture>> texture;
 	std::vector<VkDescriptorSet> descriptorSet;
 

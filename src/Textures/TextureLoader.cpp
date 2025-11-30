@@ -21,21 +21,21 @@
 /// <param name="device">Reference to the Device used to create/upload the texture on the GPU.</param>
 /// <param name="path">Filesystem path to the texture file. The function inspects the file extension (e.g., .hdr, .ktx2, .png, .jpg) to determine which loader/decoder to use.</param>
 /// <returns>A std::unique_ptr<Texture> owning the loaded texture. Ownership is transferred to the caller. May be nullptr if the texture could not be loaded.</returns>
-std::unique_ptr<TextureObject> TextureLoader::load(Device& device, const std::string& path) {
+std::unique_ptr<TextureObject> TextureLoader::load(Device& device, const std::string& path, bool useMipmap) {
     const std::string ext = imDecoder::getExtension(path);
 
-    if (ext == ".hdr") {
-        return loadHDR(device, path);
+    if (ext == "hdr") {
+        return loadHDR(device, path, useMipmap);
     }
-    if (ext == ".ktx2") {
-        return loadKTX2(device, path);
+    if (ext == "ktx2") {
+        return loadKTX2(device, path, useMipmap);
     }
-    if (ext == ".ktx") {
-        return loadKTX(device, path);
+    if (ext == "ktx") {
+        return loadKTX(device, path, useMipmap);
     }
 
     // PNG/JPG/etc
-    return load2D(device, path, /*srgb=*/true);
+    return load2D(device, path, useMipmap, /*srgb=*/true);
 }
 
 /// <summary>
@@ -45,7 +45,7 @@ std::unique_ptr<TextureObject> TextureLoader::load(Device& device, const std::st
 /// <param name="path">Path to the image file to load</param>
 /// <param name="srgb">If true, interpret the texture as sRGB; otherwise treat it as linear color space</param>
 /// <returns>A std::unique_ptr owning the created Texture</returns>
-std::unique_ptr<TextureObject> TextureLoader::load2D(Device& device, const std::string& path, bool srgb) {
+std::unique_ptr<TextureObject> TextureLoader::load2D(Device& device, const std::string& path, bool useMipmap, bool srgb) {
 
     STBDecoder decoder;
     if (!decoder.canDecode(path)) {
@@ -53,7 +53,7 @@ std::unique_ptr<TextureObject> TextureLoader::load2D(Device& device, const std::
     }
 
     DecodedImage img = decoder.decode(path);
-    return loadFromDecoded(device, img, srgb);
+    return loadFromDecoded(device, img, useMipmap, srgb);
 }
 
 /// <summary>
@@ -63,7 +63,7 @@ std::unique_ptr<TextureObject> TextureLoader::load2D(Device& device, const std::
 /// <param name="device">Reference to the Device used to create/upload the texture resources</param>
 /// <param name="path">Filesystem path to the HDR image to load</param>
 /// <returns>A std::unique_ptr<Texture> owning the uploaded HDR (floating-point) texture</returns>
-std::unique_ptr<TextureObject> TextureLoader::loadHDR(Device& device, const std::string& path) {
+std::unique_ptr<TextureObject> TextureLoader::loadHDR(Device& device, const std::string& path, bool useMipmap) {
     HDRDecoder decoder;
     if (!decoder.canDecode(path)) {
         throw std::runtime_error("TextureLoader::loadHDR - Cannot decode HDR texture: " + path);
@@ -76,10 +76,10 @@ std::unique_ptr<TextureObject> TextureLoader::loadHDR(Device& device, const std:
     }
 
     // HDR = float texture, never sRGB
-    return TextureUploader::upload2D(device, img, /*srgb=*/ false);
+    return TextureUploader::upload2D(device, img, useMipmap, /*srgb=*/ false);
 }
 
-std::unique_ptr<TextureObject> TextureLoader::loadKTX(Device& device, const std::string& path)
+std::unique_ptr<TextureObject> TextureLoader::loadKTX(Device& device, const std::string& path, bool useMipmap)
 {
     KTXDecoder decoder;
     if (!decoder.canDecode(path)) {
@@ -89,11 +89,11 @@ std::unique_ptr<TextureObject> TextureLoader::loadKTX(Device& device, const std:
     DecodedImage img = decoder.decode(path);
 
     // KTX contains its own format -> no srgb flag needed
-    return TextureUploader::upload2D(device, img, /*srgb=*/ false);
+    return TextureUploader::upload2D(device, img, true, /*srgb=*/ false);
 
 }
 
-std::unique_ptr<TextureObject> TextureLoader::loadKTX2(Device& device, const std::string& path)
+std::unique_ptr<TextureObject> TextureLoader::loadKTX2(Device& device, const std::string& path, bool useMipmap)
 {
     KTX2Decoder decoder;
     if (!decoder.canDecode(path)) {
@@ -103,7 +103,7 @@ std::unique_ptr<TextureObject> TextureLoader::loadKTX2(Device& device, const std
     DecodedImage img = decoder.decode(path);
 
     // KTX2 contains its own format -> no srgb flag needed
-    return TextureUploader::upload2D(device, img, /*srgb=*/ false);
+    return TextureUploader::upload2D(device, img, true, /*srgb=*/ false);
 }
 
 /// <summary>
@@ -158,12 +158,12 @@ std::unique_ptr<TextureObject> TextureLoader::loadCubemapFromDir(Device& device,
 /// <param name="img">DecodedImage containing the pixel data and metadata. If img.isFloat is true, an HDR/EXR upload path is used.</param>
 /// <param name="srgb">If true and the image is not floating-point, treat the image as sRGB during upload. Ignored for floating-point images.</param>
 /// <returns>A std::unique_ptr<Texture> that owns the uploaded texture. May be nullptr on failure.</returns>
-std::unique_ptr<TextureObject> TextureLoader::loadFromDecoded(Device& device, const DecodedImage& img, bool srgb) {
+std::unique_ptr<TextureObject> TextureLoader::loadFromDecoded(Device& device, const DecodedImage& img, bool useMipmap, bool srgb) {
     if (img.isFloat) {
         // Float -> HDR or EXR
-        return TextureUploader::upload2D(device, img, false);
+        return TextureUploader::upload2D(device, img, useMipmap, false);
     }
-    return TextureUploader::upload2D(device, img, srgb);
+    return TextureUploader::upload2D(device, img, useMipmap, srgb);
 }
 
 /// <summary>
