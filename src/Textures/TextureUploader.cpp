@@ -605,7 +605,12 @@ std::unique_ptr<TextureObject> TextureUploader::uploadCompressed2D(Device& devic
     vkFreeMemory(device.device(), stagingMemory, nullptr);
 
     // create view and sampler
-    VkImageView   view = createImageView(device, image, format, mipCount, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_CUBE, 6);
+    VkImageView view;
+    if (imageData.isCubemap)
+        view = createImageView(device, image, format, mipCount, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_CUBE, 6);
+    else
+        view = createImageView(device, image, format, mipCount, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D, 1);
+
     VkSampler     sampler = createSampler(device, mipCount);
 
 

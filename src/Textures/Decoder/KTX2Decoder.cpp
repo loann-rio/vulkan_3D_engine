@@ -15,22 +15,6 @@ namespace {
     /// <returns>The matching VkFormat for the texture's vkFormat when it is supported.</returns>
     VkFormat mapKtxFormat(ktxTexture2* tex) {
         return static_cast<VkFormat>(tex->vkFormat);
-        
-        switch (tex->vkFormat) {
-        case VK_FORMAT_BC7_SRGB_BLOCK:
-        case VK_FORMAT_BC7_UNORM_BLOCK:
-        case VK_FORMAT_BC3_UNORM_BLOCK:
-        case VK_FORMAT_BC1_RGB_UNORM_BLOCK:
-        case VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK:
-        case VK_FORMAT_ASTC_4x4_UNORM_BLOCK:
-        case VK_FORMAT_ASTC_4x4_SRGB_BLOCK:
-            return static_cast<VkFormat>(tex->vkFormat);
-
-        default:
-            break;
-        }
-
-        throw std::runtime_error("KTX2Decoder: Unsupported vkFormat: " + std::to_string(tex->vkFormat));
     }
 
     /// <summary>
@@ -143,7 +127,7 @@ DecodedImage KTX2Decoder::decode(const std::string& path) const {
     ktxTexture2* texture = nullptr;
     KTX_error_code result = ktxTexture2_CreateFromNamedFile(
         path.c_str(),
-        KTX_TEXTURE_CREATE_NO_FLAGS,
+        KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT,// KTX_TEXTURE_CREATE_NO_FLAGS,
         &texture
     );
 
@@ -155,16 +139,32 @@ DecodedImage KTX2Decoder::decode(const std::string& path) const {
     img.width = texture->baseWidth;
     img.height = texture->baseHeight;
     img.mipLevels = texture->numLevels;
+    
+
+    // If the KTX2 contains Basis supercompressed data, we must transcode it first
+    if (ktxTexture2_NeedsTranscoding(texture)) {
+        KTX_error_code status = ktxTexture2_TranscodeBasis(
+            texture,
+            KTX_TTF_BC7_RGBA,   // Choose your GPU format
+            0                   // flags
+        );
+        if (status != KTX_SUCCESS) {
+            ktxTexture_Destroy(ktxTexture(texture));
+            throw std::runtime_error("KTX2Decoder: Transcoding failed.");
+        }
+    }
+
     img.format = mapKtxFormat(texture);
+
 
     // Extract compressed data for the full texture (all mipmaps)
     // ktxTexture_GetData returns a pointer to the raw block of texture data
     ktx_size_t totalSize = ktxTexture_GetDataSize(ktxTexture(texture));
-
 	img.dataSize = static_cast<size_t>(totalSize);
 
-    const uint8_t* data = reinterpret_cast<const uint8_t*>(ktxTexture_GetData(ktxTexture(texture)));
-
+    
+    //const uint8_t* data = reinterpret_cast<const uint8_t*>(ktxTexture_GetData(ktxTexture(texture)));
+    uint8_t* data = (uint8_t*)texture->pData;
     if (!data || totalSize == 0) {
         ktxTexture_Destroy(ktxTexture(texture));
         throw std::runtime_error("KTX2Decoder: Empty or invalid compressed data.");
@@ -172,6 +172,21 @@ DecodedImage KTX2Decoder::decode(const std::string& path) const {
 
     img.compressedData.resize(totalSize);
     std::memcpy(img.compressedData.data(), data, totalSize);
+
+    
+	// get mipmaps sizes and offsets
+
+    img.mipOffsets.resize(img.mipLevels);
+    img.mipSizes.resize(img.mipLevels);
+
+    for (uint32_t level = 0; level < img.mipLevels; level++) {
+        
+		ktx_size_t offset = calculateImageOffset(texture, level, 0, 0);
+        ktx_size_t size = ktxTexture_GetImageSize(ktxTexture(texture), level);
+
+        img.mipOffsets[level] = static_cast<uint32_t>(offset);
+        img.mipSizes[level] = static_cast<uint32_t>(size);
+    }
 
     // Cleanup
     ktxTexture_Destroy(ktxTexture(texture));

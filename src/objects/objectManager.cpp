@@ -34,10 +34,12 @@ void ObjectManager::startLoadModel()
     //    pushGameObject(std::move(gameObject));
     //}
 
+	const char* pathTexture = "textures/tests/testimages/astc_mipmap_ldr_6x5_posx.ktx2";
+
     {
         TextureBuilder builder(device);
         std::shared_ptr<Model> plane = PrebuiltModel::createPlane(device, 3, 3, 2, 2, { 1, 1, 1 }, 1);// { 0, 102.f/255.f, 0 }
-        plane->setTexture(Texture::create(device, "textures/viking_room.png"));
+        plane->setTexture(Texture::create(device, pathTexture));
 
         auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
         gameObject->setName("ground");
@@ -49,27 +51,27 @@ void ObjectManager::startLoadModel()
         pushGameObject(std::move(gameObject));
     }
 
-    {
-        TextureBuilder builder(device);
-        std::unique_ptr<TextureObject> texture = builder.fromFile("skybox/citrus_orchard_puresky_4k.hdr").withSRGB(true).withMipmaps(true).build();
-        
-        //std::unique_ptr<TextureObject> texture = builder.fromFile("textures/viking_room.png").withMipmaps(true).build();
-        std::shared_ptr<Model> plane = PrebuiltModel::createPlane(device, 3, 3, 2, 2, { 1, 1, 1 }, 1);// { 0, 102.f/255.f, 0 }
-        plane->setTexture(std::move(texture));
+    //{
+    //    TextureBuilder builder(device);
+    //    std::unique_ptr<TextureObject> texture = builder.fromFile(pathTexture).withSRGB(true).withMipmaps(true).build();
+    //    
+    //    //std::unique_ptr<TextureObject> texture = builder.fromFile("textures/viking_room.png").withMipmaps(true).build();
+    //    std::shared_ptr<Model> plane = PrebuiltModel::createPlane(device, 3, 3, 2, 2, { 1, 1, 1 }, 1);// { 0, 102.f/255.f, 0 }
+    //    plane->setTexture(std::move(texture));
 
-        auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
-        gameObject->setName("ground2");
-        gameObject->setModelType(ModelType::OBJ_MODEL);
-        gameObject->setModel(plane);
-        gameObject->saveable = true;
-        gameObject->createDescriptorSet(*globalPool);
-        gameObject->transform.translation = { 3.f, -1.f, -1.f };
-        pushGameObject(std::move(gameObject));
-    }
+    //    auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
+    //    gameObject->setName("ground2");
+    //    gameObject->setModelType(ModelType::OBJ_MODEL);
+    //    gameObject->setModel(plane);
+    //    gameObject->saveable = true;
+    //    gameObject->createDescriptorSet(*globalPool);
+    //    gameObject->transform.translation = { 3.f, -1.f, -1.f };
+    //    pushGameObject(std::move(gameObject));
+    //}
 
     
 
-    /* {
+    /*{
         std::shared_ptr<Model> cube = Model::createModelFromFile(device, "model/cube.obj");
         cube->setTexture(Texture::create(device, "skybox/cubemap_vulkan.ktx", true));
 
@@ -81,9 +83,27 @@ void ObjectManager::startLoadModel()
         gameObject->saveable = false;
         gameObject->createDescriptorSet(*globalPool);
         pushGameObject(std::move(gameObject));
-    }
+    }*/
 
-    {
+    /*{
+
+        TextureBuilder builder(device);
+        std::unique_ptr<TextureObject> texture = builder.fromFile("skybox/cubemap_vulkan.ktx").asCubemap().build();
+
+        std::shared_ptr<Model> cube = Model::createModelFromFile(device, "model/cube.obj");
+        cube->setTexture(std::move(texture));
+
+        auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
+        gameObject->setName("cubemap2");
+        gameObject->setModelType(ModelType::OBJ_MODEL);
+        gameObject->setModelSubType(ModelSubType::SKYBOX);
+        gameObject->setModel(cube);
+        gameObject->saveable = false;
+        gameObject->createDescriptorSet(*globalPool);
+        pushGameObject(std::move(gameObject));
+    }*/
+
+    /* {
         auto behavior = GameObjectBehavior::createBehaviorFromType("ChunkManager", device);
 		auto gameObject = GameObjectFactory::createGameObject<GameObject>(device);
 		gameObject->setName("terrainGenerator");

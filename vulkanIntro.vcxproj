@@ -126,7 +126,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)\external\KTX\include;$(SolutionDir)\external\KTX-Software-main\include;$(SolutionDir)\external\nativefiledialog-master\src\include;$(SolutionDir)\external\imgui-master\backends;$(SolutionDir)\external\imgui-master;$(SolutionDir)\external\glm-1.0.0;$(SolutionDir)\external\stb-master;$(SolutionDir)\external\basis_universal-master\transcoder;$(SolutionDir)\external\glfw-3.3.9.bin.WIN64\include;$(SolutionDir)\external\tinyobjloader-release;C:\VulkanSDK\1.4.313.2\Include;$(SolutionDir)\external\KTX-Software-main\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\external\KTX\include;$(SolutionDir)\external\glm-1.0.0;$(SolutionDir)\external\stb-master;$(SolutionDir)\external\basis_universal-master\transcoder;$(SolutionDir)\external\glfw-3.3.9.bin.WIN64\include;$(SolutionDir)\external\tinyobjloader-release;C:\VulkanSDK\1.4.313.2\Include;$(SolutionDir)\external\nativefiledialog-master\src\include;$(SolutionDir)\external\imgui-master;$(SolutionDir)\external\imgui-master\backends</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>

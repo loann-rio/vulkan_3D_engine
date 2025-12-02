@@ -89,7 +89,7 @@ std::unique_ptr<TextureObject> TextureLoader::loadKTX(Device& device, const std:
     DecodedImage img = decoder.decode(path);
 
     // KTX contains its own format -> no srgb flag needed
-    return TextureUploader::upload2D(device, img, true, /*srgb=*/ false);
+    return TextureUploader::uploadCompressed2D(device, img);
 
 }
 
@@ -103,7 +103,7 @@ std::unique_ptr<TextureObject> TextureLoader::loadKTX2(Device& device, const std
     DecodedImage img = decoder.decode(path);
 
     // KTX2 contains its own format -> no srgb flag needed
-    return TextureUploader::upload2D(device, img, true, /*srgb=*/ false);
+	return TextureUploader::uploadCompressed2D(device, img);
 }
 
 /// <summary>
@@ -115,15 +115,15 @@ std::unique_ptr<TextureObject> TextureLoader::loadCubemap(Device& device, const 
 
     const std::string ext = imDecoder::getExtension(path);
 
-    if (ext == ".hdr") {
+    if (ext == "hdr") {
         throw std::runtime_error("Cannot decode hdr as cubemap texture: not implemented yet");
     }
-    if (ext == ".ktx2") {
+    if (ext == "ktx2") {
         KTX2Decoder decoder;
         DecodedCubemap cubemap = decoder.decodeCubemap(path);
 		return loadFromDecoded(device, cubemap, /*srgb=*/false);
     }
-    if (ext == ".ktx") {
+    if (ext == "ktx") {
         KTXDecoder decoder;
         DecodedCubemap cubemap = decoder.decodeCubemap(path);
         return loadFromDecoded(device, cubemap, /*srgb=*/false);
