@@ -52,13 +52,17 @@ namespace
     size_t calculateCubemapPixelSize(
         const std::array<DecodedImage, 6>& faces)
     {
-        const bool isFloat = faces[0].isFloat;
+        const size_t faceSize = faces[0].compressedData.size();
 
-        const size_t perFace = isFloat
-            ? faces[0].pixels32.size() * sizeof(float)
-            : faces[0].pixels8.size();
+        //  ensure all faces match
+        for (int i = 1; i < 6; ++i) {
+            if (faces[i].compressedData.size() != faceSize) {
+                throw std::runtime_error(
+                    "calculateCubemapPixelSize - cubemap faces have mismatched data sizes");
+            }
+        }
 
-        return perFace * 6;
+        return faceSize * 6;
     }
 
 
@@ -85,6 +89,29 @@ namespace
             }
         }
     }
+
+    /// <summary>
+	/// validates that the six cubemap faces have valid compressed data
+    /// </summary>
+    void validateCubemapFacesData(
+        const std::array<DecodedImage, 6>& faces)
+    {
+        const size_t faceSize = faces[0].compressedData.size();
+
+        for (uint32_t i = 0; i < 6; i++) {
+
+            if (!faces[i].isCompressed) {
+                throw std::runtime_error("copyCubemapToMemory: face is not compressed");
+            }
+            if (faces[i].compressedData.empty()) {
+                throw std::runtime_error("copyCubemapToMemory: compressedData is empty");
+            }
+            if (faces[i].compressedData.size() != faceSize) {
+                throw std::runtime_error("copyCubemapToMemory: inconsistent face sizes");
+            }
+        }
+    }
+
 
     /// <summary>
     /// Validates a decoded image for correctness, format, and integrity
@@ -116,6 +143,8 @@ namespace
         }
     }
 
+
+
     /// <summary>
     /// Copies six cubemap face pixel data into staging memory
     /// </summary>
@@ -125,16 +154,14 @@ namespace
         VkDeviceMemory stagingMemory,
         const std::array<DecodedImage, 6>& faces)
     {
+
         uint8_t* dst = nullptr;
         vkMapMemory(device.device(), stagingMemory, 0, VK_WHOLE_SIZE, 0, (void**)&dst);
 
         size_t faceSize = calculateCubemapPixelSize({ faces }) / 6;
 
         for (uint32_t i = 0; i < 6; i++) {
-            const void* src = faces[i].isFloat
-                ? (const void*)faces[i].pixels32.data()
-                : (const void*)faces[i].pixels8.data();
-
+            const uint8_t* src = faces[i].compressedData.data();
             std::memcpy(dst + i * faceSize, src, faceSize);
         }
 
@@ -442,13 +469,13 @@ std::unique_ptr<TextureObject> TextureUploader::upload2D(
 std::unique_ptr<TextureObject> TextureUploader::uploadCubemap(Device& device, const DecodedCubemap& cubeMap)
 {
     validateCubemapFaces(cubeMap.faces);
+	validateCubemapFacesData(cubeMap.faces);
 
-    const int width = cubeMap.faces[0].width;
-    const int height = cubeMap.faces[0].height;
+    const int width = static_cast<uint32_t>(cubeMap.faces[0].width);
+    const int height = static_cast<uint32_t>(cubeMap.faces[0].height);
     const bool isFloat = cubeMap.faces[0].isFloat;
-    const uint32_t mipLevels = 1;// calculateMipLevels(width, height);
-
-    const VkFormat format = selectFormat(isFloat, /*srgb:*/ true);
+    const uint32_t mipLevels = cubeMap.faces[0].mipLevels;
+    const VkFormat format = cubeMap.faces[0].format;
     const size_t   totalSize = calculateCubemapPixelSize(cubeMap.faces);
 
 
@@ -461,7 +488,6 @@ std::unique_ptr<TextureObject> TextureUploader::uploadCubemap(Device& device, co
     copyCubemapToMemory(device, stagingBufferMemory, cubeMap.faces);
 
     VkDeviceMemory imageMemory;
-
     VkImage image = createImage(
         device, 
         width, height, 
@@ -475,20 +501,45 @@ std::unique_ptr<TextureObject> TextureUploader::uploadCubemap(Device& device, co
         mipLevels);
 
     // create copy regions
-    const size_t faceSize =  calculateCubemapPixelSize(cubeMap.faces) / 6;
-    std::vector<VkBufferImageCopy> bufferCopyRegions(6);
+    const size_t faceSize = totalSize / 6;
 
-    for (uint32_t face = 0; face < 6; face++) {
-        auto& r = bufferCopyRegions[face];
-        r.bufferOffset = face * faceSize;
-        r.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        r.imageSubresource.mipLevel = 0;
-        r.imageSubresource.baseArrayLayer = face;
-        r.imageSubresource.layerCount = 1;
-        r.imageExtent = {
-            (uint32_t)cubeMap.faces[0].width,
-            (uint32_t)cubeMap.faces[0].height,
-            1 };
+    std::vector<VkBufferImageCopy> bufferCopyRegions;
+    bufferCopyRegions.reserve(static_cast<size_t>(6) * mipLevels);
+
+    for (uint32_t face = 0; face < 6; ++face) {
+        const DecodedImage& f = cubeMap.faces[face];
+
+        const VkDeviceSize faceBase = static_cast<VkDeviceSize>(face) * static_cast<VkDeviceSize>(faceSize);
+
+        for (uint32_t mip = 0; mip < mipLevels; ++mip) {
+            VkBufferImageCopy region{};
+            region.bufferOffset = faceBase + static_cast<VkDeviceSize>(f.mipOffsets[mip]);
+            region.bufferRowLength = 0;
+            region.bufferImageHeight = 0;
+
+            region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            region.imageSubresource.mipLevel = mip;
+            region.imageSubresource.baseArrayLayer = face;
+            region.imageSubresource.layerCount = 1;
+
+            uint32_t w = std::max(1, width >> mip);
+            uint32_t h = std::max(1, height >> mip);
+
+            region.imageOffset = { 0, 0, 0 };
+            region.imageExtent = { w, h, 1 };
+
+            // Optional: verify bufferOffset + mipSizes[mip] <= totalSize
+            VkDeviceSize endByte = region.bufferOffset + static_cast<VkDeviceSize>(f.mipSizes[mip]);
+            if (endByte > static_cast<VkDeviceSize>(totalSize)) {
+                vkDestroyBuffer(device.device(), stagingBuffer, nullptr);
+                vkFreeMemory(device.device(), stagingBufferMemory, nullptr);
+                vkDestroyImage(device.device(), image, nullptr);
+                throw std::runtime_error("uploadCubemap: region exceeds staging buffer (face " +
+                    std::to_string(face) + " mip " + std::to_string(mip) + ")");
+            }
+
+            bufferCopyRegions.push_back(region);
+        }
     }
 
     device.transitionImageLayout(image, format,

@@ -237,7 +237,7 @@ DecodedCubemap KTXDecoder::decodeCubemap(const std::string& path) const
         img.dataSize = static_cast<size_t>(totalSize);
         img.compressedData.resize(img.dataSize);
 
-        memcpy(img.compressedData.data(), (uint8_t*)tex->kvData + offset, img.dataSize);
+        memcpy(img.compressedData.data(), (uint8_t*)tex->kvData + offset, img.dataSize); 
 
         // Try to derive format
         

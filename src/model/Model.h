@@ -91,7 +91,7 @@ public:
 	void drawDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, glm::mat4 modelMatrix, uint32_t cameraIndex, const std::array<FrustumPlane, 6>& planes, uint32_t instanceCount);
 
 	// textures should be ordered by lod levels if there are multiple, each lod have the use index 
-	void setTexture(std::shared_ptr<Texture> newTexture) { texture[0] = std::move(newTexture); }
+	void setTexture(std::shared_ptr<Texture> newTexture) { texture.resize(1); texture[0] = std::move(newTexture); }
 	void setTexture(std::shared_ptr<TextureObject> newTexture) { textureObject.resize(1); textureObject[0] = std::move(newTexture); }
 	void setTexture(std::vector<std::shared_ptr<Texture>> newTextures) { texture = std::move(newTextures); }
 	void addTexture(std::shared_ptr<Texture> newTexture) { texture.push_back(std::move(newTexture)); }

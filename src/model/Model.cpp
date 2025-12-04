@@ -135,7 +135,7 @@ Model::Model(Device& device, const Model::Builder& builder) : device{ device }, 
 	}
 
 	//debugValidateLODs();
-	texture.resize(1);	
+	
 	
 
 }
@@ -158,7 +158,7 @@ void Model::bind(VkCommandBuffer& commandBuffer, bool bindTexture, VkPipelineLay
 				0,
 				nullptr);
 		}
-		else
+		else if (descriptorSet.size() > 0)
 		{
 			if (hasLODs) descriptorSetIndex += Swap_chain::MAX_FRAMES_IN_FLIGHT * lods[lodIndex].textureIndex;
 
@@ -169,6 +169,10 @@ void Model::bind(VkCommandBuffer& commandBuffer, bool bindTexture, VkPipelineLay
 				&descriptorSet[descriptorSetIndex],
 				0,
 				nullptr);
+		}
+		else
+			{
+			throw std::runtime_error("Model::bind() failed to bind descriptor set: no descriptor set available.");
 		}
 	}
 
