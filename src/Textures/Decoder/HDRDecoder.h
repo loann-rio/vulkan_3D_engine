@@ -1,14 +1,14 @@
 #pragma once
 #include "ImageDecoder.h"
 
-class HDRDecoder : public ImageDecoder {
+class HDRDecoder final : public ImageDecoder {
 public:
     
     /// <summary>
     ///  check is the decoder can decode the given file
     /// </summary>
     bool canDecode(
-        const std::string& path
+        const std::filesystem::path& path
     ) const override;
 
     /// <summary>
@@ -17,6 +17,6 @@ public:
     /// <param name="path">path to the image file to load</param>
     /// <returns>DecodedImage</returns>
     DecodedImage decode(
-        const std::string& path
+        const std::filesystem::path& path
     ) const override;
 };

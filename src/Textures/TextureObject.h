@@ -5,6 +5,18 @@
 class Device;
 
 class TextureObject {
+private:
+    struct TextureInitInfo {
+        VkImage image;
+        VkDeviceMemory memory;
+        VkImageView view;
+        VkSampler sampler;
+        uint32_t width, height;
+        uint32_t mipLevels;
+        uint32_t arrayLayers;
+        VkImageCreateFlags flags;
+    };
+
 public:
     explicit TextureObject(Device& device);
     ~TextureObject();
@@ -32,16 +44,7 @@ public:
 
 private:
     // Private constructor used only by TextureUploader
-    TextureObject(Device&,
-        VkImage image,
-        VkDeviceMemory memory,
-        VkImageView view,
-        VkSampler sampler,
-        uint32_t width,
-        uint32_t height,
-        uint32_t mipLevels,
-        uint32_t arrayLayers,
-        VkImageCreateFlags flags);
+	TextureObject(Device&, const TextureInitInfo& info);
 
     // Helpers called by recreateImageView()
     VkImageView createImageView(VkImage image,

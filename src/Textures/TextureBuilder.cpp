@@ -28,13 +28,13 @@ TextureBuilder& TextureBuilder::fromFile(const std::string& p)
     const std::string ext = imDecoder::getExtension(path);
 
     if (ext == "ktx2")
-        source = SourceType::KTX2;
+        source = SourceType::Ktx2;
     else if (ext == "ktx")
-        source = SourceType::KTX;
+        source = SourceType::Ktx1;
     else if (ext == "hdr")
-        source = SourceType::HDR;
+        source = SourceType::Hdr;
     else
-        source = SourceType::STB;
+        source = SourceType::Stb;
 
     return *this;
 }
@@ -45,7 +45,7 @@ TextureBuilder& TextureBuilder::fromFile(const std::string& p)
 TextureBuilder& TextureBuilder::fromKTX2(const std::string& p)
 {
     path = p;
-    source = SourceType::KTX2;
+    source = SourceType::Ktx2;
     return *this;
 }
 
@@ -55,7 +55,7 @@ TextureBuilder& TextureBuilder::fromKTX2(const std::string& p)
 TextureBuilder& TextureBuilder::fromKTX(const std::string& p)
 {
     path = p;
-    source = SourceType::KTX;
+    source = SourceType::Ktx1;
     return *this;
 }
 
@@ -65,7 +65,7 @@ TextureBuilder& TextureBuilder::fromKTX(const std::string& p)
 TextureBuilder& TextureBuilder::fromHDR(const std::string& p)
 {
     path = p;
-    source = SourceType::HDR;
+    source = SourceType::Hdr;
     return *this;
 }
 
@@ -75,7 +75,7 @@ TextureBuilder& TextureBuilder::fromHDR(const std::string& p)
 TextureBuilder& TextureBuilder::fromSTB(const std::string& p)
 {
     path = p;
-    source = SourceType::STB;
+    source = SourceType::Stb;
     return *this;
 }
 
@@ -84,11 +84,14 @@ TextureBuilder& TextureBuilder::fromSTB(const std::string& p)
 
 TextureBuilder& TextureBuilder::fromVector(const std::vector<std::vector<std::vector<float>>>& textureArray)
 {
-    source = SourceType::ARRAY;
+    source = SourceType::FloatArray;
 
     arrayH = static_cast<uint32_t>(textureArray.size());
     arrayW = static_cast<uint32_t>(textureArray[0].size());
     arrayD = static_cast<uint32_t>(textureArray[0][0].size());
+
+    if (arrayH == 0 || arrayW == 0 || arrayD == 0)
+		throw std::runtime_error("TextureBuilder: fromVector: input array has invalid dimensions");
 
     arrayPixels.resize(arrayW * arrayH * arrayD);
 
@@ -115,7 +118,7 @@ TextureBuilder& TextureBuilder::fromCharBuffer(std::vector<unsigned char> buffer
 
 	if (arrayMipLevels) useMipmaps = true;
 
-	source = SourceType::CHAR_BUFFER;
+	source = SourceType::RawBuffer;
 	return *this;
 }
 
@@ -178,16 +181,16 @@ TextureBuilder& TextureBuilder::withWrap(VkSamplerAddressMode mode)
 /// </summary>
 std::unique_ptr<TextureObject> TextureBuilder::build()
 {
-    if (source == SourceType::CHAR_BUFFER)
-		return buildFromCharBuffer();
-
-    if (source == SourceType::ARRAY)
-        return buildFromArray();
-
-    if (forceCubemap)
-        return buildCubemap();
-
-    return build2D();
+    switch (source) {
+    case SourceType::RawBuffer: return buildFromCharBuffer();
+    case SourceType::FloatArray: return buildFromArray();
+    case SourceType::Stb:
+    case SourceType::Hdr:
+    case SourceType::Ktx1:
+    case SourceType::Ktx2:
+        return forceCubemap ? buildCubemap() : build2D();
+	default: throw std::runtime_error("TextureBuilder: No valid source set");
+    }
 }
 
 /// <summary>
@@ -258,10 +261,10 @@ std::unique_ptr<TextureObject> TextureBuilder::buildFromCharBuffer()
 	img.pixels8 = charBuffer;
     img.mipLevels = arrayMipLevels;
 
-    img.format = (arrayD == 1) ? VK_FORMAT_R32_UINT :
-        (arrayD == 2) ? VK_FORMAT_R32G32_UINT :
-        (arrayD == 3) ? VK_FORMAT_R32G32B32_UINT :
-        VK_FORMAT_R32G32B32A32_UINT;
+    img.format = (arrayD == 1) ? VK_FORMAT_R8_UNORM :
+        (arrayD == 2) ? VK_FORMAT_R8G8_UNORM :
+        (arrayD == 3) ? VK_FORMAT_R8G8B8_UNORM :
+        VK_FORMAT_R8G8B8A8_UNORM;
     
     return TextureUploader::upload2D(device, img, useMipmaps, useSRGB);
 }

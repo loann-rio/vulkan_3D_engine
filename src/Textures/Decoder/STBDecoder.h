@@ -1,7 +1,7 @@
 #pragma once
 #include "ImageDecoder.h"
 
-class STBDecoder : public ImageDecoder {
+class STBDecoder final : public ImageDecoder {
 public:
 
     /// <summary>
@@ -10,7 +10,7 @@ public:
     /// <param name="path">Path whose extension will be checked. The function extracts the extension via getExtension and compares it against supported formats</param>
     /// <returns>true if the extracted extension is one of the supported formats (png, jpg, jpeg, bmp, tga, gif, ppm, pgm, pnm); false otherwise</returns>
     bool canDecode(
-        const std::string& path
+        const std::filesystem::path& path
     ) const override;
 
     /// <summary>
@@ -19,7 +19,7 @@ public:
     /// <param name="path">Filesystem path to the image file to load</param>
     /// <returns>DecodedImage</returns>
     DecodedImage decode(
-        const std::string& path
+        const std::filesystem::path& path
     ) const override;
 
     /// <summary>

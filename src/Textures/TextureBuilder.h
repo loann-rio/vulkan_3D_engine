@@ -11,7 +11,7 @@ class Device;
 class TextureObject;
 
 class TextureBuilder {
-    enum class SourceType { None, STB, HDR, KTX2, KTX, ARRAY, CHAR_BUFFER };
+    enum class SourceType { None, Stb, Hdr, Ktx2, Ktx1, FloatArray, RawBuffer };
 
     template <size_t W, size_t H, size_t D>
     using TextureArray = std::array<std::array<std::array<float, D>, W>, H>;
@@ -45,15 +45,18 @@ public:
     //// Build ////
     std::unique_ptr<TextureObject> build();
 
-    std::unique_ptr<TextureObject> build2D();
-    std::unique_ptr<TextureObject> buildCubemap();
-	std::unique_ptr<TextureObject> buildFromArray();
-    std::unique_ptr<TextureObject> buildFromCharBuffer();
-
 	//// from existing texture ////
 	std::unique_ptr<TextureObject> fromTextureInfo(VkImageCreateInfo imageInfo, VkImageViewCreateInfo viewInfo, VkSamplerCreateInfo samplerInfo, VkImageLayout initImageLayout, uint32_t layerCount = 1);
 
 private:
+
+	//// Build helpers ////
+    std::unique_ptr<TextureObject> build2D();
+    std::unique_ptr<TextureObject> buildCubemap();
+    std::unique_ptr<TextureObject> buildFromArray();
+    std::unique_ptr<TextureObject> buildFromCharBuffer();
+
+
     Device& device;
     std::string path;
 

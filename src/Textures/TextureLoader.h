@@ -19,7 +19,7 @@ public:
     /// <returns>loaded texture</returns>
     static std::unique_ptr<TextureObject> load(
         Device& device, 
-        const std::string& path, 
+        const std::filesystem::path& path,
         bool useMipmap
     );
 
@@ -30,7 +30,7 @@ public:
     /// <returns>loaded cubemap texture</returns>
     static std::unique_ptr<TextureObject> loadCubemap(
         Device& device, 
-        const std::string& Path
+        const std::filesystem::path& Path
     );
 
     //// Explicit loaders ////
@@ -44,7 +44,7 @@ public:
     /// <returns>created Texture</returns>
     static std::unique_ptr<TextureObject> load2D(
         Device& device, 
-        const std::string& path, 
+        const std::filesystem::path& path,
         bool useMipmap, 
         bool srgb = true
     );
@@ -57,7 +57,7 @@ public:
     /// <returns>created Texture</returns>
     static std::unique_ptr<TextureObject> loadHDR(
         Device& device, 
-        const std::string& path, 
+        const std::filesystem::path& path,
         bool useMipmap
     );
 
@@ -69,7 +69,7 @@ public:
     /// <returns>created Texture</returns>
     static std::unique_ptr<TextureObject> loadKTX(
         Device& device, 
-        const std::string& path, 
+        const std::filesystem::path& path,
         bool useMipmap
     );
 
@@ -81,14 +81,14 @@ public:
     /// <returns>created Texture</returns>
     static std::unique_ptr<TextureObject> loadKTX2(
         Device& device, 
-        const std::string& path, 
+        const std::filesystem::path& path,
         bool useMipmap
     );
 
     // Async version TODO
     static std::future<std::unique_ptr<TextureObject>> loadAsync(
         Device& device, 
-        const std::string& path, 
+        const std::filesystem::path& path,
         bool srgb = true
     );
 
@@ -101,7 +101,7 @@ private:
     /// <returns> loaded cubemap texture </returns>
     static std::unique_ptr<TextureObject> loadCubemapFromDir(
         Device& device, 
-        const std::string& directoryPath
+        const std::filesystem::path& directoryPath
     );
 
     /// <summary>

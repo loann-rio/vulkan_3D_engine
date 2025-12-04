@@ -21,8 +21,8 @@
 /// <param name="device">Reference to the Device used to create/upload the texture on the GPU</param>
 /// <param name="path">Filesystem path to the texture file</param>
 /// <returns>loaded texture</returns>
-std::unique_ptr<TextureObject> TextureLoader::load(Device& device, const std::string& path, bool useMipmap) {
-    const std::string ext = imDecoder::getExtension(path);
+std::unique_ptr<TextureObject> TextureLoader::load(Device& device, const std::filesystem::path& path, bool useMipmap) {
+    const std::string ext = imDecoder::getExtension(path.string());
 
     if (ext == "hdr") {
         return loadHDR(device, path, useMipmap);
@@ -45,11 +45,11 @@ std::unique_ptr<TextureObject> TextureLoader::load(Device& device, const std::st
 /// <param name="path">Path to the image file to load</param>
 /// <param name="srgb">If true, interpret the texture as sRGB; otherwise treat it as linear color space</param>
 /// <returns>created Texture</returns>
-std::unique_ptr<TextureObject> TextureLoader::load2D(Device& device, const std::string& path, bool useMipmap, bool srgb) {
+std::unique_ptr<TextureObject> TextureLoader::load2D(Device& device, const std::filesystem::path& path, bool useMipmap, bool srgb) {
 
     STBDecoder decoder;
     if (!decoder.canDecode(path)) {
-        throw std::runtime_error("TextureLoader::load2D - Unsupported 2D texture format: " + imDecoder::getExtension(path));
+        throw std::runtime_error("TextureLoader::load2D - Unsupported 2D texture format: " + imDecoder::getExtension(path.string()));
     }
 
     DecodedImage img = decoder.decode(path);
@@ -62,10 +62,10 @@ std::unique_ptr<TextureObject> TextureLoader::load2D(Device& device, const std::
 /// <param name="device">Reference to the Device used to create and upload GPU resources for the Texture</param>
 /// <param name="path">Path to the image file to load</param>
 /// <returns>created Texture</returns>
-std::unique_ptr<TextureObject> TextureLoader::loadHDR(Device& device, const std::string& path, bool useMipmap) {
+std::unique_ptr<TextureObject> TextureLoader::loadHDR(Device& device, const std::filesystem::path& path, bool useMipmap) {
     HDRDecoder decoder;
     if (!decoder.canDecode(path)) {
-        throw std::runtime_error("TextureLoader::loadHDR - Cannot decode HDR texture: " + path);
+        throw std::runtime_error("TextureLoader::loadHDR - Cannot decode HDR texture: " + path.string());
     }
 
     DecodedImage img = decoder.decode(path);
@@ -84,11 +84,11 @@ std::unique_ptr<TextureObject> TextureLoader::loadHDR(Device& device, const std:
 /// <param name="device">Reference to the Device used to create and upload GPU resources for the Texture</param>
 /// <param name="path">Path to the image file to load</param>
 /// <returns>created Texture</returns>
-std::unique_ptr<TextureObject> TextureLoader::loadKTX(Device& device, const std::string& path, bool useMipmap)
+std::unique_ptr<TextureObject> TextureLoader::loadKTX(Device& device, const std::filesystem::path& path, bool useMipmap)
 {
     KTXDecoder decoder;
     if (!decoder.canDecode(path)) {
-        throw std::runtime_error("TextureLoader::loadKTX - Cannot decode KTX texture: " + path);
+        throw std::runtime_error("TextureLoader::loadKTX - Cannot decode KTX texture: " + path.string());
     }
 
     DecodedImage img = decoder.decode(path);
@@ -104,11 +104,11 @@ std::unique_ptr<TextureObject> TextureLoader::loadKTX(Device& device, const std:
 /// <param name="device">Reference to the Device used to create and upload GPU resources for the Texture</param>
 /// <param name="path">Path to the image file to load</param>
 /// <returns>created Texture</returns>
-std::unique_ptr<TextureObject> TextureLoader::loadKTX2(Device& device, const std::string& path, bool useMipmap)
+std::unique_ptr<TextureObject> TextureLoader::loadKTX2(Device& device, const std::filesystem::path& path, bool useMipmap)
 {
     KTX2Decoder decoder;
     if (!decoder.canDecode(path)) {
-        throw std::runtime_error("TextureLoader::loadKTX2 - Cannot decode KTX2 texture: " + path);
+        throw std::runtime_error("TextureLoader::loadKTX2 - Cannot decode KTX2 texture: " + path.string());
     }
 
     DecodedImage img = decoder.decode(path);
@@ -122,9 +122,9 @@ std::unique_ptr<TextureObject> TextureLoader::loadKTX2(Device& device, const std
 /// </summary>
 /// <param name="device">Device used to create GPU resources and upload the texture.</param>
 /// <returns>loaded cubemap texture</returns>
-std::unique_ptr<TextureObject> TextureLoader::loadCubemap(Device& device, const std::string& path) {
+std::unique_ptr<TextureObject> TextureLoader::loadCubemap(Device& device, const std::filesystem::path& path) {
 
-    const std::string ext = imDecoder::getExtension(path);
+    const std::string ext = imDecoder::getExtension(path.string());
 
     if (ext == "hdr") {
         throw std::runtime_error("Cannot decode hdr as cubemap texture: not implemented yet");
@@ -149,14 +149,14 @@ std::unique_ptr<TextureObject> TextureLoader::loadCubemap(Device& device, const 
 /// <param name="device">Device used to create GPU resources and upload the texture</param>
 /// <param name="directoryPath">Filesystem path to a directory containing the cubemap image files</param>
 /// <returns> loaded cubemap texture </returns>
-std::unique_ptr<TextureObject> TextureLoader::loadCubemapFromDir(Device& device, const std::string& directoryPath)
+std::unique_ptr<TextureObject> TextureLoader::loadCubemapFromDir(Device& device, const std::filesystem::path& directoryPath)
 {
     if (!std::filesystem::exists(directoryPath) || !std::filesystem::is_directory(directoryPath)) {
-        throw std::runtime_error("Path is not a directory: " + directoryPath + " cubemap should be directory or ktx/ktx2");
+        throw std::runtime_error("Path is not a directory: " + directoryPath.string() + " cubemap should be directory or ktx/ktx2");
     }
 
     STBDecoder decoder;
-    DecodedCubemap cubemap = decoder.decodeCubemapFromDirectory(directoryPath);
+    DecodedCubemap cubemap = decoder.decodeCubemapFromDirectory(directoryPath.string());
     return loadFromDecoded(device, cubemap, /*srgb=*/false);
 }
 
@@ -183,7 +183,7 @@ std::unique_ptr<TextureObject> TextureLoader::loadFromDecoded(Device& device, co
 
 //// async loading ////
 /// TODO
-std::future<std::unique_ptr<TextureObject>> TextureLoader::loadAsync(Device& device, const std::string& path, bool srgb) {
+std::future<std::unique_ptr<TextureObject>> TextureLoader::loadAsync(Device& device, const std::filesystem::path& path, bool srgb) {
     return std::async(std::launch::async, [&device, path, srgb]() {
         return load2D(device, path, srgb);
         });

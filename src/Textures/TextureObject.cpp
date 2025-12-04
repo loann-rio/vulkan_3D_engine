@@ -17,25 +17,16 @@ TextureObject::~TextureObject() {
 
 
 // Manually constructed by TextureUploader
-TextureObject::TextureObject(Device& device,
-    VkImage image,
-    VkDeviceMemory memory,
-    VkImageView view,
-    VkSampler sampler,
-    uint32_t width,
-    uint32_t height,
-    uint32_t mipLevels,
-    uint32_t arrayLayers,
-    VkImageCreateFlags flags)
+TextureObject::TextureObject(Device& device, const TextureInitInfo& info)
     : device(device),
-    textureImage(image),
-    textureImageMemory(memory),
-    textureImageView(view),
-    textureSampler(sampler),
-    textureExtent{ width, height },
-    mipLevel(mipLevels),
-    createdArrayLayers(arrayLayers),
-    createdImageFlags(flags),
+    textureImage(info.image),
+    textureImageMemory(info.memory),
+    textureImageView(info.view),
+    textureSampler(info.sampler),
+    textureExtent{ info.width, info.height },
+    mipLevel(info.mipLevels),
+    createdArrayLayers(info.arrayLayers),
+    createdImageFlags(info.flags),
     isLoaded(true) {
 }
 
@@ -166,7 +157,7 @@ VkImageView TextureObject::createImageView(
 
     VkImageView imageView = VK_NULL_HANDLE;
     if (vkCreateImageView(device.device(), &viewInfo, nullptr, &imageView) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create image view");
+        throw std::runtime_error("TextureObject: Failed to create image view");
     }
 
     return imageView;

@@ -450,16 +450,19 @@ std::unique_ptr<TextureObject> TextureUploader::upload2D(
     VkImageView   view    = createImageView(device, image, format, mipLevels, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D, 1);
     VkSampler     sampler = createSampler(device, mipLevels);
 
+    TextureObject::TextureInitInfo info{
+        image,
+        imageMemory,
+        view,
+        sampler,
+        w, h,
+        mipLevels,
+        1,
+        0
+	};
+
     return std::unique_ptr<TextureObject>(
-        new TextureObject(
-            device,
-            image,
-            imageMemory,
-            view,
-            sampler,
-            w, h,
-            mipLevels,
-            1, 0)
+        new TextureObject(device, info)
     );
 }
 
@@ -492,18 +495,18 @@ std::unique_ptr<TextureObject> TextureUploader::uploadCubemap(Device& device, co
         VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
         imageMemory, 
-        6, 
+        CUBEMAP_FACE_COUNT,
         VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT, 
         VK_IMAGE_TYPE_2D, 
         mipLevels);
 
     // create copy regions
-    const size_t faceSize = totalSize / 6;
+    const size_t faceSize = totalSize / CUBEMAP_FACE_COUNT;
 
     std::vector<VkBufferImageCopy> bufferCopyRegions;
-    bufferCopyRegions.reserve(static_cast<size_t>(6) * mipLevels);
+    bufferCopyRegions.reserve(static_cast<size_t>(CUBEMAP_FACE_COUNT) * mipLevels);
 
-    for (uint32_t face = 0; face < 6; ++face) {
+    for (uint32_t face = 0; face < CUBEMAP_FACE_COUNT; ++face) {
         const DecodedImage& f = cubeMap.faces[face];
 
         const VkDeviceSize faceBase = static_cast<VkDeviceSize>(face) * static_cast<VkDeviceSize>(faceSize);
@@ -542,14 +545,14 @@ std::unique_ptr<TextureObject> TextureUploader::uploadCubemap(Device& device, co
     device.transitionImageLayout(image, format,
         VK_IMAGE_LAYOUT_UNDEFINED,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 
-        mipLevels, 6);
+        mipLevels, CUBEMAP_FACE_COUNT);
 
     device.copyBufferToImage(stagingBuffer, image, bufferCopyRegions);
 
     device.transitionImageLayout(image, format, 
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 
-        mipLevels, 6);
+        mipLevels, CUBEMAP_FACE_COUNT);
 
 	// cleanup staging
     vkDestroyBuffer(device.device(), stagingBuffer, nullptr);
@@ -559,16 +562,20 @@ std::unique_ptr<TextureObject> TextureUploader::uploadCubemap(Device& device, co
     VkImageView   view    = createImageView(device, image, format, mipLevels, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_CUBE, 6);
     VkSampler     sampler = createSampler(device, mipLevels);
 
+    TextureObject::TextureInitInfo info{
+        image,
+        imageMemory,
+        view,
+        sampler,
+        static_cast<uint32_t>(width),
+        static_cast<uint32_t>(height),
+        mipLevels,
+        CUBEMAP_FACE_COUNT,
+        VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT
+	};
+
     return std::unique_ptr<TextureObject>(
-        new TextureObject(
-            device,
-            image,
-            imageMemory,
-            view,
-            sampler,
-            width, height,
-            mipLevels,
-            1, VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT)
+        new TextureObject(device, info)
     );
 
 }
@@ -655,22 +662,23 @@ std::unique_ptr<TextureObject> TextureUploader::uploadCompressed2D(Device& devic
     // create view and sampler
     VkImageView view;
     if (imageData.isCubemap)
-        view = createImageView(device, image, format, mipCount, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_CUBE, 6);
+        view = createImageView(device, image, format, mipCount, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_CUBE, CUBEMAP_FACE_COUNT);
     else
         view = createImageView(device, image, format, mipCount, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D, 1);
 
     VkSampler     sampler = createSampler(device, mipCount);
 
+    TextureObject::TextureInitInfo info{
+        image,
+        imageMemory,
+        view,
+        sampler,
+        width, height,
+        mipCount,
+        imageData.isCubemap ? CUBEMAP_FACE_COUNT : 1,
+        imageData.isCubemap ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0 };
 
     return std::unique_ptr<TextureObject>(
-        new TextureObject(
-            device,
-            image,
-            imageMemory,
-            view,
-            sampler,
-            width, height,
-            mipCount,
-            1, 0)
+        new TextureObject(device, info)
     );
 }

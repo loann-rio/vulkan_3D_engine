@@ -6,6 +6,8 @@
 #include <vector>
 #include <array>
 
+#include <filesystem>
+
 #include <vulkan/vulkan.h>
 
 namespace imDecoder {
@@ -61,6 +63,6 @@ class ImageDecoder {
 public:
     virtual ~ImageDecoder() = default;
 
-    virtual bool canDecode(const std::string& path) const = 0;
-    virtual DecodedImage decode(const std::string& path) const = 0;
+    virtual bool canDecode(const std::filesystem::path& path) const = 0;
+    virtual DecodedImage decode(const std::filesystem::path& path) const = 0;
 };

@@ -32,7 +32,7 @@ public:
     );
 
 private:
-    
+    static constexpr uint32_t CUBEMAP_FACE_COUNT = 6;
    
     /// <summary>
     /// Creates a VkImage and allocates its device memory 

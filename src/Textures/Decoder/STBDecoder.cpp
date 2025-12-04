@@ -156,9 +156,9 @@ namespace {
 /// Determines if the file extension is matching a format supported by the STB-based decoder
 /// </summary>
 /// <param name="path">path to extension that will be checked</param>
-bool STBDecoder::canDecode(const std::string& path) const
+bool STBDecoder::canDecode(const std::filesystem::path& path) const
 {
-    const std::string ext = imDecoder::getExtension(path);
+    const std::string ext = imDecoder::getExtension(path.string());
 
     // STB-supported formats
     return (
@@ -175,7 +175,7 @@ bool STBDecoder::canDecode(const std::string& path) const
 /// </summary>
 /// <param name="path">Filesystem path to the image file to load</param>
 /// <returns>DecodedImage</returns>
-DecodedImage STBDecoder::decode(const std::string& path) const
+DecodedImage STBDecoder::decode(const std::filesystem::path& path) const
 {
     DecodedImage img{};
     img.isFloat = false;
@@ -185,7 +185,7 @@ DecodedImage STBDecoder::decode(const std::string& path) const
     int channels = 0;
 
     unsigned char* data = stbi_load(
-        path.c_str(),
+        path.string().c_str(),
         &width,
         &height,
         &channels,
@@ -193,7 +193,7 @@ DecodedImage STBDecoder::decode(const std::string& path) const
     );
 
     if (!data) {
-        throw std::runtime_error("STBDecoder: Failed to load image: " + path);
+        throw std::runtime_error("STBDecoder: Failed to load image: " + path.string());
     }
 
     img.width = static_cast<uint32_t>(width);

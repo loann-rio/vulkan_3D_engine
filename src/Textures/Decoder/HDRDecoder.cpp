@@ -4,15 +4,14 @@
 
 #include <algorithm>
 #include <stdexcept>
-#include <filesystem>
 #include <cctype>
 
 /// <summary>
 /// check is the decoder can decode the given file
 /// </summary>
-bool HDRDecoder::canDecode(const std::string& path) const
+bool HDRDecoder::canDecode(const std::filesystem::path& path) const
 {
-    return imDecoder::getExtension(path) == "hdr";
+    return imDecoder::getExtension(path.string()) == "hdr";
 }
 
 /// <summary>
@@ -20,7 +19,7 @@ bool HDRDecoder::canDecode(const std::string& path) const
 /// </summary>
 /// <param name="path">path to the image file to load</param>
 /// <returns>DecodedImage</returns>
-DecodedImage HDRDecoder::decode(const std::string& path) const
+DecodedImage HDRDecoder::decode(const std::filesystem::path& path) const
 {
     DecodedImage img{};
     img.isFloat = true;
@@ -30,7 +29,7 @@ DecodedImage HDRDecoder::decode(const std::string& path) const
     int channels = 0;
 
     float* data = stbi_loadf(
-        path.c_str(),
+        path.string().c_str(),
         &width,
         &height,
         &channels,
@@ -38,7 +37,7 @@ DecodedImage HDRDecoder::decode(const std::string& path) const
     );
 
     if (!data) {
-        throw std::runtime_error("HDRDecoder: Failed to load HDR image: " + path);
+        throw std::runtime_error("HDRDecoder: Failed to load HDR image: " + path.string());
     }
 
     img.width = static_cast<uint32_t>(width);

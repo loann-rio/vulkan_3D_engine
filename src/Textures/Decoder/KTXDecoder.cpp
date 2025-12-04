@@ -1,5 +1,7 @@
 #include "KTXDecoder.h"
 
+#include <ktx.h>
+#include <ktxvulkan.h>
 
 #include <stdexcept>
 #include <array>
@@ -194,17 +196,17 @@ namespace {
 /// Determines whether the provided file path has the KTX2 file extension
 /// </summary>
 /// <param name="path">file path or name to check</param>
-bool KTXDecoder::canDecode(const std::string& path) const
+bool KTXDecoder::canDecode(const std::filesystem::path& path) const
 {
-    return imDecoder::getExtension(path) == "ktx";
+    return imDecoder::getExtension(path.string()) == "ktx";
 }
 
-DecodedImage KTXDecoder::decode(const std::string& path) const
+DecodedImage KTXDecoder::decode(const std::filesystem::path& path) const
 {
     DecodedImage img{};
 
     // Load via KTX library
-	ktxTexture1* texture = getKtxTextureFromfile(path);
+	ktxTexture1* texture = getKtxTextureFromfile(path.string());
 
 	validateKtx2D(texture);
 
@@ -249,10 +251,10 @@ DecodedImage KTXDecoder::decode(const std::string& path) const
     return img;
 }
 
-DecodedCubemap KTXDecoder::decodeCubemap(const std::string& filePath) const
+DecodedCubemap KTXDecoder::decodeCubemap(const std::filesystem::path& path) const
 {
     // load image data
-    ktxTexture1* kTexture = getKtxTextureFromfile(filePath);
+    ktxTexture1* kTexture = getKtxTextureFromfile(path.string());
 
     // Validate cubemap compatibility
 	validateKtxCubemap(kTexture);
@@ -285,7 +287,7 @@ DecodedCubemap KTXDecoder::decodeCubemap(const std::string& filePath) const
 
     const uint8_t* srcBase = reinterpret_cast<const uint8_t*>(ktxTexture_GetData(ktxTexture(kTexture)));
     if (srcBase == nullptr) {
-        throw std::runtime_error("KTX decode error: ktx texture data pointer is null for: " + filePath);
+        throw std::runtime_error("KTX decode error: ktx texture data pointer is null for: " + path.string());
     }
 
     std::array<size_t, 6> writeOffsets = { 0, 0, 0, 0, 0, 0 };
@@ -296,7 +298,7 @@ DecodedCubemap KTXDecoder::decodeCubemap(const std::string& filePath) const
 
         // Bounds check before copying
         if (dstOffset + static_cast<size_t>(e.size) > faceImg.compressedData.size()) {
-            throw std::runtime_error("KTX decode error: write would overflow face buffer for :  " + filePath);
+            throw std::runtime_error("KTX decode error: write would overflow face buffer for :  " + path.string());
         }
 
         std::memcpy(faceImg.compressedData.data() + dstOffset, srcBase + e.offset, static_cast<size_t>(e.size));
