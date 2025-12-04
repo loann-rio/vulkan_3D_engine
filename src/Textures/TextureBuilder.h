@@ -11,7 +11,7 @@ class Device;
 class TextureObject;
 
 class TextureBuilder {
-    enum class SourceType { None, STB, HDR, KTX2, KTX, ARRAY };
+    enum class SourceType { None, STB, HDR, KTX2, KTX, ARRAY, CHAR_BUFFER };
 
     template <size_t W, size_t H, size_t D>
     using TextureArray = std::array<std::array<std::array<float, D>, W>, H>;
@@ -30,6 +30,7 @@ public:
     TextureBuilder& fromArray(const TextureArray<W, H, D>& textureArray);
 
     TextureBuilder& fromVector(const std::vector<std::vector<std::vector<float>>>& textureArray);
+	TextureBuilder& fromCharBuffer(std::vector<unsigned char> buffer, const size_t width, const size_t height, const size_t channel, const size_t mipLevel);
 
     //// Texture options ////
     TextureBuilder& withSRGB(bool enable);
@@ -47,6 +48,7 @@ public:
     std::unique_ptr<TextureObject> build2D();
     std::unique_ptr<TextureObject> buildCubemap();
 	std::unique_ptr<TextureObject> buildFromArray();
+    std::unique_ptr<TextureObject> buildFromCharBuffer();
 
 	//// from existing texture ////
 	std::unique_ptr<TextureObject> fromTextureInfo(VkImageCreateInfo imageInfo, VkImageViewCreateInfo viewInfo, VkSamplerCreateInfo samplerInfo, VkImageLayout initImageLayout, uint32_t layerCount = 1);
@@ -56,11 +58,14 @@ private:
     std::string path;
 
     // from array
-    
     uint32_t arrayW = 0;
     uint32_t arrayH = 0;
     uint32_t arrayD = 0;
+	uint32_t arrayMipLevels = 1;
     std::vector<float> arrayPixels;
+
+	// from char buffer
+    std::vector<unsigned char> charBuffer;
 
 
     bool forceCubemap = false;

@@ -70,9 +70,6 @@
     <ClCompile Include="src\objects\objectManager.cpp">
       <Filter>objects</Filter>
     </ClCompile>
-    <ClCompile Include="src\objects\Texture.cpp">
-      <Filter>objects</Filter>
-    </ClCompile>
     <ClCompile Include="src\model\GlTFModel.cpp">
       <Filter>model</Filter>
     </ClCompile>
@@ -177,9 +174,6 @@
       <Filter>objects</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\objectManager.h">
-      <Filter>objects</Filter>
-    </ClInclude>
-    <ClInclude Include="src\objects\Texture.h">
       <Filter>objects</Filter>
     </ClInclude>
     <ClInclude Include="src\model\GlTFModel.h">

@@ -104,6 +104,21 @@ TextureBuilder& TextureBuilder::fromVector(const std::vector<std::vector<std::ve
     return *this;
 }
 
+TextureBuilder& TextureBuilder::fromCharBuffer(std::vector<unsigned char> buffer, const size_t width, const size_t height, const size_t channel, const size_t mipLevel)
+{
+    charBuffer = buffer;
+
+    arrayH = static_cast<uint32_t>(height);
+    arrayW = static_cast<uint32_t>(width);
+    arrayD = static_cast<uint32_t>(channel);
+	arrayMipLevels = static_cast<uint32_t>(mipLevel);
+
+	if (arrayMipLevels) useMipmaps = true;
+
+	source = SourceType::CHAR_BUFFER;
+	return *this;
+}
+
 /// <summary>
 /// small setter to enable/disable sRGB sampling
 /// </summary>
@@ -163,6 +178,9 @@ TextureBuilder& TextureBuilder::withWrap(VkSamplerAddressMode mode)
 /// </summary>
 std::unique_ptr<TextureObject> TextureBuilder::build()
 {
+    if (source == SourceType::CHAR_BUFFER)
+		return buildFromCharBuffer();
+
     if (source == SourceType::ARRAY)
         return buildFromArray();
 
@@ -224,6 +242,28 @@ std::unique_ptr<TextureObject> TextureBuilder::buildFromArray()
         VK_FORMAT_R32G32B32A32_SFLOAT;
 
     return TextureUploader::upload2D(device, img, false, useSRGB);
+}
+
+std::unique_ptr<TextureObject> TextureBuilder::buildFromCharBuffer()
+{
+    if (charBuffer.empty())
+        throw std::runtime_error("TextureBuilder: char buffer source is empty");
+
+    DecodedImage img{};
+    img.width = arrayW;
+    img.height = arrayH;
+    img.channels = arrayD;
+    img.isFloat = false;
+    img.isCompressed = false;
+	img.pixels8 = charBuffer;
+    img.mipLevels = arrayMipLevels;
+
+    img.format = (arrayD == 1) ? VK_FORMAT_R32_UINT :
+        (arrayD == 2) ? VK_FORMAT_R32G32_UINT :
+        (arrayD == 3) ? VK_FORMAT_R32G32B32_UINT :
+        VK_FORMAT_R32G32B32A32_UINT;
+    
+    return TextureUploader::upload2D(device, img, useMipmaps, useSRGB);
 }
 
 std::unique_ptr<TextureObject> TextureBuilder::fromTextureInfo(VkImageCreateInfo imageInfo, VkImageViewCreateInfo viewInfo, VkSamplerCreateInfo samplerInfo, VkImageLayout initImageLayout, uint32_t layerCount)

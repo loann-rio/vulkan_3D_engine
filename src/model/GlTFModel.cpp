@@ -8,6 +8,9 @@
 
 #include "GlTFModel.h"
 
+#include "../Textures/TextureBuilder.h"
+
+
 
 GlTFModel::ModelGltf::~ModelGltf()
 {
@@ -808,10 +811,11 @@ void GlTFModel::ModelGltf::loadTextures(tinygltf::Model& gltfModel, Device& devi
 	}
 
 	if (!textures.size()) {
-		std::shared_ptr<Texture> nullTexture = Texture::create(device, "textures/whiteTexture.jpg");
-		TextureModel texture;
-		texture.texture = nullTexture;
-		textures.push_back(texture);
+		TextureBuilder builder(device);
+
+		TextureModel textureModel;
+		textureModel.texture = builder.fromFile("textures/whiteTexture.jpg").build();;
+		textures.push_back(textureModel);
 	}
 }
 
@@ -1432,7 +1436,8 @@ void GlTFModel::TextureModel::TextFromglTfImage(Device& device, tinygltf::Image&
 
 	if (isKtx2) {
 		// Image is KTX2 using basis universal compression. Those images need to be loaded from disk and will be transcoded to a native GPU format
-		texture = Texture::create(device, path.c_str()); 
+		TextureBuilder builder(device);
+		texture = builder.fromKTX2(path.c_str()).build();
 	}
 	else {
 		// Image is a basic glTF format like png or jpg and can be loaded directly via tinyglTF
@@ -1470,7 +1475,10 @@ void GlTFModel::TextureModel::TextFromglTfImage(Device& device, tinygltf::Image&
 		assert(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT);
 		assert(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT);
 
-		texture = std::make_shared<Texture>(device, buffer, width, height, bufferSize);
+		std::vector<unsigned char> charBuffer = std::vector<unsigned char>(buffer, buffer + bufferSize);
+
+		TextureBuilder builder(device);
+		texture = builder.fromCharBuffer(charBuffer, width, height, 4, mipLevels).build();
 
 		if (deleteBuffer)
 			delete[] buffer;

@@ -12,6 +12,8 @@
 #include <cassert>
 #include <iostream>
 #include <unordered_map>
+#include "../Textures/TextureBuilder.h"
+#include "../base/Swap_chain.h"
 
 namespace std {
 	template<>
@@ -30,7 +32,9 @@ std::unique_ptr<Model> Model::createModelFromFile(Device& device, const std::str
 	Builder builder{};
 	if (builder.loadOBJModel(filePath)) {
 		std::unique_ptr<Model> m = std::make_unique<Model>(device, builder); 
-		if (m) m->setTexture(Texture::create(device, filePathTexture));
+
+		TextureBuilder builder(device);
+		if (m) m->setTexture(std::move(builder.fromFile(filePathTexture).build()));
 		if (m) return m;
 	}
 
@@ -63,7 +67,7 @@ std::unique_ptr<Model> Model::createModelFromFile(
 	Builder builder{};
 
 	size_t textureCount = -1;
-	std::vector<std::shared_ptr<Texture>> textures;
+	std::vector<std::shared_ptr<TextureObject>> textures;
 
 	for (auto& filePath : filesPath)
 	{
@@ -97,9 +101,12 @@ std::unique_ptr<Model> Model::createModelFromFile(
 
 		if (!filePath[1].empty()) {
 			// Load texture for this LOD
-			auto texture = Texture::create(device, filePath[1].c_str());
+
+			TextureBuilder builder(device);
+			auto texture = builder.fromFile(filePath[1].c_str()).build();
+
 			if (texture) {
-				textures.push_back(texture);
+				textures.push_back(std::move(texture));
 				textureCount++;
 				lod.textureIndex = textureCount;
 			}
@@ -148,17 +155,7 @@ void Model::bind(VkCommandBuffer& commandBuffer, bool bindTexture, VkPipelineLay
 	if (bindTexture)
 	{
 		int descriptorSetIndex = frameIndex;
-		if (descriptorSetTextureObject.size() > 0)
-		{
-			vkCmdBindDescriptorSets(commandBuffer,
-				VK_PIPELINE_BIND_POINT_GRAPHICS,
-				pipelineLayout,
-				modelDescriptorSetIndex, 1,
-				&descriptorSetTextureObject[descriptorSetIndex],
-				0,
-				nullptr);
-		}
-		else if (descriptorSet.size() > 0)
+		if (descriptorSet.size() > 0)
 		{
 			if (hasLODs) descriptorSetIndex += Swap_chain::MAX_FRAMES_IN_FLIGHT * lods[lodIndex].textureIndex;
 
@@ -172,7 +169,7 @@ void Model::bind(VkCommandBuffer& commandBuffer, bool bindTexture, VkPipelineLay
 		}
 		else
 			{
-			throw std::runtime_error("Model::bind() failed to bind descriptor set: no descriptor set available.");
+			throw std::runtime_error("Model::bind() failed to bind descriptor set: no descriptor set available");
 		}
 	}
 
@@ -276,14 +273,6 @@ void Model::createDescriptorSet(DescriptorPool& pool, Device& device)
 			.build(descriptorSet[i]);
 	}
 
-	descriptorSetTextureObject.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT * textureObject.size());
-	for (int i = 0; i < descriptorSetTextureObject.size(); i++)
-	{
-		auto imageInfo = textureObject[int(i / 2)]->getImageInfo();
-		DescriptorWriter(*textureSetLayout, pool)
-			.writeImage(0, &imageInfo)
-			.build(descriptorSetTextureObject[i]);
-	}
 }
 
 std::vector<DescriptorSetObject> Model::getDescriptorType()

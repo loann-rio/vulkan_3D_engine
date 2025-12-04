@@ -4,10 +4,10 @@
 
 #include "../base/Device.h"
 #include "../base/Buffer.h"
-#include "../base/Swap_chain.h"
+
 #include "../base/descriptors.h"
 #include "../render/Camera.h"
-#include "../objects/Texture.h"
+
 #include "../model/BoundingBox.h"
 #include "../textures/TextureObject.h"
 
@@ -91,10 +91,10 @@ public:
 	void drawDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, glm::mat4 modelMatrix, uint32_t cameraIndex, const std::array<FrustumPlane, 6>& planes, uint32_t instanceCount);
 
 	// textures should be ordered by lod levels if there are multiple, each lod have the use index 
-	void setTexture(std::shared_ptr<Texture> newTexture) { texture.resize(1); texture[0] = std::move(newTexture); }
-	void setTexture(std::shared_ptr<TextureObject> newTexture) { textureObject.resize(1); textureObject[0] = std::move(newTexture); }
-	void setTexture(std::vector<std::shared_ptr<Texture>> newTextures) { texture = std::move(newTextures); }
-	void addTexture(std::shared_ptr<Texture> newTexture) { texture.push_back(std::move(newTexture)); }
+	void setTexture(std::shared_ptr<TextureObject> newTexture) { texture.resize(1); texture[0] = std::move(newTexture); }
+	void setTexture(std::vector<std::shared_ptr<TextureObject>> newTextures) { texture = std::move(newTextures); }
+	void addTexture(std::shared_ptr<TextureObject> newTexture) { texture.push_back(std::move(newTexture)); }
+
 
 	VkDescriptorImageInfo getTextureImageInfo(size_t index = 0) const { return texture[0]->getImageInfo(); }
 	
@@ -138,10 +138,7 @@ private:
 	void createIndexBuffers(const std::vector<uint32_t>& indices);
 
 	// Texture and descriptor set
-	std::vector<std::shared_ptr<TextureObject>> textureObject;
-	std::vector<VkDescriptorSet> descriptorSetTextureObject;
-
-	std::vector<std::shared_ptr<Texture>> texture;
+	std::vector<std::shared_ptr<TextureObject>> texture;
 	std::vector<VkDescriptorSet> descriptorSet;
 
 	Device& device;

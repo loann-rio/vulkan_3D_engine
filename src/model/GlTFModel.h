@@ -5,14 +5,27 @@
 // https://github.com/SaschaWillems/Vulkan-glTF-PBR?tab=readme-ov-file
 ////
 
-#include <vulkan/vulkan.h>
 #include "../base/Device.h"
 #include "../base/Buffer.h"
-#include "../objects/Texture.h"
+
+#include "../../external/basisu/transcoder/basisu_transcoder.h"
+
+#define STB_IMAGE_IMPLEMENTATION
+
+#include <ktx.h>
+#include <ktxvulkan.h> 
+#include <glm/glm.hpp>
+#include <iostream>
+#include <string>
+#include <fstream>
+
 #include "../base/Swap_chain.h"
 #include "../base/descriptors.h"
 #include "../render/Camera.h"
 #include "../model/BoundingBox.h"
+
+#include "../Textures/TextureObject.h"
+
 #include "Model.h"
 
 #define GLM_FORCE_RADIANS
@@ -24,6 +37,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/string_cast.hpp>
 
+#include <vulkan/vulkan.h>
 #include <vector>
 #include <memory>
 
@@ -36,7 +50,6 @@
 #define TINYGLTF_USE_RAPIDJSON_CRTALLOCATOR
 
 #include "../../external/tiny_gltf.h"
-#include "../../external/basisu/transcoder/basisu_transcoder.h"
 
 #define MAX_NUM_JOINTS 64u
 #define MAX_TEXTURES 128u
@@ -54,10 +67,10 @@ class GlTFModel
 		uint32_t width, height;
 		uint32_t mipLevels = 1;
 		uint32_t layerCount = 1;
-		std::shared_ptr<Texture> texture;
+		std::shared_ptr<TextureObject> texture;
 
 		TextureModel() {}
-		TextureModel(uint32_t width, uint32_t height, std::shared_ptr<Texture> texture) : width{ width }, height{ height }, texture{ texture } {} 
+		TextureModel(uint32_t width, uint32_t height, std::shared_ptr<TextureObject> texture) : width{ width }, height{ height }, texture{ texture } {}
 		void TextFromglTfImage(Device& device, tinygltf::Image& gltfimage, std::string path = "");
 	};
 

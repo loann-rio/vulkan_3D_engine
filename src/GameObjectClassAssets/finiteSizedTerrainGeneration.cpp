@@ -1,4 +1,8 @@
 #include "finiteSizedTerrainGeneration.h"
+
+#include "../Textures/TextureBuilder.h"
+#include "../Textures/TextureObject.h"
+
 // TO DO:
 // type of terrain generation
 // region
@@ -51,9 +55,19 @@ std::vector<GameObject::id_t> finiteSizedTerrainGeneration::createChunk(Device& 
 		}
 	
 		// create plane object
-		//std::shared_ptr<Model> plane = PrebuiltModel::createPlane(device, chunkWorldSizeUnit, chunkWorldSizeUnit, chunkSize, chunkSize);
 		std::shared_ptr<Model> plane = PrebuiltModel::createTerrain(device, chunkWorldSizeUnit, chunkWorldSizeUnit, heightMap, 1.f);
-		plane->setTexture(Texture::create(device, noiseMap));
+
+		std::vector<std::vector<std::vector<float>>> heightMapTexture = std::vector<std::vector<std::vector<float>>>(chunkSize, std::vector<std::vector<float>>(chunkSize, std::vector<float>(2)));
+		for (int x = 0; x < this->chunkSize; x++)
+		for (int y = 0; y < this->chunkSize; y++)
+		{
+			heightMapTexture[y][x][0] = noiseMap[x][y].x;
+			heightMapTexture[y][x][1] = noiseMap[x][y].y;
+		}
+
+		TextureBuilder builder(device);
+		plane->setTexture(std::move(builder.fromVector(heightMapTexture).build()));
+
 
 		return std::vector<futureObject>{futureObject{ plane, plane ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id_terrain, {}, false }};
 		}));

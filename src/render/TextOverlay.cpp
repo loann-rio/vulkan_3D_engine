@@ -1,5 +1,6 @@
 #include "TextOverlay.h"
 
+#include "../Textures/TextureBuilder.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -146,8 +147,11 @@ void TextOverlay::prepareResources(DescriptorPool& pool)
 			rgbaPixels[index + 3] = 255;      // A
 		}
 	}
+
+	std::vector<unsigned char> pixels = std::vector<unsigned char>(rgbaPixels, rgbaPixels + (fontWidth * fontHeight * 4));
 		
-	texture = std::make_unique<Texture>(device, rgbaPixels, fontWidth, fontHeight );
+	TextureBuilder builder(device);
+	texture = builder.fromCharBuffer(pixels, fontWidth, fontHeight, 4, 1).build();
 
 	delete[] rgbaPixels;
 

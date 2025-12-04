@@ -11,6 +11,8 @@
 #include "../objects/GameObject.h"
 #include "../render/Camera.h"
 
+#include "../Textures/TextureObject.h"
+
 #include "../../external/stb/consolas/stb_font_consolas_24_latin1.inl" 
 
 #include <memory>
@@ -55,7 +57,7 @@ private:
 
 	stb_fontchar stbFontData[STB_FONT_consolas_24_latin1_NUM_CHARS];
 
-	std::unique_ptr<Texture> texture;
+	std::unique_ptr<TextureObject> texture;
 	std::vector<VkDescriptorSet> descriptorSet{ Swap_chain::MAX_FRAMES_IN_FLIGHT };
 
 };

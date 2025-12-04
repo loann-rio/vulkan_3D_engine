@@ -59,7 +59,7 @@ void App::run()
 
     int frame = 0;
 
-    auto* textureObject = dynamic_cast<GameObjectModel*>(objectManager.get("cubemap"));
+    auto* textureObject = dynamic_cast<GameObjectModel*>(objectManager.get("cubemap1"));
 
     vkQueueWaitIdle(device.presentQueue());
 	while (!window.shouldClose())
