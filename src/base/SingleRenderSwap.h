@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Device.h"
-#include "../objects/Texture.h"
+#include "../Textures/TextureObject.h"
 
 // vulkan headers
 #include <vulkan/vulkan.h>
@@ -23,13 +23,13 @@ public:
 
 	VkRenderPass getRenderPass() const { return renderPass; }
 	
-	VkImageView getColorImageView() { return textureTargetColor->getImageView(); }
-	VkImageView getDepthImageView() { return textureTargetDepth->getImageView(); }
+	VkImageView getColorImageView() { return textureTargetColor->view(); }
+	VkImageView getDepthImageView() { return textureTargetDepth->view(); }
 
 	VkFramebuffer getFrameBuffer(int index = 0) const { return frameBuffer[index]; }
 	
-	std::shared_ptr<Texture> getTextureColor() { return textureTargetColor; }
-	std::shared_ptr<Texture> getTextureDepth() { return textureTargetDepth; }
+	std::shared_ptr<TextureObject> getTextureColor() { return textureTargetColor; }
+	std::shared_ptr<TextureObject> getTextureDepth() { return textureTargetDepth; }
 
 	VkExtent2D getSwapChainExtent() { return textureExtent; }
 
@@ -64,8 +64,8 @@ private:
 
 	VkRenderPass renderPass;
 
-	std::shared_ptr<Texture>  textureTargetColor;
-	std::shared_ptr<Texture>  textureTargetDepth;
+	std::shared_ptr<TextureObject> textureTargetColor;
+	std::shared_ptr<TextureObject> textureTargetDepth;
 
 	VkDescriptorImageInfo depthDescriptorImageInfo;
 	VkDescriptorImageInfo colorDescriptorImageInfo;

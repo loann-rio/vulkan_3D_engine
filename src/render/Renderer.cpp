@@ -18,7 +18,6 @@ Renderer::Renderer(Window& window, Device& device) : window{window} , device{dev
 Renderer::~Renderer() { freeCommandBuffers(); }
 
 /*
-
 	recreate swap chain after redimentionning of the window
 
 */
@@ -293,7 +292,7 @@ void Renderer::renderDepthImage(FrameInfo& frameInfo, std::vector<std::shared_pt
 	currentDepthFrameIndex = (currentDepthFrameIndex + 1) % Swap_chain::MAX_FRAMES_IN_FLIGHT; 
 }
 
-std::shared_ptr<Texture> Renderer::renderHdriToCubeTexture(std::shared_ptr<GlobalRenderSystem> renderSystem, VkDescriptorSet descriptorSet)
+std::shared_ptr<TextureObject> Renderer::renderHdriToCubeTexture(std::shared_ptr<GlobalRenderSystem> renderSystem, VkDescriptorSet descriptorSet)
 {
 
 	glm::mat4 captureViews[] = {
@@ -323,7 +322,7 @@ std::shared_ptr<Texture> Renderer::renderHdriToCubeTexture(std::shared_ptr<Globa
 	}
 
 	device.transitionImageLayout(
-		skyboxSwapChain.getTextureColor()->getImage(),
+		skyboxSwapChain.getTextureColor()->image(),
 		VK_FORMAT_R8G8B8A8_SRGB,
 		VK_IMAGE_LAYOUT_UNDEFINED,
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,

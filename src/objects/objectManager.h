@@ -1,15 +1,10 @@
 #pragma once
 
 #include <iostream>
+
 #include <vector>
 #include <future>
-#include <queue>
-#include <mutex>
-#include <thread>
 #include <typeindex>
-
-#include <fstream>
-
 
 #include "GameObject.h"
 #include "../render/Renderer.h"

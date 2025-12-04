@@ -1,7 +1,10 @@
 #include "depthSwapChain.h"
 
+#include "../Textures/TextureBuilder.h"
+
 // std
 #include <array>
+
 #include <stdexcept>
 
 DepthSwapChain::DepthSwapChain(Device& deviceRef, VkExtent2D depthImageExtent)
@@ -93,8 +96,8 @@ void DepthSwapChain::createDepthResources()
         samplerInfo.minLod = 0.0f;
         samplerInfo.maxLod = 100.0f;
 
-        textureTarget[i] = std::make_unique<Texture>(device, imageInfo, viewInfo, samplerInfo, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-       
+		TextureBuilder textureBuilder(device);
+        textureTarget[i] = textureBuilder.fromTextureInfo(imageInfo, viewInfo, samplerInfo, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     }
 }
 
@@ -145,13 +148,13 @@ void DepthSwapChain::createDepthRenderPass()
 void DepthSwapChain::createDepthbuffers()
 {
     depthFramebuffers.resize(MAX_DEPTH_RENDER_COUNT * Swap_chain::MAX_FRAMES_IN_FLIGHT); 
-    for (size_t i = 0; i < MAX_DEPTH_RENDER_COUNT * Swap_chain::MAX_FRAMES_IN_FLIGHT; i++) {
+    for (size_t i = 0; i < depthFramebuffers.size(); i++) {
         VkFramebufferCreateInfo framebufferInfo{};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         framebufferInfo.renderPass = depthRenderPass;
         framebufferInfo.attachmentCount = 1; 
 
-        VkImageView imageView = textureTarget[i]->getImageView();
+        VkImageView imageView = textureTarget[i]->view();
         framebufferInfo.pAttachments = &imageView;
 
         framebufferInfo.width = depthExtent.width; 

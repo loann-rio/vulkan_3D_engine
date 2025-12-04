@@ -3,13 +3,11 @@
 // local
 #include "base/Buffer.h"
 #include "base/Frame_info.h"
-#include "objects/Texture.h"
+//#include "objects/Texture.h"
 #include "objects/KeyboardMovementController.h"
 #include "render/Camera.h"
 #include "model/GlTFModel.h"
 #include "base/FrameRateCounter.h"
-
-#include "Textures/TextureObject.h"
 
 // glm
 #define GLM_FORCE_RADIANS

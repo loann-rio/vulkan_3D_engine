@@ -71,4 +71,5 @@ private:
     bool isLoaded = false;
 
     friend class TextureUploader;
+    friend class TextureBuilder;
 };

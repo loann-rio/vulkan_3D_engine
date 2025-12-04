@@ -9,6 +9,8 @@
 #include "../base/secondarySwapchain.h"
 #include "../base/SingleRenderSwap.h"
 
+#include "../Textures/TextureObject.h"
+
 #include "../base/Frame_info.h"
 #include "GlobalRenderSystem.h"
 
@@ -22,8 +24,8 @@ class Renderer
 {
 public:
 
-	std::shared_ptr<Texture> getDepthTexture() { return depthSwapChain->getTexture(0); }
-	std::shared_ptr<Texture> getSingleTexture() { return skyboxSwapChain.getTextureColor(); }
+	std::shared_ptr<TextureObject> getDepthTexture() { return depthSwapChain->getTexture(0); }
+	std::shared_ptr<TextureObject> getSingleTexture() { return skyboxSwapChain.getTextureColor(); } 
 
 	Renderer(Window& window, Device& device);
 	~Renderer();
@@ -56,7 +58,7 @@ public:
 
 	void renderDepthImage(FrameInfo& frameInfo, std::vector<std::shared_ptr<GlobalRenderSystem>> renderSystems, std::vector<VkDescriptorSet> globalDescriptorSets);
 	
-	std::shared_ptr<Texture> renderHdriToCubeTexture(std::shared_ptr<GlobalRenderSystem> renderSystem, VkDescriptorSet descriptorSet);
+	std::shared_ptr<TextureObject> renderHdriToCubeTexture(std::shared_ptr<GlobalRenderSystem> renderSystem, VkDescriptorSet descriptorSet);
 
 
 	VkCommandBuffer getCurrentCommandBuffer() const {

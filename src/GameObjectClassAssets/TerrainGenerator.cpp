@@ -1,5 +1,10 @@
 #include "TerrainGenerator.h"
 
+#include "../Textures/TextureBuilder.h"
+#include "../Textures/TextureObject.h"
+
+#include <array>
+
 void TerrainGenerator::loop(Device& device, ObjectManager* objManager, GameObject* object)
 {
 	int posX = object->transform.translation.x / chunkWorldSide;
@@ -41,7 +46,21 @@ void TerrainGenerator::loop(Device& device, ObjectManager* objManager, GameObjec
 
 				// create plane object
 				std::shared_ptr<Model> plane = PrebuiltModel::createTerrain(this->device, 4, 4, map);
-				std::shared_ptr<Texture> text = Texture::create(this->device, heightMap);
+				
+
+
+
+				std::vector<std::vector<std::vector<float>>> heightMapVector = std::vector<std::vector<std::vector<float>>>(this->chunkSize, std::vector<std::vector<float>>(this->chunkSize, std::vector<float>(2)));
+				for (int x = 0; x < this->chunkSize; x++) 
+				for (int y = 0; y < this->chunkSize; y++) 
+				{
+					heightMapVector[y][x][0] = heightMap[x][y].x;
+					heightMapVector[y][x][1] = heightMap[x][y].y;
+				}
+				
+				TextureBuilder builder(this->device);
+				std::unique_ptr<TextureObject> text = builder.fromVector(heightMapVector).build();
+
 				plane->setTexture(std::move(text));
 					
 				return std::vector<futureObject>{futureObject{ plane, plane ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id_terrain, {}, false }};

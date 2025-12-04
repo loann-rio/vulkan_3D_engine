@@ -1,15 +1,14 @@
 #pragma once
 
 #include "Device.h"
-#include "../objects/Texture.h"
+
+#include "../Textures/TextureObject.h"
 
 // vulkan headers
 #include <vulkan/vulkan.h>
 
 // std lib headers
-#include <string>
 #include <vector>
-#include <mutex>
 #include <memory>
 
 class Swap_chain {
@@ -70,8 +69,7 @@ private:
 
     VkRenderPass renderPass;
 
-
-    std::vector<std::shared_ptr<Texture>> depthTextures;
+    std::vector<std::shared_ptr<TextureObject>> depthTextures;
 
     std::vector<VkImage> swapChainImages;
     std::vector<VkImageView> swapChainImageViews;

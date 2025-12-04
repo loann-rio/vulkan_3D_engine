@@ -26,7 +26,7 @@ void ObjectManager::startLoadModel()
         cube->setTexture(std::move(texture));
 
         auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
-        gameObject->setName("cubemap2");
+        gameObject->setName("cubemap1");
         gameObject->setModelType(ModelType::OBJ_MODEL);
         gameObject->setModelSubType(ModelSubType::SKYBOX);
         gameObject->setModel(cube);
@@ -500,7 +500,9 @@ void ObjectManager::generateSkybox(const std::string pathTexture, const std::str
         .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .build();
   
-    auto texture = Texture::create(device, pathTexture.c_str());
+    TextureBuilder builder(device);
+    std::unique_ptr<TextureObject> texture = builder.fromFile(pathTexture).build();
+  
     auto imageInfo = texture->getImageInfo();
 
     VkDescriptorSet descriptorSet;

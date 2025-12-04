@@ -1,15 +1,11 @@
 #include "SingleRenderSwap.h"
 
+#include "../Textures/TextureBuilder.h"
+
 // std
-#include <array>
-#include <cstdlib>
-#include <cstring>
-#include <iostream>
-#include <limits>
-#include <set>
 #include <iostream>
 #include <stdexcept>
-#include <cassert>
+
 
 SingleSwapChain::SingleSwapChain(Device& deviceRef, VkExtent2D depthImageExtent)
     : device{ deviceRef }, textureExtent{ depthImageExtent }
@@ -106,7 +102,9 @@ void SingleSwapChain::createDepthResources()
     samplerInfo.minLod = 0.0f;
     samplerInfo.maxLod = 100.0f;
 
-    textureTargetDepth = std::make_unique<Texture>(device, imageInfo, viewInfo, samplerInfo, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    TextureBuilder builder(device);
+    textureTargetDepth = builder.fromTextureInfo(imageInfo, viewInfo, samplerInfo, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
 }
 
 void SingleSwapChain::createColorResources()
@@ -118,7 +116,7 @@ void SingleSwapChain::createColorResources()
     imageInfo.extent.height = textureExtent.height;
     imageInfo.extent.depth = 1;
     imageInfo.mipLevels = 1;
-    imageInfo.arrayLayers = isCubeMap ? 6 : 1; // maybe more??????
+    imageInfo.arrayLayers = isCubeMap ? 6 : 1; 
     imageInfo.format = isHdr ? VK_FORMAT_R32G32B32A32_SFLOAT : VK_FORMAT_R8G8B8A8_SRGB;
     imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
     imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -156,7 +154,8 @@ void SingleSwapChain::createColorResources()
     samplerInfo.minLod = 0.0f;
     samplerInfo.maxLod = 100.0f;
 
-    textureTargetColor = std::make_unique<Texture>(device, imageInfo, viewInfo, samplerInfo, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	TextureBuilder builder(device);
+    textureTargetColor = builder.fromTextureInfo(imageInfo, viewInfo, samplerInfo, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 }
 
 void SingleSwapChain::createRenderPass()
@@ -235,7 +234,9 @@ void SingleSwapChain::createFrameBuffers()
         // create image view
         VkImageViewCreateInfo viewInfo{};
         viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        viewInfo.image = textureTargetColor->getImage();
+        
+        viewInfo.image = textureTargetColor->image();
+
         viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
         viewInfo.format = isHdr ? VK_FORMAT_R32G32B32A32_SFLOAT : VK_FORMAT_R8G8B8A8_SRGB;
         viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -250,7 +251,7 @@ void SingleSwapChain::createFrameBuffers()
         attachments.push_back(imageViews[layer]);
 
         if (hasDepth)
-            attachments.push_back(textureTargetDepth->getImageView());
+            attachments.push_back(textureTargetDepth->view());
 
         VkFramebufferCreateInfo framebufferInfo{};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;

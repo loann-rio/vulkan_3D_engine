@@ -4,7 +4,8 @@
 
 #include "Device.h"
 #include "Swap_chain.h"
-#include "../objects/Texture.h"
+
+#include "../Textures/TextureObject.h"
 
 // vulkan headers
 #include <vulkan/vulkan.h>
@@ -28,8 +29,10 @@ public:
 
 	VkFramebuffer getDepthFramebuffers(int index) { return depthFramebuffers[index]; }
 	VkRenderPass getDepthRenderPass() const { return depthRenderPass; }
-	VkImageView getDepthImageView(int index) { return textureTarget[index]->getImageView(); }
-	std::shared_ptr<Texture> getTexture(int index) { return textureTarget[index]; }
+	
+	VkImageView getDepthImageView(int index) { return textureTarget[index]->view(); }
+
+	std::shared_ptr<TextureObject> getTexture(int index) { return textureTarget[index]; }
 
 	VkExtent2D getDepthSwapChainExtent() { return depthExtent; }
 
@@ -54,7 +57,7 @@ private:
 	std::vector<VkFramebuffer> depthFramebuffers;
 	VkRenderPass depthRenderPass;
 
-	std::vector<std::shared_ptr<Texture>> textureTarget;
+	std::vector<std::shared_ptr<TextureObject>> textureTarget;
 
 	std::vector<std::array<VkDescriptorImageInfo, MAX_DEPTH_RENDER_COUNT>> descriptorImageInfo; 
 

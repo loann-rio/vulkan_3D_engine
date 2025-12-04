@@ -4,7 +4,7 @@
 #include "Decoder/ImageDecoder.h"
 
 #include "TextureLoader.h"
-
+#include "TextureUploader.h"
 #include "TextureObject.h"
 
 #include <stdexcept>
@@ -79,7 +79,30 @@ TextureBuilder& TextureBuilder::fromSTB(const std::string& p)
     return *this;
 }
 
+
 //// Options ////
+
+TextureBuilder& TextureBuilder::fromVector(const std::vector<std::vector<std::vector<float>>>& textureArray)
+{
+    source = SourceType::ARRAY;
+
+    arrayH = static_cast<uint32_t>(textureArray.size());
+    arrayW = static_cast<uint32_t>(textureArray[0].size());
+    arrayD = static_cast<uint32_t>(textureArray[0][0].size());
+
+    arrayPixels.resize(arrayW * arrayH * arrayD);
+
+    size_t index = 0;
+    for (size_t y = 0; y < arrayH; ++y) {
+        for (size_t x = 0; x < arrayW; ++x) {
+            for (size_t c = 0; c < arrayD; ++c) {
+                arrayPixels[index++] = textureArray[y][x][c];
+            }
+        }
+    }
+
+    return *this;
+}
 
 /// <summary>
 /// small setter to enable/disable sRGB sampling
@@ -140,6 +163,9 @@ TextureBuilder& TextureBuilder::withWrap(VkSamplerAddressMode mode)
 /// </summary>
 std::unique_ptr<TextureObject> TextureBuilder::build()
 {
+    if (source == SourceType::ARRAY)
+        return buildFromArray();
+
     if (forceCubemap)
         return buildCubemap();
 
@@ -176,4 +202,52 @@ std::unique_ptr<TextureObject> TextureBuilder::buildCubemap()
     texture->updateSampler(minFilter, magFilter, wrapMode);
 
 	return texture;
+}
+
+std::unique_ptr<TextureObject> TextureBuilder::buildFromArray()
+{
+    if (arrayPixels.empty())
+        throw std::runtime_error("TextureBuilder: Array source is empty");
+
+    DecodedImage img{};
+    img.width = arrayW;
+    img.height = arrayH;
+    img.channels = arrayD;
+    img.isFloat = true;
+    img.isCompressed = false;
+    img.pixels32 = arrayPixels;
+    img.mipLevels = 1;
+
+    img.format = (arrayD == 1) ? VK_FORMAT_R32_SFLOAT :
+        (arrayD == 2) ? VK_FORMAT_R32G32_SFLOAT :
+        (arrayD == 3) ? VK_FORMAT_R32G32B32_SFLOAT :
+        VK_FORMAT_R32G32B32A32_SFLOAT;
+
+    return TextureUploader::upload2D(device, img, false, useSRGB);
+}
+
+std::unique_ptr<TextureObject> TextureBuilder::fromTextureInfo(VkImageCreateInfo imageInfo, VkImageViewCreateInfo viewInfo, VkSamplerCreateInfo samplerInfo, VkImageLayout initImageLayout, uint32_t layerCount)
+{
+	std::unique_ptr<TextureObject> texture = std::make_unique<TextureObject>(device);
+    texture->textureExtent = { imageInfo.extent.width, imageInfo.extent.height };
+
+    // create image
+    device.createImageWithInfo(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture->textureImage, texture->textureImageMemory);
+    // create image view
+    viewInfo.image = texture->textureImage;
+    if (vkCreateImageView(device.device(), &viewInfo, nullptr, &texture->textureImageView) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create texture image view!");
+    }
+
+    // create sampler
+    if (vkCreateSampler(device.device(), &samplerInfo, nullptr, &texture->textureSampler) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create texture sampler!");
+    }
+
+    if (initImageLayout != VK_IMAGE_LAYOUT_UNDEFINED)
+        device.transitionImageLayout(texture->textureImage, imageInfo.format,
+            VK_IMAGE_LAYOUT_UNDEFINED, initImageLayout, layerCount);
+
+	texture->isLoaded = true;
+    return texture;
 }
