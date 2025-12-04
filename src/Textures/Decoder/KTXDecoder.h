@@ -1,7 +1,12 @@
 #pragma once
 #include "ImageDecoder.h"
 
+#include <ktx.h>
+#include <ktxvulkan.h>
+
+
 class KTXDecoder : public ImageDecoder {
+
 public:
 
     /// <summary>

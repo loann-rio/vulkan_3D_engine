@@ -6,6 +6,9 @@
 #include <stdexcept>
 #include <cctype>
 
+struct CopyEntry { ktx_size_t offset; ktx_size_t size; uint32_t faceIndex; };
+
+
 namespace {
 
     /// <summary>

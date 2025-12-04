@@ -20,7 +20,7 @@ void ObjectManager::startLoadModel()
     {
 
         TextureBuilder builder(device);
-        std::unique_ptr<TextureObject> texture = builder.fromFile("skybox/skybox-mipmap.ktx2").asCubemap().build();
+        std::unique_ptr<TextureObject> texture = builder.fromFile("skybox/cubemap_space.ktx").asCubemap().build();
 
         std::shared_ptr<Model> cube = Model::createModelFromFile(device, "model/cube.obj");
         cube->setTexture(std::move(texture));

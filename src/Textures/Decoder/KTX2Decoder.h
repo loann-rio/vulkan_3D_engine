@@ -2,11 +2,12 @@
 #include "ImageDecoder.h"
 
 #include <ktx.h>
+#include <ktxvulkan.h>
 
 
-struct CopyEntry { ktx_size_t offset; ktx_size_t size; uint32_t faceIndex; }; 
 
 class KTX2Decoder : public ImageDecoder {
+
 public:
 
     /// <summary>
