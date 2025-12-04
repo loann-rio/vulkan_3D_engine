@@ -4,13 +4,15 @@
 #include <stdexcept>
 #include <array>
 #include <algorithm>
-#include <filesystem>
 
 struct CopyEntry { ktx_size_t offset; ktx_size_t size; uint32_t faceIndex; };
 
 
 namespace {
 
+    /// <summary>
+	/// check if a ktxTexture1 is valid as a 2D texture
+    /// </summary>
     void validateKtx2D(ktxTexture1* tex)
     {
         if (tex->numFaces != 1)
@@ -33,49 +35,33 @@ namespace {
         }
     }
 
+    /// <summary>
+	/// check if a ktxTexture1 is valid as a cubemap
+    /// </summary>
     void validateKtxCubemap(ktxTexture1* tex)
     {
         if (!tex->isCubemap)
         {
             ktxTexture_Destroy(ktxTexture(tex));
-            throw std::runtime_error("KTX file is not cubemap");
+            throw std::runtime_error("KTX decode error: KTX file is not cubemap");
         }
 
         if (tex->numFaces != 6)
         {
             ktxTexture_Destroy(ktxTexture(tex));
-            throw std::runtime_error("KTX texture is not a cubemap (numFaces != 6)");
+            throw std::runtime_error("KTX decode error: KTX texture is not a cubemap (numFaces != 6)");
         }
 
         if (tex->numLayers != 1)
         {
             ktxTexture_Destroy(ktxTexture(tex));
-            throw std::runtime_error("KTX cubemap has invalid number of array layers (must be 1)");
+            throw std::runtime_error("KTX decode error: KTX cubemap has invalid number of array layers (must be 1)");
         }
     }
 
     /// <summary>
     /// check if the resulting cubemap faces are compatible
     /// </summary>
-    void validateResultCubemap(DecodedCubemap outCube) {
-
-        const DecodedImage& ref = outCube.faces[0];
-
-        for (int i = 1; i < 6; ++i) {
-
-            const DecodedImage& f = outCube.faces[i];
-
-            if (f.width != ref.width || f.height != ref.height)
-                throw std::runtime_error("KTX2Decoder::decodeCubemap - cubemap faces mismatch");
-
-            if (f.mipLevels != ref.mipLevels)
-                throw std::runtime_error("KTX2Decoder::decodeCubemap - mip level mismatch");
-
-            if (f.isCompressed != ref.isCompressed)
-                throw std::runtime_error("KTX2Decoder::decodeCubemap - compression mismatch");
-        }
-    }
-
     void validateCubemap(const DecodedCubemap& cube)
     {
         const auto& ref = cube.faces[0];
@@ -84,59 +70,19 @@ namespace {
         {
             const auto& f = cube.faces[i];
             if (f.width != ref.width || f.height != ref.height)
-                throw std::runtime_error("Cubemap faces must have identical dimensions.");
+                throw std::runtime_error("KTX decode error: Cubemap faces must have identical dimensions.");
 
             if (f.format != ref.format)
-                throw std::runtime_error("Cubemap faces must have identical VkFormat.");
+                throw std::runtime_error("KTX decode error: Cubemap faces must have identical VkFormat.");
 
             if (f.isCompressed != ref.isCompressed)
-                throw std::runtime_error("Cubemap faces must have identical compression state.");
+                throw std::runtime_error("KTX decode error: Cubemap faces must have identical compression state.");
 
             if (f.mipLevels != ref.mipLevels)
-                throw std::runtime_error("Cubemap faces must have same number of mip levels.");
+                throw std::runtime_error("KTX decode error: Cubemap faces must have same number of mip levels.");
 
             if (f.isFloat != ref.isFloat)
-                throw std::runtime_error("Cubemap faces must be all-float or all-uint8.");
-        }
-    }
-
-    /// <summary>
-    /// check if a ktxTexture1 is valid as a cubemap
-    /// </summary>
-    void checkCubemapCompatibility(ktxTexture1* kTexture) {
-
-        // Check isCubemap flag
-        if (!ktxTexture(kTexture)->isCubemap) {
-            ktxTexture_Destroy(ktxTexture(kTexture));
-            throw std::runtime_error("KTX2Decoder::decodeCubemap - file is not a cubemap");
-        }
-
-        // KTX stores faces, levels, layers; we expect 6 faces
-        if (kTexture->numFaces != 6) {
-            ktxTexture_Destroy(ktxTexture(kTexture));
-            throw std::runtime_error("KTX2Decoder::decodeCubemap - cubemap must have 6 faces");
-        }
-    }
-
-    /// <summary>
-    /// Determine number of channels from VkFormat
-    /// /// <summary>
-    uint32_t channelsFromFormat(VkFormat f) {
-        switch (f) {
-        case VK_FORMAT_R8_UNORM: return 1;
-        case VK_FORMAT_R8G8_UNORM: return 2;
-        case VK_FORMAT_R8G8B8_UNORM:
-        case VK_FORMAT_B8G8R8_UNORM: return 3;
-        case VK_FORMAT_R8G8B8A8_UNORM:
-        case VK_FORMAT_B8G8R8A8_UNORM:
-        case VK_FORMAT_R8G8B8A8_SRGB: return 4;
-            // block-compressed: semantics may be 3 or 4; return 4 as a safe upper bound for channels reported
-        case VK_FORMAT_BC1_RGBA_UNORM_BLOCK:
-        case VK_FORMAT_BC3_UNORM_BLOCK:
-        case VK_FORMAT_BC7_UNORM_BLOCK:
-            return 4;
-        default:
-            return 4; // default conservative
+                throw std::runtime_error("KTX decode error: Cubemap faces must be all-float or all-uint8.");
         }
     }
 
@@ -167,7 +113,6 @@ namespace {
     }
 
 
-
     /// <summary>
     /// gather image copy entries for all levels/layers/faces
     /// </summary>
@@ -193,7 +138,9 @@ namespace {
         return entries;
     }
 
-
+    /// <summary>
+	/// load ktxTexture1 from file path
+    /// </summary>
     ktxTexture1* getKtxTextureFromfile(const std::string& path)
     {
         ktxTexture1* texture = nullptr;
@@ -204,7 +151,7 @@ namespace {
         );
 
         if (result != KTX_SUCCESS || texture == nullptr) {
-            throw std::runtime_error("KTX2Decoder: Failed to load texture: " + path);
+            throw std::runtime_error("KTX decode error: Failed to load texture: " + path);
         }
 
         return texture;
@@ -237,7 +184,7 @@ namespace {
         if (err != KTX_SUCCESS)
         {
             ktxTexture_Destroy(ktxTexture(tex));
-            throw std::runtime_error("Failed to get KTX cubemap face offset.");
+            throw std::runtime_error("KTX decode error: Failed to get KTX cubemap face offset");
         }
         return offset;
     }
@@ -257,16 +204,7 @@ DecodedImage KTXDecoder::decode(const std::string& path) const
     DecodedImage img{};
 
     // Load via KTX library
-    ktxTexture1* texture = nullptr;
-    KTX_error_code result = ktxTexture1_CreateFromNamedFile(
-        path.c_str(),
-        KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT,// KTX_TEXTURE_CREATE_NO_FLAGS,
-        &texture
-    );
-
-    if (result != KTX_SUCCESS || texture == nullptr) {
-        throw std::runtime_error("KTX2Decoder: Failed to load texture: " + path);
-    }
+	ktxTexture1* texture = getKtxTextureFromfile(path);
 
 	validateKtx2D(texture);
 
@@ -277,18 +215,15 @@ DecodedImage KTXDecoder::decode(const std::string& path) const
     img.isCompressed = true;
     img.format = findVkFormat(texture);
 
-
-    // Extract compressed data for the full texture (all mipmaps)
     // ktxTexture_GetData returns a pointer to the raw block of texture data
     ktx_size_t totalSize = ktxTexture_GetDataSize(ktxTexture(texture));
     img.dataSize = static_cast<size_t>(totalSize);
 
 
-    //const uint8_t* data = reinterpret_cast<const uint8_t*>(ktxTexture_GetData(ktxTexture(texture)));
     uint8_t* data = (uint8_t*)texture->pData;
     if (!data || totalSize == 0) {
         ktxTexture_Destroy(ktxTexture(texture));
-        throw std::runtime_error("KTX2Decoder: Empty or invalid compressed data.");
+        throw std::runtime_error("KTX decode error: Empty or invalid compressed dat");
     }
 
     img.compressedData.resize(totalSize);
@@ -296,7 +231,6 @@ DecodedImage KTXDecoder::decode(const std::string& path) const
 
 
     // get mipmaps sizes and offsets
-
     img.mipOffsets.resize(img.mipLevels);
     img.mipSizes.resize(img.mipLevels);
 
@@ -321,9 +255,8 @@ DecodedCubemap KTXDecoder::decodeCubemap(const std::string& filePath) const
     ktxTexture1* kTexture = getKtxTextureFromfile(filePath);
 
     // Validate cubemap compatibility
-    checkCubemapCompatibility(kTexture);
+	validateKtxCubemap(kTexture);
 
-    // base dims & mips
     const uint32_t baseW = static_cast<uint32_t>(kTexture->baseWidth);
     const uint32_t baseH = static_cast<uint32_t>(kTexture->baseHeight);
     const uint32_t levels = static_cast<uint32_t>(kTexture->numLevels);
@@ -332,15 +265,15 @@ DecodedCubemap KTXDecoder::decodeCubemap(const std::string& filePath) const
 
     DecodedCubemap outCube;
 
-    // initialize faces (always 6 for a cubemap)
+    // initialize faces
     for (uint32_t face = 0; face < 6; ++face) {
         DecodedImage& faceImg = outCube.faces[face];
 
         faceImg.width = baseW;
         faceImg.height = baseH;
         faceImg.mipLevels = levels;
-        faceImg.isCompressed = true;
         faceImg.format = format;
+        faceImg.isCompressed = true;
     }
 
     std::vector<CopyEntry> entries = gatherImageCopyEntries(kTexture, levels, layers);
@@ -352,7 +285,7 @@ DecodedCubemap KTXDecoder::decodeCubemap(const std::string& filePath) const
 
     const uint8_t* srcBase = reinterpret_cast<const uint8_t*>(ktxTexture_GetData(ktxTexture(kTexture)));
     if (srcBase == nullptr) {
-        throw std::runtime_error("KTXDecoder::decodeCubemap - ktx texture data pointer is null for: " + filePath);
+        throw std::runtime_error("KTX decode error: ktx texture data pointer is null for: " + filePath);
     }
 
     std::array<size_t, 6> writeOffsets = { 0, 0, 0, 0, 0, 0 };
@@ -363,12 +296,11 @@ DecodedCubemap KTXDecoder::decodeCubemap(const std::string& filePath) const
 
         // Bounds check before copying
         if (dstOffset + static_cast<size_t>(e.size) > faceImg.compressedData.size()) {
-            throw std::runtime_error("KTXDecoder::decodeCubemap - write would overflow face buffer (file: " + filePath + ")");
+            throw std::runtime_error("KTX decode error: write would overflow face buffer for :  " + filePath);
         }
 
         std::memcpy(faceImg.compressedData.data() + dstOffset, srcBase + e.offset, static_cast<size_t>(e.size));
 
-        //faceImg.dataSize = static_cast<size_t>(e.size);
         faceImg.mipOffsets.push_back(static_cast<uint32_t>(dstOffset));
         faceImg.mipSizes.push_back(static_cast<uint32_t>(e.size));
 
@@ -378,14 +310,14 @@ DecodedCubemap KTXDecoder::decodeCubemap(const std::string& filePath) const
 
     for (uint32_t f = 0; f < 6; ++f) {
         if (writeOffsets[f] != outCube.faces[f].compressedData.size()) {
-            throw std::runtime_error("KTXDecoder::decodeCubemap - written size mismatch for face " + std::to_string(f));
+            throw std::runtime_error("KTX decode error:  written size mismatch for face " + std::to_string(f));
         }
         outCube.faces[f].dataSize = outCube.faces[f].compressedData.size();
     }
 
     ktxTexture_Destroy(ktxTexture(kTexture));
 
-    validateResultCubemap(outCube);
+    validateCubemap(outCube);
 
     return outCube;
 }
