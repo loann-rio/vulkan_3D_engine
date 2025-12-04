@@ -6,7 +6,7 @@
 #include "TextureObject.h"
 
 class Device;
-//class TextureObject;
+
 struct DecodedImage;
 struct DecodedCubemap;
 

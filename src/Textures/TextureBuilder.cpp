@@ -15,6 +15,11 @@ TextureBuilder::TextureBuilder(Device& device)
 
 //// Input sources ////
 
+/// <summary>
+/// small setter for file path, save the extension
+/// </summary>
+/// <param name="p"></param>
+/// <returns></returns>
 TextureBuilder& TextureBuilder::fromFile(const std::string& p)
 {
     path = p;
@@ -34,6 +39,9 @@ TextureBuilder& TextureBuilder::fromFile(const std::string& p)
     return *this;
 }
 
+/// <summary>
+/// small setter for KTX2 file path
+/// </summary>
 TextureBuilder& TextureBuilder::fromKTX2(const std::string& p)
 {
     path = p;
@@ -41,6 +49,9 @@ TextureBuilder& TextureBuilder::fromKTX2(const std::string& p)
     return *this;
 }
 
+/// <summary>
+/// small setter for KTX file path
+/// </summary>
 TextureBuilder& TextureBuilder::fromKTX(const std::string& p)
 {
     path = p;
@@ -48,6 +59,9 @@ TextureBuilder& TextureBuilder::fromKTX(const std::string& p)
     return *this;
 }
 
+/// <summary>
+/// small setter for HDR file path
+/// </summary>
 TextureBuilder& TextureBuilder::fromHDR(const std::string& p)
 {
     path = p;
@@ -55,6 +69,9 @@ TextureBuilder& TextureBuilder::fromHDR(const std::string& p)
     return *this;
 }
 
+/// <summary>
+/// small setter for STB file path
+/// </summary>
 TextureBuilder& TextureBuilder::fromSTB(const std::string& p)
 {
     path = p;
@@ -64,44 +81,63 @@ TextureBuilder& TextureBuilder::fromSTB(const std::string& p)
 
 //// Options ////
 
+/// <summary>
+/// small setter to enable/disable sRGB sampling
+/// </summary>
 TextureBuilder& TextureBuilder::withSRGB(bool enable)
 {
     useSRGB = enable;
     return *this;
 }
 
+/// <summary>
+/// small setter to enable/disable mipmaps
+/// </summary>
 TextureBuilder& TextureBuilder::withMipmaps(bool enable)
 {
     useMipmaps = enable;
     return *this;
 }
 
+/// <summary>
+/// small setter to force cubemap creation
+/// </summary>
 TextureBuilder& TextureBuilder::asCubemap(bool enable)
 {
     forceCubemap = enable;
     return *this;
 }
 
+/// <summary>
+/// small setter for minification filter
+/// </summary>
 TextureBuilder& TextureBuilder::withMinFilter(VkFilter f)
 {
     minFilter = f;
     return *this;
 }
 
+/// <summary>
+/// small setter for magnification filter
+/// </summary>
 TextureBuilder& TextureBuilder::withMagFilter(VkFilter f)
 {
     magFilter = f;
     return *this;
 }
 
+/// <summary>
+/// small setter for sampler wrap mode
+/// </summary>
 TextureBuilder& TextureBuilder::withWrap(VkSamplerAddressMode mode)
 {
     wrapMode = mode;
     return *this;
 }
 
-//// Build uncompressed textures ////
-
+/// <summary>
+/// builds the texture based on the set options
+/// </summary>
 std::unique_ptr<TextureObject> TextureBuilder::build()
 {
     if (forceCubemap)
@@ -110,6 +146,9 @@ std::unique_ptr<TextureObject> TextureBuilder::build()
     return build2D();
 }
 
+/// <summary>
+/// builds a 2D texture
+/// </summary>
 std::unique_ptr<TextureObject> TextureBuilder::build2D()
 {
     if (path.empty())
@@ -123,6 +162,9 @@ std::unique_ptr<TextureObject> TextureBuilder::build2D()
     return texture;
 }
 
+/// <summary>
+/// builds a cubemap texture
+/// </summary>
 std::unique_ptr<TextureObject> TextureBuilder::buildCubemap()
 {
     if (path.empty())

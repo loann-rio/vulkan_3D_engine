@@ -31,7 +31,7 @@ namespace {
     /// <summary>
     /// List available decoders for regular 2D images(directory loading)
     /// </summary>
-    /// <returns></returns>
+    /// <returns>usable decoder</returns>
     std::array<std::unique_ptr<ImageDecoder>, 4> createDecoders()
     {
         std::array<std::unique_ptr<ImageDecoder>, 4> decoders{
@@ -79,9 +79,9 @@ namespace {
     /// <summary>
     /// Searches a list of files for a set of cubemap face filenames using one of the provided filename patterns and returns the matched file paths in face order
     /// </summary>
-    /// <param name="files">A const reference to a vector of std::filesystem::path representing the available files to search.</param>
-    /// <param name="patterns">A vector of candidate patterns. Each element is an array of six C-style string substrings; each substring is a case-insensitive substring to look for in a filename for the corresponding cubemap face. The function tests patterns in order and returns the first pattern where all six substrings are found among files.</param>
-    /// <returns>A std::array<std::string, 6> containing the full file paths (as strings) for the six cubemap faces, ordered according to the matched pattern.</returns>
+    /// <param name="files">list of files to search in</param>
+    /// <param name="patterns">vector of candidate patterns. Each element is an array of six C-style string substrings</param>
+    /// <returns>full file paths as strings for the six cubemap faces, ordered according to the matched pattern</returns>
     static std::array<std::string, 6> findFaceFiles(
         const std::vector<std::filesystem::path>& files,
         std::vector<std::array<const char*, 6>> patterns)
@@ -155,8 +155,7 @@ namespace {
 /// <summary>
 /// Determines if the file extension is matching a format supported by the STB-based decoder
 /// </summary>
-/// <param name="path">Path whose extension will be checked. The function extracts the extension via getExtension and compares it against supported formats</param>
-/// <returns>true if the extracted extension is one of the supported formats (png, jpg, jpeg, bmp, tga, gif, ppm, pgm, pnm); false otherwise</returns>
+/// <param name="path">path to extension that will be checked</param>
 bool STBDecoder::canDecode(const std::string& path) const
 {
     const std::string ext = imDecoder::getExtension(path);

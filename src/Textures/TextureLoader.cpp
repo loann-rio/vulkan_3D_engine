@@ -16,11 +16,11 @@
 //// TextureLoader Implementation ////
 
 /// <summary>
-/// Loads a texture from the specified file path and returns a GPU texture wrapped in a std::unique_ptr. The loader chooses the loading path based on the file extension: .hdr files are handled by loadHDR, .ktx2 files are decoded with KTX2Decoder and uploaded with srgb=false, and other formats (PNG/JPG/etc.) are loaded via load2D with srgb=true.
+/// Loads a texture from the specified file path and returns a GPU texture by forwarding to the right loader based on file extension
 /// </summary>
-/// <param name="device">Reference to the Device used to create/upload the texture on the GPU.</param>
-/// <param name="path">Filesystem path to the texture file. The function inspects the file extension (e.g., .hdr, .ktx2, .png, .jpg) to determine which loader/decoder to use.</param>
-/// <returns>A std::unique_ptr<Texture> owning the loaded texture. Ownership is transferred to the caller. May be nullptr if the texture could not be loaded.</returns>
+/// <param name="device">Reference to the Device used to create/upload the texture on the GPU</param>
+/// <param name="path">Filesystem path to the texture file</param>
+/// <returns>loaded texture</returns>
 std::unique_ptr<TextureObject> TextureLoader::load(Device& device, const std::string& path, bool useMipmap) {
     const std::string ext = imDecoder::getExtension(path);
 
@@ -39,12 +39,12 @@ std::unique_ptr<TextureObject> TextureLoader::load(Device& device, const std::st
 }
 
 /// <summary>
-/// Loads a 2D texture from the given file path, decoding the image data and creating a Texture. Uses an HDR loader for .hdr files and STBDecoder for other supported formats; throws if the format is unsupported
+/// Loads a 2D STB texture 
 /// </summary>
 /// <param name="device">Reference to the Device used to create and upload GPU resources for the Texture</param>
 /// <param name="path">Path to the image file to load</param>
 /// <param name="srgb">If true, interpret the texture as sRGB; otherwise treat it as linear color space</param>
-/// <returns>A std::unique_ptr owning the created Texture</returns>
+/// <returns>created Texture</returns>
 std::unique_ptr<TextureObject> TextureLoader::load2D(Device& device, const std::string& path, bool useMipmap, bool srgb) {
 
     STBDecoder decoder;
@@ -57,12 +57,11 @@ std::unique_ptr<TextureObject> TextureLoader::load2D(Device& device, const std::
 }
 
 /// <summary>
-/// Loads an HDR image from the given file path, verifies it can be decoded as a floating-point image, uploads it to the device as an HDR (floating-point, not sRGB) texture, and returns the created texture. 
-/// Throws runtime_error if decoding is not possible or the decoder does not produce a floating-point image
+/// Loads a 2D HDR texture 
 /// </summary>
-/// <param name="device">Reference to the Device used to create/upload the texture resources</param>
-/// <param name="path">Filesystem path to the HDR image to load</param>
-/// <returns>A std::unique_ptr<Texture> owning the uploaded HDR (floating-point) texture</returns>
+/// <param name="device">Reference to the Device used to create and upload GPU resources for the Texture</param>
+/// <param name="path">Path to the image file to load</param>
+/// <returns>created Texture</returns>
 std::unique_ptr<TextureObject> TextureLoader::loadHDR(Device& device, const std::string& path, bool useMipmap) {
     HDRDecoder decoder;
     if (!decoder.canDecode(path)) {
@@ -79,6 +78,12 @@ std::unique_ptr<TextureObject> TextureLoader::loadHDR(Device& device, const std:
     return TextureUploader::upload2D(device, img, useMipmap, /*srgb=*/ false);
 }
 
+/// <summary>
+/// Loads a 2D KTX texture 
+/// </summary>
+/// <param name="device">Reference to the Device used to create and upload GPU resources for the Texture</param>
+/// <param name="path">Path to the image file to load</param>
+/// <returns>created Texture</returns>
 std::unique_ptr<TextureObject> TextureLoader::loadKTX(Device& device, const std::string& path, bool useMipmap)
 {
     KTXDecoder decoder;
@@ -93,6 +98,12 @@ std::unique_ptr<TextureObject> TextureLoader::loadKTX(Device& device, const std:
 
 }
 
+/// <summary>
+/// Loads a 2D KTX2 texture 
+/// </summary>
+/// <param name="device">Reference to the Device used to create and upload GPU resources for the Texture</param>
+/// <param name="path">Path to the image file to load</param>
+/// <returns>created Texture</returns>
 std::unique_ptr<TextureObject> TextureLoader::loadKTX2(Device& device, const std::string& path, bool useMipmap)
 {
     KTX2Decoder decoder;
@@ -110,7 +121,7 @@ std::unique_ptr<TextureObject> TextureLoader::loadKTX2(Device& device, const std
 /// Loads a cubemap texture
 /// </summary>
 /// <param name="device">Device used to create GPU resources and upload the texture.</param>
-/// <returns>A std::unique_ptr<Texture> owning the loaded cubemap texture</returns>
+/// <returns>loaded cubemap texture</returns>
 std::unique_ptr<TextureObject> TextureLoader::loadCubemap(Device& device, const std::string& path) {
 
     const std::string ext = imDecoder::getExtension(path);
@@ -133,11 +144,11 @@ std::unique_ptr<TextureObject> TextureLoader::loadCubemap(Device& device, const 
 }
 
 /// <summary>
-/// Loads a cubemap texture from a directory: verifies the path is a directory, decodes the cubemap data, and creates a Texture using sRGB color space.
+/// Loads a cubemap texture from a directory
 /// </summary>
-/// <param name="device">Device used to create GPU resources and upload the texture.</param>
-/// <param name="directoryPath">Filesystem path to a directory containing the cubemap image files.</param>
-/// <returns>A std::unique_ptr<Texture> owning the loaded cubemap texture (created with sRGB). May throw std::runtime_error if the path does not exist or is not a directory; other errors from decoding or texture creation may propagate.</returns>
+/// <param name="device">Device used to create GPU resources and upload the texture</param>
+/// <param name="directoryPath">Filesystem path to a directory containing the cubemap image files</param>
+/// <returns> loaded cubemap texture </returns>
 std::unique_ptr<TextureObject> TextureLoader::loadCubemapFromDir(Device& device, const std::string& directoryPath)
 {
     if (!std::filesystem::exists(directoryPath) || !std::filesystem::is_directory(directoryPath)) {
@@ -149,15 +160,10 @@ std::unique_ptr<TextureObject> TextureLoader::loadCubemapFromDir(Device& device,
     return loadFromDecoded(device, cubemap, /*srgb=*/false);
 }
 
-//// Internal glue functions ////
 
 /// <summary>
-/// Creates and uploads a Texture from a decoded image, using an HDR/EXR upload for floating-point images and a standard 2D upload otherwise.
+/// Creates and uploads a Texture from a decoded image
 /// </summary>
-/// <param name="device">Reference to the Device used for texture creation and uploading.</param>
-/// <param name="img">DecodedImage containing the pixel data and metadata. If img.isFloat is true, an HDR/EXR upload path is used.</param>
-/// <param name="srgb">If true and the image is not floating-point, treat the image as sRGB during upload. Ignored for floating-point images.</param>
-/// <returns>A std::unique_ptr<Texture> that owns the uploaded texture. May be nullptr on failure.</returns>
 std::unique_ptr<TextureObject> TextureLoader::loadFromDecoded(Device& device, const DecodedImage& img, bool useMipmap, bool srgb) {
     if (img.isFloat) {
         // Float -> HDR or EXR
@@ -169,22 +175,14 @@ std::unique_ptr<TextureObject> TextureLoader::loadFromDecoded(Device& device, co
 /// <summary>
 /// Creates and uploads a cubemap texture from decoded image data and returns the resulting Texture object
 /// </summary>
-/// <param name="device">The Device (rendering context) used to create and upload GPU resources for the texture</param>
-/// <param name="cube">A const reference to the DecodedCubemap containing the six faces' image data to upload</param>
-/// <returns>A std::unique_ptr<Texture> that owns the uploaded cubemap Texture. The returned pointer may be empty if the upload fails</returns>
+/// <param name="cube">const reference to the DecodedCubemap containing the six faces image data to upload</param>
+/// <returns>uploaded cubemap Texture</returns>
 std::unique_ptr<TextureObject> TextureLoader::loadFromDecoded(Device& device, const DecodedCubemap& cube, bool srgb) {
     return TextureUploader::uploadCubemap(device, cube);
 }
 
 //// async loading ////
-
-/// <summary>
-/// Starts an asynchronous task to load a 2D texture from a file and returns a future that will hold the loaded texture
-/// </summary>
-/// <param name="device">Reference to the Device used to create or upload the texture</param>
-/// <param name="path">Path to the texture file to load</param>
-/// <param name="srgb">If true, interpret the texture data as sRGB; otherwise treat it as linear</param>
-/// <returns>A std::future that will hold a std::unique_ptr<Texture> pointing to the loaded texture</returns>
+/// TODO
 std::future<std::unique_ptr<TextureObject>> TextureLoader::loadAsync(Device& device, const std::string& path, bool srgb) {
     return std::async(std::launch::async, [&device, path, srgb]() {
         return load2D(device, path, srgb);

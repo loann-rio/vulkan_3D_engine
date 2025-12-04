@@ -5,15 +5,12 @@
 #include "Decoder/ImageDecoder.h"
 
 #include "../base/Device.h"     
-#include "../base/Buffer.h"
 
 #include <stdexcept>
 #include <cmath>
 #include <vector>
 #include <array>
 #include <cstring>
-
-//// helper functions ////
 
 namespace
 {

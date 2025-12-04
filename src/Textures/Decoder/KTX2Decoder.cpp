@@ -121,7 +121,7 @@ namespace {
         ktxTexture2* texture = nullptr;
         KTX_error_code result = ktxTexture2_CreateFromNamedFile(
             path.c_str(),
-            KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT,// KTX_TEXTURE_CREATE_NO_FLAGS,
+            KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT,
             &texture
         );
 

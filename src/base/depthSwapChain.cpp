@@ -2,14 +2,7 @@
 
 // std
 #include <array>
-#include <cstdlib>
-#include <cstring>
-#include <iostream>
-#include <limits>
-#include <set>
-#include <iostream>
 #include <stdexcept>
-#include <cassert>
 
 DepthSwapChain::DepthSwapChain(Device& deviceRef, VkExtent2D depthImageExtent)
 	: device{ deviceRef }, depthExtent { depthImageExtent }

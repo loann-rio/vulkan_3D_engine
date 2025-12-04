@@ -54,7 +54,7 @@ private:
 	std::vector<VkFramebuffer> depthFramebuffers;
 	VkRenderPass depthRenderPass;
 
-	std::vector<std::shared_ptr<Texture>>  textureTarget;
+	std::vector<std::shared_ptr<Texture>> textureTarget;
 
 	std::vector<std::array<VkDescriptorImageInfo, MAX_DEPTH_RENDER_COUNT>> descriptorImageInfo; 
 

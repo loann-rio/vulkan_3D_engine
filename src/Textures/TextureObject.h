@@ -2,8 +2,6 @@
 
 #include <vulkan/vulkan.h>
 
-#include <memory>
-
 class Device;
 
 class TextureObject {
