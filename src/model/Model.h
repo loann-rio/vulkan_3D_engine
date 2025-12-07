@@ -93,13 +93,10 @@ public:
 	void drawDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, glm::mat4 modelMatrix, uint32_t cameraIndex, const std::array<FrustumPlane, 6>& planes, uint32_t instanceCount);
 
 	// textures should be ordered by lod levels if there are multiple, each lod have the use index 
-	void setTexture(std::shared_ptr<TextureObject> newTexture) { texture.resize(1); texture[0] = std::move(newTexture); }
-	void setTexture(std::vector<std::shared_ptr<TextureObject>> newTextures) { texture = std::move(newTextures); }
+	void setTexture(TextureManager::TextureID newTexture) { textures.resize(1); textures[0] = newTexture; }
+	void setTexture(std::vector<TextureManager::TextureID> newTextures) { textures = newTextures; }
 
-	void setTextureID(TextureManager::TextureID newTexture) { textureIDs.resize(1); textureIDs[0] = newTexture; }
-	void setTextureID(std::vector<TextureManager::TextureID> newTextures) { textureIDs = newTextures; }
-
-	VkDescriptorImageInfo getTextureImageInfo(size_t index = 0) const { return texture[0]->getImageInfo(); }
+	VkDescriptorImageInfo getTextureImageInfo(size_t index = 0) const { return assets.textures().get(textures[index])->getImageInfo(); }
 	
 	void createDescriptorSet(DescriptorPool& pool, Device& device);
 	std::vector<VkDescriptorSet> getDescriptorSets() { return descriptorSet; };
@@ -141,9 +138,7 @@ private:
 	void createIndexBuffers(const std::vector<uint32_t>& indices);
 
 	// Texture and descriptor set
-	std::vector<TextureManager::TextureID> textureIDs;
-
-	std::vector<std::shared_ptr<TextureObject>> texture;
+	std::vector<TextureManager::TextureID> textures;
 	std::vector<VkDescriptorSet> descriptorSet;
 
 	Device& device;

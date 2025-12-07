@@ -68,7 +68,7 @@ std::vector<GameObject::id_t> finiteSizedTerrainGeneration::createChunk(Device& 
 		}
 
 		TextureBuilder builder(device);
-		plane->setTexture(std::move(builder.fromVector(heightMapTexture).build()));
+		plane->setTexture(assets.textures().create((builder.fromVector(heightMapTexture))));
 
 
 		return std::vector<futureObject>{futureObject{ plane, plane ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id_terrain, {}, false }};

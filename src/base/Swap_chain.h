@@ -3,6 +3,7 @@
 #include "Device.h"
 
 #include "../Textures/TextureObject.h"
+#include "../assetManager/AssetManager.h"
 
 // vulkan headers
 #include <vulkan/vulkan.h>
@@ -15,8 +16,8 @@ class Swap_chain {
 public:
     static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
-    Swap_chain(Device& deviceRef, VkExtent2D windowExtent);
-    Swap_chain(Device& deviceRef, VkExtent2D windowExtent, std::shared_ptr<Swap_chain> previous);
+    Swap_chain(Device& deviceRef, AssetManager& assets, VkExtent2D windowExtent);
+    Swap_chain(Device& deviceRef, AssetManager& assets, VkExtent2D windowExtent, std::shared_ptr<Swap_chain> previous);
     ~Swap_chain();
 
     Swap_chain(const Swap_chain&) = delete;
@@ -69,7 +70,7 @@ private:
 
     VkRenderPass renderPass;
 
-    std::vector<std::shared_ptr<TextureObject>> depthTextures;
+    std::vector<TextureManager::TextureID> depthTextures;
 
     std::vector<VkImage> swapChainImages;
     std::vector<VkImageView> swapChainImageViews;
@@ -78,6 +79,7 @@ private:
 
 
     Device& device;
+    AssetManager& assets;
     VkExtent2D windowExtent;
 
     VkSwapchainKHR swapChain;

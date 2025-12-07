@@ -33,12 +33,15 @@ public:
 	void run();
 
 private:
-	
+
 	void createRenderSystems();
 
 	Window window{ WIDTH, HEIGHT, "vulkan engine" };
 	Device device{ window };
-	Renderer renderer{ window, device };
+	AssetManager assetManager{};
+	Renderer renderer{ window, device, assetManager };
+	ObjectManager objectManager{ device, assetManager };
+
 
 	std::unique_ptr<DescriptorPool> globalPool{};
 
@@ -60,10 +63,6 @@ private:
 	// global descriptor sets
 	std::vector<VkDescriptorSet> globalDescriptorSet;
 	std::vector<VkDescriptorSet> shadowDescriptorSet;
-	std::vector<VkDescriptorSet> terrainDescriptorSet; 
+	std::vector<VkDescriptorSet> terrainDescriptorSet;
 
-	AssetManager assetManager{};
-
-	// object management:
-	ObjectManager objectManager{ device, assetManager }; 
 };

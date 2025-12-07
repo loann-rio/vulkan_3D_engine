@@ -46,14 +46,13 @@ public:
 	//// from existing texture ////
     TextureBuilder& fromTextureInfo(VkImageCreateInfo imageInfo, VkImageViewCreateInfo viewInfo, VkSamplerCreateInfo samplerInfo, VkImageLayout initImageLayout, uint32_t layerCount = 1);
 
-    std::unique_ptr<TextureObject> build();
 private:
 
     //// Hash for caching ////
     uint64_t hash() const;
 
     //// Build ////
-    
+    std::unique_ptr<TextureObject> build();
 
 	//// Build helpers ////
     std::unique_ptr<TextureObject> build2D();

@@ -7,8 +7,8 @@
 #include <stdexcept>
 
 
-SingleSwapChain::SingleSwapChain(Device& deviceRef, VkExtent2D depthImageExtent)
-    : device{ deviceRef }, textureExtent{ depthImageExtent }
+SingleSwapChain::SingleSwapChain(Device& deviceRef, AssetManager& assets, VkExtent2D depthImageExtent)
+    : device{ deviceRef }, assets{ assets }, textureExtent{ depthImageExtent }
 {
     init();
 }
@@ -103,8 +103,8 @@ void SingleSwapChain::createDepthResources()
     samplerInfo.maxLod = 100.0f;
 
     TextureBuilder builder(device);
-    textureTargetDepth = builder.fromTextureInfo(imageInfo, viewInfo, samplerInfo, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL).build();
-
+    textureTargetDepth = assets.textures().create(builder.fromTextureInfo(imageInfo, viewInfo, samplerInfo, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+    
 }
 
 void SingleSwapChain::createColorResources()
@@ -154,8 +154,8 @@ void SingleSwapChain::createColorResources()
     samplerInfo.minLod = 0.0f;
     samplerInfo.maxLod = 100.0f;
 
-	TextureBuilder builder(device);
-    textureTargetColor = builder.fromTextureInfo(imageInfo, viewInfo, samplerInfo, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL).build();
+    TextureBuilder builder(device);
+    textureTargetColor = assets.textures().create(builder.fromTextureInfo(imageInfo, viewInfo, samplerInfo, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 }
 
 void SingleSwapChain::createRenderPass()
@@ -235,7 +235,7 @@ void SingleSwapChain::createFrameBuffers()
         VkImageViewCreateInfo viewInfo{};
         viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         
-        viewInfo.image = textureTargetColor->image();
+        viewInfo.image = assets.textures().get(textureTargetColor)->image();
 
         viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
         viewInfo.format = isHdr ? VK_FORMAT_R32G32B32A32_SFLOAT : VK_FORMAT_R8G8B8A8_SRGB;
@@ -251,7 +251,7 @@ void SingleSwapChain::createFrameBuffers()
         attachments.push_back(imageViews[layer]);
 
         if (hasDepth)
-            attachments.push_back(textureTargetDepth->view());
+            attachments.push_back(assets.textures().get(textureTargetDepth)->view());
 
         VkFramebufferCreateInfo framebufferInfo{};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;

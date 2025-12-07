@@ -168,10 +168,10 @@
     <ClCompile Include="src\objects\ModelLoader.cpp">
       <Filter>objects</Filter>
     </ClCompile>
-    <ClCompile Include="src\assetManager\AssetManager.cpp">
+    <ClCompile Include="src\assetManager\TextureManager.cpp">
       <Filter>assetManager</Filter>
     </ClCompile>
-    <ClCompile Include="src\assetManager\TextureManager.cpp" />
+    <ClCompile Include="src\assetManager\ModelManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tiny_gltf.h">
@@ -319,6 +319,12 @@
     </ClInclude>
     <ClInclude Include="src\assetManager\TextureManager.h">
       <Filter>assetManager</Filter>
+    </ClInclude>
+    <ClInclude Include="src\assetManager\ModelManager.h">
+      <Filter>assetManager</Filter>
+    </ClInclude>
+    <ClInclude Include="src\model\ModelBuilder.h">
+      <Filter>model</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

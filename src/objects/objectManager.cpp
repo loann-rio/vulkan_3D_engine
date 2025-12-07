@@ -19,11 +19,12 @@ void ObjectManager::startLoadModel()
 
     if (true)
     {
-        TextureBuilder builder(device);
-        std::unique_ptr<TextureObject> texture = builder.fromFile("skybox/cubemap_space.ktx").asCubemap().build();
+        
 
         std::shared_ptr<Model> cube = Model::createModelFromFile(device, assetManager, "model/cube.obj");
-        cube->setTexture(std::move(texture));
+        
+        TextureBuilder builder(device);
+        cube->setTexture(assetManager.textures().create(builder.fromFile("skybox/cubemap_space.ktx").asCubemap()));
 
         auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
         gameObject->setName("cubemap1");
@@ -465,7 +466,7 @@ void ObjectManager::loadObjectAsync(Device& device, AssetManager& assets, const 
     pushGameObject(std::move(gameObject));
 
     pushFuture( std::async(std::launch::async, [filePath, &device, &assets, id]() {
-        std::shared_ptr<GlTFModel::ModelGltf> model = GlTFModel::createModelFromFile(device, filePath);
+        std::shared_ptr<GlTFModel::ModelGltf> model = GlTFModel::createModelFromFile(device, assets, filePath);
         return std::vector<futureObject>{ futureObject{ model, model ? ModelType::GLTF_MODEL : ModelType::UNDEFINED_MODEL, id }};
         }) 
 	);
@@ -495,45 +496,45 @@ void ObjectManager::loadObjectAsync(Device& device, AssetManager& assets, const 
 
 void ObjectManager::generateSkybox(const std::string pathTexture, const std::string goName, Renderer* renderer, std::shared_ptr<GlobalRenderSystem> skyboxRenedrSystem)
 {
-    auto textureSetLayout = DescriptorSetLayout::Builder(device)
-        .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .build();
+    //auto textureSetLayout = DescriptorSetLayout::Builder(device)
+    //    .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+    //    .build();
   
-    TextureBuilder builder(device);
-    std::unique_ptr<TextureObject> texture = builder.fromFile(pathTexture).build();
+    //TextureBuilder builder(device);
+    //std::unique_ptr<TextureObject> texture = builder.fromFile(pathTexture).build();
   
-    auto imageInfo = texture->getImageInfo();
+    //auto imageInfo = texture->getImageInfo();
 
-    VkDescriptorSet descriptorSet;
-    DescriptorWriter(*textureSetLayout, *globalPool)
-        .writeImage(0, &imageInfo)
-        .build(descriptorSet);
+    //VkDescriptorSet descriptorSet;
+    //DescriptorWriter(*textureSetLayout, *globalPool)
+    //    .writeImage(0, &imageInfo)
+    //    .build(descriptorSet);
 
-    // render new texture
-    auto resultTexture = renderer->renderHdriToCubeTexture(skyboxRenedrSystem, descriptorSet);
+    //// render new texture
+    //auto resultTexture = renderer->renderHdriToCubeTexture(skyboxRenedrSystem, descriptorSet);
 
-    // create go with new texture
-    auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
-    gameObject->setName(goName);
+    //// create go with new texture
+    //auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
+    //gameObject->setName(goName);
 
-    gameObject->setModelType(ModelType::OBJ_MODEL);
-    gameObject->setModelSubType(ModelSubType::SKYBOX);
-    gameObject->setPrimitivesModelType(PrimitivesModelType::CUBE);
+    //gameObject->setModelType(ModelType::OBJ_MODEL);
+    //gameObject->setModelSubType(ModelSubType::SKYBOX);
+    //gameObject->setPrimitivesModelType(PrimitivesModelType::CUBE);
 
-    gameObject->texturePath = gameObject->texturePath;
-    gameObject->saveable = false;
-    gameObject->show = false;
+    //gameObject->texturePath = gameObject->texturePath;
+    //gameObject->saveable = false;
+    //gameObject->show = false;
 
-    GameObject::id_t id = gameObject->getId();
+    //GameObject::id_t id = gameObject->getId();
 
-    pushGameObject(std::move(gameObject));
+    //pushGameObject(std::move(gameObject));
 
-    pushFuture(std::async(std::launch::async, [this, resultTexture, id]() {
-        std::shared_ptr<Model> cube = PrebuiltModel::createCube(this->device, this->assetManager);
-        cube->setTexture(resultTexture);
-        return std::vector<futureObject> {futureObject{ cube, cube ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id, {}, false }};
-        })
-    );
+    //pushFuture(std::async(std::launch::async, [this, resultTexture, id]() {
+    //    std::shared_ptr<Model> cube = PrebuiltModel::createCube(this->device, this->assetManager);
+    //    cube->setTexture(resultTexture);
+    //    return std::vector<futureObject> {futureObject{ cube, cube ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id, {}, false }};
+    //    })
+    //);
 }
 
 

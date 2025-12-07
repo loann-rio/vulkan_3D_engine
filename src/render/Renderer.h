@@ -10,6 +10,7 @@
 #include "../base/SingleRenderSwap.h"
 
 #include "../Textures/TextureObject.h"
+#include "../assetManager/AssetManager.h"
 
 #include "../base/Frame_info.h"
 #include "GlobalRenderSystem.h"
@@ -24,10 +25,10 @@ class Renderer
 {
 public:
 
-	std::shared_ptr<TextureObject> getDepthTexture() { return depthSwapChain->getTexture(0); }
-	std::shared_ptr<TextureObject> getSingleTexture() { return skyboxSwapChain.getTextureColor(); } 
+	TextureManager::TextureID getDepthTexture() { return depthSwapChain->getTexture(0); }
+	TextureManager::TextureID getSingleTexture() { return skyboxSwapChain.getTextureColor(); }
 
-	Renderer(Window& window, Device& device);
+	Renderer(Window& window, Device& device, AssetManager& assets);
 	~Renderer();
 
 	Renderer(const Renderer&) = delete;
@@ -58,7 +59,7 @@ public:
 
 	void renderDepthImage(FrameInfo& frameInfo, std::vector<std::shared_ptr<GlobalRenderSystem>> renderSystems, std::vector<VkDescriptorSet> globalDescriptorSets);
 	
-	std::shared_ptr<TextureObject> renderHdriToCubeTexture(std::shared_ptr<GlobalRenderSystem> renderSystem, VkDescriptorSet descriptorSet);
+	TextureManager::TextureID renderHdriToCubeTexture(std::shared_ptr<GlobalRenderSystem> renderSystem, VkDescriptorSet descriptorSet);
 
 
 	VkCommandBuffer getCurrentCommandBuffer() const {
@@ -90,11 +91,12 @@ private:
 
 	Window& window;
 	Device& device;
+	AssetManager& assets; 
 
 	std::unique_ptr<Swap_chain> swapChain;
 	std::unique_ptr<DepthSwapChain> depthSwapChain;
 
-	SingleSwapChain skyboxSwapChain{ device, {2000, 2000} };
+	SingleSwapChain skyboxSwapChain{ device, assets, {2000, 2000} };
 
 	std::vector<VkCommandBuffer> commandBuffers;
 	std::vector<VkCommandBuffer> depthCommandBuffers;

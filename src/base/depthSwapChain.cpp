@@ -7,8 +7,8 @@
 
 #include <stdexcept>
 
-DepthSwapChain::DepthSwapChain(Device& deviceRef, VkExtent2D depthImageExtent)
-	: device{ deviceRef }, depthExtent { depthImageExtent }
+DepthSwapChain::DepthSwapChain(Device& deviceRef, AssetManager& assets, VkExtent2D depthImageExtent)
+    : device{ deviceRef }, assets{ assets }, depthExtent { depthImageExtent }
 {
 	init();
 }
@@ -97,7 +97,7 @@ void DepthSwapChain::createDepthResources()
         samplerInfo.maxLod = 100.0f;
 
 		TextureBuilder textureBuilder(device);
-        textureTarget[i] = textureBuilder.fromTextureInfo(imageInfo, viewInfo, samplerInfo, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL).build();
+        textureTarget[i] = assets.textures().create(textureBuilder.fromTextureInfo(imageInfo, viewInfo, samplerInfo, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
     }
 }
 
@@ -154,7 +154,7 @@ void DepthSwapChain::createDepthbuffers()
         framebufferInfo.renderPass = depthRenderPass;
         framebufferInfo.attachmentCount = 1; 
 
-        VkImageView imageView = textureTarget[i]->view();
+        VkImageView imageView = assets.textures().get(textureTarget[i])->view();
         framebufferInfo.pAttachments = &imageView;
 
         framebufferInfo.width = depthExtent.width; 
@@ -178,7 +178,7 @@ void DepthSwapChain::createDepthImageInfo()
         std::array<VkDescriptorImageInfo, MAX_DEPTH_RENDER_COUNT> imageInfo;
 
         for (uint16_t j = 0; j < MAX_DEPTH_RENDER_COUNT; ++j) 
-            imageInfo[j] = textureTarget[i * MAX_DEPTH_RENDER_COUNT + j]->getImageInfo();
+            imageInfo[j] = assets.textures().get(textureTarget[i * MAX_DEPTH_RENDER_COUNT + j])->getImageInfo();
 
         descriptorImageInfo.push_back(imageInfo);
     }

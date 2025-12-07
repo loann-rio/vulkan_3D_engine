@@ -174,7 +174,7 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClCompile Include="external\imgui-master\imgui_widgets.cpp" />
     <ClCompile Include="external\nativefiledialog-master\src\nfd_common.c" />
     <ClCompile Include="external\nativefiledialog-master\src\nfd_win.cpp" />
-    <ClCompile Include="src\assetManager\AssetManager.cpp" />
+    <ClCompile Include="src\assetManager\ModelManager.cpp" />
     <ClCompile Include="src\assetManager\TextureManager.cpp" />
     <ClCompile Include="src\Engine.cpp" />
     <ClCompile Include="src\base\Buffer.cpp" />
@@ -218,6 +218,7 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClInclude Include="external\nativefiledialog-master\src\nfd_common.h" />
     <ClInclude Include="external\nativefiledialog-master\src\simple_exec.h" />
     <ClInclude Include="src\assetManager\AssetManager.h" />
+    <ClInclude Include="src\assetManager\ModelManager.h" />
     <ClInclude Include="src\assetManager\TextureManager.h" />
     <ClInclude Include="src\Engine.h" />
     <ClInclude Include="src\base\Buffer.h" />
@@ -242,6 +243,7 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClInclude Include="src\model\BoundingBox.h" />
     <ClInclude Include="src\model\GlTFModel.h" />
     <ClInclude Include="src\model\Model.h" />
+    <ClInclude Include="src\model\ModelBuilder.h" />
     <ClInclude Include="src\model\preBuild.h" />
     <ClInclude Include="src\objects\BasicUI.h" />
     <ClInclude Include="src\objects\GameObject.h" />

@@ -34,7 +34,8 @@ std::unique_ptr<Model> Model::createModelFromFile(Device& device, AssetManager& 
 		std::unique_ptr<Model> m = std::make_unique<Model>(device, assets, builder); 
 
 		TextureBuilder builder(device);
-		if (m) m->setTexture(std::move(builder.fromFile(filePathTexture).build()));
+
+		if (m) m->setTexture(assets.textures().create(builder.fromFile(filePathTexture)));
 		if (m) return m;
 	}
 
@@ -67,7 +68,7 @@ std::unique_ptr<Model> Model::createModelFromFile(
 	Builder builder{};
 
 	size_t textureCount = -1;
-	std::vector<std::shared_ptr<TextureObject>> textures;
+	std::vector<TextureManager::TextureID> textures;
 
 	for (auto& filePath : filesPath)
 	{
@@ -103,10 +104,10 @@ std::unique_ptr<Model> Model::createModelFromFile(
 			// Load texture for this LOD
 
 			TextureBuilder builder(device);
-			auto texture = builder.fromFile(filePath[1].c_str()).build();
+			auto texture = assets.textures().create(builder.fromFile(filePath[1].c_str()));
 
-			if (texture) {
-				textures.push_back(std::move(texture));
+			if (texture != 0) {
+				textures.push_back(texture);
 				textureCount++;
 				lod.textureIndex = textureCount;
 			}
@@ -147,7 +148,11 @@ Model::Model(Device& device, AssetManager& assets, const Model::Builder& builder
 
 }
 
-Model::~Model() {}
+Model::~Model() {
+	for (auto textureID : textures) {
+		assets.textures().remove(textureID);
+	}
+}
 
 
 void Model::bind(VkCommandBuffer& commandBuffer, bool bindTexture, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, uint16_t modelDescriptorSetIndex, Buffer* instancesBuffer)
@@ -264,10 +269,10 @@ void Model::createDescriptorSet(DescriptorPool& pool, Device& device)
 		.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.build();
 
-	descriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT * texture.size());
+	descriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT * textures.size());
 	for (int i = 0; i < descriptorSet.size(); i++)
 	{
-		auto imageInfo = texture[int(i/2)]->getImageInfo();
+		auto imageInfo = assets.textures().get(textures[int(i/2)])->getImageInfo();
 		DescriptorWriter(*textureSetLayout, pool)
 			.writeImage(0, &imageInfo)
 			.build(descriptorSet[i]);

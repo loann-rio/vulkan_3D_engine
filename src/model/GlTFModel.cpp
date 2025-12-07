@@ -30,6 +30,10 @@ GlTFModel::ModelGltf::~ModelGltf()
 		delete skin;
 	}
 
+	for (auto texture : textures) {
+		assets.textures().remove(texture.texture);
+	}
+
 	skins.resize(0);
 }
 
@@ -244,10 +248,10 @@ void GlTFModel::ModelGltf::drawDepth(VkCommandBuffer& commandBuffer, VkPipelineL
 
 //// create ////
 
-std::unique_ptr<GlTFModel::ModelGltf> GlTFModel::createModelFromFile(Device& device, const std::string& filePath)
+std::unique_ptr<GlTFModel::ModelGltf> GlTFModel::createModelFromFile(Device& device, AssetManager& assets, const std::string& filePath)
 {
 	std::cout << "start loading \n";
-	std::unique_ptr<GlTFModel::ModelGltf> model = std::make_unique<GlTFModel::ModelGltf>(device);
+	std::unique_ptr<GlTFModel::ModelGltf> model = std::make_unique<GlTFModel::ModelGltf>(device, assets);
 	if (model->loadFromFile(filePath))
 		return model;
 	return nullptr;
@@ -343,13 +347,14 @@ void GlTFModel::ModelGltf::createIndexBuffers(LoaderInfo loaderInfo)
 
 void GlTFModel::ModelGltf::createDescriptorSet(DescriptorPool& pool, Device& device)
 {
-	VkDescriptorImageInfo info = textures[0].texture->getImageInfo();
+
+	VkDescriptorImageInfo info = assets.textures().get(textures[0].texture)->getImageInfo();
 
 	std::vector<VkDescriptorImageInfo> texturesImageInfo{ MAX_TEXTURES, info }; 
 
 	size_t i = 0;
 	for (auto& texture : textures) {
-		texturesImageInfo[i++] = texture.texture->getImageInfo();
+		texturesImageInfo[i++] = assets.textures().get(texture.texture)->getImageInfo();
 	}
 
 	auto textureSetLayout = DescriptorSetLayout::Builder(device)
@@ -806,15 +811,16 @@ void GlTFModel::ModelGltf::loadTextures(tinygltf::Model& gltfModel, Device& devi
 		}
 
 		TextureModel texture;
-		texture.TextFromglTfImage(device, image);
+		texture.TextFromglTfImage(device, assets, image);
 		textures.push_back(texture);
 	}
 
 	if (!textures.size()) {
-		TextureBuilder builder(device);
 
 		TextureModel textureModel;
-		textureModel.texture = builder.fromFile("textures/whiteTexture.jpg").build();;
+		
+		TextureBuilder builder(device);
+		textureModel.texture = assets.textures().create((builder.fromFile("textures/whiteTexture.jpg")));
 		textures.push_back(textureModel);
 	}
 }
@@ -1422,7 +1428,7 @@ GlTFModel::Node::~Node()
 	}
 }
 
-void GlTFModel::TextureModel::TextFromglTfImage(Device& device, tinygltf::Image& gltfimage, std::string path)
+void GlTFModel::TextureModel::TextFromglTfImage(Device& device, AssetManager& assets, tinygltf::Image& gltfimage, std::string path)
 {
 	// KTX2 files need to be handled explicitly
 	bool isKtx2 = false;
@@ -1437,7 +1443,7 @@ void GlTFModel::TextureModel::TextFromglTfImage(Device& device, tinygltf::Image&
 	if (isKtx2) {
 		// Image is KTX2 using basis universal compression. Those images need to be loaded from disk and will be transcoded to a native GPU format
 		TextureBuilder builder(device);
-		texture = builder.fromKTX2(path.c_str()).build();
+		texture = assets.textures().create(builder.fromKTX2(path.c_str()));
 	}
 	else {
 		// Image is a basic glTF format like png or jpg and can be loaded directly via tinyglTF
@@ -1478,7 +1484,7 @@ void GlTFModel::TextureModel::TextFromglTfImage(Device& device, tinygltf::Image&
 		std::vector<unsigned char> charBuffer = std::vector<unsigned char>(buffer, buffer + bufferSize);
 
 		TextureBuilder builder(device);
-		texture = builder.fromCharBuffer(charBuffer, width, height, 4, mipLevels).build();
+		texture = assets.textures().create(builder.fromCharBuffer(charBuffer, width, height, 4, mipLevels));
 
 		if (deleteBuffer)
 			delete[] buffer;

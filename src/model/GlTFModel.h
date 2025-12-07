@@ -26,6 +26,8 @@
 
 #include "../Textures/TextureObject.h"
 
+#include "../assetManager/AssetManager.h"
+
 #include "Model.h"
 
 #define GLM_FORCE_RADIANS
@@ -67,11 +69,11 @@ class GlTFModel
 		uint32_t width, height;
 		uint32_t mipLevels = 1;
 		uint32_t layerCount = 1;
-		std::shared_ptr<TextureObject> texture;
+		TextureManager::TextureID texture;
 
 		TextureModel() {}
-		TextureModel(uint32_t width, uint32_t height, std::shared_ptr<TextureObject> texture) : width{ width }, height{ height }, texture{ texture } {}
-		void TextFromglTfImage(Device& device, tinygltf::Image& gltfimage, std::string path = "");
+		TextureModel(uint32_t width, uint32_t height, TextureManager::TextureID texture) : width{ width }, height{ height }, texture{ texture } {}
+		void TextFromglTfImage(Device& device, AssetManager& assets, tinygltf::Image& gltfimage, std::string path = "");
 	};
 
 	struct TextureSampler {
@@ -330,7 +332,7 @@ class GlTFModel
 			size_t vertexPos = 0;
 		};
 
-		ModelGltf(Device& device) : device{ device }{};
+		ModelGltf(Device& device, AssetManager& assets) : device{ device }, assets{ assets } {};
 		~ModelGltf();
 
 		void loadNode(Node* parent, const tinygltf::Node& node, uint32_t nodeIndex, const tinygltf::Model& model, LoaderInfo& loaderInfo, float globalscale);
@@ -372,13 +374,14 @@ class GlTFModel
 		GlTFModel::Node* findNode(Node* parent, uint32_t index);
 		GlTFModel::Node* nodeFromIndex(uint32_t index);
 
+		AssetManager& assets;
 		Device& device;
 	};
 
 	GlTFModel(const GlTFModel&) = delete;
 	GlTFModel& operator=(const GlTFModel&) = delete;
 
-	static std::unique_ptr<GlTFModel::ModelGltf> createModelFromFile(Device& device, const std::string& filePath);
+	static std::unique_ptr<GlTFModel::ModelGltf> createModelFromFile(Device& device, AssetManager& assets, const std::string& filePath);
 	ModelGltf model;
 };
 

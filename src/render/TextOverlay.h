@@ -22,7 +22,7 @@
 class TextOverlay
 {
 public:
-	TextOverlay(Device& device, VkRenderPass renderPass);
+	TextOverlay(Device& device, AssetManager& assets, VkRenderPass renderPass);
 	~TextOverlay();
 
 	TextOverlay(const TextOverlay&) = delete;
@@ -47,6 +47,7 @@ private:
 	void createPipeline(VkRenderPass renderPass);
 
 	Device& device;
+	AssetManager& assets;
 
 	std::vector<std::unique_ptr<Buffer>> vertexBuffer;
 
@@ -57,7 +58,7 @@ private:
 
 	stb_fontchar stbFontData[STB_FONT_consolas_24_latin1_NUM_CHARS];
 
-	std::unique_ptr<TextureObject> texture;
+	TextureManager::TextureID texture;
 	std::vector<VkDescriptorSet> descriptorSet{ Swap_chain::MAX_FRAMES_IN_FLIGHT };
 
 };

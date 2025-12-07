@@ -5,6 +5,8 @@
 #include "Device.h"
 #include "Swap_chain.h"
 
+#include "../assetManager/AssetManager.h"
+#include "../Textures/TextureBuilder.h"
 #include "../Textures/TextureObject.h"
 
 // vulkan headers
@@ -21,7 +23,7 @@ class DepthSwapChain
 public:
 	static constexpr int MAX_DEPTH_RENDER_COUNT = 4; 
 
-	DepthSwapChain(Device& deviceRef, VkExtent2D depthImageExtent);
+	DepthSwapChain(Device& deviceRef, AssetManager& assets, VkExtent2D depthImageExtent);
 	~DepthSwapChain();
 
 	DepthSwapChain(const DepthSwapChain&) = delete;
@@ -30,9 +32,9 @@ public:
 	VkFramebuffer getDepthFramebuffers(int index) { return depthFramebuffers[index]; }
 	VkRenderPass getDepthRenderPass() const { return depthRenderPass; }
 	
-	VkImageView getDepthImageView(int index) { return textureTarget[index]->view(); }
+	VkImageView getDepthImageView(int index) { return assets.textures().get(textureTarget[index])->view(); }
 
-	std::shared_ptr<TextureObject> getTexture(int index) { return textureTarget[index]; }
+	TextureManager::TextureID getTexture(int index) { return textureTarget[index]; }
 
 	VkExtent2D getDepthSwapChainExtent() { return depthExtent; }
 
@@ -57,10 +59,11 @@ private:
 	std::vector<VkFramebuffer> depthFramebuffers;
 	VkRenderPass depthRenderPass;
 
-	std::vector<std::shared_ptr<TextureObject>> textureTarget;
+	std::vector<TextureManager::TextureID> textureTarget;
 
 	std::vector<std::array<VkDescriptorImageInfo, MAX_DEPTH_RENDER_COUNT>> descriptorImageInfo; 
 
 	Device& device;
+	AssetManager& assets;
 };
 

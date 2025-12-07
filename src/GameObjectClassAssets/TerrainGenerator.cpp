@@ -59,10 +59,8 @@ void TerrainGenerator::loop(Device& device, ObjectManager* objManager, GameObjec
 					heightMapVector[y][x][1] = heightMap[x][y].y;
 				}
 				
-				TextureBuilder builder(this->device);
-				std::unique_ptr<TextureObject> text = builder.fromVector(heightMapVector).build();
-
-				plane->setTexture(std::move(text));
+				TextureBuilder builder(this->device);				
+				plane->setTexture(assets.textures().create((builder.fromVector(heightMapVector))));
 					
 				return std::vector<futureObject>{futureObject{ plane, plane ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id_terrain, {}, false }};
 				}));

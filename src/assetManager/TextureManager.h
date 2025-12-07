@@ -4,12 +4,19 @@
 #include "../Textures/TextureObject.h"
 
 #include <unordered_map>
+#include <mutex>
 
 class TextureManager {
+
+    struct CacheEntry {
+        std::unique_ptr<TextureObject> texture;
+		size_t refCount = 0;
+	};
+
 public:
     using TextureID = uint64_t;
 
-    explicit TextureManager() {}
+    explicit TextureManager();
 
     TextureID create(TextureBuilder& builder);
     TextureObject* get(const TextureID id) const;
@@ -18,5 +25,6 @@ public:
     void removeAll();
 
 private:
-    std::unordered_map<size_t, std::unique_ptr<TextureObject>> cache;
+    std::mutex mutex;
+    std::unordered_map<size_t, CacheEntry> cache;
 };

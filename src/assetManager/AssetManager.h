@@ -7,7 +7,9 @@
 
 class AssetManager {
 public:
-    AssetManager() {};
+    AssetManager() {
+		textureMgr = std::make_unique<TextureManager>();
+    };
 
     //ModelManager& models() { return *modelMgr; }
     TextureManager& textures() { return *textureMgr; }
@@ -19,7 +21,7 @@ public:
 
 private:
     //std::unique_ptr<ModelManager> modelMgr;
-    std::unique_ptr<TextureManager> textureMgr{};
+    std::unique_ptr<TextureManager> textureMgr;
     //std::unique_ptr<ShaderManager> shaderMgr;
     //std::unique_ptr<ScriptManager> scriptMgr;
 };

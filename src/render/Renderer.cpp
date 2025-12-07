@@ -4,12 +4,12 @@
 #include <array>
 #include <cassert>
 
-Renderer::Renderer(Window& window, Device& device) : window{window} , device{device}
+Renderer::Renderer(Window& window, Device& device, AssetManager& assets) : window{window} , device{device}, assets{assets}
 {
 	recreateSwapChain();
 
 	isDepthStarted.resize(DepthSwapChain::MAX_DEPTH_RENDER_COUNT);
-	depthSwapChain = std::make_unique<DepthSwapChain>(device, VkExtent2D{ 2048, 2048 });
+	depthSwapChain = std::make_unique<DepthSwapChain>(device, assets, VkExtent2D{ 2048, 2048 });
 
 	createDepthCommandBuffer();
 	createCommandBuffer();
@@ -38,11 +38,11 @@ void Renderer::recreateSwapChain()
 
 	// if the swapchain does not already exist create a new one
 	if (swapChain == nullptr) {
-		swapChain = std::make_unique<Swap_chain>(device, extent);
+		swapChain = std::make_unique<Swap_chain>(device, assets, extent);
 	}
 	else {
 		std::shared_ptr<Swap_chain> oldSwapChain = std::move(swapChain);
-		swapChain = std::make_unique<Swap_chain>(device, extent, oldSwapChain);
+		swapChain = std::make_unique<Swap_chain>(device, assets, extent, oldSwapChain);
 
 		if (!oldSwapChain->compareSwapFormat(*swapChain.get())) {
 			throw std::runtime_error("Swap chain image format as changed");
@@ -292,7 +292,7 @@ void Renderer::renderDepthImage(FrameInfo& frameInfo, std::vector<std::shared_pt
 	currentDepthFrameIndex = (currentDepthFrameIndex + 1) % Swap_chain::MAX_FRAMES_IN_FLIGHT; 
 }
 
-std::shared_ptr<TextureObject> Renderer::renderHdriToCubeTexture(std::shared_ptr<GlobalRenderSystem> renderSystem, VkDescriptorSet descriptorSet)
+TextureManager::TextureID Renderer::renderHdriToCubeTexture(std::shared_ptr<GlobalRenderSystem> renderSystem, VkDescriptorSet descriptorSet)
 {
 
 	glm::mat4 captureViews[] = {
@@ -322,7 +322,7 @@ std::shared_ptr<TextureObject> Renderer::renderHdriToCubeTexture(std::shared_ptr
 	}
 
 	device.transitionImageLayout(
-		skyboxSwapChain.getTextureColor()->image(),
+		assets.textures().get(skyboxSwapChain.getTextureColor())->image(),
 		VK_FORMAT_R8G8B8A8_SRGB,
 		VK_IMAGE_LAYOUT_UNDEFINED,
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,

@@ -13,13 +13,13 @@
 #define VK_SUBPASS_EXTERNAL (~0U)
 #endif
 
-Swap_chain::Swap_chain(Device& deviceRef, VkExtent2D windowExtent)
-    : device{ deviceRef }, windowExtent{ windowExtent } {
+Swap_chain::Swap_chain(Device& deviceRef, AssetManager& assets, VkExtent2D windowExtent)
+    : device{ deviceRef }, assets{ assets }, windowExtent{windowExtent} {
     init();
 }
 
-Swap_chain::Swap_chain(Device& deviceRef, VkExtent2D windowExtent, std::shared_ptr<Swap_chain> previous) 
-    : device{ deviceRef }, windowExtent{ windowExtent }, oldSwapChain{ previous } {
+Swap_chain::Swap_chain(Device& deviceRef, AssetManager& assets, VkExtent2D windowExtent, std::shared_ptr<Swap_chain> previous)
+    : device{ deviceRef }, assets{ assets }, windowExtent{ windowExtent }, oldSwapChain{ previous } {
     init();
 }
 
@@ -330,7 +330,7 @@ void Swap_chain::createFramebuffers() {
     swapChainFramebuffers.resize(imageCount());
     for (size_t i = 0; i < imageCount(); i++) {
 
-        std::array<VkImageView, 2> attachments = { swapChainImageViews[i], depthTextures[i]->view() };
+        std::array<VkImageView, 2> attachments = { swapChainImageViews[i], assets.textures().get(depthTextures[i])->view() };
 
         VkExtent2D swapChainExtent = getSwapChainExtent();
         VkFramebufferCreateInfo framebufferInfo = {};
@@ -408,9 +408,8 @@ void Swap_chain::createDepthResources() {
         samplerInfo.maxLod = 100.0f;
 
         TextureBuilder builder(device);
-        depthTextures[i] = builder.fromTextureInfo(imageInfo, viewInfo, samplerInfo, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL).build();
+        depthTextures[i] = assets.textures().create(builder.fromTextureInfo(imageInfo, viewInfo, samplerInfo, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 	}
-        //depthTextures[i] = Texture::createEmpty(device, swapChainExtent.width, swapChainExtent.height, depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_DEPTH_BIT, false);
 }
 
 void Swap_chain::createSyncObjects() {
