@@ -1,7 +1,5 @@
 #pragma once
 
-//#include "TextureObject.h"
-
 #include <vulkan/vulkan.h>
 #include <string>
 #include <vector>

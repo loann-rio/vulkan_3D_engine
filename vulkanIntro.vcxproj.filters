@@ -165,13 +165,13 @@
     <ClCompile Include="src\objects\GameObjectRegistry.cpp">
       <Filter>objects</Filter>
     </ClCompile>
-    <ClCompile Include="src\objects\ModelLoader.cpp">
-      <Filter>objects</Filter>
-    </ClCompile>
     <ClCompile Include="src\assetManager\TextureManager.cpp">
       <Filter>assetManager</Filter>
     </ClCompile>
-    <ClCompile Include="src\assetManager\ModelManager.cpp" />
+    <ClCompile Include="src\assetManager\ModelManager.cpp">
+      <Filter>assetManager</Filter>
+    </ClCompile>
+    <ClCompile Include="src\model\ModelBuilder.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tiny_gltf.h">
@@ -311,9 +311,6 @@
     <ClInclude Include="src\objects\GameObjectRegistry.h">
       <Filter>objects</Filter>
     </ClInclude>
-    <ClInclude Include="src\objects\ModelLoader.h">
-      <Filter>objects</Filter>
-    </ClInclude>
     <ClInclude Include="src\assetManager\AssetManager.h">
       <Filter>assetManager</Filter>
     </ClInclude>
@@ -324,6 +321,9 @@
       <Filter>assetManager</Filter>
     </ClInclude>
     <ClInclude Include="src\model\ModelBuilder.h">
+      <Filter>model</Filter>
+    </ClInclude>
+    <ClInclude Include="src\model\ModelAsset.h">
       <Filter>model</Filter>
     </ClInclude>
   </ItemGroup>
