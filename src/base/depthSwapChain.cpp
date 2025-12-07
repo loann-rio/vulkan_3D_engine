@@ -97,7 +97,7 @@ void DepthSwapChain::createDepthResources()
         samplerInfo.maxLod = 100.0f;
 
 		TextureBuilder textureBuilder(device);
-        textureTarget[i] = textureBuilder.fromTextureInfo(imageInfo, viewInfo, samplerInfo, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        textureTarget[i] = textureBuilder.fromTextureInfo(imageInfo, viewInfo, samplerInfo, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL).build();
     }
 }
 

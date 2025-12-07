@@ -12,24 +12,23 @@
 #include "render/TextOverlay.h"
 #include "objects/ObjectManager.h"
 
-
+#include "assetManager/AssetManager.h"
 
 #include <memory>
 #include <vector>
-#include <deque>
 
 
-class App
+class Engine
 {
 public:
 	static constexpr int WIDTH = 1600;
 	static constexpr int HEIGHT = 1200;
 
-	App();
-	~App() {};
+	Engine();
+	~Engine() {};
 
-	App(const App&) = delete;
-	App& operator=(const App&) = delete;
+	Engine(const Engine&) = delete;
+	Engine& operator=(const Engine&) = delete;
 
 	void run();
 
@@ -61,9 +60,10 @@ private:
 	// global descriptor sets
 	std::vector<VkDescriptorSet> globalDescriptorSet;
 	std::vector<VkDescriptorSet> shadowDescriptorSet;
-	std::vector<VkDescriptorSet> terrainDescriptorSet;
+	std::vector<VkDescriptorSet> terrainDescriptorSet; 
+
+	AssetManager assetManager{};
 
 	// object management:
-	ObjectManager objectManager{ device };
+	ObjectManager objectManager{ device, assetManager }; 
 };
-

@@ -174,7 +174,9 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClCompile Include="external\imgui-master\imgui_widgets.cpp" />
     <ClCompile Include="external\nativefiledialog-master\src\nfd_common.c" />
     <ClCompile Include="external\nativefiledialog-master\src\nfd_win.cpp" />
-    <ClCompile Include="src\App.cpp" />
+    <ClCompile Include="src\assetManager\AssetManager.cpp" />
+    <ClCompile Include="src\assetManager\TextureManager.cpp" />
+    <ClCompile Include="src\Engine.cpp" />
     <ClCompile Include="src\base\Buffer.cpp" />
     <ClCompile Include="src\base\depthSwapChain.cpp" />
     <ClCompile Include="src\base\descriptors.cpp" />
@@ -193,7 +195,9 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClCompile Include="src\model\preBuild.cpp" />
     <ClCompile Include="src\objects\BasicUI.cpp" />
     <ClCompile Include="src\objects\GameObject.cpp" />
+    <ClCompile Include="src\objects\GameObjectRegistry.cpp" />
     <ClCompile Include="src\objects\KeyboardMovementController.cpp" />
+    <ClCompile Include="src\objects\ModelLoader.cpp" />
     <ClCompile Include="src\objects\objectManager.cpp" />
     <ClCompile Include="src\render\Camera.cpp" />
     <ClCompile Include="src\render\GlobalRenderSystem.cpp" />
@@ -213,7 +217,9 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClInclude Include="external\nativefiledialog-master\src\include\nfd.h" />
     <ClInclude Include="external\nativefiledialog-master\src\nfd_common.h" />
     <ClInclude Include="external\nativefiledialog-master\src\simple_exec.h" />
-    <ClInclude Include="src\App.h" />
+    <ClInclude Include="src\assetManager\AssetManager.h" />
+    <ClInclude Include="src\assetManager\TextureManager.h" />
+    <ClInclude Include="src\Engine.h" />
     <ClInclude Include="src\base\Buffer.h" />
     <ClInclude Include="src\base\depthSwapChain.h" />
     <ClInclude Include="src\base\descriptors.h" />
@@ -239,7 +245,9 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClInclude Include="src\model\preBuild.h" />
     <ClInclude Include="src\objects\BasicUI.h" />
     <ClInclude Include="src\objects\GameObject.h" />
+    <ClInclude Include="src\objects\GameObjectRegistry.h" />
     <ClInclude Include="src\objects\KeyboardMovementController.h" />
+    <ClInclude Include="src\objects\ModelLoader.h" />
     <ClInclude Include="src\objects\objectManager.h" />
     <ClInclude Include="src\render\Camera.h" />
     <ClInclude Include="src\render\GlobalRenderSystem.h" />

@@ -6,6 +6,7 @@
 #include "../model/GlTFModel.h"
 #include "../model/Model.h"
 #include "../render/Camera.h"
+#include "../assetManager/AssetManager.h"
 
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
@@ -138,7 +139,7 @@ public:
 	GameObject(GameObject&&) = default; 
 	GameObject& operator=(GameObject&&) = default;
 
-	GameObject(id_t id, Device& device) : id(id), device(device) {}
+	GameObject(id_t id, Device& device, AssetManager& assets) : id(id), device(device), assets(assets) {}
 	virtual ~GameObject() = default;
 
 	// UI
@@ -183,6 +184,7 @@ protected:
 
 	std::string name;
 	Device& device;
+	AssetManager& assets;
 	id_t id;
 
 	friend class GameObjectBehavior;
@@ -191,8 +193,8 @@ protected:
 class GameObjectCamera : public GameObject { 
 
 public:
-	GameObjectCamera(id_t id, Device& device, float fov, float aspect_ratio, float nearClip, float farClip)
-		: GameObject(id, device), _fov(fov), _aspect_ratio(aspect_ratio), _nearClip(nearClip), _farClip(farClip) { 
+	GameObjectCamera(id_t id, Device& device, AssetManager& assets, float fov, float aspect_ratio, float nearClip, float farClip)
+		: GameObject(id, device, assets), _fov(fov), _aspect_ratio(aspect_ratio), _nearClip(nearClip), _farClip(farClip) { 
 		camera = std::make_unique<Camera>(aspect_ratio);
 		camera->setPerspectiveProjection(fov, aspect_ratio, nearClip, farClip);
 	} 
@@ -222,8 +224,8 @@ private:
 class GameObjectPointLight : public GameObject {
 
 public:
-	GameObjectPointLight(id_t id, Device& device, float intencity, float radius, glm::vec3 color = glm::vec3{ 1.f })
-		: GameObject(id, device) {
+	GameObjectPointLight(id_t id, Device& device, AssetManager& assets, float intencity, float radius, glm::vec3 color = glm::vec3{ 1.f })
+		: GameObject(id, device, assets) {
 		transform.color = glm::vec4(color, intencity); 
 		transform.scale.x = radius; 
 	}
@@ -237,8 +239,8 @@ public:
 class GameObjectSpotLight : public GameObject {
 
 public:
-	GameObjectSpotLight(id_t id, Device& device, float fov, float aspect_ratio, float nearClip, float farClip)
-		: GameObject(id, device), _fov(fov), _aspect_ratio(aspect_ratio), _nearClip(nearClip), _farClip(farClip) {
+	GameObjectSpotLight(id_t id, Device& device, AssetManager& assets, float fov, float aspect_ratio, float nearClip, float farClip)
+		: GameObject(id, device, assets), _fov(fov), _aspect_ratio(aspect_ratio), _nearClip(nearClip), _farClip(farClip) {
 
 		camera = std::make_unique<Camera>();
 		camera->setPerspectiveProjection(fov, aspect_ratio, nearClip, farClip);
@@ -322,7 +324,7 @@ public:
 	// primitive info
 	int primitiveLOD = 0;
 
-	GameObjectModel(id_t id, Device& device) : GameObject(id, device) { setMultipleInstances({ {} }); }
+	GameObjectModel(id_t id, Device& device, AssetManager& assets) : GameObject(id, device, assets) { setMultipleInstances({ {} }); }
 private:
 
 	bool hasModel = false;
@@ -349,7 +351,7 @@ public:
 	static GameObject::id_t nextId;
 
 	template <typename T, typename... Args>
-	static std::unique_ptr<T> createGameObject(Device& device, Args&&... args) {
-		return std::make_unique<T>(nextId++, device, std::forward<Args>(args)...);
+	static std::unique_ptr<T> createGameObject(Device& device, AssetManager& assets, Args&&... args) {
+		return std::make_unique<T>(nextId++, device, assets, std::forward<Args>(args)...);
 	}
 };

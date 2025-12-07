@@ -7,7 +7,7 @@
 #include "../Textures/TextureBuilder.h"
 #include "../Textures/TextureObject.h"
 
-std::shared_ptr<Model> PrebuiltModel::createFullScreenQuad(Device& device)
+std::shared_ptr<Model> PrebuiltModel::createFullScreenQuad(Device& device, AssetManager& assets)
 {
     Model::Builder modelBuilder{};
 
@@ -26,7 +26,7 @@ std::shared_ptr<Model> PrebuiltModel::createFullScreenQuad(Device& device)
         0, 2, 3
     };
 
-    auto model = std::make_unique<Model>(device, modelBuilder);
+    auto model = std::make_unique<Model>(device, assets, modelBuilder);
 
     TextureBuilder builder(device);
     model->setTexture(std::move(builder.fromFile("textures/whiteTexture.jpg").build()));
@@ -35,7 +35,7 @@ std::shared_ptr<Model> PrebuiltModel::createFullScreenQuad(Device& device)
 }
 
 
-std::shared_ptr<Model> PrebuiltModel::createPlane(Device& device, float width, float depth, uint16_t widthDetail, uint16_t depthDetail, glm::vec3 color, float UVfactor)
+std::shared_ptr<Model> PrebuiltModel::createPlane(Device& device, AssetManager& assets, float width, float depth, uint16_t widthDetail, uint16_t depthDetail, glm::vec3 color, float UVfactor)
 {
     Model::Builder modelBuilder{};
     // Step 1: Generate vertices
@@ -90,7 +90,7 @@ std::shared_ptr<Model> PrebuiltModel::createPlane(Device& device, float width, f
         modelBuilder.vertices[i].normal = glm::normalize(accumulatedNormals[i]);
     }
 
-    auto model = std::make_unique<Model>(device, modelBuilder);
+    auto model = std::make_unique<Model>(device, assets, modelBuilder);
 
     TextureBuilder builder(device);
     model->setTexture(std::move(builder.fromFile("textures/whiteTexture.jpg").build()));
@@ -107,7 +107,7 @@ std::shared_ptr<Model> PrebuiltModel::createPlane(Device& device, float width, f
 /// <param name="color"></param>
 /// <returns> pointer to a new model </returns>
 /// 
-std::unique_ptr<Model> PrebuiltModel::createPlane(Device& device, const unsigned int detail, const float sizePlane, glm::vec3 color, const std::string texturePath, float uvFactor)
+std::unique_ptr<Model> PrebuiltModel::createPlane(Device& device, AssetManager& assets, const unsigned int detail, const float sizePlane, glm::vec3 color, const std::string texturePath, float uvFactor)
 {
     Model::Builder modelBuilder{};
 
@@ -138,7 +138,7 @@ std::unique_ptr<Model> PrebuiltModel::createPlane(Device& device, const unsigned
         modelBuilder.vertices[i].normal = -glm::normalize(glm::cross(modelBuilder.vertices[i].position - modelBuilder.vertices[i + 1].position, modelBuilder.vertices[i].position - modelBuilder.vertices[i + detail + 1].position));
     }
 
-	auto model = std::make_unique<Model>(device, modelBuilder);
+	auto model = std::make_unique<Model>(device, assets, modelBuilder);
 
     TextureBuilder builder(device);
     model->setTexture(std::move(builder.fromFile(texturePath.c_str()).build()));
@@ -146,7 +146,7 @@ std::unique_ptr<Model> PrebuiltModel::createPlane(Device& device, const unsigned
     return model;
 }
 
-std::shared_ptr<Model> PrebuiltModel::createIcoSphere(Device& device, uint16_t detail)
+std::shared_ptr<Model> PrebuiltModel::createIcoSphere(Device& device, AssetManager& assets, uint16_t detail)
 {
     Model::Builder modelBuilder{};
 
@@ -193,7 +193,7 @@ std::shared_ptr<Model> PrebuiltModel::createIcoSphere(Device& device, uint16_t d
     };
 
 
-    auto model = std::make_unique<Model>(device, modelBuilder);
+    auto model = std::make_unique<Model>(device, assets, modelBuilder);
 
     TextureBuilder builder(device);
     model->setTexture(std::move(builder.fromFile("textures/floor.jpg").build()));
@@ -201,12 +201,12 @@ std::shared_ptr<Model> PrebuiltModel::createIcoSphere(Device& device, uint16_t d
     return model;
 }
 
-std::shared_ptr<Model> PrebuiltModel::createCube(Device& device, uint16_t detail)
+std::shared_ptr<Model> PrebuiltModel::createCube(Device& device, AssetManager& assets, uint16_t detail)
 {
     return std::shared_ptr<Model>();
 }
 
-std::shared_ptr<Model> PrebuiltModel::createCube(Device& device)
+std::shared_ptr<Model> PrebuiltModel::createCube(Device& device, AssetManager& assets)
 {
     Model::Builder modelBuilder{};
     glm::vec3 color = { 1.0f, 1.0f, 1.0f };
@@ -255,7 +255,7 @@ std::shared_ptr<Model> PrebuiltModel::createCube(Device& device)
         modelBuilder.vertices[i].normal = glm::normalize(accum[i]);
     }
 
-    auto model = std::make_unique<Model>(device, modelBuilder);
+    auto model = std::make_unique<Model>(device, assets, modelBuilder);
 
     TextureBuilder builder(device);
     model->setTexture(std::move(builder.fromFile("textures/whiteTexture.jpg").build()));
@@ -264,7 +264,7 @@ std::shared_ptr<Model> PrebuiltModel::createCube(Device& device)
 }
 
 
-std::shared_ptr<Model> PrebuiltModel::createTerrain(Device& device,
+std::shared_ptr<Model> PrebuiltModel::createTerrain(Device& device, AssetManager& assets,
     float width, float depth,
     uint16_t widthDetail, uint16_t depthDetail,
     float scale,
@@ -348,7 +348,7 @@ std::shared_ptr<Model> PrebuiltModel::createTerrain(Device& device,
         }
     }
 
-    auto model = std::make_unique<Model>(device, modelBuilder);
+    auto model = std::make_unique<Model>(device, assets, modelBuilder);
 
     TextureBuilder builder(device);
     model->setTexture(std::move(builder.fromFile("textures/whiteTexture.jpg").build()));
@@ -356,7 +356,7 @@ std::shared_ptr<Model> PrebuiltModel::createTerrain(Device& device,
     return model;
 }
 
-std::shared_ptr<Model> PrebuiltModel::createTerrain(Device& device, float width, float depth, std::vector<std::vector<float>> heightMap, float UVfactor)
+std::shared_ptr<Model> PrebuiltModel::createTerrain(Device& device, AssetManager& assets, float width, float depth, std::vector<std::vector<float>> heightMap, float UVfactor)
 {
 
     uint16_t widthDetail = heightMap.size() - 1;
@@ -462,7 +462,7 @@ std::shared_ptr<Model> PrebuiltModel::createTerrain(Device& device, float width,
         modelBuilder.vertices[i].color = color;
     }
 
-    auto model = std::make_unique<Model>(device, modelBuilder);
+    auto model = std::make_unique<Model>(device, assets, modelBuilder);
 
     TextureBuilder builder(device);
     model->setTexture(std::move(builder.fromFile("textures/whiteTexture.jpg").build()));

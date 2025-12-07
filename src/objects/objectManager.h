@@ -10,6 +10,8 @@
 #include "../render/Renderer.h"
 #include "../render/GlobalRenderSystem.h" 
 
+#include "../assetManager/AssetManager.h"
+
 #include <../json.hpp>
 using json = nlohmann::json;
 
@@ -32,7 +34,7 @@ public:
     ObjectManager(const ObjectManager&) = delete;
     ObjectManager& operator=(const ObjectManager&) = delete;
 
-    ObjectManager(Device& device);
+    ObjectManager(Device& device, AssetManager& assetManager);
 
     ~ObjectManager() { saveFullScene(); globalPool = nullptr; }
 	
@@ -55,8 +57,8 @@ public:
 
     std::shared_ptr<GameObject::Map> getGameObjects() const { return gameObjects; } 
 
-    void loadObjectAsync(Device& device, const std::string& filePath, TransformComponent transform, const std::string& name = "");
-    void loadObjectAsync(Device& device, const std::string& filePath, const std::string filePathTexture, TransformComponent transform, const std::string& name = "");
+    void loadObjectAsync(Device& device, AssetManager& assets, const std::string& filePath, TransformComponent transform, const std::string& name = "");
+    void loadObjectAsync(Device& device, AssetManager& assets, const std::string& filePath, const std::string filePathTexture, TransformComponent transform, const std::string& name = "");
 
     void pushFuture(std::future<std::vector<futureObject>> futures);
 
@@ -80,8 +82,10 @@ public:
     // main skybox
     std::string mainSkybox = "cubemap";
 
+    AssetManager& assetManager;
 private:
     Device& device;
+    
 
     std::vector<std::future<futureObject>> futureGameObjects;
     std::vector<std::future<std::vector<futureObject>>> futureGameObjectslist;

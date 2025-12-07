@@ -19,14 +19,13 @@ void ObjectManager::startLoadModel()
 
     if (true)
     {
-
         TextureBuilder builder(device);
         std::unique_ptr<TextureObject> texture = builder.fromFile("skybox/cubemap_space.ktx").asCubemap().build();
 
-        std::shared_ptr<Model> cube = Model::createModelFromFile(device, "model/cube.obj");
+        std::shared_ptr<Model> cube = Model::createModelFromFile(device, assetManager, "model/cube.obj");
         cube->setTexture(std::move(texture));
 
-        auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
+        auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
         gameObject->setName("cubemap1");
         gameObject->setModelType(ModelType::OBJ_MODEL);
         gameObject->setModelSubType(ModelSubType::SKYBOX);
@@ -34,7 +33,6 @@ void ObjectManager::startLoadModel()
         gameObject->saveable = false;
         gameObject->createDescriptorSet(*globalPool);
         pushGameObject(std::move(gameObject));
-
     }
 
     /* {
@@ -76,7 +74,7 @@ void ObjectManager::startLoadModel()
 
 void ObjectManager::createPrimitive(PrimitivesModelType type, int detail, TransformComponent transform, const std::string& name, const std::string& filePathTexture)
 {
-    auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
+    auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
     gameObject->transform = transform; 
     gameObject->setName(name.empty() ? "primitive_" + std::to_string(gameObject->getId()) : name);
 	gameObject->setModelType(ModelType::OBJ_MODEL);
@@ -93,10 +91,10 @@ void ObjectManager::createPrimitive(PrimitivesModelType type, int detail, Transf
 
         switch (type) {
         case PrimitivesModelType::PLANE:
-            primitive = PrebuiltModel::createPlane(this->device, detail, 1, { 0, 0, 0 }, filePathTexture.empty() ? "textures/whiteTexture.jpg" : filePathTexture, 20);
+            primitive = PrebuiltModel::createPlane(this->device, this->assetManager, detail, 1, { 0, 0, 0 }, filePathTexture.empty() ? "textures/whiteTexture.jpg" : filePathTexture, 20);
             break;
         case PrimitivesModelType::CUBE:
-            primitive = PrebuiltModel::createCube(this->device);
+            primitive = PrebuiltModel::createCube(this->device, this->assetManager);
             break;
         case PrimitivesModelType::SPHERE:
             break;
@@ -239,11 +237,11 @@ void ObjectManager::loadScene(std::string name)
                 std::string modelPath = element.value()["modelPath"];
 
                 if (modelPath.find(".gltf") != std::string::npos || modelPath.find(".glb") != std::string::npos)
-                    loadObjectAsync(device, modelPath, transform, objName);
+                    loadObjectAsync(device, assetManager, modelPath, transform, objName);
                 else 
                 {
                     std::string texturePath = element.value().contains("texturePath") ? element.value()["texturePath"] : "textures/whiteTexture.jpg";
-                    loadObjectAsync(device, modelPath, texturePath, transform, objName);
+                    loadObjectAsync(device, assetManager, modelPath, texturePath, transform, objName);
                 }
             }
             else if(element.value().contains("primitivesModelType"))
@@ -260,7 +258,7 @@ void ObjectManager::loadScene(std::string name)
             float nearPlane   = element.value()["nearPlane"];
             float farPlane    = element.value()["farPlane"];
             
-            auto cameraObject = GameObjectFactory::createGameObject<GameObjectCamera>(device, fov, aspectRatio, nearPlane, farPlane);
+            auto cameraObject = GameObjectFactory::createGameObject<GameObjectCamera>(device, assetManager, fov, aspectRatio, nearPlane, farPlane);
             cameraObject->transform = transform;
             cameraObject->setName(objName);
             pushGameObject(std::move(cameraObject));
@@ -270,14 +268,14 @@ void ObjectManager::loadScene(std::string name)
             float aspectRatio = element.value()["aspectRatio"];
             float nearPlane = element.value()["nearPlane"];
             float farPlane = element.value()["farPlane"];
-            auto spotLight = GameObjectFactory::createGameObject<GameObjectSpotLight>(device, fov, aspectRatio, nearPlane, farPlane);
+            auto spotLight = GameObjectFactory::createGameObject<GameObjectSpotLight>(device, assetManager, fov, aspectRatio, nearPlane, farPlane);
             spotLight->transform = transform;
             spotLight->setName(objName);
             pushGameObject(std::move(spotLight));
         }
         else
         {
-            auto gameObject = GameObjectFactory::createGameObject<GameObject>(device);
+            auto gameObject = GameObjectFactory::createGameObject<GameObject>(device, assetManager);
 
             if (behavior) gameObject->setAttachedClass(std::move(behavior));
 
@@ -289,7 +287,7 @@ void ObjectManager::loadScene(std::string name)
 
 	// ensure there is a main camera
     if (get("mainCamera") == nullptr) { 
-        auto cameraObject = GameObjectFactory::createGameObject<GameObjectCamera>(device, glm::radians(50.f), 1.f, .1f, 100.f);
+        auto cameraObject = GameObjectFactory::createGameObject<GameObjectCamera>(device, assetManager, glm::radians(50.f), 1.f, .1f, 100.f);
         cameraObject->setName("mainCamera");
         pushGameObject(std::move(cameraObject));
 	}
@@ -456,9 +454,9 @@ void ObjectManager::pushGameObject(std::unique_ptr<GameObject> gameObject)
     gameObjectsByType[type].push_back(gameObjects->at(id).get());
 }
 
-void ObjectManager::loadObjectAsync(Device& device, const std::string& filePath, TransformComponent transform, const std::string& name)
+void ObjectManager::loadObjectAsync(Device& device, AssetManager& assets, const std::string& filePath, TransformComponent transform, const std::string& name)
 {
-    auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device); 
+    auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
     gameObject->transform = transform; 
     gameObject->setName(name.empty() ? filePath : name);
     gameObject->modelPath = filePath;
@@ -466,16 +464,16 @@ void ObjectManager::loadObjectAsync(Device& device, const std::string& filePath,
 
     pushGameObject(std::move(gameObject));
 
-    pushFuture( std::async(std::launch::async, [filePath, &device, id]() {
+    pushFuture( std::async(std::launch::async, [filePath, &device, &assets, id]() {
         std::shared_ptr<GlTFModel::ModelGltf> model = GlTFModel::createModelFromFile(device, filePath);
         return std::vector<futureObject>{ futureObject{ model, model ? ModelType::GLTF_MODEL : ModelType::UNDEFINED_MODEL, id }};
         }) 
 	);
 }
 
-void ObjectManager::loadObjectAsync(Device& device, const std::string& filePath, const std::string filePathTexture, TransformComponent transform, const std::string& name)
+void ObjectManager::loadObjectAsync(Device& device, AssetManager& assets, const std::string& filePath, const std::string filePathTexture, TransformComponent transform, const std::string& name)
 {
-    auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device); 
+    auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
     gameObject->transform = transform;  
     gameObject->setName(name.empty() ? filePath : name); 
 
@@ -486,8 +484,8 @@ void ObjectManager::loadObjectAsync(Device& device, const std::string& filePath,
 
     pushGameObject(std::move(gameObject)); 
      
-    pushFuture( std::async(std::launch::async, [filePath, filePathTexture, &device, id]() {
-        std::shared_ptr<Model> model = Model::createModelFromFile(device, filePath, filePathTexture.c_str());
+    pushFuture( std::async(std::launch::async, [filePath, filePathTexture, &device, &assets, id]() {
+        std::shared_ptr<Model> model = Model::createModelFromFile(device, assets, filePath, filePathTexture.c_str());
         return std::vector<futureObject> {futureObject{ model, model ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id }};
         }) 
      );
@@ -515,7 +513,7 @@ void ObjectManager::generateSkybox(const std::string pathTexture, const std::str
     auto resultTexture = renderer->renderHdriToCubeTexture(skyboxRenedrSystem, descriptorSet);
 
     // create go with new texture
-    auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
+    auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
     gameObject->setName(goName);
 
     gameObject->setModelType(ModelType::OBJ_MODEL);
@@ -531,7 +529,7 @@ void ObjectManager::generateSkybox(const std::string pathTexture, const std::str
     pushGameObject(std::move(gameObject));
 
     pushFuture(std::async(std::launch::async, [this, resultTexture, id]() {
-        std::shared_ptr<Model> cube = PrebuiltModel::createCube(this->device);
+        std::shared_ptr<Model> cube = PrebuiltModel::createCube(this->device, this->assetManager);
         cube->setTexture(resultTexture);
         return std::vector<futureObject> {futureObject{ cube, cube ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id, {}, false }};
         })
@@ -539,7 +537,7 @@ void ObjectManager::generateSkybox(const std::string pathTexture, const std::str
 }
 
 
-ObjectManager::ObjectManager(Device& device) : device{ device }
+ObjectManager::ObjectManager(Device& device, AssetManager& assetManager) : device{ device }, assetManager{ assetManager }
 {
     globalPool = DescriptorPool::Builder(device)
         .setMaxSets(Swap_chain::MAX_FRAMES_IN_FLIGHT * 320)

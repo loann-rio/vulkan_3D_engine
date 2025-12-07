@@ -29,6 +29,9 @@
     <Filter Include="textures\Decoder">
       <UniqueIdentifier>{7d99d3eb-f7e3-4108-a225-779a731569ff}</UniqueIdentifier>
     </Filter>
+    <Filter Include="assetManager">
+      <UniqueIdentifier>{78d2fc85-aecb-4b33-991f-1c5fe001a1e3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="external\basisu\transcoder\basisu_transcoder.cpp">
@@ -109,7 +112,7 @@
     <ClCompile Include="src\render\TextOverlay.cpp">
       <Filter>render</Filter>
     </ClCompile>
-    <ClCompile Include="src\App.cpp" />
+    <ClCompile Include="src\Engine.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\base\Window.cpp">
       <Filter>base</Filter>
@@ -159,6 +162,16 @@
     <ClCompile Include="src\Textures\Decoder\KTXDecoder.cpp">
       <Filter>textures\Decoder</Filter>
     </ClCompile>
+    <ClCompile Include="src\objects\GameObjectRegistry.cpp">
+      <Filter>objects</Filter>
+    </ClCompile>
+    <ClCompile Include="src\objects\ModelLoader.cpp">
+      <Filter>objects</Filter>
+    </ClCompile>
+    <ClCompile Include="src\assetManager\AssetManager.cpp">
+      <Filter>assetManager</Filter>
+    </ClCompile>
+    <ClCompile Include="src\assetManager\TextureManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tiny_gltf.h">
@@ -221,7 +234,7 @@
     <ClInclude Include="src\render\TextOverlay.h">
       <Filter>render</Filter>
     </ClInclude>
-    <ClInclude Include="src\App.h" />
+    <ClInclude Include="src\Engine.h" />
     <ClInclude Include="src\base\Window.h">
       <Filter>base</Filter>
     </ClInclude>
@@ -294,6 +307,18 @@
     </ClInclude>
     <ClInclude Include="src\Textures\Decoder\KTXDecoder.h">
       <Filter>textures\Decoder</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\GameObjectRegistry.h">
+      <Filter>objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\objects\ModelLoader.h">
+      <Filter>objects</Filter>
+    </ClInclude>
+    <ClInclude Include="src\assetManager\AssetManager.h">
+      <Filter>assetManager</Filter>
+    </ClInclude>
+    <ClInclude Include="src\assetManager\TextureManager.h">
+      <Filter>assetManager</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

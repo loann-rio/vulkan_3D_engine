@@ -13,6 +13,7 @@ void TerrainGenerator::loop(Device& device, ObjectManager* objManager, GameObjec
 	//int posX = 0;
 	//int posY = 0;
 
+	AssetManager& assets = objManager->assetManager;
 	
 	
 	for (int i = posX - int(sizeWorldInChunck / 2); i <= posX + int(sizeWorldInChunck / 2); i++)
@@ -24,7 +25,7 @@ void TerrainGenerator::loop(Device& device, ObjectManager* objManager, GameObjec
 			std::cout << "chunk not found, creating chunk \n";
 			
 			// push terrain
-			auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
+			auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, objManager->assetManager);
 			gameObject->transform.translation = { i * chunkWorldSide, 4, j * chunkWorldSide };
 			gameObject->setModelSubType(ModelSubType::TERRAIN);
 			//gameObject->setParent(objManager->get("terrain G"));
@@ -35,7 +36,7 @@ void TerrainGenerator::loop(Device& device, ObjectManager* objManager, GameObjec
 			loadedChunk[hash] = id_terrain;
 
 			// create terrain and place trees
-			objManager->pushFuture(std::async(std::launch::async, [this, id_terrain, i, j]() {
+			objManager->pushFuture(std::async(std::launch::async, [this, &assets, id_terrain, i, j]() {
 
 				// create height map from noise function
 				std::vector<std::vector<glm::vec2>> heightMap = generateChunck(i * (this->chunkSize - 1), j * (this->chunkSize - 1));
@@ -45,7 +46,7 @@ void TerrainGenerator::loop(Device& device, ObjectManager* objManager, GameObjec
 				for (int x = 0; x < this->chunkSize; x++) for (int y = 0; y < this->chunkSize; y++) map[y][x] = heightMap[x][y].x;
 
 				// create plane object
-				std::shared_ptr<Model> plane = PrebuiltModel::createTerrain(this->device, 4, 4, map);
+				std::shared_ptr<Model> plane = PrebuiltModel::createTerrain(this->device, assets, 4, 4, map);
 				
 
 

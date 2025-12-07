@@ -22,7 +22,7 @@
 class BasicUI
 {
 public:
-	BasicUI(Device& device, GLFWwindow* window, VkRenderPass renderPass);
+	BasicUI(Device& device, AssetManager& assets, GLFWwindow* window, VkRenderPass renderPass);
 	~BasicUI();
 
 	void drawUI(VkCommandBuffer commandBuffer, ObjectManager* manager, TerrainUbo& terrainUbo, float fps);
@@ -44,6 +44,7 @@ private:
 
 	VkDescriptorPool imguiPool; 
 	Device& device;
+	AssetManager& assets;
 
 	std::string selected_object = "";
 

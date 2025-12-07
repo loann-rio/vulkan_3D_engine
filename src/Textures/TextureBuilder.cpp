@@ -184,6 +184,7 @@ std::unique_ptr<TextureObject> TextureBuilder::build()
     switch (source) {
     case SourceType::RawBuffer: return buildFromCharBuffer();
     case SourceType::FloatArray: return buildFromArray();
+	case SourceType::Custom: return std::move(existingTexture);
     case SourceType::Stb:
     case SourceType::Hdr:
     case SourceType::Ktx1:
@@ -201,7 +202,7 @@ std::unique_ptr<TextureObject> TextureBuilder::build2D()
     if (path.empty())
         throw std::runtime_error("TextureBuilder: No input path set");
 
-	auto texture = TextureLoader::load(device, path, useMipmaps);
+	auto texture = TextureAssetLoader::load(device, path, useMipmaps);
 
     // Update sampler parameters
     texture->updateSampler(minFilter, magFilter, wrapMode);
@@ -217,7 +218,7 @@ std::unique_ptr<TextureObject> TextureBuilder::buildCubemap()
     if (path.empty())
         throw std::runtime_error("TextureBuilder: No input path set");
     
-    auto texture = TextureLoader::loadCubemap(device, path);
+    auto texture = TextureAssetLoader::loadCubemap(device, path);
 
     // Update sampler parameters
     texture->updateSampler(minFilter, magFilter, wrapMode);
@@ -269,28 +270,55 @@ std::unique_ptr<TextureObject> TextureBuilder::buildFromCharBuffer()
     return TextureUploader::upload2D(device, img, useMipmaps, useSRGB);
 }
 
-std::unique_ptr<TextureObject> TextureBuilder::fromTextureInfo(VkImageCreateInfo imageInfo, VkImageViewCreateInfo viewInfo, VkSamplerCreateInfo samplerInfo, VkImageLayout initImageLayout, uint32_t layerCount)
+TextureBuilder& TextureBuilder::fromTextureInfo(VkImageCreateInfo imageInfo, VkImageViewCreateInfo viewInfo, VkSamplerCreateInfo samplerInfo, VkImageLayout initImageLayout, uint32_t layerCount)
 {
-	std::unique_ptr<TextureObject> texture = std::make_unique<TextureObject>(device);
-    texture->textureExtent = { imageInfo.extent.width, imageInfo.extent.height };
+    source = SourceType::Custom;
+
+    existingTexture = std::make_unique<TextureObject>(device);
+    existingTexture->textureExtent = { imageInfo.extent.width, imageInfo.extent.height };
 
     // create image
-    device.createImageWithInfo(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture->textureImage, texture->textureImageMemory);
+    device.createImageWithInfo(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, existingTexture->textureImage, existingTexture->textureImageMemory);
     // create image view
-    viewInfo.image = texture->textureImage;
-    if (vkCreateImageView(device.device(), &viewInfo, nullptr, &texture->textureImageView) != VK_SUCCESS) {
+    viewInfo.image = existingTexture->textureImage;
+    if (vkCreateImageView(device.device(), &viewInfo, nullptr, &existingTexture->textureImageView) != VK_SUCCESS) {
         throw std::runtime_error("failed to create texture image view!");
     }
 
     // create sampler
-    if (vkCreateSampler(device.device(), &samplerInfo, nullptr, &texture->textureSampler) != VK_SUCCESS) {
+    if (vkCreateSampler(device.device(), &samplerInfo, nullptr, &existingTexture->textureSampler) != VK_SUCCESS) {
         throw std::runtime_error("failed to create texture sampler!");
     }
 
     if (initImageLayout != VK_IMAGE_LAYOUT_UNDEFINED)
-        device.transitionImageLayout(texture->textureImage, imageInfo.format,
+        device.transitionImageLayout(existingTexture->textureImage, imageInfo.format,
             VK_IMAGE_LAYOUT_UNDEFINED, initImageLayout, layerCount);
 
-	texture->isLoaded = true;
-    return texture;
+    existingTexture->isLoaded = true;
+    return *this;
+}
+
+uint64_t TextureBuilder::hash() const
+{
+    if (source == SourceType::Custom)
+    {
+		// Generate a unique id for custom textures
+        static std::atomic<uint64_t> customCounter = 1;
+        return 0xFFFFFFFF00000000ull | customCounter++;
+    }
+
+    // simple hash combining path and options
+    std::hash<std::string> strHash;
+    std::hash<bool> boolHash;
+    std::hash<VkFilter> filterHash;
+    std::hash<VkSamplerAddressMode> wrapHash;
+
+    uint64_t h = strHash(path);
+    h ^= boolHash(useSRGB)     + 0x9e3779b9 + (h << 6) + (h >> 2);
+    h ^= boolHash(useMipmaps)  + 0x9e3779b9 + (h << 6) + (h >> 2);
+    h ^= filterHash(minFilter) + 0x9e3779b9 + (h << 6) + (h >> 2);
+    h ^= filterHash(magFilter) + 0x9e3779b9 + (h << 6) + (h >> 2);
+    h ^= wrapHash(wrapMode)    + 0x9e3779b9 + (h << 6) + (h >> 2);
+	return h;
+
 }

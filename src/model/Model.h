@@ -11,6 +11,8 @@
 #include "../model/BoundingBox.h"
 #include "../textures/TextureObject.h"
 
+#include "../assetManager/AssetManager.h"
+
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
@@ -33,11 +35,11 @@ class Model
 {
 public:
 
-	static std::unique_ptr<Model> createModelFromFile(Device& device, const std::string& filePath, const char* filePathTexture);
-	static std::unique_ptr<Model> createModelFromFile(Device& device, const std::string& filePath);
+	static std::unique_ptr<Model> createModelFromFile(Device& device, AssetManager& assets, const std::string& filePath, const char* filePathTexture);
+	static std::unique_ptr<Model> createModelFromFile(Device& device, AssetManager& assets, const std::string& filePath);
 	
 	///  model with LOD
-	static std::unique_ptr<Model> createModelFromFile(Device& device, std::vector<std::array<std::string, 2>> filesPath);
+	static std::unique_ptr<Model> createModelFromFile(Device& device, AssetManager& assets, std::vector<std::array<std::string, 2>> filesPath);
 
 
 	struct Instance {
@@ -80,7 +82,7 @@ public:
 		bool loadOBJModel(const std::string& filepath);
 	};
 
-	Model(Device& device, const Model::Builder& builder);
+	Model(Device& device, AssetManager& assets, const Model::Builder& builder);
 	~Model(); 
 
 	Model(const Model&) = delete;
@@ -93,8 +95,9 @@ public:
 	// textures should be ordered by lod levels if there are multiple, each lod have the use index 
 	void setTexture(std::shared_ptr<TextureObject> newTexture) { texture.resize(1); texture[0] = std::move(newTexture); }
 	void setTexture(std::vector<std::shared_ptr<TextureObject>> newTextures) { texture = std::move(newTextures); }
-	void addTexture(std::shared_ptr<TextureObject> newTexture) { texture.push_back(std::move(newTexture)); }
 
+	void setTextureID(TextureManager::TextureID newTexture) { textureIDs.resize(1); textureIDs[0] = newTexture; }
+	void setTextureID(std::vector<TextureManager::TextureID> newTextures) { textureIDs = newTextures; }
 
 	VkDescriptorImageInfo getTextureImageInfo(size_t index = 0) const { return texture[0]->getImageInfo(); }
 	
@@ -138,10 +141,13 @@ private:
 	void createIndexBuffers(const std::vector<uint32_t>& indices);
 
 	// Texture and descriptor set
+	std::vector<TextureManager::TextureID> textureIDs;
+
 	std::vector<std::shared_ptr<TextureObject>> texture;
 	std::vector<VkDescriptorSet> descriptorSet;
 
 	Device& device;
+	AssetManager& assets;
 
 };
 

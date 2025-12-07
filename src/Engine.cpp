@@ -1,4 +1,4 @@
-#include "App.h"
+#include "Engine.h"
 
 // local
 #include "base/Buffer.h"
@@ -24,16 +24,16 @@
 #include <thread>
 
 
-App::App() { 
+Engine::Engine() { 
     objectManager.startLoadModel(); 
     createRenderSystems();
 }
 
 
-void App::run()
+void Engine::run()
 {
     // ui
-    BasicUI imgui{ device, window.getGLFWwindow(), renderer.getSwapChainRenderPass() };
+    BasicUI imgui{ device, assetManager, window.getGLFWwindow(), renderer.getSwapChainRenderPass() };
 
     //TextOverlay textOverlay(device, renderer.getSwapChainRenderPass());
     //textOverlay.prepareResources(*globalPool);
@@ -256,7 +256,7 @@ void App::run()
 }
  
  
-void App::createRenderSystems()
+void Engine::createRenderSystems()
 {
 
     /// global buffer

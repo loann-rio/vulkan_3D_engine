@@ -27,11 +27,11 @@ namespace std {
 	};
 }
 
-std::unique_ptr<Model> Model::createModelFromFile(Device& device, const std::string& filePath, const char* filePathTexture)
+std::unique_ptr<Model> Model::createModelFromFile(Device& device, AssetManager& assets, const std::string& filePath, const char* filePathTexture)
 {
 	Builder builder{};
 	if (builder.loadOBJModel(filePath)) {
-		std::unique_ptr<Model> m = std::make_unique<Model>(device, builder); 
+		std::unique_ptr<Model> m = std::make_unique<Model>(device, assets, builder); 
 
 		TextureBuilder builder(device);
 		if (m) m->setTexture(std::move(builder.fromFile(filePathTexture).build()));
@@ -41,18 +41,18 @@ std::unique_ptr<Model> Model::createModelFromFile(Device& device, const std::str
 	return nullptr;
 }
 
-std::unique_ptr<Model> Model::createModelFromFile(Device& device, const std::string& filePath)
+std::unique_ptr<Model> Model::createModelFromFile(Device& device, AssetManager& assets, const std::string& filePath)
 {
 	Builder builder{};
 	if (builder.loadOBJModel(filePath)) {
-		std::unique_ptr<Model> m = std::make_unique<Model>(device, builder);
+		std::unique_ptr<Model> m = std::make_unique<Model>(device, assets, builder);
 		if (m) return m;
 	}
 	return nullptr;
 }
 
 std::unique_ptr<Model> Model::createModelFromFile(
-	Device& device,
+	Device& device, AssetManager& assets,
 	std::vector<std::array<std::string, 2>> filesPath)
 {
 	if (filesPath.empty()) {
@@ -119,7 +119,7 @@ std::unique_ptr<Model> Model::createModelFromFile(
 		return nullptr;
 	}
 
-	auto model = std::make_unique<Model>(device, builder);
+	auto model = std::make_unique<Model>(device, assets, builder);
 	model->setTexture(textures);
 	model->hasLODs = true;
 
@@ -127,7 +127,7 @@ std::unique_ptr<Model> Model::createModelFromFile(
 }
 
 
-Model::Model(Device& device, const Model::Builder& builder) : device{ device }, aabb{ builder.aabb } 
+Model::Model(Device& device, AssetManager& assets, const Model::Builder& builder) : device{ device }, aabb{ builder.aabb }, assets{ assets }
 {
 	if (builder.aabb.valid == false) {
 		createAABB(builder.vertices);

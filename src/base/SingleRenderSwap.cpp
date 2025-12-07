@@ -103,7 +103,7 @@ void SingleSwapChain::createDepthResources()
     samplerInfo.maxLod = 100.0f;
 
     TextureBuilder builder(device);
-    textureTargetDepth = builder.fromTextureInfo(imageInfo, viewInfo, samplerInfo, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    textureTargetDepth = builder.fromTextureInfo(imageInfo, viewInfo, samplerInfo, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL).build();
 
 }
 
@@ -155,7 +155,7 @@ void SingleSwapChain::createColorResources()
     samplerInfo.maxLod = 100.0f;
 
 	TextureBuilder builder(device);
-    textureTargetColor = builder.fromTextureInfo(imageInfo, viewInfo, samplerInfo, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    textureTargetColor = builder.fromTextureInfo(imageInfo, viewInfo, samplerInfo, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL).build();
 }
 
 void SingleSwapChain::createRenderPass()

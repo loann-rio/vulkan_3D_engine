@@ -408,7 +408,7 @@ void Swap_chain::createDepthResources() {
         samplerInfo.maxLod = 100.0f;
 
         TextureBuilder builder(device);
-        depthTextures[i] = builder.fromTextureInfo(imageInfo, viewInfo, samplerInfo, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        depthTextures[i] = builder.fromTextureInfo(imageInfo, viewInfo, samplerInfo, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL).build();
 	}
         //depthTextures[i] = Texture::createEmpty(device, swapChainExtent.width, swapChainExtent.height, depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_DEPTH_BIT, false);
 }
