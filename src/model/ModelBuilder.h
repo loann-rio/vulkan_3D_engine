@@ -4,14 +4,12 @@
 #include <vector>
 #include <memory>
 
-#include "Model.h"
 #include "../base/Device.h"
 #include "ModelAsset.h"
+#include "../assetManager/TextureManager.h"
 
 class Device;
 class ModelManager;
-
-
 
 class ModelBuilder {
     enum class SourceType { None, GlTF, Obj };
@@ -25,8 +23,7 @@ public:
     ModelBuilder& fromGlTF(const std::string& path);
    
     //// Model options ////
-	ModelBuilder& withTexture(const std::string& texturePath);
-	ModelBuilder& withMultipleInstances(const std::vector<Model::Instance>& instances);
+	ModelBuilder& withTexture(TextureManager::TextureID texture);
 
 private:
 
@@ -35,11 +32,13 @@ private:
 
     //// Build ////
     std::unique_ptr<ModelAsset> build();
+    std::unique_ptr<ModelAsset> buildObj();
+    std::unique_ptr<ModelAsset> buildGlTF();
 
-    //// Build helpers ////
+    std::vector<std::string> modelPath{};
+    std::vector<TextureManager::TextureID> textures{};
 
     Device& device;
-    std::string path;
 
     // Selected decoder type
     SourceType source = SourceType::None;
