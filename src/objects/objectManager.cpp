@@ -9,30 +9,58 @@
 #include "../Textures/TextureObject.h"
 #include "../Textures/TextureBuilder.h"
 
+#include "../model/ModelBuilder.h"
+
+
 #include <chrono>
-#include <stdlib.h>
 #include <fstream>
 
 
 void ObjectManager::startLoadModel()
 {
+    for (int i = 0; i < 1; i++)
+    {
+        ModelBuilder builder(device, assetManager);
+        ModelManager::ModelID id = assetManager.models().create(builder.fromFile("model/buster_drone/scene.gltf"));
+
+        if (!id) continue;
+
+        createDescriptorSet(assetManager.models().get(id));
+
+
+        auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
+        gameObject->setName("testModelBuilder");
+        gameObject->setModelType(ModelType::OBJ_MODEL);
+        gameObject->setModel(id);
+        gameObject->transform.rotation.x = 3.141592f;
+        gameObject->transform.rotation.y = i * 15;
+        gameObject->transform.translation = { i, 0.2f, 8 };
+        gameObject->saveable = false;
+        gameObject->createDescriptorSet(*globalPool);
+        pushGameObject(std::move(gameObject));
+    }
+
+
+
 
     if (true)
     {
-        
+        TextureBuilder textureBuilder(device);
+        auto texture = assetManager.textures().create(textureBuilder.fromFile("skybox/cubemap_space.ktx").asCubemap());
 
-        std::shared_ptr<Model> cube = Model::createModelFromFile(device, assetManager, "model/cube.obj");
+        ModelBuilder builder(device, assetManager);
+        ModelManager::ModelID modelId = assetManager.models().create(builder.fromFile("model/cube.obj").withTexture(texture));
+
+        createDescriptorSet(assetManager.models().get(modelId));
         
-        TextureBuilder builder(device);
-        cube->setTexture(assetManager.textures().create(builder.fromFile("skybox/cubemap_space.ktx").asCubemap()));
 
         auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
         gameObject->setName("cubemap1");
         gameObject->setModelType(ModelType::OBJ_MODEL);
         gameObject->setModelSubType(ModelSubType::SKYBOX);
-        gameObject->setModel(cube);
+        gameObject->setModel(modelId);
         gameObject->saveable = false;
-        gameObject->createDescriptorSet(*globalPool);
+        gameObject->show = false;
         pushGameObject(std::move(gameObject));
     }
 
@@ -43,7 +71,7 @@ void ObjectManager::startLoadModel()
 		gameObject->setAttachedClass(std::move(behavior));
 		gameObject->saveable = false;
 		pushGameObject(std::move(gameObject));
-    }
+    }*/
  
     {
 
@@ -58,10 +86,16 @@ void ObjectManager::startLoadModel()
 			}
 		}
 
-        std::shared_ptr<Model> cube = Model::createModelFromFile(device, {{"model/grassLOD/grassLod1.obj", "textures/whiteTexture.jpg"}, {"model/grassLOD/grassLod2.obj", ""} , {"model/grassLOD/grassLod3.obj", ""} , {"model/grassLOD/grassLod4.obj", "textures/GrassBillboard.png"} });
+        std::shared_ptr<Model> cube = Model::createModelFromFile(device, assetManager, std::vector<std::array<std::string, 2>>{ {"model/grassLOD/grassLod4.obj", "textures/GrassBillboard.png"} , {"model/grassLOD/grassLod1.obj", "textures/whiteTexture.jpg"}, {"model/grassLOD/grassLod2.obj", ""} , {"model/grassLOD/grassLod3.obj", ""} });
         cube->computeShadow = false;
 
-        auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
+        /*TextureBuilder textureBuilder(device);
+        auto texture = assetManager.textures().create(textureBuilder.fromFile("textures/whiteTexture.jpg"));
+
+        ModelBuilder builder(device, assetManager);
+        ModelManager::ModelID modelId = assetManager.models().create(builder.fromFile("model/grassLOD/grassLod1.obj").withTexture(texture));*/
+
+        auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
         gameObject->setName("testlod");
         gameObject->setModelType(ModelType::OBJ_MODEL);
         gameObject->setModel(cube);
@@ -69,7 +103,8 @@ void ObjectManager::startLoadModel()
 		gameObject->setMultipleInstances(instances);
         gameObject->createDescriptorSet(*globalPool);
         pushGameObject(std::move(gameObject));
-    }*/
+    }
+    
 
 }
 
@@ -362,6 +397,29 @@ void ObjectManager::addObjectToScene(GameObject* gameObject)
 
 }
 
+void ObjectManager::createDescriptorSet(ModelAsset* model)
+{
+
+    for (auto& lod : model->lods) {
+        for (auto& material : lod.materials)
+        {
+            auto textureSetLayout = DescriptorSetLayout::Builder(device)
+                .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+                .build();
+
+            material.descriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT * lod.materials.size());
+            for (int i = 0; i < material.descriptorSet.size(); i++)
+            {
+                auto imageInfo = assetManager.textures().get(material.albedoTexture)->getImageInfo();
+                DescriptorWriter(*textureSetLayout, *globalPool)
+                    .writeImage(0, &imageInfo)
+                    .build(material.descriptorSet[i]);
+            }
+        }
+    }
+    
+}
+
 void ObjectManager::createScene(std::string name)
 {
     json empty = json::parse(R"({})");
@@ -496,45 +554,49 @@ void ObjectManager::loadObjectAsync(Device& device, AssetManager& assets, const 
 
 void ObjectManager::generateSkybox(const std::string pathTexture, const std::string goName, Renderer* renderer, std::shared_ptr<GlobalRenderSystem> skyboxRenedrSystem)
 {
-    //auto textureSetLayout = DescriptorSetLayout::Builder(device)
-    //    .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-    //    .build();
+    auto textureSetLayout = DescriptorSetLayout::Builder(device)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .build();
   
-    //TextureBuilder builder(device);
-    //std::unique_ptr<TextureObject> texture = builder.fromFile(pathTexture).build();
+    TextureBuilder builder(device);
+    TextureManager::TextureID texture  = assetManager.textures().create(builder.fromFile(pathTexture));
   
-    //auto imageInfo = texture->getImageInfo();
+    auto imageInfo = assetManager.textures().get(texture)->getImageInfo();
 
-    //VkDescriptorSet descriptorSet;
-    //DescriptorWriter(*textureSetLayout, *globalPool)
-    //    .writeImage(0, &imageInfo)
-    //    .build(descriptorSet);
+    VkDescriptorSet descriptorSet;
+    DescriptorWriter(*textureSetLayout, *globalPool)
+        .writeImage(0, &imageInfo)
+        .build(descriptorSet);
 
-    //// render new texture
-    //auto resultTexture = renderer->renderHdriToCubeTexture(skyboxRenedrSystem, descriptorSet);
+    // render new texture
+    auto resultTexture = renderer->renderHdriToCubeTexture(skyboxRenedrSystem, descriptorSet);
 
-    //// create go with new texture
-    //auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
-    //gameObject->setName(goName);
 
-    //gameObject->setModelType(ModelType::OBJ_MODEL);
-    //gameObject->setModelSubType(ModelSubType::SKYBOX);
-    //gameObject->setPrimitivesModelType(PrimitivesModelType::CUBE);
+    // remove builder texture
+    assetManager.textures().remove(texture);
 
-    //gameObject->texturePath = gameObject->texturePath;
-    //gameObject->saveable = false;
-    //gameObject->show = false;
+    // create go with new texture
+    auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
+    gameObject->setName(goName);
 
-    //GameObject::id_t id = gameObject->getId();
+    gameObject->setModelType(ModelType::OBJ_MODEL);
+    gameObject->setModelSubType(ModelSubType::SKYBOX);
 
-    //pushGameObject(std::move(gameObject));
+    gameObject->texturePath = gameObject->texturePath;
+    gameObject->saveable = false;
+    gameObject->show = true;
 
-    //pushFuture(std::async(std::launch::async, [this, resultTexture, id]() {
-    //    std::shared_ptr<Model> cube = PrebuiltModel::createCube(this->device, this->assetManager);
-    //    cube->setTexture(resultTexture);
-    //    return std::vector<futureObject> {futureObject{ cube, cube ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id, {}, false }};
-    //    })
-    //);
+    GameObject::id_t id = gameObject->getId();
+
+   
+
+    ModelBuilder modelBuilder(device, assetManager);
+    ModelManager::ModelID modelId = assetManager.models().create(modelBuilder.fromFile("model/cube.obj").withTexture(resultTexture));
+
+    createDescriptorSet(assetManager.models().get(modelId));
+    gameObject->setModel(modelId);
+
+    pushGameObject(std::move(gameObject));
 }
 
 
@@ -550,3 +612,4 @@ ObjectManager::ObjectManager(Device& device, AssetManager& assetManager) : devic
     gameObjects = std::make_shared<GameObject::Map>();
     loadScene(currentScene);
 };
+

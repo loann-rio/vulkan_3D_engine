@@ -109,9 +109,6 @@ public:
 
 	BoundingBox getAABB() const { return aabb; }
 
-	std::vector<Model::Instance> instanceList = {};
-	std::vector<Model::Instance> getInstanceList() { return instanceList; }
-
 	bool computeShadow = true;
 
 private:

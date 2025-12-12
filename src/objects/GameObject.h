@@ -11,6 +11,8 @@
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
 
+#include "../model/ModelAsset.h"
+
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <memory>
@@ -288,6 +290,13 @@ public:
 	void setModel(ModelVariant newModel);
 
 
+	void setModel(ModelManager::ModelID _model) {
+		modelAsset = _model;
+		modelType = ModelType::OBJ_MODEL;
+		hasModel = true;
+	}
+
+
 	// setters getters
 	void setModelType(ModelType type) { modelType = type; } 
 	ModelType getModelType() const { return modelType; } 
@@ -314,6 +323,9 @@ public:
 	void drawModelDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, int cameraIndex, uint16_t frameIndex, const std::array<FrustumPlane, 6>& planes);
 
 	void debugUI(); 
+
+	//std::unique_ptr<ModelAsset> modelAsset;
+	ModelManager::ModelID modelAsset;
 
 	bool show = true;
 

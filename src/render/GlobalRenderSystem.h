@@ -7,6 +7,11 @@
 #include "../base/descriptors.h"
 #include "../objects/GameObject.h"
 #include "../render/Camera.h"
+
+#include "../model/ModelAsset.h"
+
+#include "../assetManager/AssetManager.h"
+
 #include <memory>
 #include <vector>
 
@@ -29,9 +34,10 @@ class GlobalRenderSystem
 public:
 
 	// external builder to allow the use of template, take a RenderSystemBuilder as arg
-	template <class T> static std::shared_ptr<GlobalRenderSystem> create(Device& device, RenderSystemBuilder builder);
+	template <class T> static std::shared_ptr<GlobalRenderSystem> create(Device& device, AssetManager& assets, RenderSystemBuilder builder);
 
-	GlobalRenderSystem(Device& device, VkRenderPass renderPass,  
+	GlobalRenderSystem(Device& device, AssetManager& assets,
+		VkRenderPass renderPass,  
 		std::vector<VkDescriptorSetLayout> globalSetLayout, std::vector<DescriptorSetObject> bindings, 
 		const std::string& vertFilepath, const std::string& fragFilepath,
 		ModelType modelType, ModelSubType subModelType, 
@@ -61,7 +67,12 @@ private:
 
 	void bind(VkCommandBuffer& commandBuffer, std::vector<VkDescriptorSet> globalDescriptorSets); 
 
+	void bindModel(VkCommandBuffer& commandBuffer, ModelAsset* model);
+	void bindTextures(VkCommandBuffer& commandBuffer, ModelAsset* model, Primitive& primitive, uint16_t frameIndex);
+	void drawModel(VkCommandBuffer& commandBuffer, ModelAsset* model, Primitive& primitive, glm::mat4 modelMat, glm::mat4 normalM);
+
 	Device& device;
+	AssetManager& assets;
 
 	std::unique_ptr<Pipeline> pipeline;
 	VkPipelineLayout pipelineLayout;
@@ -88,7 +99,7 @@ private:
 /// <param name="builder"> RenderSystemBuilder </param>
 /// <returns> return an instance of render system </returns>
 template<class T>
-inline std::shared_ptr<GlobalRenderSystem> GlobalRenderSystem::create(Device& device, RenderSystemBuilder builder)
+inline std::shared_ptr<GlobalRenderSystem> GlobalRenderSystem::create(Device& device, AssetManager& assets, RenderSystemBuilder builder)
 {
 	std::vector<DescriptorSetObject> bindings;
 	std::vector<VkVertexInputAttributeDescription> attributeDescription;
@@ -119,7 +130,7 @@ inline std::shared_ptr<GlobalRenderSystem> GlobalRenderSystem::create(Device& de
 	}
 
 	return std::make_shared<GlobalRenderSystem>(
-		device,
+		device, assets,
 		builder.renderPass,
 		builder.globalSetLayout,
 		bindings,

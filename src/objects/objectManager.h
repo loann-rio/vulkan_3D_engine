@@ -12,6 +12,9 @@
 
 #include "../assetManager/AssetManager.h"
 
+#include "../model/ModelAsset.h"
+
+
 #include <../json.hpp>
 using json = nlohmann::json;
 
@@ -98,6 +101,9 @@ private:
     void addObjectToScene(GameObject* gameObject);
 
     std::unique_ptr<DescriptorPool> globalPool{};
+
+
+    void createDescriptorSet(ModelAsset* model);
 };
 
 

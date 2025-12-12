@@ -1,5 +1,7 @@
 #include "ModelManager.h"
 
+#include "../model/ModelBuilder.h"
+
 ModelManager::ModelManager()
 {
     cache = std::unordered_map<size_t, CacheEntry>{};
@@ -25,7 +27,7 @@ ModelManager::ModelID ModelManager::create(ModelBuilder& builder)
         return 0; // failed to build model
     }
 
-    cache[key] = { std::move(model), 0 };
+    cache[key] = { std::move(model), 1 };
 
     return key;
 }
@@ -43,8 +45,9 @@ void ModelManager::remove(const ModelID id)
         return; // unknown ID
 
     it->second.refCount--;
-    if (it->second.refCount < 0)
+    if (it->second.refCount == 0)
         cache.erase(it);
+       
 }
 
 void ModelManager::removeAll()

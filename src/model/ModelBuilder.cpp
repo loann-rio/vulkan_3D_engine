@@ -2,6 +2,10 @@
 
 #include <algorithm> 
 #include <stdexcept>
+#include <iostream>
+
+#include "Decoder/ObjModelDecoder.h"
+#include "ModelUploader.h"
 
 namespace {
 
@@ -18,12 +22,10 @@ namespace {
     }
 }
 
-ModelBuilder::ModelBuilder(Device& device) : device(device) {}
+ModelBuilder::ModelBuilder(Device& device, AssetManager& assets) : device(device), assets(assets) {}
 
 ModelBuilder& ModelBuilder::fromFile(const std::string& path)
 {
-    if (source != SourceType::Obj && source != SourceType::None)
-        throw std::runtime_error("all model should have the same type");
 
     auto ext = getExtension(path);
     if (ext == "obj")
@@ -101,30 +103,125 @@ uint64_t ModelBuilder::hash() const
 
 std::unique_ptr<ModelAsset> ModelBuilder::build()
 {
-    switch (source)
-    {
-        case ModelBuilder::SourceType::GlTF:
-            return buildGlTF();
+    try {
+        switch (source)
+        {
+            case ModelBuilder::SourceType::GlTF:
+                return buildGlTF();
 
-        case ModelBuilder::SourceType::Obj:
-            return buildObj();
+            case ModelBuilder::SourceType::Obj:
+                return buildObj();
         
-        case ModelBuilder::SourceType::None:
-        default:
-            throw std::runtime_error("no file provided");
+            case ModelBuilder::SourceType::None:
+            default:
+                throw std::runtime_error("no suported file provided");
+        }
+
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << std::string("TextureBuilder: build failed: ") + e.what() << "\n";
+        return nullptr;
     }
 }
 
 std::unique_ptr<ModelAsset> ModelBuilder::buildObj()
 {
+    if (modelPath.empty()) {
+        throw std::runtime_error("path cannot be empty for obj");
+    }
+
+    std::unique_ptr<ModelAsset> fullModel = std::make_unique<ModelAsset>();
+
+    size_t i = 0;
+    for (auto modelFilePath : modelPath)
+    {
+        if (modelFilePath.empty()) {
+            throw std::runtime_error("path cannot be empty for obj");
+        }
+
+        ObjModelDecoder decoder;
+        if (!decoder.canDecode(modelFilePath)) {
+            throw std::runtime_error("obj not suported by decoder");
+        }
+
+        DecodedModel decodedModel = decoder.decode(modelFilePath);
 
 
-    throw std::runtime_error("build type not implemented yet");
+        ModelLOD model = ModelUploader::uploadDecodedModel(device, assets, decodedModel);
+
+        if (i < textures.size())
+        {
+            Material mat;
+            mat.albedoTexture = textures[i++];
+            model.materials.push_back(mat);
+        }
+
+        if (model.materials.empty()) {
+            Material mat;
+            TextureBuilder builder(device);
+            mat.albedoTexture = assets.textures().create(builder.fromFile("textures/whiteTexture.jpg"));
+            model.materials.push_back(mat);
+        }
+
+        
+
+        fullModel->lods.push_back(std::move(model));
+    }
+
+    return fullModel;
+
 }
 
 std::unique_ptr<ModelAsset> ModelBuilder::buildGlTF()
 {
-    throw std::runtime_error("build type not implemented yet");
+
+    if (modelPath.empty()) {
+        throw std::runtime_error("path cannot be empty for obj");
+    }
+
+    std::unique_ptr<ModelAsset> fullModel = std::make_unique<ModelAsset>();
+
+    size_t i = 0;
+    for (auto modelFilePath : modelPath)
+    {
+        if (modelFilePath.empty()) {
+            throw std::runtime_error("path cannot be empty for obj");
+        }
+
+        throw std::runtime_error("build type not implemented yet");
+
+        ObjModelDecoder decoder;
+        if (!decoder.canDecode(modelFilePath)) {
+            throw std::runtime_error("obj not suported by decoder");
+        }
+
+        DecodedModel decodedModel = decoder.decode(modelFilePath);
+
+
+        ModelLOD model = ModelUploader::uploadDecodedModel(device, assets, decodedModel);
+
+        if (i < textures.size())
+        {
+            Material mat;
+            mat.albedoTexture = textures[i++];
+            model.materials.push_back(mat);
+        }
+
+        if (model.materials.empty()) {
+            Material mat;
+            TextureBuilder builder(device);
+            mat.albedoTexture = assets.textures().create(builder.fromFile("textures/whiteTexture.jpg"));
+            model.materials.push_back(mat);
+        }
+
+
+
+        fullModel->lods.push_back(std::move(model));
+    }
+
+    return fullModel;
+    
 }
 
 

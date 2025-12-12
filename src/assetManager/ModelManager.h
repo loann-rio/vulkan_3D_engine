@@ -1,10 +1,11 @@
 #pragma once
 
-#include "../model/ModelAsset.h"
-#include "../model/ModelBuilder.h"
-
 #include <unordered_map>
 #include <mutex>
+
+#include "../model/ModelAsset.h"
+
+class ModelBuilder;
 
 class ModelManager {
 

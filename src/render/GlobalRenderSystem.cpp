@@ -9,12 +9,13 @@
 #include <cassert>
 
 
-GlobalRenderSystem::GlobalRenderSystem(Device& device, VkRenderPass renderPass,
+GlobalRenderSystem::GlobalRenderSystem(Device& device, AssetManager& assets,
+	VkRenderPass renderPass,
 	std::vector<VkDescriptorSetLayout> globalSetLayout, std::vector<DescriptorSetObject> bindings,
 	const std::string& vertFilepath, const std::string& fragFilepath,
 	ModelType modelType, ModelSubType subModelType,
 	std::vector<VkVertexInputBindingDescription> bindingDescription, std::vector<VkVertexInputAttributeDescription> attributeDescription, VkShaderStageFlagBits pushStage_in, bool isShadow, bool isSkyBox, bool isFullsceenrender)
-	: device{ device }, modelType{ modelType }, isShadow{ isShadow }, modelSubType{ subModelType }, isSkyBox{ isSkyBox }, isFullscreenRender{ isFullsceenrender }
+	: device{ device }, modelType{ modelType }, isShadow{ isShadow }, modelSubType{ subModelType }, isSkyBox{ isSkyBox }, isFullscreenRender{ isFullsceenrender }, assets{ assets }
 {
 	if (pushStage_in) {
 		pushStage = pushStage_in;
@@ -201,6 +202,44 @@ void GlobalRenderSystem::bind(VkCommandBuffer& commandBuffer, std::vector<VkDesc
 	}
 }
 
+void GlobalRenderSystem::bindModel(VkCommandBuffer& commandBuffer, ModelAsset* model)
+{
+	VkBuffer buffers[] = { model->lods[0].vertexBuffer->getBuffer() };
+	VkDeviceSize offsets[] = { 0 };
+	vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
+	vkCmdBindIndexBuffer(commandBuffer, model->lods[0].indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
+}
+
+void GlobalRenderSystem::bindTextures(VkCommandBuffer& commandBuffer, ModelAsset* model, Primitive& primitive, uint16_t frameIndex)
+{
+	vkCmdBindDescriptorSets(commandBuffer,
+		VK_PIPELINE_BIND_POINT_GRAPHICS,
+		pipelineLayout,
+		modelDescriptorSetIndex, 1,
+		&model->lods[0].materials[primitive.materialIndex].descriptorSet[frameIndex],
+		0,
+		nullptr);
+}
+
+void GlobalRenderSystem::drawModel(VkCommandBuffer& commandBuffer, ModelAsset* model, Primitive& primitive, glm::mat4 modelMat, glm::mat4 normalM)
+{
+	SimplePushConstantData push{};
+	push.modelMatrix = modelMat;
+	push.normalMatrix = normalM;
+
+	vkCmdPushConstants(
+		commandBuffer,
+		pipelineLayout,
+		VK_SHADER_STAGE_VERTEX_BIT,
+		0,
+		sizeof(push),
+		&push
+	);
+
+	vkCmdDrawIndexed(commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
+	
+}
+
 void GlobalRenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, std::vector<VkDescriptorSet> globalDescriptorSets, const std::array<FrustumPlane, 6>& frustrumPlanes)
 {
 	bind(commandBuffer, globalDescriptorSets);
@@ -208,8 +247,26 @@ void GlobalRenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, Frame
 	for (auto& obj : frameInfo.listGameObjects)
 	{
 		if (obj->show && !obj->toBeRemoved && obj->getModelType() == modelType && obj->getModelSubType() == modelSubType)
+		{
+			
 
-			renderModel(commandBuffer, frameInfo, obj, frustrumPlanes);
+			if (obj->modelAsset) {
+
+				auto modelAsset = assets.models().get(obj->modelAsset);
+
+				bindModel(commandBuffer, modelAsset);
+
+				for (auto primitive : modelAsset->lods[0].primitives)
+				{
+					bindTextures(commandBuffer, modelAsset, primitive, frameInfo.frameIndex);
+					drawModel(commandBuffer, modelAsset, primitive, obj->getTransformMat(), obj->getNormalMat());
+				}
+			}
+			else
+			{
+				renderModel(commandBuffer, frameInfo, obj, frustrumPlanes);
+			}
+		}
 	}
 }
 

@@ -1,6 +1,6 @@
 #pragma once
 #include <memory>
-//#include "ModelManager.h"
+#include "ModelManager.h"
 #include "TextureManager.h"
 //#include "ShaderManager.h"
 //#include "ScriptManager.h"
@@ -9,10 +9,12 @@ class AssetManager {
 public:
     AssetManager() {
 		textureMgr = std::make_unique<TextureManager>();
+        modelMgr = std::make_unique<ModelManager>();
     };
 
-    //ModelManager& models() { return *modelMgr; }
+    
     TextureManager& textures() { return *textureMgr; }
+    ModelManager& models() { return *modelMgr; }
     //ShaderManager& shaders() { return *shaderMgr; }
     //ScriptManager& scripts() { return *scriptMgr; }
 
@@ -20,7 +22,7 @@ public:
     //void update();
 
 private:
-    //std::unique_ptr<ModelManager> modelMgr;
+    std::unique_ptr<ModelManager> modelMgr;
     std::unique_ptr<TextureManager> textureMgr;
     //std::unique_ptr<ShaderManager> shaderMgr;
     //std::unique_ptr<ScriptManager> scriptMgr;

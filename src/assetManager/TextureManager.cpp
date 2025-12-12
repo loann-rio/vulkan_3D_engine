@@ -25,7 +25,7 @@ TextureManager::TextureID TextureManager::create(TextureBuilder& builder)
         return 0; // failed to build texture
 	}
 
-    cache[key] = { std::move(texture), 0 };
+    cache[key] = { std::move(texture), 1 };
 
     return key;
 }
@@ -43,8 +43,9 @@ void TextureManager::remove(const TextureID id)
         return; // unknown ID
 
     it->second.refCount--;
-    if (it->second.refCount < 0)
+    if (it->second.refCount == 0)
         cache.erase(it);
+            
 }
 
 void TextureManager::removeAll()

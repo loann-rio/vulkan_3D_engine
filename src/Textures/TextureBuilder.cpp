@@ -189,7 +189,7 @@ std::unique_ptr<TextureObject> TextureBuilder::build()
         case SourceType::Custom: return std::move(existingTexture);
         case SourceType::Stb:
         case SourceType::Hdr:
-        case SourceType::Ktx1:
+        case SourceType::Ktx1: 
         case SourceType::Ktx2:
             return forceCubemap ? buildCubemap() : build2D();
         default: throw std::runtime_error("TextureBuilder: No valid source set");

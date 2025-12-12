@@ -24,6 +24,11 @@
 /// <param name="path">Filesystem path to the texture file</param>
 /// <returns>loaded texture</returns>
 std::unique_ptr<TextureObject> TextureAssetLoader::load(Device& device, const std::filesystem::path& path, bool useMipmap) {
+    
+    if (path.empty()) {
+        throw std::exception("TextureAssetLoader : cannot load : empty texture path");
+    }
+    
     const std::string ext = imDecoder::getExtension(path.string());
 
     if (ext == "hdr") {
@@ -51,7 +56,7 @@ std::unique_ptr<TextureObject> TextureAssetLoader::load2D(Device& device, const 
 
     STBDecoder decoder;
     if (!decoder.canDecode(path)) {
-        throw std::runtime_error("TextureLoader::load2D - Unsupported 2D texture format: " + imDecoder::getExtension(path.string()));
+        throw std::runtime_error("TextureLoader::load2D - Unsupported 2D texture format: " + imDecoder::getExtension(path.string()) + " from file : " + path.string());
     }
 
     DecodedImage img = decoder.decode(path);

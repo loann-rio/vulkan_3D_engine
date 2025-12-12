@@ -4,18 +4,18 @@
 #include <vector>
 #include <memory>
 
-#include "../base/Device.h"
 #include "ModelAsset.h"
-#include "../assetManager/TextureManager.h"
+
 
 class Device;
 class ModelManager;
+class AssetManager;
 
 class ModelBuilder {
     enum class SourceType { None, GlTF, Obj };
 
 public:
-    explicit ModelBuilder(Device& device);
+    explicit ModelBuilder(Device& device, AssetManager& assets);
 
     //// Input sources ////
     ModelBuilder& fromFile(const std::string& path);
@@ -32,6 +32,7 @@ private:
 
     //// Build ////
     std::unique_ptr<ModelAsset> build();
+    
     std::unique_ptr<ModelAsset> buildObj();
     std::unique_ptr<ModelAsset> buildGlTF();
 
@@ -39,6 +40,7 @@ private:
     std::vector<TextureManager::TextureID> textures{};
 
     Device& device;
+    AssetManager& assets;
 
     // Selected decoder type
     SourceType source = SourceType::None;

@@ -226,7 +226,7 @@ void Engine::run()
                     {
                         globalDescriptorSet[frameIndex],
                         shadowDescriptorSet[renderer.getDepthIndex()],
-                        textureObject->getDescriptorSets()[frameIndex]
+                        assetManager.models().get(textureObject->modelAsset)->lods[0].materials[0].descriptorSet[frameIndex]
                     },
                     frustrumPlanes);
                 
@@ -370,7 +370,7 @@ void Engine::createRenderSystems()
             gltfBuilder.renderPass = renderer.getSwapChainRenderPass();
 			gltfBuilder.hasMultipleInstance = true;
 
-            gltfRenderSystem = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, gltfBuilder);
+            gltfRenderSystem = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, assetManager, gltfBuilder);
         }
 
         {
@@ -380,7 +380,7 @@ void Engine::createRenderSystems()
             gltfShadowBuilder.renderPass = renderer.getDepthRenderPass();
 			gltfShadowBuilder.hasMultipleInstance = true;
 
-            depthRenderSystemGltf = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, gltfShadowBuilder);
+            depthRenderSystemGltf = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, assetManager, gltfShadowBuilder);
         }
     }
 
@@ -393,7 +393,7 @@ void Engine::createRenderSystems()
             objBuilder.renderPass = renderer.getSwapChainRenderPass();
             objBuilder.hasMultipleInstance = true;
 
-            objRenderSystem = GlobalRenderSystem::create<Model>(device, objBuilder);
+            objRenderSystem = GlobalRenderSystem::create<Model>(device, assetManager, objBuilder);
         }
 
         {
@@ -403,7 +403,7 @@ void Engine::createRenderSystems()
             objShadowBuilder.renderPass = renderer.getDepthRenderPass();
             objShadowBuilder.hasMultipleInstance = true;
 
-            depthRenderSystem = GlobalRenderSystem::create<Model>(device, objShadowBuilder);
+            depthRenderSystem = GlobalRenderSystem::create<Model>(device, assetManager, objShadowBuilder);
         }
     }
     
@@ -420,7 +420,7 @@ void Engine::createRenderSystems()
             terrainBuilder.hasMultipleInstance = true;
             terrainBuilder.subModelType = ModelSubType::TERRAIN;
 
-            terrainRenderSystem = GlobalRenderSystem::create<Model>(device, terrainBuilder);
+            terrainRenderSystem = GlobalRenderSystem::create<Model>(device, assetManager, terrainBuilder);
         }
 
         {
@@ -431,7 +431,7 @@ void Engine::createRenderSystems()
             terrainShadowBuilder.hasMultipleInstance = true;
             terrainShadowBuilder.subModelType = ModelSubType::TERRAIN;
 
-            depthTerrainRenderSystem = GlobalRenderSystem::create<Model>(device, terrainShadowBuilder);
+            depthTerrainRenderSystem = GlobalRenderSystem::create<Model>(device, assetManager, terrainShadowBuilder);
         }
     }
 
@@ -443,7 +443,7 @@ void Engine::createRenderSystems()
         skyboxBuilder.renderPass = renderer.getSwapChainRenderPass();
         skyboxBuilder.subModelType = ModelSubType::SKYBOX;
         skyboxBuilder.isSkyBox = true;
-        skyboxRenderSystem = GlobalRenderSystem::create<Model>(device, skyboxBuilder);
+        skyboxRenderSystem = GlobalRenderSystem::create<Model>(device, assetManager, skyboxBuilder);
     }
 
     {
@@ -453,6 +453,6 @@ void Engine::createRenderSystems()
         skyboxBuilder.renderPass = renderer.getSecondarySwapRenderPass();
         skyboxBuilder.isFullscreenRender = true;
         skyboxBuilder.pushStage = static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_FRAGMENT_BIT);
-        skyboxCreationRenderSystem = GlobalRenderSystem::create<Model>(device, skyboxBuilder);
+        skyboxCreationRenderSystem = GlobalRenderSystem::create<Model>(device, assetManager, skyboxBuilder);
     }
 }
