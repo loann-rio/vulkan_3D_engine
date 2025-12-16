@@ -27,7 +27,6 @@ void ObjectManager::startLoadModel()
 
         createDescriptorSet(assetManager.models().get(id));
 
-
         auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
         gameObject->setName("testModelBuilder");
         gameObject->setModelType(ModelType::OBJ_MODEL);
@@ -71,7 +70,7 @@ void ObjectManager::startLoadModel()
 		gameObject->setAttachedClass(std::move(behavior));
 		gameObject->saveable = false;
 		pushGameObject(std::move(gameObject));
-    }*/
+    }
  
     {
 
@@ -89,11 +88,7 @@ void ObjectManager::startLoadModel()
         std::shared_ptr<Model> cube = Model::createModelFromFile(device, assetManager, std::vector<std::array<std::string, 2>>{ {"model/grassLOD/grassLod4.obj", "textures/GrassBillboard.png"} , {"model/grassLOD/grassLod1.obj", "textures/whiteTexture.jpg"}, {"model/grassLOD/grassLod2.obj", ""} , {"model/grassLOD/grassLod3.obj", ""} });
         cube->computeShadow = false;
 
-        /*TextureBuilder textureBuilder(device);
-        auto texture = assetManager.textures().create(textureBuilder.fromFile("textures/whiteTexture.jpg"));
-
-        ModelBuilder builder(device, assetManager);
-        ModelManager::ModelID modelId = assetManager.models().create(builder.fromFile("model/grassLOD/grassLod1.obj").withTexture(texture));*/
+       
 
         auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
         gameObject->setName("testlod");
@@ -103,7 +98,7 @@ void ObjectManager::startLoadModel()
 		gameObject->setMultipleInstances(instances);
         gameObject->createDescriptorSet(*globalPool);
         pushGameObject(std::move(gameObject));
-    }
+    }*/
     
 
 }

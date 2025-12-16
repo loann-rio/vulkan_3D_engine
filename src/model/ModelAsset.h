@@ -8,6 +8,8 @@
 
 #include "Decoder/IModelDecoder.h"
 
+#include "ModelNode.h"
+
 class ModelBuilder;
 
 struct ModelLOD {
@@ -28,7 +30,8 @@ struct ModelLOD {
 
 	uint32_t vertexStride = 0; // size of single vertex
 
-	std::vector<Primitive> primitives;
+	//std::vector<Primitive> primitives;
+	std::vector<Node> nodes;
 	std::vector<Material> materials;
 
 	float switchDistance = std::numeric_limits<float>::infinity();

@@ -184,7 +184,8 @@ class GlTFModel
 		std::vector<Node*> joints;
 	};
 
-	struct Node {
+	struct Node 
+	{
 		Node* parent;
 		uint32_t index;
 
@@ -217,14 +218,16 @@ class GlTFModel
 		~Node();
 	};
 
-	struct AnimationChannel {
+	struct AnimationChannel 
+	{
 		enum PathType { TRANSLATION, ROTATION, SCALE };
 		PathType path;
 		Node* node;
 		uint32_t samplerIndex;
 	};
 
-	struct AnimationSampler {
+	struct AnimationSampler 
+	{
 		enum InterpolationType { LINEAR, STEP, CUBICSPLINE };
 		InterpolationType interpolation;
 		std::vector<float> inputs;
@@ -236,7 +239,8 @@ class GlTFModel
 		void rotate(size_t index, float time, Node* node);
 	};
 
-	struct Animation {
+	struct Animation 
+	{
 		std::string name;
 		std::vector<AnimationSampler> samplers;
 		std::vector<AnimationChannel> channels;
@@ -299,14 +303,12 @@ class GlTFModel
 
 		std::vector<Node*> nodes;
 		std::vector<Node*> linearNodes;
-
 		std::vector<Skin*> skins;
 
 		std::vector<TextureModel> textures; 
 		std::vector<TextureSampler> textureSamplers;
-		
-
 		std::vector<Material> materials;
+
 		std::shared_ptr<Buffer> materialBuffer = nullptr; 
 
 		std::vector<Animation> animations;		

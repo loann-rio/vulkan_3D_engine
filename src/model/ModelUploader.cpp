@@ -9,6 +9,7 @@
 #include "../assetManager/AssetManager.h"
 #include "../base/Buffer.h"
 #include "../base/Device.h"
+#include "ModelNode.h"
 #include "Decoder/IModelDecoder.h"
 #include "ModelAsset.h"
 #include "Vertex/IVertexData.h"
@@ -19,16 +20,18 @@ ModelLOD ModelUploader::uploadDecodedModel(Device& device, AssetManager& assets,
 	std::unique_ptr<Buffer> vertexBuffer = createVertexBuffers(device, obj.vertices.get());
 	std::unique_ptr<Buffer> indexBuffer = createIndexBuffers(device, obj.indices);
 
-	//std::vector<Material> materials
-
 	ModelLOD asset{};
 	asset.vertexBuffer = std::move(vertexBuffer);
 	asset.vertexCount = obj.vertices->vertexCount();
 	asset.indexBuffer = std::move(indexBuffer);
 	asset.indexCount = obj.indices.size();
 	asset.vertexStride = obj.vertices->stride();
-	asset.primitives = obj.primitives;
+	
 	asset.materials = uploadMaterialsTextures(device, assets, obj.materials);
+
+	Node node{};
+	node.primitives = obj.primitives;
+	asset.nodes.push_back(node);
 
 	return asset;
 }

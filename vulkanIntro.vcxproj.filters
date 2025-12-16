@@ -189,6 +189,18 @@
     <ClCompile Include="src\model\Vertex\ObjVertexData.cpp">
       <Filter>model\Vertex</Filter>
     </ClCompile>
+    <ClCompile Include="src\model\Decoder\GlTFModelDecoder.cpp">
+      <Filter>model\Decoder</Filter>
+    </ClCompile>
+    <ClCompile Include="src\model\ModelNode.cpp">
+      <Filter>model</Filter>
+    </ClCompile>
+    <ClCompile Include="src\model\Decoder\GltfNodeDecoder.cpp">
+      <Filter>model\Decoder</Filter>
+    </ClCompile>
+    <ClCompile Include="src\model\Vertex\GltfVertexData.cpp">
+      <Filter>model\Vertex</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tiny_gltf.h">
@@ -363,6 +375,12 @@
     </ClInclude>
     <ClInclude Include="src\model\Vertex\GltfVertexData.h">
       <Filter>model\Vertex</Filter>
+    </ClInclude>
+    <ClInclude Include="src\model\Decoder\GlTFModelDecoder.h">
+      <Filter>model\Decoder</Filter>
+    </ClInclude>
+    <ClInclude Include="src\model\ModelNode.h">
+      <Filter>model</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

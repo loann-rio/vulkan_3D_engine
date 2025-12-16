@@ -8,13 +8,11 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
 
-#include "../../base/Utils.h"
-
-//#define TINYOBJLOADER_IMPLEMENTATION
 #include "../../external/tinyobjectloader/tiny_obj_loader.h"
 
-
 #include "../Vertex/ObjVertexData.h"
+#include "../../base/Utils.h"
+
 
 namespace std {
 	template<>

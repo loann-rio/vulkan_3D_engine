@@ -255,12 +255,12 @@ void GlobalRenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, Frame
 				auto modelAsset = assets.models().get(obj->modelAsset);
 
 				bindModel(commandBuffer, modelAsset);
-
-				for (auto primitive : modelAsset->lods[0].primitives)
-				{
-					bindTextures(commandBuffer, modelAsset, primitive, frameInfo.frameIndex);
-					drawModel(commandBuffer, modelAsset, primitive, obj->getTransformMat(), obj->getNormalMat());
-				}
+				for (auto node : modelAsset->lods[0].nodes)
+					for (auto primitive : node.primitives)
+					{
+						bindTextures(commandBuffer, modelAsset, primitive, frameInfo.frameIndex);
+						drawModel(commandBuffer, modelAsset, primitive, obj->getTransformMat(), obj->getNormalMat());
+					}
 			}
 			else
 			{

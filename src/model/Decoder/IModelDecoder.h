@@ -4,8 +4,6 @@
 #include <memory>
 #include <string>   
 #include <vector>
-#include <array>
-
 #include <filesystem>
 
 #define GLM_FORCE_RADIANS
@@ -14,10 +12,11 @@
 
 #include "../../assetManager/TextureManager.h"
 
-
 #include "../Vertex/IVertexData.h"
 
 #include "../BoundingBox.h"
+
+#include "../ModelNode.h"
 
 namespace moDecoder {
 
@@ -38,14 +37,7 @@ namespace moDecoder {
     }
 }
 
-struct Primitive {
-    BoundingBox aabb;
 
-    uint32_t firstIndex;
-    uint32_t indexCount;
-
-    uint32_t materialIndex = 0;
-};
 
 struct DecodedMaterial {
     // References to textures IDs from TextureManager
@@ -66,6 +58,7 @@ struct DecodedModel {
     std::vector<uint32_t> indices;
     std::vector<Primitive> primitives;
     std::vector<DecodedMaterial> materials;
+    std::vector<std::unique_ptr<Node>> nodes;
     BoundingBox aabb;
 
     std::string name;
