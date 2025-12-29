@@ -5,6 +5,8 @@
 #include <iostream>
 
 #include "Decoder/ObjModelDecoder.h"
+#include "Decoder/GlTFModelDecoder.h"
+
 #include "ModelUploader.h"
 
 namespace {
@@ -75,6 +77,16 @@ ModelBuilder& ModelBuilder::fromGlTF(const std::string& path)
     return *this;
 }
 
+ModelBuilder& ModelBuilder::fromVertexList(std::unique_ptr<IVertexData> newVertices, std::vector<uint32_t> newIndices)
+{
+    source = SourceType::Vertex;
+    
+    vertices = std::move(newVertices);
+    indices = std::move(newIndices);
+
+    return *this;
+}
+
 ModelBuilder& ModelBuilder::withTexture(TextureManager::TextureID texture)
 {
     textures.push_back(texture);
@@ -83,6 +95,13 @@ ModelBuilder& ModelBuilder::withTexture(TextureManager::TextureID texture)
 
 uint64_t ModelBuilder::hash() const
 {
+    if (source == SourceType::Vertex)
+    {
+        // Generate a unique id for custom model
+        static std::atomic<uint64_t> customCounter = 1;
+        return 0xFFFFFFFF00000000ull | customCounter++;
+    }
+
     auto combine = [](uint64_t& seed, uint64_t v) {
         seed ^= v + 0x9e3779b97f4a7c15ULL + (seed << 6) + (seed >> 2);
         };
@@ -106,6 +125,9 @@ std::unique_ptr<ModelAsset> ModelBuilder::build()
     try {
         switch (source)
         {
+            case ModelBuilder::SourceType::Vertex:
+                return buildFromVertice();
+
             case ModelBuilder::SourceType::GlTF:
                 return buildGlTF();
 
@@ -120,7 +142,7 @@ std::unique_ptr<ModelAsset> ModelBuilder::build()
     }
     catch (const std::exception& e)
     {
-        std::cerr << std::string("TextureBuilder: build failed: ") + e.what() << "\n";
+        std::cerr << std::string("modelBuilder: build failed: ") + e.what() << "\n";
         return nullptr;
     }
 }
@@ -146,7 +168,6 @@ std::unique_ptr<ModelAsset> ModelBuilder::buildObj()
         }
 
         DecodedModel decodedModel = decoder.decode(modelFilePath);
-
 
         ModelLOD model = ModelUploader::uploadDecodedModel(device, assets, decodedModel);
 
@@ -189,15 +210,13 @@ std::unique_ptr<ModelAsset> ModelBuilder::buildGlTF()
             throw std::runtime_error("path cannot be empty for obj");
         }
 
-        throw std::runtime_error("build type not implemented yet");
-
-        ObjModelDecoder decoder;
+        GlTFModelDecoder decoder;
         if (!decoder.canDecode(modelFilePath)) {
-            throw std::runtime_error("obj not suported by decoder");
+            throw std::runtime_error("path not suported by decoder");
         }
+       
 
         DecodedModel decodedModel = decoder.decode(modelFilePath);
-
 
         ModelLOD model = ModelUploader::uploadDecodedModel(device, assets, decodedModel);
 
@@ -215,13 +234,44 @@ std::unique_ptr<ModelAsset> ModelBuilder::buildGlTF()
             model.materials.push_back(mat);
         }
 
-
-
         fullModel->lods.push_back(std::move(model));
     }
 
     return fullModel;
     
+}
+
+std::unique_ptr<ModelAsset> ModelBuilder::buildFromVertice()
+{
+    if (indices.empty()) {
+        throw std::runtime_error("indices cannot be empty");
+    }
+
+    if (vertices == nullptr) {
+        throw std::runtime_error("vertex must be defined");
+    }
+
+    std::unique_ptr<ModelAsset> fullModel = std::make_unique<ModelAsset>();
+
+    ModelLOD model = ModelUploader::uploadVertexList(device, assets, std::move(vertices), indices);
+
+    for (TextureManager::TextureID text : textures)
+    {
+        Material mat;
+        mat.albedoTexture = text;
+        model.materials.push_back(mat);
+    }
+
+    if (model.materials.empty()) {
+        Material mat;
+        TextureBuilder builder(device);
+        mat.albedoTexture = assets.textures().create(builder.fromFile("textures/whiteTexture.jpg"));
+        model.materials.push_back(mat);
+    }
+
+    fullModel->lods.push_back(std::move(model));
+
+    return fullModel;
 }
 
 

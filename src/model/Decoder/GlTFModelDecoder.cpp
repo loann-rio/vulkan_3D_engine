@@ -12,8 +12,11 @@
 #include <vector>
 #include <cstdint>
 #include <memory>
+#include <algorithm>
+#include <iterator>
 
 #include "../Vertex/GltfVertexData.h"
+
 
 
 
@@ -29,35 +32,36 @@ namespace {
 		if (ext == "ktx" || ext == "ktx2") return true;
 
 		return tinygltf::LoadImageData(image, imageIndex, error, warning, req_width, req_height, bytes, size, userData);
+	}	
+
+	tinygltf::Model loadModel(tinygltf::TinyGLTF& gltfContext, const std::filesystem::path& path) {
+		std::string error;
+		std::string warning;
+
+		tinygltf::Model gltfModel;
+		bool fileLoaded;
+		if (isBinaryFile(path))
+			fileLoaded = gltfContext.LoadBinaryFromFile(&gltfModel, &error, &warning, path.string().c_str());
+		else
+			fileLoaded = gltfContext.LoadASCIIFromFile(&gltfModel, &error, &warning, path.string().c_str());
+
+		if (!fileLoaded) {
+			std::cerr << "Could not load gltf file: " << error << std::endl;
+			throw std::exception("gltf decoder : Could not load gltf file");
+		}
 	}
 
-	void loadGltfMaterials(tinygltf::Model& gltfModel) 
+	size_t gltfIndexToLinearNodeIndex(std::vector<size_t>& nodes, size_t gltfIndex)
 	{
-		/*loadTextureSamplers(gltfModel);
-		loadTextures(gltfModel, device);
+		auto it = std::find(nodes.begin(), nodes.end(), gltfIndex);
 
-		loadMaterials(gltfModel);
-		createMaterialBuffer();*/
-
+		if (it != nodes.end()) {
+			return std::distance(nodes.begin(), it);
+		}
+		else {
+			throw std::exception("gltf decoder : Could not find gltf node index");
+		}
 	}
-
-	void loadSkins(tinygltf::Model& gltfModel)
-	{
-		//loadSkins(gltfModel);
-
-		//for (auto node : linearNodes) {
-		//	// Assign skins
-		//	if (node->skinIndex > -1) {
-		//		node->skin = skins[node->skinIndex];
-		//	}
-
-		//	// Initial pose
-		//	if (node->mesh) {
-		//		node->update();
-		//	}
-		//}
-	}
-	
 }
 
 bool GlTFModelDecoder::canDecode(const std::filesystem::path& path) const
@@ -73,6 +77,8 @@ DecodedModel GlTFModelDecoder::decode(const std::filesystem::path& path) const
 	tinygltf::TinyGLTF gltfContext;
 	gltfContext.SetImageLoader(loadImageDataFunc, nullptr);
 
+
+	// load file 
 	std::string error;
 	std::string warning;
 
@@ -88,29 +94,58 @@ DecodedModel GlTFModelDecoder::decode(const std::filesystem::path& path) const
 		throw std::exception("gltf decoder : Could not load gltf file");
 	}
 
-	loadGltfMaterials(gltfModel);
-
+	// initial scene
 	const tinygltf::Scene& scene = gltfModel.scenes[gltfModel.defaultScene > -1 ? gltfModel.defaultScene : 0];
 
 	std::vector<GltfVertex> localVertices;
 	std::vector<uint32_t> localIndices;
+
 	std::vector<std::unique_ptr<Node>> nodes;
+	std::vector<size_t> nodesGlTFIndices;
+
+	std::vector<size_t> rootNodes;
+
 	for (size_t i = 0; i < scene.nodes.size(); i++) {
-		const tinygltf::Node node = gltfModel.nodes[scene.nodes[i]];
-		loadNode(nullptr, node, scene.nodes[i], gltfModel, localVertices, localIndices, nodes);
+		const tinygltf::Node& node = gltfModel.nodes[scene.nodes[i]];
+		loadNode(
+			/* parent index : */ -1, 
+			/* current node */   node, 
+			/* node gltf index*/ scene.nodes[i], 
+			/* model */          gltfModel, 
+			/* targets : */
+			localVertices, localIndices, 
+			nodes, nodesGlTFIndices, rootNodes);
 	}
 
-	decodedModel.vertices = std::make_unique<GltfVertexData>(std::move(localVertices));
-	decodedModel.indices  = std::move(localIndices);
+	decodedModel.vertices    = std::make_unique<GltfVertexData>(std::move(localVertices));
+	decodedModel.indices     = std::move(localIndices);
+	decodedModel.nodes       = std::move(nodes);
+	decodedModel.rootNodes   = std::move(rootNodes);
 
-	/*if (gltfModel.animations.size() > 0) {
-		loadAnimations(gltfModel);
+	decodedModel.materials   = loadMaterials(gltfModel);
+	decodedModel.textures    = loadTextures(gltfModel);
+
+
+	decodedModel.animations  = loadAnimations(gltfModel);
+
+	// convert from gltf indices to linearNode indices
+	for (DecodedAnimation anim : decodedModel.animations) {
+		for (DecodedAnimationChannel& channel : anim.channels) {
+			channel.nodeIndex = 
+				gltfIndexToLinearNodeIndex(nodesGlTFIndices, channel.nodeIndex);
+		}
 	}
 
-	loadSkins(gltfModel);
-	*/
 
+	decodedModel.skins       = loadSkins(gltfModel);
 
+	// convert from gltf indices to linearNode indices
+	for (DecodedSkin& skin : decodedModel.skins) {
+		skin.skeletonRootIndex = gltfIndexToLinearNodeIndex(nodesGlTFIndices, skin.skeletonRootIndex);
+
+		for (size_t& index : skin.jointsIndex) 
+			index = gltfIndexToLinearNodeIndex(nodesGlTFIndices, index);
+	}
+	
 	return decodedModel;
-
 }

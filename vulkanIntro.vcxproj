@@ -190,11 +190,15 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClCompile Include="src\GameObjectClassAssets\finiteSizedTerrainGeneration.cpp" />
     <ClCompile Include="src\GameObjectClassAssets\TerrainGenerator.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\model\Decoder\GlTFAnimationDecoder.cpp" />
+    <ClCompile Include="src\model\Decoder\GlTFMaterialsDecoder.cpp" />
     <ClCompile Include="src\model\Decoder\GlTFModelDecoder.cpp" />
     <ClCompile Include="src\model\Decoder\GltfNodeDecoder.cpp" />
     <ClCompile Include="src\model\Decoder\ObjModelDecoder.cpp" />
     <ClCompile Include="src\model\GlTFModel.cpp" />
     <ClCompile Include="src\model\Model.cpp" />
+    <ClCompile Include="src\model\ModelAnimation.cpp" />
+    <ClCompile Include="src\model\ModelAsset.cpp" />
     <ClCompile Include="src\model\ModelBuilder.cpp" />
     <ClCompile Include="src\model\ModelNode.cpp" />
     <ClCompile Include="src\model\ModelUploader.cpp" />
@@ -253,6 +257,7 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClInclude Include="src\model\Decoder\ObjModelDecoder.h" />
     <ClInclude Include="src\model\GlTFModel.h" />
     <ClInclude Include="src\model\Model.h" />
+    <ClInclude Include="src\model\ModelAnimation.h" />
     <ClInclude Include="src\model\ModelAsset.h" />
     <ClInclude Include="src\model\ModelBuilder.h" />
     <ClInclude Include="src\model\ModelNode.h" />
@@ -289,6 +294,8 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <None Include="shaders\equirectangular_to_cube.frag" />
     <None Include="shaders\fullscreen.vert" />
     <None Include="shaders\global_ubo.minc" />
+    <None Include="shaders\GlTFAssetRenderer.frag" />
+    <None Include="shaders\GlTFAssetRenderer.vert" />
     <None Include="shaders\GlTFshader.frag" />
     <None Include="shaders\GlTFshader.vert" />
     <None Include="shaders\point_light.frag" />
@@ -297,16 +304,11 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <None Include="shaders\shadowmapgltf.vert" />
     <None Include="shaders\shadowMapTerrain.vert" />
     <None Include="shaders\simple_shader.frag" />
-    <None Include="shaders\simple_shader.mfrag" />
     <None Include="shaders\simple_shader.vert" />
     <None Include="shaders\skybox.frag" />
     <None Include="shaders\skybox.vert" />
     <None Include="shaders\terrainShader.frag" />
     <None Include="shaders\terrainShader.vert" />
-    <None Include="shaders\test.vert" />
-    <None Include="shaders\testRed.frag" />
-    <None Include="shaders\text.frag" />
-    <None Include="shaders\text.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

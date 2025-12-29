@@ -10,6 +10,10 @@ C:\VulkanSDK\1.4.313.2\Bin\glslc.exe text.frag -o text.frag.spv --target-env=vul
 C:\VulkanSDK\1.4.313.2\Bin\glslc.exe GlTFshader.vert -o GlTFshader.vert.spv --target-env=vulkan1.2
 C:\VulkanSDK\1.4.313.2\Bin\glslc.exe GlTFshader.frag -o GlTFshader.frag.spv --target-env=vulkan1.2
 
+
+C:\VulkanSDK\1.4.313.2\Bin\glslc.exe GlTFAssetRenderer.vert -o GlTFAssetRenderer.vert.spv --target-env=vulkan1.2
+C:\VulkanSDK\1.4.313.2\Bin\glslc.exe GlTFAssetRenderer.frag -o GlTFAssetRenderer.frag.spv --target-env=vulkan1.2
+
 C:\VulkanSDK\1.4.313.2\Bin\glslc.exe shadowmap.vert -o shadowmap.vert.spv --target-env=vulkan1.2
 C:\VulkanSDK\1.4.313.2\Bin\glslc.exe shadowmapgltf.vert -o shadowmapgltf.vert.spv --target-env=vulkan1.2 
 

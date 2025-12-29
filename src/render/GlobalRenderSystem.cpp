@@ -210,18 +210,18 @@ void GlobalRenderSystem::bindModel(VkCommandBuffer& commandBuffer, ModelAsset* m
 	vkCmdBindIndexBuffer(commandBuffer, model->lods[0].indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 }
 
-void GlobalRenderSystem::bindTextures(VkCommandBuffer& commandBuffer, ModelAsset* model, Primitive& primitive, uint16_t frameIndex)
+void GlobalRenderSystem::bindTextures(VkCommandBuffer& commandBuffer, std::vector<VkDescriptorSet>& descriptorSet, uint16_t frameIndex)
 {
 	vkCmdBindDescriptorSets(commandBuffer,
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
 		pipelineLayout,
 		modelDescriptorSetIndex, 1,
-		&model->lods[0].materials[primitive.materialIndex].descriptorSet[frameIndex],
+		&descriptorSet[frameIndex],
 		0,
 		nullptr);
 }
 
-void GlobalRenderSystem::drawModel(VkCommandBuffer& commandBuffer, ModelAsset* model, Primitive& primitive, glm::mat4 modelMat, glm::mat4 normalM)
+void GlobalRenderSystem::drawPrimitive(VkCommandBuffer& commandBuffer, Primitive& primitive, glm::mat4 modelMat, glm::mat4 normalM)
 {
 	SimplePushConstantData push{};
 	push.modelMatrix = modelMat;
@@ -240,6 +240,37 @@ void GlobalRenderSystem::drawModel(VkCommandBuffer& commandBuffer, ModelAsset* m
 	
 }
 
+void GlobalRenderSystem::drawNode(VkCommandBuffer& commandBuffer,
+	ModelLOD& model, Node* node, uint16_t frameIndex, 
+	const std::array<FrustumPlane, 6>& planes, 
+	glm::mat4 modelMat, glm::mat4 normalM, bool bindSkin)
+{
+
+	for (auto& child : node->children) {
+		
+		drawNode(commandBuffer, model, child, frameIndex, planes, modelMat, normalM);
+	}
+	
+	if (bindSkin && node->bufferCreated) {
+		vkCmdBindDescriptorSets(
+			commandBuffer,
+			VK_PIPELINE_BIND_POINT_GRAPHICS,
+			pipelineLayout,
+			3, 1,
+			&node->descriptorSet[frameIndex],
+			0, nullptr
+		);
+	}
+
+	for (auto primitive : node->primitives)
+	{
+		bindTextures(commandBuffer, model.materials[primitive.materialIndex].descriptorSet, frameIndex);
+		drawPrimitive(commandBuffer, primitive, modelMat, normalM);
+	}
+
+	
+}
+
 void GlobalRenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, std::vector<VkDescriptorSet> globalDescriptorSets, const std::array<FrustumPlane, 6>& frustrumPlanes)
 {
 	bind(commandBuffer, globalDescriptorSets);
@@ -249,18 +280,23 @@ void GlobalRenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, Frame
 		if (obj->show && !obj->toBeRemoved && obj->getModelType() == modelType && obj->getModelSubType() == modelSubType)
 		{
 			
-
-			if (obj->modelAsset) {
+			if (obj->modelAsset && modelSubType == ModelSubType::GLTF_ASSET) {
 
 				auto modelAsset = assets.models().get(obj->modelAsset);
 
 				bindModel(commandBuffer, modelAsset);
-				for (auto node : modelAsset->lods[0].nodes)
-					for (auto primitive : node.primitives)
-					{
-						bindTextures(commandBuffer, modelAsset, primitive, frameInfo.frameIndex);
-						drawModel(commandBuffer, modelAsset, primitive, obj->getTransformMat(), obj->getNormalMat());
-					}
+				for (auto& node : modelAsset->lods[0].nodes) {
+					drawNode(commandBuffer, modelAsset->lods[0], node, frameInfo.frameIndex, frustrumPlanes, obj->getTransformMat(), obj->getNormalMat(), true);
+				}
+
+			}
+			if (obj->modelAsset) {
+				auto modelAsset = assets.models().get(obj->modelAsset);
+
+				bindModel(commandBuffer, modelAsset);
+				for (auto& node : modelAsset->lods[0].nodes) {
+					drawNode(commandBuffer, modelAsset->lods[0], node, frameInfo.frameIndex, frustrumPlanes, obj->getTransformMat(), obj->getNormalMat());
+				}
 			}
 			else
 			{

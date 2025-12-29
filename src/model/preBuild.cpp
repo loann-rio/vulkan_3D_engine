@@ -7,37 +7,47 @@
 #include "../Textures/TextureBuilder.h"
 #include "../Textures/TextureObject.h"
 
-std::shared_ptr<Model> PrebuiltModel::createFullScreenQuad(Device& device, AssetManager& assets)
+#include "Vertex/ObjVertexData.h"
+#include "ModelAsset.h"
+#include "ModelBuilder.h"
+
+ModelManager::ModelID PrebuiltModel::createFullScreenQuad(Device& device, AssetManager& assets)
 {
-    Model::Builder modelBuilder{};
+   
+    std::vector<ObjVertex> vertices;
+    vertices.push_back({ {-1.0f, -1.0f, 0.0f}, {1,1,1}, {0,0,1}, {0.0f, 0.0f} });  // bottom-left
+    vertices.push_back({ { 1.0f, -1.0f, 0.0f}, {1,1,1}, {0,0,1}, {1.0f, 0.0f} });  // bottom-right
+    vertices.push_back({ { 1.0f,  1.0f, 0.0f}, {1,1,1}, {0,0,1}, {1.0f, 1.0f} });  // top-right
+    vertices.push_back({ {-1.0f,  1.0f, 0.0f}, {1,1,1}, {0,0,1}, {0.0f, 1.0f} });  // top-left
 
-    // Fullscreen quad directly in clip-space (-1..1)
-    modelBuilder.vertices = {
-        // position           // color  // normal     // uv
-        {{-1.0f, -1.0f, 0.0f}, {1,1,1}, {0,0,1}, {0.0f, 0.0f}},  // bottom-left
-        {{ 1.0f, -1.0f, 0.0f}, {1,1,1}, {0,0,1}, {1.0f, 0.0f}},  // bottom-right
-        {{ 1.0f,  1.0f, 0.0f}, {1,1,1}, {0,0,1}, {1.0f, 1.0f}},  // top-right
-        {{-1.0f,  1.0f, 0.0f}, {1,1,1}, {0,0,1}, {0.0f, 1.0f}},  // top-left
-    };
+    auto vert = std::make_unique<ObjVertexData>(std::move(vertices));
 
-    // Two triangles
-    modelBuilder.indices = {
+    std::vector<uint32_t> indices = {
         0, 1, 2,
         0, 2, 3
     };
 
-    auto model = std::make_unique<Model>(device, assets, modelBuilder);
-
     TextureBuilder builder(device);
-    model->setTexture(assets.textures().create((builder.fromFile("textures/whiteTexture.jpg"))));
+    auto text = assets.textures().create(
+        builder.fromFile("textures/whiteTexture.jpg")
+    );
+
+    ModelBuilder modelBuilder(device, assets);
+    auto model = assets.models().create(
+        modelBuilder
+        .fromVertexList(std::move(vert), indices)
+        .withTexture(text)
+    );
+      
 
     return model;
 }
 
 
-std::shared_ptr<Model> PrebuiltModel::createPlane(Device& device, AssetManager& assets, float width, float depth, uint16_t widthDetail, uint16_t depthDetail, glm::vec3 color, float UVfactor)
+ModelManager::ModelID PrebuiltModel::createPlane(Device& device, AssetManager& assets, float width, float depth, uint16_t widthDetail, uint16_t depthDetail, glm::vec3 color, float UVfactor)
 {
-    Model::Builder modelBuilder{};
+    //Model::Builder modelBuilder{};
+    std::vector<ObjVertex> vertices;
     // Step 1: Generate vertices
     for (unsigned int i = 0; i <= widthDetail; i++) {
         for (unsigned int j = 0; j <= depthDetail; j++) {
@@ -46,11 +56,12 @@ std::shared_ptr<Model> PrebuiltModel::createPlane(Device& device, AssetManager& 
             glm::vec3 normal = { 0, 1, 0 };  // Upward-facing normal
             glm::vec2 uv = { (float)(i * UVfactor) / (float)widthDetail, (float)(j * UVfactor) / (float)depthDetail };
 
-            modelBuilder.vertices.push_back({ position, color, normal, uv });
+            vertices.push_back({ position, color, normal, uv });
         }
     }
 
     // Step 2: Generate indices (triangles)
+    std::vector<uint32_t> indices;
     for (unsigned int i = 0; i < widthDetail; i++) {
         for (unsigned int j = 0; j < depthDetail; j++) {
             int topLeft = i * (depthDetail + 1) + j;
@@ -59,41 +70,51 @@ std::shared_ptr<Model> PrebuiltModel::createPlane(Device& device, AssetManager& 
             int bottomRight = bottomLeft + 1;
 
             // First triangle
-            modelBuilder.indices.push_back(topLeft);
-            modelBuilder.indices.push_back(bottomLeft);
-            modelBuilder.indices.push_back(topRight);
+            indices.push_back(topLeft);
+            indices.push_back(bottomLeft);
+            indices.push_back(topRight);
 
             // Second triangle
-            modelBuilder.indices.push_back(topRight);
-            modelBuilder.indices.push_back(bottomLeft);
-            modelBuilder.indices.push_back(bottomRight);
+            indices.push_back(topRight);
+            indices.push_back(bottomLeft);
+            indices.push_back(bottomRight);
         }
     }
 
     // Step 3: Compute normals
-    std::vector<glm::vec3> accumulatedNormals(modelBuilder.vertices.size(), glm::vec3(0.0f));
+    std::vector<glm::vec3> accumulatedNormals(vertices.size(), glm::vec3(0.0f));
 
-    for (size_t i = 0; i < modelBuilder.indices.size(); i += 3) {
-        glm::vec3& v0 = modelBuilder.vertices[modelBuilder.indices[i]].position;
-        glm::vec3& v1 = modelBuilder.vertices[modelBuilder.indices[i + 1]].position;
-        glm::vec3& v2 = modelBuilder.vertices[modelBuilder.indices[i + 2]].position;
+    for (size_t i = 0; i < indices.size(); i += 3) {
+        glm::vec3& v0 = vertices[indices[i]].position;
+        glm::vec3& v1 = vertices[indices[i + 1]].position;
+        glm::vec3& v2 = vertices[indices[i + 2]].position;
 
         glm::vec3 normal = glm::normalize(glm::cross(v1 - v0, v2 - v0));
 
-        accumulatedNormals[modelBuilder.indices[i]] += normal;
-        accumulatedNormals[modelBuilder.indices[i + 1]] += normal;
-        accumulatedNormals[modelBuilder.indices[i + 2]] += normal;
+        accumulatedNormals[indices[i]] += normal;
+        accumulatedNormals[indices[i + 1]] += normal;
+        accumulatedNormals[indices[i + 2]] += normal;
     }
 
     // Normalize accumulated normals
-    for (size_t i = 0; i < modelBuilder.vertices.size(); i++) {
-        modelBuilder.vertices[i].normal = glm::normalize(accumulatedNormals[i]);
+    for (size_t i = 0; i < vertices.size(); i++) {
+        vertices[i].normal = glm::normalize(accumulatedNormals[i]);
     }
 
-    auto model = std::make_unique<Model>(device, assets, modelBuilder);
-
     TextureBuilder builder(device);
-    model->setTexture(assets.textures().create((builder.fromFile("textures/whiteTexture.jpg"))));
+    auto text = assets.textures().create(
+        builder.fromFile("textures/whiteTexture.jpg")
+    );
+
+
+    auto vert = std::make_unique<ObjVertexData>(std::move(vertices));
+
+    ModelBuilder modelBuilder(device, assets);
+    auto model = assets.models().create(
+        modelBuilder
+        .fromVertexList(std::move(vert), indices)
+        .withTexture(text)
+    );
 
     return model;
 }
@@ -107,14 +128,15 @@ std::shared_ptr<Model> PrebuiltModel::createPlane(Device& device, AssetManager& 
 /// <param name="color"></param>
 /// <returns> pointer to a new model </returns>
 /// 
-std::unique_ptr<Model> PrebuiltModel::createPlane(Device& device, AssetManager& assets, const unsigned int detail, const float sizePlane, glm::vec3 color, const std::string texturePath, float uvFactor)
+ModelManager::ModelID PrebuiltModel::createPlane(Device& device, AssetManager& assets, const unsigned int detail, const float sizePlane, glm::vec3 color, const std::string texturePath, float uvFactor)
 {
-    Model::Builder modelBuilder{};
+    std::vector<ObjVertex> vertices;
+    std::vector<uint32_t> indices;
 
     for (unsigned int i = 0; i < detail + 1; i++) {
         for (unsigned int j = 0; j < detail + 1; j++)
         {
-            modelBuilder.vertices.push_back({ {i * sizePlane / detail, 0.f, j * sizePlane / detail}, {1, 1, 1}, {0, -1, 0}, {(float)(i * uvFactor) / (float)detail , (float)(j * uvFactor) / (float)detail } });
+            vertices.push_back({ {i * sizePlane / detail, 0.f, j * sizePlane / detail}, {1, 1, 1}, {0, -1, 0}, {(float)(i * uvFactor) / (float)detail , (float)(j * uvFactor) / (float)detail } });
         }
     }
 
@@ -125,23 +147,32 @@ std::unique_ptr<Model> PrebuiltModel::createPlane(Device& device, AssetManager& 
             row++;
         }
 
-        modelBuilder.indices.push_back(i);
-        modelBuilder.indices.push_back(i + detail + 1);
-        modelBuilder.indices.push_back(i + 1);
+        indices.push_back(i);
+        indices.push_back(i + detail + 1);
+        indices.push_back(i + 1);
         
 
-        modelBuilder.indices.push_back(i + 1);
-        modelBuilder.indices.push_back(i + detail + 1);
-        modelBuilder.indices.push_back(i + detail + 2);
+        indices.push_back(i + 1);
+        indices.push_back(i + detail + 1);
+        indices.push_back(i + detail + 2);
         
 
-        modelBuilder.vertices[i].normal = -glm::normalize(glm::cross(modelBuilder.vertices[i].position - modelBuilder.vertices[i + 1].position, modelBuilder.vertices[i].position - modelBuilder.vertices[i + detail + 1].position));
+        vertices[i].normal = -glm::normalize(glm::cross(vertices[i].position - vertices[i + 1].position, vertices[i].position - vertices[i + detail + 1].position));
     }
 
-	auto model = std::make_unique<Model>(device, assets, modelBuilder);
-
     TextureBuilder builder(device);
-    model->setTexture(assets.textures().create((builder.fromFile(texturePath.c_str()))));
+    auto text = assets.textures().create(
+        builder.fromFile(texturePath.c_str())
+    );
+
+    auto vert = std::make_unique<ObjVertexData>(std::move(vertices));
+
+    ModelBuilder modelBuilder(device, assets);
+    auto model = assets.models().create(
+        modelBuilder
+        .fromVertexList(std::move(vert), indices)
+        .withTexture(text)
+    );
 
     return model;
 }

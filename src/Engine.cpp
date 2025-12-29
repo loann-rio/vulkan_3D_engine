@@ -25,7 +25,7 @@
 
 
 Engine::Engine() { 
-    objectManager.startLoadModel(); 
+
     createRenderSystems();
 }
 
@@ -221,7 +221,7 @@ void Engine::run()
                 // render
                 renderer.beginSwapChainRenderPass(commandBuffer); 
 
-                if (textureObject)
+                if (textureObject && textureObject->modelAsset)
                     gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo,
                     {
                         globalDescriptorSet[frameIndex],
@@ -232,6 +232,7 @@ void Engine::run()
                 
                 
                 objRenderSystem->renderGameObjects(commandBuffer, frameInfo, descriptorSets); 
+                //GlTFAssetRenderSystem->renderGameObjects(commandBuffer, frameInfo, descriptorSets);
 
                 std::vector<VkDescriptorSet> terrainDescriptorSets{ globalDescriptorSet[frameIndex], shadowDescriptorSet[renderer.getDepthIndex()], terrainDescriptorSet[frameIndex] };
                 terrainRenderSystem->renderGameObjects(commandBuffer, frameInfo, terrainDescriptorSets);
@@ -373,6 +374,16 @@ void Engine::createRenderSystems()
             gltfRenderSystem = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, assetManager, gltfBuilder);
         }
 
+        /*{
+            RenderSystemBuilder gltfBuilder{};
+            gltfBuilder.fragFilepath = "shaders\\GlTFAssetRenderer.frag.spv";
+            gltfBuilder.vertFilepath = "shaders\\GlTFAssetRenderer.vert.spv";
+            gltfBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
+            gltfBuilder.renderPass = renderer.getSwapChainRenderPass();
+            gltfBuilder.subModelType = ModelSubType::GLTF_ASSET;
+            GlTFAssetRenderSystem = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, assetManager, gltfBuilder);
+        }*/
+
         {
             RenderSystemBuilder gltfShadowBuilder{};
             gltfShadowBuilder.vertFilepath = "shaders\\shadowmapgltf.vert.spv";
@@ -394,6 +405,16 @@ void Engine::createRenderSystems()
             objBuilder.hasMultipleInstance = true;
 
             objRenderSystem = GlobalRenderSystem::create<Model>(device, assetManager, objBuilder);
+        }
+
+        {
+            RenderSystemBuilder cloudBuilder{};
+            cloudBuilder.fragFilepath = "shaders\\simple_shader.frag.spv";
+            cloudBuilder.vertFilepath = "shaders\\simple_shader.vert.spv";
+            cloudBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
+            cloudBuilder.renderPass = renderer.getSwapChainRenderPass();
+
+            cloudRenderSystem = GlobalRenderSystem::create<Model>(device, assetManager, cloudBuilder);
         }
 
         {

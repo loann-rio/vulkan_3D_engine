@@ -643,7 +643,6 @@ void Device::endSingleTimeCommands(VkCommandBuffer commandBuffer)
     submitInfo.pCommandBuffers = &commandBuffer;
 
 	submitToGraphicQueue(submitInfo, VK_NULL_HANDLE);
-    //vkQueueSubmit(graphicsQueue_, 1, &submitInfo, VK_NULL_HANDLE);
     vkQueueWaitIdle(graphicsQueue_);
 
     vkFreeCommandBuffers(device_, getThreadCommandPool(), 1, &commandBuffer);

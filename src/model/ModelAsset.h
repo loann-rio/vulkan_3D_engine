@@ -19,6 +19,8 @@ struct ModelLOD {
 	ModelLOD(ModelLOD&&) noexcept = default;
 	ModelLOD& operator=(ModelLOD&&) noexcept = default;
 
+	bool updateAnimation(uint32_t index, float timeInSeconds, float speed = 1.0f);
+
 
 	// Vertex Buffer
 	std::unique_ptr<Buffer> vertexBuffer;
@@ -28,11 +30,19 @@ struct ModelLOD {
 	std::unique_ptr<Buffer> indexBuffer;
 	uint32_t indexCount;
 
+	// animation
+	std::vector<Animation> animations;
+	std::vector<std::unique_ptr<Skin>> skins;
+
 	uint32_t vertexStride = 0; // size of single vertex
 
-	//std::vector<Primitive> primitives;
-	std::vector<Node> nodes;
+	std::vector<std::unique_ptr<Node>> LinearNodes{};
+	std::vector<Node*> nodes{}; // contains pointer to the root nodes of the model
 	std::vector<Material> materials;
+
+	bool hasDescriptor = false;
+
+	BoundingBox aabb;
 
 	float switchDistance = std::numeric_limits<float>::infinity();
 };

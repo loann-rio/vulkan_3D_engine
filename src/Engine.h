@@ -52,6 +52,7 @@ private:
 
 	// render systems
 	std::shared_ptr<GlobalRenderSystem> gltfRenderSystem;
+	std::shared_ptr<GlobalRenderSystem> GlTFAssetRenderSystem;
 	std::shared_ptr<GlobalRenderSystem> objRenderSystem;
 	std::shared_ptr<GlobalRenderSystem> depthRenderSystem;
 	std::shared_ptr<GlobalRenderSystem> depthRenderSystemGltf;
@@ -59,6 +60,8 @@ private:
 	std::shared_ptr<GlobalRenderSystem> depthTerrainRenderSystem;
 	std::shared_ptr<GlobalRenderSystem> skyboxRenderSystem;
 	std::shared_ptr<GlobalRenderSystem> skyboxCreationRenderSystem;
+
+	std::shared_ptr<GlobalRenderSystem> cloudRenderSystem;
 
 	// global descriptor sets
 	std::vector<VkDescriptorSet> globalDescriptorSet;

@@ -8,11 +8,14 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "BoundingBox.h"
+#include "../base/Buffer.h"
+#include "ModelAnimation.h"
+#include "../base/Device.h"
 
+#define MAX_NUM_JOINTS 64u
 
-class Skin;
-class Mesh;
 class ModelUploader;
+
 
 struct Primitive {
 	BoundingBox aabb;
@@ -30,6 +33,15 @@ struct NodeTransform {
 	glm::quat rotation;
 };
 
+struct UniformBlock {
+	glm::mat4 matrix;
+	glm::mat4 jointMatrix[MAX_NUM_JOINTS]{};
+	uint32_t jointcount{ 0 };
+};
+
+
+
+
 class Node
 {
 public:
@@ -40,19 +52,24 @@ public:
 	glm::mat4 localMatrix();
 	glm::mat4 getMatrix();
 
-	void update();  // TODO
+	void update_cpu();
+	void update_gpu();
 
 	std::vector<Primitive> primitives;
 
 	Node* parent;
 	std::vector<Node*> children;
 
+	int parentIndex = -1;
+	std::vector<int> childrenIndices;
+
 	glm::mat4 matrix{};
 	NodeTransform transform;
 
 	size_t index;
 	
-	std::shared_ptr<Skin> skin;
+	bool hasSkin = false;
+	Skin* skin = nullptr;
 	int32_t skinIndex = -1;
 
 	BoundingBox aabb;
@@ -60,6 +77,18 @@ public:
 	bool useCachedMatrix{ true };
 	glm::mat4 cachedLocalMatrix{ glm::mat4(1.0f) };
 	glm::mat4 cachedMatrix{ glm::mat4(1.0f) };
-	
+
+	bool bufferCreated = false;
+	UniformBlock uniformBlock;
+	std::unique_ptr<Buffer> uniformBuffer;
+	std::vector<VkDescriptorSet> descriptorSet;
+
 	friend ModelUploader;
+
+
+//private:
+	void createBuffer(bool hasSkin, Device& device);
+	void updateUniformBuffer();
+	void updateStaticUniform(glm::mat4& worldMatrix);
+	void updateSkinnedUniforms(const glm::mat4& worldMatrix);
 };

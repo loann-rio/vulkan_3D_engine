@@ -65,6 +65,7 @@ enum class ModelSubType {
 	NONE = 0,
 	TERRAIN = 1,
 	SKYBOX = 2,
+	GLTF_ASSET = 3
 };
 
 enum class GameObjectType { 
@@ -292,7 +293,7 @@ public:
 
 	void setModel(ModelManager::ModelID _model) {
 		modelAsset = _model;
-		modelType = ModelType::OBJ_MODEL;
+		//modelType = ModelType::OBJ_MODEL;
 		hasModel = true;
 	}
 

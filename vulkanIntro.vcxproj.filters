@@ -201,6 +201,16 @@
     <ClCompile Include="src\model\Vertex\GltfVertexData.cpp">
       <Filter>model\Vertex</Filter>
     </ClCompile>
+    <ClCompile Include="src\model\Decoder\GlTFMaterialsDecoder.cpp">
+      <Filter>model\Decoder</Filter>
+    </ClCompile>
+    <ClCompile Include="src\model\Decoder\GlTFAnimationDecoder.cpp">
+      <Filter>model\Decoder</Filter>
+    </ClCompile>
+    <ClCompile Include="src\model\ModelAsset.cpp" />
+    <ClCompile Include="src\model\ModelAnimation.cpp">
+      <Filter>model</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tiny_gltf.h">
@@ -382,6 +392,9 @@
     <ClInclude Include="src\model\ModelNode.h">
       <Filter>model</Filter>
     </ClInclude>
+    <ClInclude Include="src\model\ModelAnimation.h">
+      <Filter>model</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\compile.bat">
@@ -417,12 +430,6 @@
     <None Include="shaders\simple_shader.vert">
       <Filter>shaders</Filter>
     </None>
-    <None Include="shaders\text.frag">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="shaders\text.vert">
-      <Filter>shaders</Filter>
-    </None>
     <None Include="shaders\skybox.vert">
       <Filter>shaders</Filter>
     </None>
@@ -438,22 +445,19 @@
     <None Include="shaders\global_ubo.minc">
       <Filter>shaders</Filter>
     </None>
-    <None Include="shaders\simple_shader.mfrag">
-      <Filter>shaders</Filter>
-    </None>
     <None Include="shaders\fullscreen.vert">
       <Filter>shaders</Filter>
     </None>
     <None Include="shaders\equirectangular_to_cube.frag">
       <Filter>shaders</Filter>
     </None>
-    <None Include="shaders\testRed.frag">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="shaders\test.vert">
-      <Filter>shaders</Filter>
-    </None>
     <None Include="shaders\shadowMapTerrain.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\GlTFAssetRenderer.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\GlTFAssetRenderer.frag">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>

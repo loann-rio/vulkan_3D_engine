@@ -14,33 +14,59 @@
 
 #include <chrono>
 #include <fstream>
+#include <iostream>
 
 
 void ObjectManager::startLoadModel()
 {
-    for (int i = 0; i < 1; i++)
+    if (true)
     {
         ModelBuilder builder(device, assetManager);
         ModelManager::ModelID id = assetManager.models().create(builder.fromFile("model/buster_drone/scene.gltf"));
 
-        if (!id) continue;
+        if (id != 0)
+        {
+            auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
+            gameObject->setName("testModelBuilder");
+            gameObject->setModel(id);
+            gameObject->setModelType(ModelType::OBJ_MODEL);
 
-        createDescriptorSet(assetManager.models().get(id));
+            gameObject->transform.rotation.x = 2 * 3.141592f;
+            gameObject->transform.scale = { 0.005, 0.005, 0.005 };
+            gameObject->transform.translation = { 6, -1.f, 7 };
 
-        auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
-        gameObject->setName("testModelBuilder");
-        gameObject->setModelType(ModelType::OBJ_MODEL);
-        gameObject->setModel(id);
-        gameObject->transform.rotation.x = 3.141592f;
-        gameObject->transform.rotation.y = i * 15;
-        gameObject->transform.translation = { i, 0.2f, 8 };
-        gameObject->saveable = false;
-        gameObject->createDescriptorSet(*globalPool);
-        pushGameObject(std::move(gameObject));
+            gameObject->saveable = false;
+            gameObject->show = true;
+            pushGameObject(std::move(gameObject));
+
+            createDescriptorSet(assetManager.models().get(id));
+        }
     }
 
+    //loadObjectAsync(device, assetManager, "model/buster_drone/scene.gltf", {}, "gltf_drone");
 
+    {
+        ModelBuilder builder(device, assetManager);
+        ModelManager::ModelID id = assetManager.models().create(builder.fromFile("model/cube.obj"));
+        if (id) createDescriptorSet(assetManager.models().get(id));
 
+        for (int i = 0; i < 12; i++) {
+            if (id != 0)
+            {
+                auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
+                gameObject->setName("testModelBuilder " + i);
+                gameObject->setModel(id);
+                gameObject->setModelType(ModelType::OBJ_MODEL);
+                gameObject->transform.rotation.x = i * 456;
+                gameObject->transform.rotation.y = i;
+                gameObject->transform.scale = { 0.5, 0.5, 0.5 };
+                gameObject->transform.translation = { i * 1.5 , -1.f - cos(i * 0.356), 7 + cos(i * 0.978) };
+                gameObject->saveable = false;
+                gameObject->show = true;
+                pushGameObject(std::move(gameObject));
+            }
+        }
+    }
 
     if (true)
     {
@@ -50,7 +76,7 @@ void ObjectManager::startLoadModel()
         ModelBuilder builder(device, assetManager);
         ModelManager::ModelID modelId = assetManager.models().create(builder.fromFile("model/cube.obj").withTexture(texture));
 
-        createDescriptorSet(assetManager.models().get(modelId));
+        if (modelId) createDescriptorSet(assetManager.models().get(modelId));
         
 
         auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
@@ -99,8 +125,6 @@ void ObjectManager::startLoadModel()
         gameObject->createDescriptorSet(*globalPool);
         pushGameObject(std::move(gameObject));
     }*/
-    
-
 }
 
 void ObjectManager::createPrimitive(PrimitivesModelType type, int detail, TransformComponent transform, const std::string& name, const std::string& filePathTexture)
@@ -113,34 +137,18 @@ void ObjectManager::createPrimitive(PrimitivesModelType type, int detail, Transf
 	gameObject->primitiveLOD = detail;
 	gameObject->texturePath = filePathTexture;
 
-    GameObject::id_t id = gameObject->getId();
-
-    pushGameObject(std::move(gameObject));
-
-    pushFuture(std::async(std::launch::async, [this, id, type, detail, filePathTexture]() {
-        std::shared_ptr<Model> primitive;
-
-        switch (type) {
+    switch (type) {
         case PrimitivesModelType::PLANE:
-            primitive = PrebuiltModel::createPlane(this->device, this->assetManager, detail, 1, { 0, 0, 0 }, filePathTexture.empty() ? "textures/whiteTexture.jpg" : filePathTexture, 20);
-            break;
-        case PrimitivesModelType::CUBE:
-            primitive = PrebuiltModel::createCube(this->device, this->assetManager);
-            break;
-        case PrimitivesModelType::SPHERE:
-            break;
-        case PrimitivesModelType::CYLINDER:
-            break;
-        case PrimitivesModelType::CONE:
+            gameObject->setModel(PrebuiltModel::createPlane(this->device, this->assetManager, detail, 1, { 0, 0, 0 }, filePathTexture.empty() ? "textures/whiteTexture.jpg" : filePathTexture, 20));
             break;
         default:
             std::cerr << "Unknown primitive type\n";
             break;
-        }
+    }
 
-        return std::vector<futureObject>{ futureObject{ primitive, primitive ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id } };
-        })
-     );
+    createDescriptorSet(assetManager.models().get(gameObject->modelAsset));
+    
+    pushGameObject(std::move(gameObject));
 }
 
     /////// get and remove ///////
@@ -273,6 +281,20 @@ void ObjectManager::loadScene(std::string name)
                 {
                     std::string texturePath = element.value().contains("texturePath") ? element.value()["texturePath"] : "textures/whiteTexture.jpg";
                     loadObjectAsync(device, assetManager, modelPath, texturePath, transform, objName);
+
+                    /*TextureBuilder textureBuilder(device);
+                    auto texture = assetManager.textures().create(textureBuilder.fromFile(texturePath));
+
+                    ModelBuilder builder(device, assetManager);
+                    ModelManager::ModelID modelId = assetManager.models().create(builder.fromFile(modelPath).withTexture(texture));
+
+                    createDescriptorSet(assetManager.models().get(modelId));
+
+                    auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
+                    gameObject->setName("objName");
+                    gameObject->setModelType(ModelType::OBJ_MODEL);
+                    gameObject->setModel(modelId);
+                    pushGameObject(std::move(gameObject));*/
                 }
             }
             else if(element.value().contains("primitivesModelType"))
@@ -396,21 +418,47 @@ void ObjectManager::createDescriptorSet(ModelAsset* model)
 {
 
     for (auto& lod : model->lods) {
-        for (auto& material : lod.materials)
-        {
-            auto textureSetLayout = DescriptorSetLayout::Builder(device)
-                .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-                .build();
 
-            material.descriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT * lod.materials.size());
-            for (int i = 0; i < material.descriptorSet.size(); i++)
+        if (!lod.hasDescriptor)
+        {
+            for (auto& material : lod.materials)
             {
-                auto imageInfo = assetManager.textures().get(material.albedoTexture)->getImageInfo();
-                DescriptorWriter(*textureSetLayout, *globalPool)
-                    .writeImage(0, &imageInfo)
-                    .build(material.descriptorSet[i]);
+                auto textureSetLayout = DescriptorSetLayout::Builder(device)
+                    .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+                    .build();
+
+                material.descriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
+                for (int i = 0; i < material.descriptorSet.size(); i++)
+                {
+                    auto imageInfo = assetManager.textures().get(material.albedoTexture)->getImageInfo();
+                    DescriptorWriter(*textureSetLayout, *globalPool)
+                        .writeImage(0, &imageInfo)
+                        .build(material.descriptorSet[i]);
+                }
             }
+
+
+            for (auto& node : lod.LinearNodes) {
+                if (node->bufferCreated) {
+                    auto textureSetLayout = DescriptorSetLayout::Builder(device)
+                        .addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+                        .build();
+
+                    VkDescriptorBufferInfo skinBufferInfo = node->uniformBuffer->descriptorInfo();
+
+                    node->descriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
+                    for (int i = 0; i < node->descriptorSet.size(); i++)
+                    {
+                        DescriptorWriter(*textureSetLayout, *globalPool)
+                            .writeBuffer(0, &skinBufferInfo)
+                            .build(node->descriptorSet[i]);
+                    }
+                }
+            }
+
+            lod.hasDescriptor = true;
         }
+
     }
     
 }
@@ -588,10 +636,13 @@ void ObjectManager::generateSkybox(const std::string pathTexture, const std::str
     ModelBuilder modelBuilder(device, assetManager);
     ModelManager::ModelID modelId = assetManager.models().create(modelBuilder.fromFile("model/cube.obj").withTexture(resultTexture));
 
-    createDescriptorSet(assetManager.models().get(modelId));
-    gameObject->setModel(modelId);
+    if (modelId)
+    {
+        createDescriptorSet(assetManager.models().get(modelId));
+        gameObject->setModel(modelId);
 
-    pushGameObject(std::move(gameObject));
+        pushGameObject(std::move(gameObject));
+    }
 }
 
 
@@ -605,6 +656,7 @@ ObjectManager::ObjectManager(Device& device, AssetManager& assetManager) : devic
         .build();
 
     gameObjects = std::make_shared<GameObject::Map>();
+    startLoadModel();
     loadScene(currentScene);
 };
 

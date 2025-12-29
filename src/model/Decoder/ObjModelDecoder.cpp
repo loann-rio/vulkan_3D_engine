@@ -13,6 +13,8 @@
 #include "../Vertex/ObjVertexData.h"
 #include "../../base/Utils.h"
 
+#include "../ModelNode.h"
+
 
 namespace std {
 	template<>
@@ -215,8 +217,12 @@ DecodedModel ObjModelDecoder::decode(const std::filesystem::path& path) const
 	// push local indices
 	model.indices = std::move(localIndices);
 
-	// push primitives
-	model.primitives = std::move(primitive_list);
+	// push node/primitives
+	std::unique_ptr<Node> node = std::make_unique<Node>();
+	node->primitives = std::move(primitive_list);
+
+	model.rootNodes.push_back(model.nodes.size());
+	model.nodes.push_back(std::move(node));
 	
 	return model;
 }

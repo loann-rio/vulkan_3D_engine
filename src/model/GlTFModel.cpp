@@ -715,6 +715,8 @@ void GlTFModel::ModelGltf::loadNode(Node* parent, const tinygltf::Node& node, ui
 					std::cerr << "Index component type " << accessor.componentType << " not supported!" << std::endl;
 					return;
 				}
+
+				
 			}
 
 
@@ -1159,6 +1161,7 @@ bool GlTFModel::ModelGltf::loadFromFile(std::string filename, float scale)
 			if (node->skinIndex > -1) {
 				node->skin = skins[node->skinIndex];
 			}
+
 			// Initial pose
 			if (node->mesh) {
 				node->update();

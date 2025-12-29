@@ -11,25 +11,31 @@
 
 
 struct GltfVertex {
+
     glm::vec3 position{};
+    glm::vec3 color{ 1.0f, 1.0f, 1.0f };
     glm::vec3 normal{};
-
-    glm::uvec4 joint0;
-    glm::vec4 weight0;
-
     glm::vec2 uv0{};
-    glm::vec2 uv1{};
 
-    glm::vec3 color{1.f, 1.f, 1.f};
+    //glm::vec3 position{};
+    //glm::vec3 normal{};
+
+    //glm::uvec4 joint0;
+    //glm::vec4 weight0;
+
+    //glm::vec2 uv0{};
+    //glm::vec2 uv1{};
+
+    //glm::vec3 color{1.f, 1.f, 1.f};
 
 
     bool operator==(const GltfVertex& other) const noexcept {
         return position == other.position &&
             normal == other.normal &&
             uv0 == other.uv0 &&
-            uv1 == other.uv1 &&
+            /*uv1 == other.uv1 &&
             joint0 == other.joint0 &&
-            weight0 == other.weight0 &&
+            weight0 == other.weight0 &&*/
             color == other.color;
     }
 };
@@ -40,12 +46,13 @@ public:
         m_attrs.clear();
 
         m_attrs.push_back({ "position", offsetof(GltfVertex, position) , sizeof(GltfVertex::position) });
-        m_attrs.push_back({ "color",    offsetof(GltfVertex, color)    , sizeof(GltfVertex::color)    });
+        m_attrs.push_back({ "color",    offsetof(GltfVertex, color)    , sizeof(GltfVertex::color) });
         m_attrs.push_back({ "normal",   offsetof(GltfVertex, normal)   , sizeof(GltfVertex::normal)   });
-        m_attrs.push_back({ "uv0",      offsetof(GltfVertex, uv0)      , sizeof(GltfVertex::uv0)      });
-        m_attrs.push_back({ "uv1",      offsetof(GltfVertex, uv1)      , sizeof(GltfVertex::uv1)      });
-        m_attrs.push_back({ "joint0",   offsetof(GltfVertex, joint0)   , sizeof(GltfVertex::joint0)   });
-        m_attrs.push_back({ "weight0",  offsetof(GltfVertex, weight0)  , sizeof(GltfVertex::weight0)  });
+        //m_attrs.push_back({ "joint0",   offsetof(GltfVertex, joint0)   , sizeof(GltfVertex::joint0)   });
+        //m_attrs.push_back({ "weight0",  offsetof(GltfVertex, weight0)  , sizeof(GltfVertex::weight0)  });
+        m_attrs.push_back({ "uv0",      offsetof(GltfVertex, uv0)      , sizeof(GltfVertex::uv0) });
+        //m_attrs.push_back({ "uv1",      offsetof(GltfVertex, uv1)      , sizeof(GltfVertex::uv1) });
+        //m_attrs.push_back({ "color",    offsetof(GltfVertex, color)    , sizeof(GltfVertex::color) });
 
         m_stride = static_cast<uint32_t>(sizeof(GltfVertex));
     };

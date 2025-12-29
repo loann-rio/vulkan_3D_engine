@@ -12,10 +12,10 @@
 
 class PrebuiltModel {
 public:
-    static std::shared_ptr<Model> createFullScreenQuad(Device& device, AssetManager& assets);
+    static ModelManager::ModelID createFullScreenQuad(Device& device, AssetManager& assets);
 
-    static std::shared_ptr<Model> createPlane(Device& device, AssetManager& assets, float width, float depth, uint16_t widthDetail, uint16_t depthDetail, glm::vec3 color = { 1.0f, 1.0f, 1.0f }, float UVfactor = 1);
-    static std::unique_ptr<Model> createPlane(Device& device, AssetManager& assets, const unsigned int detail, const float sizePlane, glm::vec3 color, const std::string path = "textures/floor.jpg", float uvFactor = 1);
+    static ModelManager::ModelID createPlane(Device& device, AssetManager& assets, float width, float depth, uint16_t widthDetail, uint16_t depthDetail, glm::vec3 color = { 1.0f, 1.0f, 1.0f }, float UVfactor = 1);
+    static ModelManager::ModelID createPlane(Device& device, AssetManager& assets, const unsigned int detail, const float sizePlane, glm::vec3 color, const std::string path = "textures/floor.jpg", float uvFactor = 1);
 
     static std::shared_ptr<Model> createIcoSphere(Device& device, AssetManager& assets, uint16_t detail);
 

@@ -68,8 +68,14 @@ private:
 	void bind(VkCommandBuffer& commandBuffer, std::vector<VkDescriptorSet> globalDescriptorSets); 
 
 	void bindModel(VkCommandBuffer& commandBuffer, ModelAsset* model);
-	void bindTextures(VkCommandBuffer& commandBuffer, ModelAsset* model, Primitive& primitive, uint16_t frameIndex);
-	void drawModel(VkCommandBuffer& commandBuffer, ModelAsset* model, Primitive& primitive, glm::mat4 modelMat, glm::mat4 normalM);
+	void bindTextures(VkCommandBuffer& commandBuffer, std::vector<VkDescriptorSet>& descriptorSet, uint16_t frameIndex);
+	void drawPrimitive(VkCommandBuffer& commandBuffer, Primitive& primitive, glm::mat4 modelMat, glm::mat4 normalM);
+
+	void drawNode(VkCommandBuffer& commandBuffer,
+		ModelLOD& model, Node* node, uint16_t frameIndex,
+		const std::array<FrustumPlane, 6>& planes,
+		glm::mat4 modelMat, glm::mat4 normalM, bool bindSkin = false);
+
 
 	Device& device;
 	AssetManager& assets;

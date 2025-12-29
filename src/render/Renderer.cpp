@@ -15,7 +15,10 @@ Renderer::Renderer(Window& window, Device& device, AssetManager& assets) : windo
 	createCommandBuffer();
 }
 
-Renderer::~Renderer() { freeCommandBuffers(); }
+Renderer::~Renderer() { 
+	vkDeviceWaitIdle(device.device());
+	freeCommandBuffers();
+}
 
 /*
 	recreate swap chain after redimentionning of the window
@@ -270,16 +273,23 @@ void Renderer::renderDepthImage(FrameInfo& frameInfo, std::vector<std::shared_pt
 	size_t countDepthRender = 0; 
 	for (int commandBufferIndex = 0; commandBufferIndex < DepthSwapChain::MAX_DEPTH_RENDER_COUNT && commandBufferIndex < frameInfo.spotLightCount; commandBufferIndex++)
 	{
-		if (auto depthCommandBuffer = beginDepthFrame(commandBufferIndex)) {
+		try
+		{
+			if (auto depthCommandBuffer = beginDepthFrame(commandBufferIndex)) {
 
-			beginShadowRenderPass(depthCommandBuffer, commandBufferIndex); 
+				beginShadowRenderPass(depthCommandBuffer, commandBufferIndex);
 
-			for (auto renderSystem : renderSystems)
-				renderSystem->renderGameObjectsDepth(depthCommandBuffer, frameInfo, globalDescriptorSets,  commandBufferIndex, frameInfo.frameIndex);
+				for (auto renderSystem : renderSystems)
+					renderSystem->renderGameObjectsDepth(depthCommandBuffer, frameInfo, globalDescriptorSets, commandBufferIndex, frameInfo.frameIndex);
 
-			endShadowRenderPass(depthCommandBuffer, commandBufferIndex);
-			endDepthFrame(commandBufferIndex);
-			countDepthRender++;
+				endShadowRenderPass(depthCommandBuffer, commandBufferIndex);
+				endDepthFrame(commandBufferIndex);
+				countDepthRender++;
+			}
+		}
+		catch (const std::exception& e)
+		{
+			std::cerr << std::string("render depth: failed: ") + e.what() << "\n";
 		}
 	}
 
@@ -370,10 +380,14 @@ void Renderer::createDepthCommandBuffer()
 
 void Renderer::freeCommandBuffers()
 {
-	vkFreeCommandBuffers(device.device(), device.getThreadCommandPool(), static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
-	commandBuffers.clear();
+	if (!commandBuffers.empty()) {
+		vkFreeCommandBuffers(device.device(), device.getThreadCommandPool(), static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+		commandBuffers.clear();
+	}
 
-	vkFreeCommandBuffers(device.device(), device.getThreadCommandPool(), static_cast<uint32_t>(depthCommandBuffers.size()), depthCommandBuffers.data());
-	depthCommandBuffers.clear();
+	if (!depthCommandBuffers.empty()) {
+		vkFreeCommandBuffers(device.device(), device.getThreadCommandPool(), static_cast<uint32_t>(depthCommandBuffers.size()), depthCommandBuffers.data());
+		depthCommandBuffers.clear();
+	}
 }
 
