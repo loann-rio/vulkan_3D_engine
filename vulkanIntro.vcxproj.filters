@@ -207,8 +207,10 @@
     <ClCompile Include="src\model\Decoder\GlTFAnimationDecoder.cpp">
       <Filter>model\Decoder</Filter>
     </ClCompile>
-    <ClCompile Include="src\model\ModelAsset.cpp" />
     <ClCompile Include="src\model\ModelAnimation.cpp">
+      <Filter>model</Filter>
+    </ClCompile>
+    <ClCompile Include="src\model\ModelAsset.cpp">
       <Filter>model</Filter>
     </ClCompile>
   </ItemGroup>
@@ -442,9 +444,6 @@
     <None Include="shaders\terrainShader.vert">
       <Filter>shaders</Filter>
     </None>
-    <None Include="shaders\global_ubo.minc">
-      <Filter>shaders</Filter>
-    </None>
     <None Include="shaders\fullscreen.vert">
       <Filter>shaders</Filter>
     </None>
@@ -458,6 +457,12 @@
       <Filter>shaders</Filter>
     </None>
     <None Include="shaders\GlTFAssetRenderer.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\CloudShader.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\CloudShader.frag">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>

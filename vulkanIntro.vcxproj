@@ -288,12 +288,13 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClInclude Include="tiny_gltf.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="shaders\CloudShader.frag" />
+    <None Include="shaders\CloudShader.vert" />
     <None Include="shaders\compile.bat" />
     <None Include="shaders\depthView.frag" />
     <None Include="shaders\depthView.vert" />
     <None Include="shaders\equirectangular_to_cube.frag" />
     <None Include="shaders\fullscreen.vert" />
-    <None Include="shaders\global_ubo.minc" />
     <None Include="shaders\GlTFAssetRenderer.frag" />
     <None Include="shaders\GlTFAssetRenderer.vert" />
     <None Include="shaders\GlTFshader.frag" />

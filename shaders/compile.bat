@@ -10,7 +10,6 @@ C:\VulkanSDK\1.4.313.2\Bin\glslc.exe text.frag -o text.frag.spv --target-env=vul
 C:\VulkanSDK\1.4.313.2\Bin\glslc.exe GlTFshader.vert -o GlTFshader.vert.spv --target-env=vulkan1.2
 C:\VulkanSDK\1.4.313.2\Bin\glslc.exe GlTFshader.frag -o GlTFshader.frag.spv --target-env=vulkan1.2
 
-
 C:\VulkanSDK\1.4.313.2\Bin\glslc.exe GlTFAssetRenderer.vert -o GlTFAssetRenderer.vert.spv --target-env=vulkan1.2
 C:\VulkanSDK\1.4.313.2\Bin\glslc.exe GlTFAssetRenderer.frag -o GlTFAssetRenderer.frag.spv --target-env=vulkan1.2
 
@@ -29,8 +28,8 @@ C:\VulkanSDK\1.4.313.2\Bin\glslc.exe skybox.vert -o skybox.vert.spv --target-env
 C:\VulkanSDK\1.4.313.2\Bin\glslc.exe equirectangular_to_cube.frag -o equirectangular_to_cube.frag.spv --target-env=vulkan1.2
 C:\VulkanSDK\1.4.313.2\Bin\glslc.exe fullscreen.vert -o fullscreen.vert.spv --target-env=vulkan1.2
 
-C:\VulkanSDK\1.4.313.2\Bin\glslc.exe testRed.frag -o testRed.frag.spv --target-env=vulkan1.2
-C:\VulkanSDK\1.4.313.2\Bin\glslc.exe test.vert -o test.vert.spv --target-env=vulkan1.2
+C:\VulkanSDK\1.4.313.2\Bin\glslc.exe CloudShader.frag -o CloudShader.frag.spv --target-env=vulkan1.2
+C:\VulkanSDK\1.4.313.2\Bin\glslc.exe CloudShader.vert -o CloudShader.vert.spv --target-env=vulkan1.2
 
 C:\VulkanSDK\1.4.313.2\Bin\glslc.exe shadowMapTerrain.vert -o shadowMapTerrain.vert.spv --target-env=vulkan1.2
 

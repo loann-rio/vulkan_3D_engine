@@ -65,7 +65,8 @@ enum class ModelSubType {
 	NONE = 0,
 	TERRAIN = 1,
 	SKYBOX = 2,
-	GLTF_ASSET = 3
+	GLTF_ASSET = 3,
+	CLOUD = 4
 };
 
 enum class GameObjectType { 

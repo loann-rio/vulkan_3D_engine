@@ -19,7 +19,7 @@
 
 void ObjectManager::startLoadModel()
 {
-    if (true)
+    /*if (true)
     {
         ModelBuilder builder(device, assetManager);
         ModelManager::ModelID id = assetManager.models().create(builder.fromFile("model/buster_drone/scene.gltf"));
@@ -41,11 +41,11 @@ void ObjectManager::startLoadModel()
 
             createDescriptorSet(assetManager.models().get(id));
         }
-    }
+    }*/
 
     //loadObjectAsync(device, assetManager, "model/buster_drone/scene.gltf", {}, "gltf_drone");
 
-    {
+    /*{
         ModelBuilder builder(device, assetManager);
         ModelManager::ModelID id = assetManager.models().create(builder.fromFile("model/cube.obj"));
         if (id) createDescriptorSet(assetManager.models().get(id));
@@ -66,6 +66,28 @@ void ObjectManager::startLoadModel()
                 pushGameObject(std::move(gameObject));
             }
         }
+    }*/
+
+    {
+        ModelBuilder builder(device, assetManager);
+        ModelManager::ModelID id = assetManager.models().create(builder.fromFile("model/cube.obj"));
+        if (id) createDescriptorSet(assetManager.models().get(id));
+
+        if (id != 0)
+        {
+            auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
+            gameObject->setName("cloud");
+            gameObject->setModel(id);
+            gameObject->setModelType(ModelType::OBJ_MODEL);
+            gameObject->setModelSubType(ModelSubType::CLOUD);
+            
+            gameObject->transform.scale = { 1, 0.5, 0.5 };
+            gameObject->transform.translation = { 7 , -1.5f, 8 };
+            gameObject->saveable = false;
+            gameObject->show = true;
+            pushGameObject(std::move(gameObject));
+        }
+        
     }
 
     if (true)

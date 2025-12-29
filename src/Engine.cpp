@@ -232,6 +232,7 @@ void Engine::run()
                 
                 
                 objRenderSystem->renderGameObjects(commandBuffer, frameInfo, descriptorSets); 
+                cloudRenderSystem->renderGameObjects(commandBuffer, frameInfo, descriptorSets);
                 //GlTFAssetRenderSystem->renderGameObjects(commandBuffer, frameInfo, descriptorSets);
 
                 std::vector<VkDescriptorSet> terrainDescriptorSets{ globalDescriptorSet[frameIndex], shadowDescriptorSet[renderer.getDepthIndex()], terrainDescriptorSet[frameIndex] };
@@ -409,10 +410,11 @@ void Engine::createRenderSystems()
 
         {
             RenderSystemBuilder cloudBuilder{};
-            cloudBuilder.fragFilepath = "shaders\\simple_shader.frag.spv";
-            cloudBuilder.vertFilepath = "shaders\\simple_shader.vert.spv";
-            cloudBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
+            cloudBuilder.fragFilepath = "shaders\\CloudShader.frag.spv";
+            cloudBuilder.vertFilepath = "shaders\\CloudShader.vert.spv";
+            cloudBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout() };
             cloudBuilder.renderPass = renderer.getSwapChainRenderPass();
+            cloudBuilder.subModelType = ModelSubType::CLOUD;
 
             cloudRenderSystem = GlobalRenderSystem::create<Model>(device, assetManager, cloudBuilder);
         }

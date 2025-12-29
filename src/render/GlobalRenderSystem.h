@@ -26,6 +26,7 @@ struct RenderSystemBuilder {
 	bool isSkyBox = false;
 	bool isFullscreenRender = false;
 	VkShaderStageFlagBits pushStage;
+	bool enableAlphaBlend = false;
 };
 
 class GlobalRenderSystem
@@ -37,12 +38,12 @@ public:
 	template <class T> static std::shared_ptr<GlobalRenderSystem> create(Device& device, AssetManager& assets, RenderSystemBuilder builder);
 
 	GlobalRenderSystem(Device& device, AssetManager& assets,
-		VkRenderPass renderPass,  
-		std::vector<VkDescriptorSetLayout> globalSetLayout, std::vector<DescriptorSetObject> bindings, 
+		VkRenderPass renderPass,
+		std::vector<VkDescriptorSetLayout> globalSetLayout, std::vector<DescriptorSetObject> bindings,
 		const std::string& vertFilepath, const std::string& fragFilepath,
-		ModelType modelType, ModelSubType subModelType, 
+		ModelType modelType, ModelSubType subModelType,
 		std::vector<VkVertexInputBindingDescription> bindingDescription, std::vector<VkVertexInputAttributeDescription> attributeDescription,
-		VkShaderStageFlagBits pushStage, bool isShadow = false, bool isSkyBox = false, bool isFullscreenrender = false
+		VkShaderStageFlagBits pushStage, bool isShadow = false, bool isSkyBox = false, bool isFullscreenrender = false, bool enableAlpha = false
 	);
 
 	~GlobalRenderSystem();
@@ -88,6 +89,7 @@ private:
 	const bool isShadow = false;
 	const bool isSkyBox = false;
 	const bool isFullscreenRender = false;
+	const bool enableAlpha = false;
 
 	bool customPushStage = false;
 	VkShaderStageFlagBits pushStage;
@@ -143,6 +145,6 @@ inline std::shared_ptr<GlobalRenderSystem> GlobalRenderSystem::create(Device& de
 		builder.vertFilepath, builder.fragFilepath,
 		modelType, builder.subModelType,
 		bindingDescription, attributeDescription, builder.pushStage,
-		isShadow, builder.isSkyBox, builder.isFullscreenRender);
+		isShadow, builder.isSkyBox, builder.isFullscreenRender, builder.enableAlphaBlend);
 }
 
