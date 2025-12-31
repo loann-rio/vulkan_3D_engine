@@ -30,6 +30,7 @@ struct GlobalUbo {
 };
 
 struct TerrainUbo {
+	
 	float clif_slop{ 0.76f };
 	float height_grass{ 2.3f };
 	float slope_snow{ 1.f };
@@ -37,6 +38,21 @@ struct TerrainUbo {
 	float height_dirt_with_slope{ 2.5f };
 	float height_snow{ 2.5f };
 };
+
+struct alignas(16) CloudUbo {
+	glm::vec4 min_rect{ 0 };
+	glm::vec4 max_rect{ 0 };
+	float baseAlpha = 0;
+
+	float noiseSizeFactor = 1.49;
+	float stepSize = 0.160;
+	float noiseFactorpreexp = 5.33;
+	float noiseFactorpostexp = 1.9;
+	float fadeDistance = 0;
+	
+	int numStep = 50;
+};
+
 
 struct FrameInfo {
 	int frameIndex;

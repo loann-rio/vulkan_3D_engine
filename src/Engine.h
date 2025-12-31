@@ -49,6 +49,7 @@ private:
 	std::vector<std::unique_ptr<Buffer>> uboBuffers;
 	std::vector<std::unique_ptr<Buffer>> shadowUboBuffer;
 	std::vector<std::unique_ptr<Buffer>> terrainBuffers;
+	std::vector<std::unique_ptr<Buffer>> cloudBuffers;
 
 	// render systems
 	std::shared_ptr<GlobalRenderSystem> gltfRenderSystem;
@@ -67,5 +68,6 @@ private:
 	std::vector<VkDescriptorSet> globalDescriptorSet;
 	std::vector<VkDescriptorSet> shadowDescriptorSet;
 	std::vector<VkDescriptorSet> terrainDescriptorSet;
+	std::vector<VkDescriptorSet> cloudDescriptorSet;
 
 };

@@ -58,7 +58,7 @@ BasicUI::~BasicUI()
     vkDestroyDescriptorPool(device.device(), imguiPool, nullptr); 
 }
 
-void BasicUI::drawUI(VkCommandBuffer commandBuffer, ObjectManager* manager, TerrainUbo& terrainUbo, float fps)
+void BasicUI::drawUI(VkCommandBuffer commandBuffer, ObjectManager* manager, TerrainUbo& terrainUbo, CloudUbo& cloudUbo, float fps)
 {
     isWindowSelected = false;
 
@@ -77,7 +77,8 @@ void BasicUI::drawUI(VkCommandBuffer commandBuffer, ObjectManager* manager, Terr
 
     objectSelectionWindow(listObjectsName, manager, fps);
 
-	terrainUboWindow(terrainUbo);
+	//terrainUboWindow(terrainUbo);
+    CloudUboWindow(cloudUbo);
 
     auto gameObject = manager->get(selected_object);
     if (gameObject != nullptr) {
@@ -231,6 +232,50 @@ void BasicUI::terrainUboWindow(TerrainUbo& terrainUbo)
     ImGui::DragFloat("##height_dirt_with_slope", &terrainUbo.height_dirt_with_slope, 0.1f, -10.f, 10.0f);
     ImGui::Text("height_snow");
     ImGui::DragFloat("##height_snow", &terrainUbo.height_snow, 0.1f, -10.f, 10.0f);
+
+    ImGui::End();
+
+    if (!show_create_terrain_window) selected = -1;
+}
+
+void BasicUI::CloudUboWindow(CloudUbo& cloudUbo)
+{
+
+    ImGui::Begin("cloud data", &show_create_terrain_window);
+
+    isWindowSelected = (isWindowSelected || ImGui::IsWindowFocused());
+
+    /*float noiseSizeFactor;
+    float stepSize;
+    float noiseFactorpreexp;
+    float noiseFactorpostexp;
+    float baseAlpha = 0;
+    int numStep;*/
+
+    ImGui::Text(("min : " + std::to_string(cloudUbo.min_rect.x) + " " + std::to_string(cloudUbo.min_rect.y) + " " + std::to_string(cloudUbo.min_rect.z)).c_str());
+    ImGui::Text(("max : " + std::to_string(cloudUbo.max_rect.x) + " " + std::to_string(cloudUbo.max_rect.y) + " " + std::to_string(cloudUbo.max_rect.z)).c_str());
+
+    ImGui::Text("noiseSizeFactor");
+    ImGui::DragFloat("##noiseSizeFactor", &cloudUbo.noiseSizeFactor, 0.01f, -10.0f, 10.0f);
+
+    ImGui::Text("stepSize");
+    ImGui::DragFloat("##stepSize", &cloudUbo.stepSize, 0.01f, 0.f, 10.0f);
+
+    ImGui::Text("noiseFactorpreexp");
+    ImGui::DragFloat("##noiseFactorpreexp ", &cloudUbo.noiseFactorpreexp, 0.01f, 0.0f, 20.0f);
+
+    ImGui::Text("noiseFactorpostexp");
+    ImGui::DragFloat("##noiseFactorpostexp", &cloudUbo.noiseFactorpostexp, 0.1f, -10.f, 10.0f);
+
+    ImGui::Text("baseAlpha");
+    ImGui::DragFloat("##baseAlpha", &cloudUbo.baseAlpha, 0.1f, 0.f, 1.0f);
+
+    ImGui::Text("fadeDistance;");
+    ImGui::DragFloat("##fadeDistance", &cloudUbo.fadeDistance, 0.1f, 0.f, 1.0f);
+
+    ImGui::Text("numStep");
+    ImGui::DragInt("##numStep", &cloudUbo.numStep, 1, 1.f, 50.0f);
+    
 
     ImGui::End();
 

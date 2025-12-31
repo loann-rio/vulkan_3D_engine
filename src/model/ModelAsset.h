@@ -52,6 +52,8 @@ public:
 	ModelAsset() = default;
 	~ModelAsset() = default;
 
+	ModelLOD& baseLod() { return lods[0]; }
+
 //private:
 	bool hasShadow = false;
 

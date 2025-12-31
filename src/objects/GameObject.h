@@ -312,6 +312,8 @@ public:
 	VkDescriptorImageInfo getTextureImageInfo() const;
 	std::vector<VkDescriptorSet> getDescriptorSets() const;
 
+
+
 	void setMultipleInstances(std::vector<Model::Instance> instances);
 
 	void createDescriptorSet(DescriptorPool& pool) const; 

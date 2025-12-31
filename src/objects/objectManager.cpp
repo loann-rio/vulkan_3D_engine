@@ -81,9 +81,9 @@ void ObjectManager::startLoadModel()
             gameObject->setModelType(ModelType::OBJ_MODEL);
             gameObject->setModelSubType(ModelSubType::CLOUD);
             
-            gameObject->transform.scale = { 1, 0.5, 0.5 };
-            gameObject->transform.translation = { 7 , -1.5f, 8 };
-            gameObject->saveable = false;
+            gameObject->transform.scale = { 4, 0.5, 4 };
+            gameObject->transform.translation = { 0 , -4.f, 0 };
+            gameObject->saveable = true;
             gameObject->show = true;
             pushGameObject(std::move(gameObject));
         }
@@ -596,7 +596,7 @@ void ObjectManager::loadObjectAsync(Device& device, AssetManager& assets, const 
 }
 
 void ObjectManager::loadObjectAsync(Device& device, AssetManager& assets, const std::string& filePath, const std::string filePathTexture, TransformComponent transform, const std::string& name)
-{
+{   
     auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
     gameObject->transform = transform;  
     gameObject->setName(name.empty() ? filePath : name); 

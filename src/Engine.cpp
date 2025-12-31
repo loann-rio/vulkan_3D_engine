@@ -47,6 +47,8 @@ void Engine::run()
     GlobalUbo ubo{};
     SpotLightUbo spotLightUbo{};
     TerrainUbo terrainUbo{};
+    CloudUbo cloudUbo{};
+
     
     // frame counter
     FrameRateCounter gpuFrameRate;
@@ -175,6 +177,23 @@ void Engine::run()
             terrainBuffers[frameIndex]->flush();
 		}
 
+        // update cloud ubo
+        {
+            
+            auto* cloudObject = dynamic_cast<GameObjectModel*>(objectManager.get("cloud"));
+
+            if (cloudObject)
+            {
+                auto cloudModelAabb = assetManager.models().get(cloudObject->modelAsset)->baseLod().aabb.getAABB(cloudObject->getTransformMat());
+
+                cloudUbo.min_rect = glm::vec4(cloudModelAabb.min, 0);
+                cloudUbo.max_rect = glm::vec4(cloudModelAabb.max, 0);
+            }
+
+            cloudBuffers[frameIndex]->writeToBuffer(&cloudUbo);
+            cloudBuffers[frameIndex]->flush();
+        }
+
         std::vector<std::array<FrustumPlane, 6>> frustrumPlanesList;
         // update spotLight
         {
@@ -221,28 +240,28 @@ void Engine::run()
                 // render
                 renderer.beginSwapChainRenderPass(commandBuffer); 
 
-                if (textureObject && textureObject->modelAsset)
+                /*if (textureObject && textureObject->modelAsset)
                     gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo,
                     {
                         globalDescriptorSet[frameIndex],
                         shadowDescriptorSet[renderer.getDepthIndex()],
                         assetManager.models().get(textureObject->modelAsset)->lods[0].materials[0].descriptorSet[frameIndex]
                     },
-                    frustrumPlanes);
+                    frustrumPlanes);*/
                 
                 
                 objRenderSystem->renderGameObjects(commandBuffer, frameInfo, descriptorSets); 
-                cloudRenderSystem->renderGameObjects(commandBuffer, frameInfo, descriptorSets);
+                
                 //GlTFAssetRenderSystem->renderGameObjects(commandBuffer, frameInfo, descriptorSets);
 
-                std::vector<VkDescriptorSet> terrainDescriptorSets{ globalDescriptorSet[frameIndex], shadowDescriptorSet[renderer.getDepthIndex()], terrainDescriptorSet[frameIndex] };
-                terrainRenderSystem->renderGameObjects(commandBuffer, frameInfo, terrainDescriptorSets);
+                //std::vector<VkDescriptorSet> terrainDescriptorSets{ globalDescriptorSet[frameIndex], shadowDescriptorSet[renderer.getDepthIndex()], terrainDescriptorSet[frameIndex] };
+                //terrainRenderSystem->renderGameObjects(commandBuffer, frameInfo, terrainDescriptorSets);
 
-				skyboxRenderSystem->renderGameObjects(commandBuffer, frameInfo, { globalDescriptorSet[frameIndex] });
-
+				//skyboxRenderSystem->renderGameObjects(commandBuffer, frameInfo, { globalDescriptorSet[frameIndex] });
+                cloudRenderSystem->renderGameObjects(commandBuffer, frameInfo, { globalDescriptorSet[frameIndex], cloudDescriptorSet[frameIndex] });
                 //textOverlay.renderText(commandBuffer, frameInfo); 
 
-                imgui.drawUI(commandBuffer, &objectManager, terrainUbo, gpuFrameRate.get());
+                imgui.drawUI(commandBuffer, &objectManager, terrainUbo, cloudUbo, gpuFrameRate.get());
 
                 renderer.endSwapChainRenderPass(commandBuffer); 
                 renderer.endFrame();
@@ -322,6 +341,38 @@ void Engine::createRenderSystems()
             .build(terrainDescriptorSet[i]);
     }
 
+    //// cloud buffer 
+
+    cloudBuffers.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
+    for (int i = 0; i < cloudBuffers.size(); i++)
+    {
+        cloudBuffers[i] = std::make_unique<Buffer>(
+            device,
+            sizeof(CloudUbo),
+            1,
+            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+            device.properties.limits.minUniformBufferOffsetAlignment
+        );
+
+        cloudBuffers[i]->map();
+    }
+
+    auto cloudSetLayout = DescriptorSetLayout::Builder(device)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .build();
+
+    cloudDescriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
+    for (int i = 0; i < cloudDescriptorSet.size() && i < 2; i++)
+    {
+        auto bufferInfo = cloudBuffers[i]->descriptorInfo();
+
+        DescriptorWriter(*cloudSetLayout, *objectManager.getPool())
+            .writeBuffer(0, &bufferInfo)
+            .build(cloudDescriptorSet[i]);
+    }
+
+
     //// shadow buffer
     shadowUboBuffer.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT); 
     for (int i = 0; i < shadowUboBuffer.size(); i++)
@@ -364,7 +415,7 @@ void Engine::createRenderSystems()
     /// render systems
 
     {
-        {
+        /*{
             RenderSystemBuilder gltfBuilder{};
             gltfBuilder.fragFilepath = "shaders\\GlTFshader.frag.spv";
             gltfBuilder.vertFilepath = "shaders\\GlTFshader.vert.spv";
@@ -373,7 +424,7 @@ void Engine::createRenderSystems()
 			gltfBuilder.hasMultipleInstance = true;
 
             gltfRenderSystem = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, assetManager, gltfBuilder);
-        }
+        }*/
 
         /*{
             RenderSystemBuilder gltfBuilder{};
@@ -385,7 +436,7 @@ void Engine::createRenderSystems()
             GlTFAssetRenderSystem = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, assetManager, gltfBuilder);
         }*/
 
-        {
+        /*{
             RenderSystemBuilder gltfShadowBuilder{};
             gltfShadowBuilder.vertFilepath = "shaders\\shadowmapgltf.vert.spv";
             gltfShadowBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
@@ -393,7 +444,7 @@ void Engine::createRenderSystems()
 			gltfShadowBuilder.hasMultipleInstance = true;
 
             depthRenderSystemGltf = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, assetManager, gltfShadowBuilder);
-        }
+        }*/
     }
 
     {
@@ -412,14 +463,15 @@ void Engine::createRenderSystems()
             RenderSystemBuilder cloudBuilder{};
             cloudBuilder.fragFilepath = "shaders\\CloudShader.frag.spv";
             cloudBuilder.vertFilepath = "shaders\\CloudShader.vert.spv";
-            cloudBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout() };
+            cloudBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), cloudSetLayout->getDescriptorSetLayout() };
             cloudBuilder.renderPass = renderer.getSwapChainRenderPass();
             cloudBuilder.subModelType = ModelSubType::CLOUD;
+            cloudBuilder.enableAlphaBlend = true;
 
             cloudRenderSystem = GlobalRenderSystem::create<Model>(device, assetManager, cloudBuilder);
         }
 
-        {
+        /*{
             RenderSystemBuilder objShadowBuilder{};
             objShadowBuilder.vertFilepath = "shaders\\shadowmap.vert.spv";
             objShadowBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
@@ -427,13 +479,13 @@ void Engine::createRenderSystems()
             objShadowBuilder.hasMultipleInstance = true;
 
             depthRenderSystem = GlobalRenderSystem::create<Model>(device, assetManager, objShadowBuilder);
-        }
+        }*/
     }
     
     
 
     {
-        {
+        /*{
             RenderSystemBuilder terrainBuilder{};
 
             terrainBuilder.vertFilepath = "shaders\\terrainShader.vert.spv";
@@ -455,7 +507,7 @@ void Engine::createRenderSystems()
             terrainShadowBuilder.subModelType = ModelSubType::TERRAIN;
 
             depthTerrainRenderSystem = GlobalRenderSystem::create<Model>(device, assetManager, terrainShadowBuilder);
-        }
+        }*/
     }
 
     {
