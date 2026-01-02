@@ -236,7 +236,7 @@ void ObjectManager::switchScene(std::string name)
 	}
 
 	// keep skybox
-    get("cubemap")->toBeRemoved = false;
+    get("cubemap1")->toBeRemoved = false;
 
 	// keep main camera
     get("mainCamera")->toBeRemoved = false;

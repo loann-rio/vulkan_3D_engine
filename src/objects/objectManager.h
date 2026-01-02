@@ -67,8 +67,8 @@ public:
 
     // scene 
 	json currentSceneJson;
-    std::string currentScene = "test6";
-	std::string scenePath = "scenes/test6.json";
+    std::string currentScene = "test5";
+	std::string scenePath = "scenes/test5.json";
 
     void switchScene(std::string name); 
     void loadScene(std::string name);

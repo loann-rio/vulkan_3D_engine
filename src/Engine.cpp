@@ -233,21 +233,21 @@ void Engine::run()
             auto newGpuTime = std::chrono::high_resolution_clock::now();
            
 			// render shadow map
-            renderer.renderDepthImage(frameInfo, { depthRenderSystem, depthRenderSystemGltf, depthTerrainRenderSystem }, descriptorSets);
+            renderer.renderDepthImage(frameInfo, { depthRenderSystem, depthRenderSystemGltf }, descriptorSets);
 
             if (auto commandBuffer = renderer.beginFrame()) {
                  
                 // render
                 renderer.beginSwapChainRenderPass(commandBuffer); 
 
-                /*if (textureObject && textureObject->modelAsset)
+                if (textureObject && textureObject->modelAsset)
                     gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo,
                     {
                         globalDescriptorSet[frameIndex],
                         shadowDescriptorSet[renderer.getDepthIndex()],
                         assetManager.models().get(textureObject->modelAsset)->lods[0].materials[0].descriptorSet[frameIndex]
                     },
-                    frustrumPlanes);*/
+                    frustrumPlanes);
                 
                 
                 objRenderSystem->renderGameObjects(commandBuffer, frameInfo, descriptorSets); 
@@ -257,7 +257,7 @@ void Engine::run()
                 //std::vector<VkDescriptorSet> terrainDescriptorSets{ globalDescriptorSet[frameIndex], shadowDescriptorSet[renderer.getDepthIndex()], terrainDescriptorSet[frameIndex] };
                 //terrainRenderSystem->renderGameObjects(commandBuffer, frameInfo, terrainDescriptorSets);
 
-				//skyboxRenderSystem->renderGameObjects(commandBuffer, frameInfo, { globalDescriptorSet[frameIndex] });
+				skyboxRenderSystem->renderGameObjects(commandBuffer, frameInfo, { globalDescriptorSet[frameIndex] });
                 cloudRenderSystem->renderGameObjects(commandBuffer, frameInfo, { globalDescriptorSet[frameIndex], cloudDescriptorSet[frameIndex] });
                 //textOverlay.renderText(commandBuffer, frameInfo); 
 
@@ -415,7 +415,7 @@ void Engine::createRenderSystems()
     /// render systems
 
     {
-        /*{
+        {
             RenderSystemBuilder gltfBuilder{};
             gltfBuilder.fragFilepath = "shaders\\GlTFshader.frag.spv";
             gltfBuilder.vertFilepath = "shaders\\GlTFshader.vert.spv";
@@ -424,7 +424,7 @@ void Engine::createRenderSystems()
 			gltfBuilder.hasMultipleInstance = true;
 
             gltfRenderSystem = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, assetManager, gltfBuilder);
-        }*/
+        }
 
         /*{
             RenderSystemBuilder gltfBuilder{};
@@ -436,7 +436,7 @@ void Engine::createRenderSystems()
             GlTFAssetRenderSystem = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, assetManager, gltfBuilder);
         }*/
 
-        /*{
+        {
             RenderSystemBuilder gltfShadowBuilder{};
             gltfShadowBuilder.vertFilepath = "shaders\\shadowmapgltf.vert.spv";
             gltfShadowBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
@@ -444,7 +444,7 @@ void Engine::createRenderSystems()
 			gltfShadowBuilder.hasMultipleInstance = true;
 
             depthRenderSystemGltf = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, assetManager, gltfShadowBuilder);
-        }*/
+        }
     }
 
     {
@@ -471,7 +471,7 @@ void Engine::createRenderSystems()
             cloudRenderSystem = GlobalRenderSystem::create<Model>(device, assetManager, cloudBuilder);
         }
 
-        /*{
+        {
             RenderSystemBuilder objShadowBuilder{};
             objShadowBuilder.vertFilepath = "shaders\\shadowmap.vert.spv";
             objShadowBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
@@ -479,7 +479,7 @@ void Engine::createRenderSystems()
             objShadowBuilder.hasMultipleInstance = true;
 
             depthRenderSystem = GlobalRenderSystem::create<Model>(device, assetManager, objShadowBuilder);
-        }*/
+        }
     }
     
     
