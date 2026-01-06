@@ -1,28 +1,53 @@
 #pragma once
 
 #include <vector>
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan_core.h>
 
 #include "RenderPass/FrameRenderer.h"
+
 
 class Device;
 class Swapchain;
 
-class Renderer {
+class GlobalRenderer {
 public:
-    Renderer(Device& device, Swapchain& swapchain);
+    GlobalRenderer(Device& device, Window& window);
+    ~GlobalRenderer();
+
+    GlobalRenderer(const GlobalRenderer&) = delete;
+    GlobalRenderer& operator=(const GlobalRenderer&) = delete;
 
     void renderFrame();
 
-private:
-    void beginCommandBuffer(VkCommandBuffer cmd);
-    void endCommandBuffer(VkCommandBuffer cmd);
+    uint32_t frameIndex() const;
+
 
 private:
+
+    void recreateSwapchain();
+
+    void createFrameContexts();
+
+    void createCommandBuffers();
+    void freeCommandBuffers();
+
+    bool aquireFrame(FrameContext& frame);
+    void presentFrame(FrameContext& frame);
+
+    void beginFrame(FrameContext& frame);
+    void endFrame(FrameContext& frame);
+
     Device& device;
-    Swapchain& swapchain;
+    Window& window;
 
-    FrameRenderer frameRenderer;
+    std::unique_ptr<Swapchain> swapchain;
 
-    std::vector<VkCommandBuffer> commandBuffers;
+    std::unique_ptr<FrameRenderer> frameRenderer;
+
+    std::vector<FrameContext> frames;
+    std::vector<VkCommandBuffer> presentCommandBuffers;
+
+    uint32_t currentFrameIndex = 0;
+
+    bool isFrameStarted = false;
 };
