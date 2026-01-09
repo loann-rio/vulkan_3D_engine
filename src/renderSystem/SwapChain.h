@@ -12,21 +12,15 @@ class Swapchain {
 public:
     static constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
 
-    struct Frame {
-        VkImage image{};
-        VkImageView imageView{};
-        VkFramebuffer framebuffer{};
-        VkCommandBuffer commandBuffer{};
-        VkSemaphore imageAvailable{};
-        VkSemaphore renderFinished{};
-        VkFence inFlight{};
-    };
-
     Swapchain(
-        Device& device,
-        AssetManager& assets,
-        VkExtent2D extent,
-        std::shared_ptr<Swapchain> oldSwapchain = nullptr
+        Device& device, 
+        VkExtent2D windowExtent
+    );
+    
+    Swapchain(
+        Device& device, 
+        VkExtent2D windowExtent, 
+        std::shared_ptr<Swapchain> oldSwapchain
     );
 
     ~Swapchain();
@@ -34,40 +28,70 @@ public:
     Swapchain(const Swapchain&) = delete;
     Swapchain& operator=(const Swapchain&) = delete;
 
-    VkExtent2D extent() const { return extent_; }
-    VkFormat imageFormat() const { return imageFormat_; }
-    VkRenderPass renderPass() const { return renderPass_; }
+    // queries //
 
-    uint32_t currentFrameIndex() const { return currentFrame_; }
-    const Frame& currentFrame() const { return frames_[currentFrame_]; }
+    uint32_t imageCount() const;
+    VkExtent2D getExtent() const;
+    VkFormat format() const;
+    VkFormat depthFormat() const;
 
-    bool acquireNextImage(uint32_t& imageIndex);
-    void present(uint32_t imageIndex);
+    // image //
 
-    void advanceFrame();
+    VkImage getImage(uint32_t imageIndex) const;
+    VkImageView getImageView(uint32_t imageIndex) const;
+    VkImageView getDepthImageView(uint32_t imageIndex) const;
+
+    // Framebuffers //
+
+    VkFramebuffer getFramebuffer(uint32_t imageIndex) const;
+    VkRenderPass getDefaultRenderPass() const;
+
+    // Synchronization / presentation //
+
+    VkResult acquireNextImage(uint32_t* imageIndex);
+    VkResult present(uint32_t imageIndex);
+
+    bool compareSwapFormat(const Swapchain& swapChain) const;
 
 private:
-    void createSwapchain();
+    void createSwapchain(VkExtent2D extent);
     void createImageViews();
-    void createRenderPass();
+    void createDepthResources();
+    //void createRenderPass();
     void createFramebuffers();
     void createSyncObjects();
 
+    // helpers //
+    VkSurfaceFormatKHR chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats);
+    VkPresentModeKHR choosePresentMode(const std::vector<VkPresentModeKHR>& modes);
+    VkExtent2D chooseExtent(const VkSurfaceCapabilitiesKHR& capabilities);
+
 private:
     Device& device;
-    AssetManager& assets;
 
-    VkSurfaceKHR surface_{};
+    VkSwapchainKHR swapchain{ VK_NULL_HANDLE };
+    std::shared_ptr<Swapchain> oldSwapchain;
 
-    VkSwapchainKHR swapchain_{};
-    VkFormat imageFormat_{};
-    VkExtent2D extent_{};
+    VkExtent2D extent{};
+    VkFormat swapchainFormat{};
+    VkFormat depthImageFormat{};
 
-    VkRenderPass renderPass_{};
+    // Swapchain images //
 
-    std::vector<VkImage> images_;
-    std::vector<Frame> frames_;
+    std::vector<VkImage> images;
+    std::vector<VkImageView> imageViews;
 
-    uint32_t currentFrame_{ 0 };
-    uint32_t maxFrames_{ 0 };
+    // Depth //
+
+    std::vector<VkImage> depthImages;
+    std::vector<VkDeviceMemory> depthMemory;
+    std::vector<VkImageView> depthImageViews;
+
+    // Presentation sync //
+
+    std::vector<VkSemaphore> imageAvailable;
+    std::vector<VkSemaphore> renderFinished;
+    std::vector<VkFence> inFlightFences;
+
+    uint32_t currentFrame{ 0 };
 };
