@@ -54,7 +54,7 @@ public:
 		glm::vec3 normal{};
 		glm::vec2 uv{};
 
-		static std::vector<VkVertexInputBindingDescription> getBindingDescriptions(bool hasMutipleInstances);
+		static std::vector<VkVertexInputBindingDescription>   getBindingDescriptions(bool hasMutipleInstances);
 		static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions(bool hasMutipleInstances);
 		static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptionsShadow(bool hasMutipleInstances);
 

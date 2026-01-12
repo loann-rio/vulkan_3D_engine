@@ -306,6 +306,33 @@ TextureBuilder& TextureBuilder::fromTextureInfo(VkImageCreateInfo imageInfo, VkI
     return *this;
 }
 
+TextureBuilder& TextureBuilder::fromTextureInfo(VkImage image, VkExtent3D extent, VkImageViewCreateInfo viewInfo, VkSamplerCreateInfo samplerInfo, VkImageLayout initImageLayout, uint32_t layerCount, VkFormat format)
+{
+    source = SourceType::Custom;
+
+    existingTexture = std::make_unique<TextureObject>(device);
+    existingTexture->textureExtent = { extent.width, extent.height };
+    existingTexture->textureImage = image;
+    
+    // create image view
+    viewInfo.image = existingTexture->textureImage;
+    if (vkCreateImageView(device.device(), &viewInfo, nullptr, &existingTexture->textureImageView) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create texture image view!");
+    }
+
+    // create sampler
+    if (vkCreateSampler(device.device(), &samplerInfo, nullptr, &existingTexture->textureSampler) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create texture sampler!");
+    }
+
+    if (initImageLayout != VK_IMAGE_LAYOUT_UNDEFINED)
+        device.transitionImageLayout(existingTexture->textureImage, format,
+            VK_IMAGE_LAYOUT_UNDEFINED, initImageLayout, layerCount);
+
+    existingTexture->isLoaded = true;
+    return *this;
+}
+
 uint64_t TextureBuilder::hash() const
 {
     if (source == SourceType::Custom || source == SourceType::RawBuffer || source == SourceType::FloatArray)

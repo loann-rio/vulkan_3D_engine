@@ -74,6 +74,8 @@ public:
     void getPhysicalFeatures(VkPhysicalDeviceFeatures* pFeatures) { vkGetPhysicalDeviceFeatures(physicalDevice, pFeatures); }
     bool isFormatSupported(const VkFormat candidate);
 
+    void waitIdle() const { vkDeviceWaitIdle(device_); }
+
     void submitToTransferQueue(VkSubmitInfo& submitInfo, VkFence fence);
     void submitToGraphicQueue(VkSubmitInfo& submitInfo, VkFence fence);
     VkResult present(const VkPresentInfoKHR* presentInfo);

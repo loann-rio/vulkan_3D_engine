@@ -43,8 +43,8 @@ public:
 
     // Framebuffers //
 
-    VkFramebuffer getFramebuffer(uint32_t imageIndex) const;
-    VkRenderPass getDefaultRenderPass() const;
+    //VkFramebuffer getFramebuffer(uint32_t imageIndex) const;
+    //VkRenderPass getDefaultRenderPass() const;
 
     // Synchronization / presentation //
 
@@ -56,15 +56,10 @@ public:
 private:
     void createSwapchain(VkExtent2D extent);
     void createImageViews();
-    void createDepthResources();
+    //void createDepthResources();
     //void createRenderPass();
-    void createFramebuffers();
+    //void createFramebuffers();
     void createSyncObjects();
-
-    // helpers //
-    VkSurfaceFormatKHR chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats);
-    VkPresentModeKHR choosePresentMode(const std::vector<VkPresentModeKHR>& modes);
-    VkExtent2D chooseExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 
 private:
     Device& device;

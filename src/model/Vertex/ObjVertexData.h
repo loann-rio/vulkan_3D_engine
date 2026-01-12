@@ -30,10 +30,10 @@ public:
     ObjVertexLayout() {
         m_attrs.clear();
 
-        m_attrs.push_back({ "position", offsetof(ObjVertex, position), sizeof(ObjVertex::position) });
-        m_attrs.push_back({ "color",    offsetof(ObjVertex, color)   , sizeof(ObjVertex::color) });
-        m_attrs.push_back({ "normal",   offsetof(ObjVertex, normal)  , sizeof(ObjVertex::normal) });
-        m_attrs.push_back({ "uv",       offsetof(ObjVertex, uv)      , sizeof(ObjVertex::uv) });
+        m_attrs.push_back({ "position", VK_FORMAT_R32G32B32_SFLOAT,  offsetof(ObjVertex, position), sizeof(ObjVertex::position) });
+        m_attrs.push_back({ "color",    VK_FORMAT_R32G32B32_SFLOAT,  offsetof(ObjVertex, color)   , sizeof(ObjVertex::color) });
+        m_attrs.push_back({ "normal",   VK_FORMAT_R32G32B32_SFLOAT,  offsetof(ObjVertex, normal)  , sizeof(ObjVertex::normal) });
+        m_attrs.push_back({ "uv",       VK_FORMAT_R32G32_SFLOAT,     offsetof(ObjVertex, uv)      , sizeof(ObjVertex::uv) });
 
         m_stride = static_cast<uint32_t>(sizeof(ObjVertex));
     };

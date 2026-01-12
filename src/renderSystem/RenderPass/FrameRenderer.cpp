@@ -21,31 +21,19 @@ void FrameRenderer::render(FrameContext& frame)
     submitPasses(frame);
 }
 
-void FrameRenderer::recordPasses(FrameContext& frame) {
-    std::vector<std::future<void>> parallelJobs;
-
-    for (auto& pass : passes) {
-        if (pass->allowParallelRecording()) 
-        {
-            parallelJobs.emplace_back(
-                std::async(std::launch::async, [&pass, &frame]() {
-                    pass->record(frame);
-                    })
-            );
-        }
-        else {
-            pass->record(frame);
-        }
+void FrameRenderer::recordPasses(FrameContext& frame) 
+{
+    for (auto& pass : passes) 
+    {
+        pass->record(frame);
     }
 
-    // Ensure all parallel recordings are complete
-    for (auto& job : parallelJobs) {
-        job.get();
-    }
 }
 
-void FrameRenderer::submitPasses(FrameContext& frame) {
-    for (auto& pass : passes) {
+void FrameRenderer::submitPasses(FrameContext& frame) 
+{
+    for (auto& pass : passes) 
+    {
         pass->submit(frame);
     }
 }

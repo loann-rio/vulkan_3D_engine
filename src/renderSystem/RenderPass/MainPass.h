@@ -1,20 +1,62 @@
 #pragma once
 
 #include "RenderPassBase.h"
+#include "../../base/Device.h"
+#include "../FrameContext.h"
+#include "../SwapChain.h"
 
-class Swapchain;
+#include <vulkan/vulkan_core.h>
+
+#include <memory>
+#include <vector>
+
+
 class RenderSystem;
 
+/*
+
+Main color rendering pass
+
+record command buffer
+bind framebuffer
+execute all renderSystems
+
+*/
 class MainPass final : public RenderPassBase {
 public:
     MainPass(
-        Swapchain& swapchain,
-        RenderSystem& renderer
+        Device& device,
+        AssetManager& assets,
+        uint32_t frame_in_flight, 
+        VkExtent2D extent
     );
 
-    void execute(FrameContext& frame) override;
+    ~MainPass() override;
+
+    void record(FrameContext& frame) override;
+
+    VkCommandBuffer commandBuffer(uint32_t frameIndex) const override;
+
+    void setTimelineValue(uint64_t value) override;
+    uint64_t timelineValue() const override;
+
 
 private:
+
+    void allocateCommandBuffers(uint32_t framesInFlight);
+    
+    void createTargetTexture();
+    void createFramebuffers();
+
+    VkCommandBuffer beginPass(uint32_t frameIndex);
+
+    Device& device;
     Swapchain& swapchain;
-    RenderSystem& renderer;
+    AssetManager& assets;
+    VkExtent2D extent;
+
+    VkRenderPass renderPass{ VK_NULL_HANDLE };
+
+    std::vector<VkFramebuffer> framebuffers;
+    std::vector<TextureManager::TextureID> textureTarget;
 };

@@ -10,19 +10,20 @@
 #include <cassert>
 
 GlobalRenderer::GlobalRenderer(Device& device, Window& window)
-    : device(device), window(window) {
-
+    : device(device), window(window) 
+{
     recreateSwapchain();
-    createFrameContexts();
-    createCommandBuffers();
-
-    frameRenderer = std::make_unique<FrameRenderer>(device, *swapchain);
+    createSemaphore();
+    createFrameRenderer();
 }
 
 
 GlobalRenderer::~GlobalRenderer() {
     device.waitIdle();
-    freeCommandBuffers();
+
+    if (timelineSemaphore != VK_NULL_HANDLE) {
+        vkDestroySemaphore(device.device(), timelineSemaphore, nullptr);
+    }
 }
 
 /// <summary>
@@ -54,91 +55,76 @@ void GlobalRenderer::recreateSwapchain() {
             throw std::runtime_error("Swap chain image format as changed");
         }
     }
+
+    frameContext.swapchain = swapchain.get();
 }
 
-void GlobalRenderer::createFrameContexts()
+void GlobalRenderer::createSemaphore()
 {
-    frames.resize(Swapchain::MAX_FRAMES_IN_FLIGHT);
+    VkSemaphoreTypeCreateInfo timelineInfo{};
+    timelineInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
+    timelineInfo.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
+    timelineInfo.initialValue = 0;
 
-    for (uint32_t i = 0; i < frames.size(); ++i) {
-        frames[i].frameIndex = i;
-        device.createSyncObjects(
-            frames[i].imageAvailable,
-            frames[i].renderFinished,
-            frames[i].inFlight
-        );
+    VkSemaphoreCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    createInfo.pNext = &timelineInfo;
+
+    if (vkCreateSemaphore(device.device(), &createInfo, nullptr, &timelineSemaphore) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create timeline semaphore");
     }
 }
 
-void GlobalRenderer::createCommandBuffers()
+void GlobalRenderer::createFrameRenderer()
 {
-    presentCommandBuffers.resize(Swapchain::MAX_FRAMES_IN_FLIGHT);
+    frameRenderer = std::make_unique<FrameRenderer>();
 
-    VkCommandBufferAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandPool = device.getThreadCommandPool();
-    allocInfo.commandBufferCount = static_cast<uint32_t>(presentCommandBuffers.size());
+    /*auto mainPass = std::make_unique<MainPass>(device,
+        mainRenderPass,
+        swapchain->extent()
+    );
 
+    frameRenderer->addPass(std::move(mainPass));*/
 
-    if (vkAllocateCommandBuffers(
-        device.device(), 
-        &allocInfo, 
-        presentCommandBuffers.data()) != VK_SUCCESS) {
-
-        throw std::runtime_error("failed to allocate command buffer");
-    }
-
-    for (uint32_t i = 0; i < frames.size(); ++i) {
-        frames[i].commandBuffer = presentCommandBuffers[i];
-    }
-}
-
-void GlobalRenderer::freeCommandBuffers()
-{
-    if (!presentCommandBuffers.empty())
-    {
-        vkFreeCommandBuffers(
-            device.device(), 
-            device.getThreadCommandPool(), 
-            static_cast<uint32_t>(presentCommandBuffers.size()),
-            presentCommandBuffers.data()
-        );
-
-        presentCommandBuffers.clear();
-    }
-}
-
-uint32_t GlobalRenderer::frameIndex() const {
-    return currentFrameIndex;
+  
 }
 
 void GlobalRenderer::renderFrame() 
 {
-    FrameContext& frame = frames[currentFrameIndex];
+    
+    frameContext.frameIndex = currentFrameIndex;
+    frameContext.timeline = timelineSemaphore;
+    frameContext.timelineValue = timelineValue;
 
-    if (!aquireFrame(frame)) {
+    if (!aquireFrame()) {
         return;
     }
 
-    beginFrame(frame);
+    frameRenderer->render(frameContext);
 
-    frameRenderer->render(frame);
+    // wait for all passes to complete
+    VkSemaphoreWaitInfo waitInfo{};
+    waitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
+    waitInfo.semaphoreCount = 1;
+    waitInfo.pSemaphores = &timelineSemaphore;
+    waitInfo.pValues = &frameContext.timelineValue;
 
-    endFrame(frame);
-    presentFrame(frame);
+    vkWaitSemaphores(device.device(), &waitInfo, UINT64_MAX);
 
+
+    presentFrame();
+
+    timelineValue = frameContext.timelineValue;
     currentFrameIndex = (currentFrameIndex + 1) % Swapchain::MAX_FRAMES_IN_FLIGHT;
     
 }
 
-bool GlobalRenderer::aquireFrame(FrameContext& frame)
+bool GlobalRenderer::aquireFrame()
 {
-    vkWaitForFences(device.device(), 1, &frame.inFlight, VK_TRUE, UINT64_MAX);
+    vkWaitForFences(device.device(), 1, &frameContext.inFlightFence, VK_TRUE, UINT64_MAX);
 
     VkResult result = swapchain->acquireNextImage(
-        frame.imageAvailable,
-        &frame.imageIndex
+        frameContext.frameIndex
     );
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
@@ -150,41 +136,23 @@ bool GlobalRenderer::aquireFrame(FrameContext& frame)
         throw std::runtime_error("Failed to acquire swapchain image");
     }
 
-    vkResetFences(device.device(), 1, &frame.inFlight);
+    vkResetFences(device.device(), 1, &frameContext.inFlightFence);
     return true;
 }
 
-void GlobalRenderer::presentFrame(FrameContext& frame)
+void GlobalRenderer::presentFrame()
 {
-    VkResult result = swapchain->submitAndPresent(
-        frame.commandBuffer,
-        frame.imageAvailable,
-        frame.renderFinished,
-        frame.inFlight,
-        frame.imageIndex
-    );
 
-    if (result != VK_SUCCESS) {
-        throw std::runtime_error("failed to present swap chain image");
+    VkResult result = swapchain->present(frameContext.frameIndex, timelineSemaphore, frameContext.timelineBaseValue);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR ||
+        result == VK_SUBOPTIMAL_KHR ||
+        window.wasWindowResized()) {
+
+        window.resetWindowResizedFlag();
+        recreateSwapchain();
     }
-}
-
-void GlobalRenderer::beginFrame(FrameContext& frame)
-{
-    VkCommandBuffer cmd = frame.commandBuffer;
-    vkResetCommandBuffer(cmd, 0);
-
-    VkCommandBufferBeginInfo beginInfo{};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-    if (vkBeginCommandBuffer(cmd, &beginInfo) != VK_SUCCESS) {
-        throw std::runtime_error("failed to begin recording command buffer");
-    }
-}
-
-void GlobalRenderer::endFrame(FrameContext& frame)
-{
-    if (vkEndCommandBuffer(frame.commandBuffer) != VK_SUCCESS) {
-        throw std::runtime_error("failed to record command buffer");
+    else if (result != VK_SUCCESS) {
+        throw std::runtime_error("Failed to present frame");
     }
 }

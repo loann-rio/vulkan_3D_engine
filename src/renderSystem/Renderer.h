@@ -19,35 +19,29 @@ public:
 
     void renderFrame();
 
-    uint32_t frameIndex() const;
-
-
 private:
+    
+
+    void createFrameContexts();
+    void createSemaphore();
+    void createFrameRenderer();
 
     void recreateSwapchain();
 
-    void createFrameContexts();
+    bool aquireFrame();
+    void presentFrame();
 
-    void createCommandBuffers();
-    void freeCommandBuffers();
-
-    bool aquireFrame(FrameContext& frame);
-    void presentFrame(FrameContext& frame);
-
-    void beginFrame(FrameContext& frame);
-    void endFrame(FrameContext& frame);
-
+private:
     Device& device;
     Window& window;
 
-    std::unique_ptr<Swapchain> swapchain;
+    FrameContext frameContext;
 
+    std::unique_ptr<Swapchain> swapchain;
     std::unique_ptr<FrameRenderer> frameRenderer;
 
-    std::vector<FrameContext> frames;
-    std::vector<VkCommandBuffer> presentCommandBuffers;
+    VkSemaphore timelineSemaphore = VK_NULL_HANDLE;
+    uint64_t timelineValue = 0;
 
-    uint32_t currentFrameIndex = 0;
-
-    bool isFrameStarted = false;
+    uint32_t currentFrameIndex = 0; 
 };

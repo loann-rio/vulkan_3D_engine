@@ -13,6 +13,7 @@ public:
     // attribute semantic description 
     struct Attribute {
         std::string name;
+        VkFormat format;
         uint32_t offset;
         uint32_t size; // in bytes
     };

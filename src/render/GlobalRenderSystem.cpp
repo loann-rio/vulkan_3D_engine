@@ -324,7 +324,6 @@ void GlobalRenderSystem::renderGameObjectsDepth(VkCommandBuffer& commandBuffer, 
 
 void GlobalRenderSystem::renderFullScreen(VkCommandBuffer& commandBuffer, VkDescriptorSet& globalDescriptorSets, glm::mat4 view, glm::mat4 proj)
 {
-
 	bind(commandBuffer, {});
 
 	struct Push { glm::mat4 view; glm::mat4 proj; } push;
