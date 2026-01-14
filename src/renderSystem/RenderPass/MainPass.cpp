@@ -1,6 +1,6 @@
 #include "MainPass.h"
 
-MainPass::MainPass(Device& device, AssetManager& assets, uint32_t frame_in_flight, VkExtent2D extent)
+MainPass::MainPass(Device& device, AssetManager& assets, Swapchain& swapchain, uint32_t frame_in_flight, VkExtent2D extent)
 	: device( device ), swapchain( swapchain ), assets( assets ), extent( extent )
 { 
 	allocateCommandBuffers(frame_in_flight);
@@ -45,6 +45,37 @@ void MainPass::record(FrameContext& frame)
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("MainPass: vkEndCommandBuffer failed");
     }
+}
+
+void MainPass::submit(FrameContext& frame)
+{
+    // Submit command buffer and signal timeline semaphore
+    VkCommandBuffer cmd = commandBuffers[frame.frameIndex];
+
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &cmd;
+
+    // Timeline semaphore signal
+    VkTimelineSemaphoreSubmitInfo timelineInfo{};
+    timelineInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
+    uint64_t signalValue = frame.timelineValue;
+    timelineInfo.signalSemaphoreValueCount = 1;
+    timelineInfo.pSignalSemaphoreValues = &signalValue;
+
+    submitInfo.pNext = &timelineInfo;
+
+    VkSemaphore signalSemaphores[] = { frame.timeline };
+    submitInfo.signalSemaphoreCount = 1;
+    submitInfo.pSignalSemaphores = signalSemaphores;
+
+    // Reset and submit using Device helper (provides queue synchronization)
+    vkResetFences(device.device(), 1, &frame.inFlightFence);
+    device.submitToGraphicQueue(submitInfo, frame.inFlightFence);
+
+    // store last signaled value for this pass
+    signaledTimelineValue = signalValue;
 }
 
 VkCommandBuffer MainPass::commandBuffer(uint32_t frameIndex) const

@@ -32,249 +32,284 @@ Engine::Engine() {
 
 void Engine::run()
 {
-    // ui
-    BasicUI imgui{ device, assetManager, window.getGLFWwindow(), renderer.getSwapChainRenderPass() };
-
-    //TextOverlay textOverlay(device, renderer.getSwapChainRenderPass());
-    //textOverlay.prepareResources(*globalPool);
-
-    objectManager.generateSkybox("skybox/citrus_orchard_puresky_4k.hdr", "testSkybox", &renderer, skyboxCreationRenderSystem);
-
-    // user inputs
     KeyboardMovementController cameraController{};
 
-    // UBO
     GlobalUbo ubo{};
-    SpotLightUbo spotLightUbo{};
-    TerrainUbo terrainUbo{};
-    CloudUbo cloudUbo{};
-
-    
-    // frame counter
-    FrameRateCounter gpuFrameRate;
-    FrameRateCounter cpuFrameRate;
-
-
-    auto currentTime = std::chrono::high_resolution_clock::now();
-	float frameTime = 0.1f;
-	float gpuTime = 0.0f;
-
-    int frame = 0;
-
-    auto* textureObject = dynamic_cast<GameObjectModel*>(objectManager.get("cubemap1"));
 
     vkQueueWaitIdle(device.presentQueue());
-	while (!window.shouldClose())
-	{   
-		glfwPollEvents();
-
+    while (!window.shouldClose()) {
+        glfwPollEvents();
+        
         // add loaded async model to gameObjectmap 
         objectManager.pushModel();
 
-        // calculate frame time
-        auto newTime = std::chrono::high_resolution_clock::now();
-        frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
-        currentTime = newTime;
-        
-        //// move camera on event ////
-        {
-            if (!imgui.isWindowSelected)
-                cameraController.moveInPlaneXZ(window.getGLFWwindow(), frameTime, objectManager.get(objectManager.mainCamera));
-            dynamic_cast<GameObjectCamera*>(objectManager.get(objectManager.mainCamera))->updateCameraView();
-        }
-
-        /////// start frame ///////
-        if (!renderer.aquireNextImage()) continue;
-        
-        int frameIndex = renderer.getFrameIndex();
-
-        /* {
-            // show fps count on screen
-            
-            cpuFrameRate.update(frameTime);
-
-            std::stringstream ss("");
-            ss << std::fixed << std::setprecision(2) << cpuFrameRate.get() << " fps";
-
-            textOverlay.beginTextUpdate(frameIndex);
-            textOverlay.addText(frameIndex, ss.str(), 10, 10, TextOverlay::alignLeft, renderer.getWidth(), renderer.getHeight()); 
-            textOverlay.endTextUpdate(frameIndex); 
-        }*/
-
-        /////// update objects ///////
-
-        // loop on games objects
-        {
-            std::shared_ptr<GameObject::Map> objects = objectManager.getGameObjects();
-            std::vector<GameObject::id_t> toRemove;
-
-            for (auto& [id, obj] : *objects) {
-                if (!obj->toBeRemoved) {
-                    obj->loop(&objectManager);
-                    continue;
-                }
-
-                // Handle removal
-                if (obj->getType() == GameObjectType::MODEL) {
-                    auto* modelObj = dynamic_cast<GameObjectModel*>(obj.get());
-                    if (modelObj->show) {
-                        modelObj->show = false; // Hide first to avoid descriptor issues
-                        continue;
-                    }
-                }
-
-                // Either not a model, or already hidden — safe to remove
-                toRemove.push_back(id);
-            }
-
-            // Remove after iteration
-            for (auto id : toRemove) {
-                objectManager.removeGameObject(id);
-            }
-
-        }
-
-        // update GLTF game objects
-        {
-            std::vector<GameObjectModel*> objects = objectManager.getByType<GameObjectModel>();
-            for (auto obj : objects) {
-                obj->update(frameTime);
-            }
-        }
+		uint16_t frameIndex = renderer.getNextFrameIndex();
 
         // update camera
         {
             auto* camObj = dynamic_cast<GameObjectCamera*>(objectManager.get(objectManager.mainCamera));
-            if (camObj->camera->aspectRatio != renderer.getAspectRatio()) {
-                camObj->camera->setPerspectiveProjection(renderer.getAspectRatio());
-            }
-
+           
             ubo.projection = camObj->camera->getProjection();
             ubo.view = camObj->camera->getView(); 
             ubo.inverseView = camObj->camera->getInverseView();
             ubo.lightPos = camObj->transform.translation; 
         }
 
-        // update pointLight 
-        {
-            std::vector<GameObjectPointLight*> pointLigths = objectManager.getByType<GameObjectPointLight>();
-            uint16_t i = 0;
-            for (auto lightObj : pointLigths) {
-                if (lightObj->transform.color.w)
-                    ubo.pointLights[i++] = PointLight{ glm::vec4(lightObj->transform.translation, lightObj->transform.scale.x), lightObj->transform.color };
-                if (i >= MAX_LIGHT) break;
-            }
-            ubo.numLights = i;
-        }
-
-        uboBuffers[frameIndex]->writeToBuffer(&ubo); 
+        uboBuffers[frameIndex]->writeToBuffer(&ubo);
         uboBuffers[frameIndex]->flush();
 
+		renderer.renderFrame();
+    }
 
-        // update terrain ubo
-        {
-            terrainBuffers[frameIndex]->writeToBuffer(&terrainUbo);
-            terrainBuffers[frameIndex]->flush();
-		}
-
-        // update cloud ubo
-        {
-            
-            auto* cloudObject = dynamic_cast<GameObjectModel*>(objectManager.get("cloud"));
-
-            if (cloudObject)
-            {
-                auto cloudModelAabb = assetManager.models().get(cloudObject->modelAsset)->baseLod().aabb.getAABB(cloudObject->getTransformMat());
-
-                cloudUbo.min_rect = glm::vec4(cloudModelAabb.min, 0);
-                cloudUbo.max_rect = glm::vec4(cloudModelAabb.max, 0);
-            }
-
-            cloudBuffers[frameIndex]->writeToBuffer(&cloudUbo);
-            cloudBuffers[frameIndex]->flush();
-        }
-
-        std::vector<std::array<FrustumPlane, 6>> frustrumPlanesList;
-        // update spotLight
-        {
-            uint16_t i = 0; 
-            std::vector<GameObjectSpotLight*> spotLigths = objectManager.getByType<GameObjectSpotLight>();
-            for (auto lightObj : spotLigths) {
-                if (lightObj->transform.color.w != 0)
-                    spotLightUbo.spotLight[i++] = lightObj->getSpotLightInfo(true);
-
-                lightObj->camera->updateFrustrumPlanes();
-                frustrumPlanesList.push_back(lightObj->getFrustumPlanes());
-                if (i >= DepthSwapChain::MAX_DEPTH_RENDER_COUNT) break;
-            }
-            spotLightUbo.numLights = i;
-
-            shadowUboBuffer[frameIndex]->writeToBuffer(&spotLightUbo);
-            shadowUboBuffer[frameIndex]->flush();
-        }
-
-        FrameInfo frameInfo{
-            frameIndex,
-            frameTime,
-            spotLightUbo.numLights,
-            objectManager.get(objectManager.mainCamera)->transform.translation,
-            objectManager.getByType<GameObjectModel>(),
-            frustrumPlanesList
-        };
-
-		
-        /////// render frame ///////
-        {
-            std::vector<VkDescriptorSet> descriptorSets{ globalDescriptorSet[frameIndex], shadowDescriptorSet[renderer.getDepthIndex()]};
-			std::array<FrustumPlane, 6> frustrumPlanes = dynamic_cast<GameObjectCamera*>(objectManager.get(objectManager.mainCamera))->getFrustumPlanes();
-
-            vkQueueWaitIdle(device.presentQueue());
-
-            auto newGpuTime = std::chrono::high_resolution_clock::now();
-           
-			// render shadow map
-            renderer.renderDepthImage(frameInfo, { depthRenderSystem, depthRenderSystemGltf }, descriptorSets);
-
-            if (auto commandBuffer = renderer.beginFrame()) {
-                 
-                // render
-                renderer.beginSwapChainRenderPass(commandBuffer); 
-
-                if (textureObject && textureObject->modelAsset)
-                    gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo,
-                    {
-                        globalDescriptorSet[frameIndex],
-                        shadowDescriptorSet[renderer.getDepthIndex()],
-                        assetManager.models().get(textureObject->modelAsset)->lods[0].materials[0].descriptorSet[frameIndex]
-                    },
-                    frustrumPlanes);
-                
-                
-                objRenderSystem->renderGameObjects(commandBuffer, frameInfo, descriptorSets); 
-                
-                //GlTFAssetRenderSystem->renderGameObjects(commandBuffer, frameInfo, descriptorSets);
-
-                //std::vector<VkDescriptorSet> terrainDescriptorSets{ globalDescriptorSet[frameIndex], shadowDescriptorSet[renderer.getDepthIndex()], terrainDescriptorSet[frameIndex] };
-                //terrainRenderSystem->renderGameObjects(commandBuffer, frameInfo, terrainDescriptorSets);
-
-				skyboxRenderSystem->renderGameObjects(commandBuffer, frameInfo, { globalDescriptorSet[frameIndex] });
-                cloudRenderSystem->renderGameObjects(commandBuffer, frameInfo, { globalDescriptorSet[frameIndex], cloudDescriptorSet[frameIndex] });
-                //textOverlay.renderText(commandBuffer, frameInfo); 
-
-                imgui.drawUI(commandBuffer, &objectManager, terrainUbo, cloudUbo, gpuFrameRate.get());
-
-                renderer.endSwapChainRenderPass(commandBuffer); 
-                renderer.endFrame();
-            } 
-
-			auto endGpuTime = std::chrono::high_resolution_clock::now();
-			gpuTime = std::chrono::duration<float, std::chrono::seconds::period>(endGpuTime - newGpuTime).count();
-			gpuFrameRate.update(gpuTime);
-        }   
-	}
-
-    vkQueueWaitIdle(device.presentQueue());
+	// wait before destroying resources
+	device.waitIdle();
 }
+
+//void Engine::run()
+//{
+//    // ui
+//    BasicUI imgui{ device, assetManager, window.getGLFWwindow(), renderer.getSwapChainRenderPass() };
+//
+//    //TextOverlay textOverlay(device, renderer.getSwapChainRenderPass());
+//    //textOverlay.prepareResources(*globalPool);
+//
+//    //objectManager.generateSkybox("skybox/citrus_orchard_puresky_4k.hdr", "testSkybox", &renderer, skyboxCreationRenderSystem);
+//
+//    // user inputs
+//    KeyboardMovementController cameraController{};
+//
+//    // UBO
+//    GlobalUbo ubo{};
+//    SpotLightUbo spotLightUbo{};
+//    TerrainUbo terrainUbo{};
+//    CloudUbo cloudUbo{};
+//
+//    
+//    // frame counter
+//    FrameRateCounter gpuFrameRate;
+//    FrameRateCounter cpuFrameRate;
+//
+//
+//    auto currentTime = std::chrono::high_resolution_clock::now();
+//	float frameTime = 0.1f;
+//	float gpuTime = 0.0f;
+//
+//    int frame = 0;
+//
+//    auto* textureObject = dynamic_cast<GameObjectModel*>(objectManager.get("cubemap1"));
+//
+//    vkQueueWaitIdle(device.presentQueue());
+//	while (!window.shouldClose())
+//	{   
+//		glfwPollEvents();
+//
+//        // add loaded async model to gameObjectmap 
+//        objectManager.pushModel();
+//
+//        // calculate frame time
+//        auto newTime = std::chrono::high_resolution_clock::now();
+//        frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
+//        currentTime = newTime;
+//        
+//        //// move camera on event ////
+//        {
+//            if (!imgui.isWindowSelected)
+//                cameraController.moveInPlaneXZ(window.getGLFWwindow(), frameTime, objectManager.get(objectManager.mainCamera));
+//            dynamic_cast<GameObjectCamera*>(objectManager.get(objectManager.mainCamera))->updateCameraView();
+//        }
+//
+//        /////// start frame ///////
+//        if (!renderer.aquireNextImage()) continue;
+//        
+//        int frameIndex = renderer.getFrameIndex();
+//
+//        /* {
+//            // show fps count on screen
+//            
+//            cpuFrameRate.update(frameTime);
+//
+//            std::stringstream ss("");
+//            ss << std::fixed << std::setprecision(2) << cpuFrameRate.get() << " fps";
+//
+//            textOverlay.beginTextUpdate(frameIndex);
+//            textOverlay.addText(frameIndex, ss.str(), 10, 10, TextOverlay::alignLeft, renderer.getWidth(), renderer.getHeight()); 
+//            textOverlay.endTextUpdate(frameIndex); 
+//        }*/
+//
+//        /////// update objects ///////
+//
+//        // loop on games objects
+//        {
+//            std::shared_ptr<GameObject::Map> objects = objectManager.getGameObjects();
+//            std::vector<GameObject::id_t> toRemove;
+//
+//            for (auto& [id, obj] : *objects) {
+//                if (!obj->toBeRemoved) {
+//                    obj->loop(&objectManager);
+//                    continue;
+//                }
+//
+//                // Handle removal
+//                if (obj->getType() == GameObjectType::MODEL) {
+//                    auto* modelObj = dynamic_cast<GameObjectModel*>(obj.get());
+//                    if (modelObj->show) {
+//                        modelObj->show = false; // Hide first to avoid descriptor issues
+//                        continue;
+//                    }
+//                }
+//
+//                // Either not a model, or already hidden — safe to remove
+//                toRemove.push_back(id);
+//            }
+//
+//            // Remove after iteration
+//            for (auto id : toRemove) {
+//                objectManager.removeGameObject(id);
+//            }
+//
+//        }
+//
+//        // update GLTF game objects
+//        {
+//            std::vector<GameObjectModel*> objects = objectManager.getByType<GameObjectModel>();
+//            for (auto obj : objects) {
+//                obj->update(frameTime);
+//            }
+//        }
+//
+//        // update camera
+//        {
+//            auto* camObj = dynamic_cast<GameObjectCamera*>(objectManager.get(objectManager.mainCamera));
+//            if (camObj->camera->aspectRatio != renderer.getAspectRatio()) {
+//                camObj->camera->setPerspectiveProjection(renderer.getAspectRatio());
+//            }
+//
+//            ubo.projection = camObj->camera->getProjection();
+//            ubo.view = camObj->camera->getView(); 
+//            ubo.inverseView = camObj->camera->getInverseView();
+//            ubo.lightPos = camObj->transform.translation; 
+//        }
+//
+//        // update pointLight 
+//        {
+//            std::vector<GameObjectPointLight*> pointLigths = objectManager.getByType<GameObjectPointLight>();
+//            uint16_t i = 0;
+//            for (auto lightObj : pointLigths) {
+//                if (lightObj->transform.color.w)
+//                    ubo.pointLights[i++] = PointLight{ glm::vec4(lightObj->transform.translation, lightObj->transform.scale.x), lightObj->transform.color };
+//                if (i >= MAX_LIGHT) break;
+//            }
+//            ubo.numLights = i;
+//        }
+//
+//        uboBuffers[frameIndex]->writeToBuffer(&ubo); 
+//        uboBuffers[frameIndex]->flush();
+//
+//
+//        // update terrain ubo
+//        {
+//            terrainBuffers[frameIndex]->writeToBuffer(&terrainUbo);
+//            terrainBuffers[frameIndex]->flush();
+//		}
+//
+//        // update cloud ubo
+//        {
+//            
+//            auto* cloudObject = dynamic_cast<GameObjectModel*>(objectManager.get("cloud"));
+//
+//            if (cloudObject)
+//            {
+//                auto cloudModelAabb = assetManager.models().get(cloudObject->modelAsset)->baseLod().aabb.getAABB(cloudObject->getTransformMat());
+//
+//                cloudUbo.min_rect = glm::vec4(cloudModelAabb.min, 0);
+//                cloudUbo.max_rect = glm::vec4(cloudModelAabb.max, 0);
+//            }
+//
+//            cloudBuffers[frameIndex]->writeToBuffer(&cloudUbo);
+//            cloudBuffers[frameIndex]->flush();
+//        }
+//
+//        std::vector<std::array<FrustumPlane, 6>> frustrumPlanesList;
+//        // update spotLight
+//        {
+//            uint16_t i = 0; 
+//            std::vector<GameObjectSpotLight*> spotLigths = objectManager.getByType<GameObjectSpotLight>();
+//            for (auto lightObj : spotLigths) {
+//                if (lightObj->transform.color.w != 0)
+//                    spotLightUbo.spotLight[i++] = lightObj->getSpotLightInfo(true);
+//
+//                lightObj->camera->updateFrustrumPlanes();
+//                frustrumPlanesList.push_back(lightObj->getFrustumPlanes());
+//                if (i >= DepthSwapChain::MAX_DEPTH_RENDER_COUNT) break;
+//            }
+//            spotLightUbo.numLights = i;
+//
+//            shadowUboBuffer[frameIndex]->writeToBuffer(&spotLightUbo);
+//            shadowUboBuffer[frameIndex]->flush();
+//        }
+//
+//        FrameInfo frameInfo{
+//            frameIndex,
+//            frameTime,
+//            spotLightUbo.numLights,
+//            objectManager.get(objectManager.mainCamera)->transform.translation,
+//            objectManager.getByType<GameObjectModel>(),
+//            frustrumPlanesList
+//        };
+//
+//		
+//        /////// render frame ///////
+//        {
+//            std::vector<VkDescriptorSet> descriptorSets{ globalDescriptorSet[frameIndex], shadowDescriptorSet[renderer.getDepthIndex()]};
+//			std::array<FrustumPlane, 6> frustrumPlanes = dynamic_cast<GameObjectCamera*>(objectManager.get(objectManager.mainCamera))->getFrustumPlanes();
+//
+//            vkQueueWaitIdle(device.presentQueue());
+//
+//            auto newGpuTime = std::chrono::high_resolution_clock::now();
+//           
+//			// render shadow map
+//            renderer.renderDepthImage(frameInfo, { depthRenderSystem, depthRenderSystemGltf }, descriptorSets);
+//
+//            if (auto commandBuffer = renderer.beginFrame()) {
+//                 
+//                // render
+//                renderer.beginSwapChainRenderPass(commandBuffer); 
+//
+//                if (textureObject && textureObject->modelAsset)
+//                    gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo,
+//                    {
+//                        globalDescriptorSet[frameIndex],
+//                        shadowDescriptorSet[renderer.getDepthIndex()],
+//                        assetManager.models().get(textureObject->modelAsset)->lods[0].materials[0].descriptorSet[frameIndex]
+//                    },
+//                    frustrumPlanes);
+//                
+//                
+//                objRenderSystem->renderGameObjects(commandBuffer, frameInfo, descriptorSets); 
+//                
+//                //GlTFAssetRenderSystem->renderGameObjects(commandBuffer, frameInfo, descriptorSets);
+//
+//                //std::vector<VkDescriptorSet> terrainDescriptorSets{ globalDescriptorSet[frameIndex], shadowDescriptorSet[renderer.getDepthIndex()], terrainDescriptorSet[frameIndex] };
+//                //terrainRenderSystem->renderGameObjects(commandBuffer, frameInfo, terrainDescriptorSets);
+//
+//				skyboxRenderSystem->renderGameObjects(commandBuffer, frameInfo, { globalDescriptorSet[frameIndex] });
+//                cloudRenderSystem->renderGameObjects(commandBuffer, frameInfo, { globalDescriptorSet[frameIndex], cloudDescriptorSet[frameIndex] });
+//                //textOverlay.renderText(commandBuffer, frameInfo); 
+//
+//                imgui.drawUI(commandBuffer, &objectManager, terrainUbo, cloudUbo, gpuFrameRate.get());
+//
+//                renderer.endSwapChainRenderPass(commandBuffer); 
+//                renderer.endFrame();
+//            } 
+//
+//			auto endGpuTime = std::chrono::high_resolution_clock::now();
+//			gpuTime = std::chrono::duration<float, std::chrono::seconds::period>(endGpuTime - newGpuTime).count();
+//			gpuFrameRate.update(gpuTime);
+//        }   
+//	}
+//
+//    vkQueueWaitIdle(device.presentQueue());
+//}
  
  
 void Engine::createRenderSystems()
@@ -312,7 +347,7 @@ void Engine::createRenderSystems()
 
     //// terrain buffer 
 
-    terrainBuffers.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
+   /* terrainBuffers.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
     for (int i = 0; i < terrainBuffers.size(); i++)
     {
         terrainBuffers[i] = std::make_unique<Buffer>(
@@ -339,11 +374,11 @@ void Engine::createRenderSystems()
         DescriptorWriter(*terrainSetLayout, *objectManager.getPool())
             .writeBuffer(0, &bufferInfo)
             .build(terrainDescriptorSet[i]);
-    }
+    }*/
 
     //// cloud buffer 
 
-    cloudBuffers.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
+    /*cloudBuffers.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
     for (int i = 0; i < cloudBuffers.size(); i++)
     {
         cloudBuffers[i] = std::make_unique<Buffer>(
@@ -370,11 +405,11 @@ void Engine::createRenderSystems()
         DescriptorWriter(*cloudSetLayout, *objectManager.getPool())
             .writeBuffer(0, &bufferInfo)
             .build(cloudDescriptorSet[i]);
-    }
+    }*/
 
 
     //// shadow buffer
-    shadowUboBuffer.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT); 
+    /*shadowUboBuffer.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT); 
     for (int i = 0; i < shadowUboBuffer.size(); i++)
     {
         shadowUboBuffer[i] = std::make_unique<Buffer>( 
@@ -387,9 +422,9 @@ void Engine::createRenderSystems()
         ); 
 
         shadowUboBuffer[i]->map(); 
-    } 
+    } */
      
-    auto shadowSetLayout = DescriptorSetLayout::Builder(device)
+    /*auto shadowSetLayout = DescriptorSetLayout::Builder(device)
         .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS) 
         .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, DepthSwapChain::MAX_DEPTH_RENDER_COUNT)
         .build();
@@ -404,18 +439,18 @@ void Engine::createRenderSystems()
             .writeBuffer(0, &bufferInfo)
             .writeImage(1, depthInfo, DepthSwapChain::MAX_DEPTH_RENDER_COUNT)
             .build(shadowDescriptorSet[i]); 
-    }
+    }*/
 
 
     /// skybox 
-    auto skyboxSetLayout = DescriptorSetLayout::Builder(device)
+    /*auto skyboxSetLayout = DescriptorSetLayout::Builder(device)
         .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) 
-        .build();
+        .build();*/
 
     /// render systems
 
     {
-        {
+        /*{
             RenderSystemBuilder gltfBuilder{};
             gltfBuilder.fragFilepath = "shaders\\GlTFshader.frag.spv";
             gltfBuilder.vertFilepath = "shaders\\GlTFshader.vert.spv";
@@ -424,7 +459,7 @@ void Engine::createRenderSystems()
 			gltfBuilder.hasMultipleInstance = true;
 
             gltfRenderSystem = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, assetManager, gltfBuilder);
-        }
+        }*/
 
         /*{
             RenderSystemBuilder gltfBuilder{};
@@ -436,7 +471,7 @@ void Engine::createRenderSystems()
             GlTFAssetRenderSystem = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, assetManager, gltfBuilder);
         }*/
 
-        {
+        /*{
             RenderSystemBuilder gltfShadowBuilder{};
             gltfShadowBuilder.vertFilepath = "shaders\\shadowmapgltf.vert.spv";
             gltfShadowBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
@@ -444,11 +479,11 @@ void Engine::createRenderSystems()
 			gltfShadowBuilder.hasMultipleInstance = true;
 
             depthRenderSystemGltf = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, assetManager, gltfShadowBuilder);
-        }
+        }*/
     }
 
     {
-        {
+        /*{
             RenderSystemBuilder objBuilder{};
             objBuilder.fragFilepath = "shaders\\simple_shader.frag.spv";
             objBuilder.vertFilepath = "shaders\\simple_shader.vert.spv";
@@ -479,7 +514,7 @@ void Engine::createRenderSystems()
             objShadowBuilder.hasMultipleInstance = true;
 
             depthRenderSystem = GlobalRenderSystem::create<Model>(device, assetManager, objShadowBuilder);
-        }
+        }*/
     }
     
     
@@ -510,7 +545,7 @@ void Engine::createRenderSystems()
         }*/
     }
 
-    {
+    /*{
         RenderSystemBuilder skyboxBuilder{};
         skyboxBuilder.fragFilepath = "shaders\\skybox.frag.spv";
         skyboxBuilder.vertFilepath = "shaders\\skybox.vert.spv";
@@ -529,5 +564,5 @@ void Engine::createRenderSystems()
         skyboxBuilder.isFullscreenRender = true;
         skyboxBuilder.pushStage = static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_FRAGMENT_BIT);
         skyboxCreationRenderSystem = GlobalRenderSystem::create<Model>(device, assetManager, skyboxBuilder);
-    }
+    }*/
 }

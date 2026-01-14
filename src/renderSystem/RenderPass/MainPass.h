@@ -27,6 +27,7 @@ public:
     MainPass(
         Device& device,
         AssetManager& assets,
+        Swapchain& swapchain,
         uint32_t frame_in_flight, 
         VkExtent2D extent
     );
@@ -34,6 +35,7 @@ public:
     ~MainPass() override;
 
     void record(FrameContext& frame) override;
+    void submit(FrameContext& frame) override; 
 
     VkCommandBuffer commandBuffer(uint32_t frameIndex) const override;
 

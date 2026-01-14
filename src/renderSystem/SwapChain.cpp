@@ -35,27 +35,36 @@ namespace {
         actual.height = std::clamp(actual.height, caps.minImageExtent.height, caps.maxImageExtent.height);
         return actual;
     }
+
+    VkFormat findDepthFormat(Device& device) {
+        return device.findSupportedFormat(
+            { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
+            VK_IMAGE_TILING_OPTIMAL,
+            VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+    }
+
+
 }
 
 Swapchain::Swapchain(Device& device, VkExtent2D windowExtent)
     : device(device) {
-    createSwapchain(windowExtent);
-    createImageViews();
-    createDepthResources();
-    createFramebuffers();
-    createSyncObjects();
+	init(windowExtent);
 }
 
 Swapchain::Swapchain(Device& device,
     VkExtent2D windowExtent,
     std::shared_ptr<Swapchain> old)
     : device(device), oldSwapchain(old) {
-    createSwapchain(windowExtent);
+	init(windowExtent);
+}
+
+void Swapchain::init(VkExtent2D extent)
+{
+    createSwapchain(extent);
     createImageViews();
-    createDepthResources();
-    createFramebuffers();
     createSyncObjects();
 }
+
 
 Swapchain::~Swapchain()
 {
@@ -67,20 +76,6 @@ Swapchain::~Swapchain()
 
     for (auto sem : renderFinished)
         vkDestroySemaphore(device.device(), sem, nullptr);
-
-    /*for (auto fb : framebuffers)
-        vkDestroyFramebuffer(device.device(), fb, nullptr);*/
-
-    /*if (renderPass)
-        vkDestroyRenderPass(device.device(), renderPass, nullptr);*/
-
-    for (auto view : depthImageViews)
-        vkDestroyImageView(device.device(), view, nullptr);
-
-    for (size_t i = 0; i < depthImages.size(); ++i) {
-        vkDestroyImage(device.device(), depthImages[i], nullptr);
-        vkFreeMemory(device.device(), depthMemory[i], nullptr);
-    }
 
     for (auto view : imageViews)
         vkDestroyImageView(device.device(), view, nullptr);
@@ -113,11 +108,7 @@ VkImageView Swapchain::getImageView(uint32_t index) const {
     return imageViews[index];
 }
 
-VkImageView Swapchain::getDepthImageView(uint32_t index) const {
-    return depthImageViews[index];
-}
-
-VkResult Swapchain::acquireNextImage(uint32_t* imageIndex) {
+VkResult Swapchain::acquireNextImage(uint32_t* imageIndex, uint32_t* outFrameSlot) {
     vkWaitForFences(
         device.device(),
         1,
@@ -132,6 +123,8 @@ VkResult Swapchain::acquireNextImage(uint32_t* imageIndex) {
         imageAvailable[currentFrame],
         VK_NULL_HANDLE,
         imageIndex);
+
+    if (outFrameSlot) *outFrameSlot = currentFrame;
 
     return result;
 }
@@ -157,9 +150,10 @@ bool Swapchain::compareSwapFormat(const Swapchain& swapChain) const
         depthImageFormat == swapChain.depthImageFormat;
 }
 
-
-void Swapchain::createSwapchain(VkExtent2D windowExtent) 
+void Swapchain::createSwapchain(VkExtent2D windowExtent)
 {
+    depthImageFormat = findDepthFormat(device);
+
     VkSurfaceCapabilitiesKHR capabilities;
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
         device.getPhysicalDevice(), 
@@ -201,7 +195,7 @@ void Swapchain::createSwapchain(VkExtent2D windowExtent)
 
     VkSurfaceFormatKHR surfaceFormat = chooseSurfaceFormat(formats);
     VkPresentModeKHR presentMode = choosePresentMode(presentModes);
-    extent = chooseExtent(capabilities);
+    extent = chooseExtent(capabilities, extent);
 
     uint32_t imageCount = capabilities.minImageCount + 1;
     if (capabilities.maxImageCount > 0 &&
@@ -269,4 +263,14 @@ void Swapchain::createSyncObjects() {
             vkCreateFence(device.device(), &fence, nullptr, &inFlightFences[i]) != VK_SUCCESS)
             throw std::runtime_error("Failed to create sync objects");
     }
+}
+
+VkSemaphore Swapchain::getImageAvailableSemaphore(uint32_t frame) const {
+    return imageAvailable.at(frame);
+}
+VkSemaphore Swapchain::getRenderFinishedSemaphore(uint32_t frame) const {
+    return renderFinished.at(frame);
+}
+VkFence Swapchain::getInFlightFence(uint32_t frame) const {
+    return inFlightFences.at(frame);
 }

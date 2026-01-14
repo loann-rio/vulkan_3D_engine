@@ -12,6 +12,7 @@
 #include "../model/ModelBuilder.h"
 
 
+
 #include <chrono>
 #include <fstream>
 #include <iostream>
@@ -619,52 +620,52 @@ void ObjectManager::loadObjectAsync(Device& device, AssetManager& assets, const 
 
 void ObjectManager::generateSkybox(const std::string pathTexture, const std::string goName, Renderer* renderer, std::shared_ptr<GlobalRenderSystem> skyboxRenedrSystem)
 {
-    auto textureSetLayout = DescriptorSetLayout::Builder(device)
-        .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .build();
+    //auto textureSetLayout = DescriptorSetLayout::Builder(device)
+    //    .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+    //    .build();
   
-    TextureBuilder builder(device);
-    TextureManager::TextureID texture  = assetManager.textures().create(builder.fromFile(pathTexture));
+    //TextureBuilder builder(device);
+    //TextureManager::TextureID texture  = assetManager.textures().create(builder.fromFile(pathTexture));
   
-    auto imageInfo = assetManager.textures().get(texture)->getImageInfo();
+    //auto imageInfo = assetManager.textures().get(texture)->getImageInfo();
 
-    VkDescriptorSet descriptorSet;
-    DescriptorWriter(*textureSetLayout, *globalPool)
-        .writeImage(0, &imageInfo)
-        .build(descriptorSet);
+    //VkDescriptorSet descriptorSet;
+    //DescriptorWriter(*textureSetLayout, *globalPool)
+    //    .writeImage(0, &imageInfo)
+    //    .build(descriptorSet);
 
-    // render new texture
-    auto resultTexture = renderer->renderHdriToCubeTexture(skyboxRenedrSystem, descriptorSet);
+    //// render new texture
+    //auto resultTexture = renderer->renderHdriToCubeTexture(skyboxRenedrSystem, descriptorSet);
 
 
-    // remove builder texture
-    assetManager.textures().remove(texture);
+    //// remove builder texture
+    //assetManager.textures().remove(texture);
 
-    // create go with new texture
-    auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
-    gameObject->setName(goName);
+    //// create go with new texture
+    //auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
+    //gameObject->setName(goName);
 
-    gameObject->setModelType(ModelType::OBJ_MODEL);
-    gameObject->setModelSubType(ModelSubType::SKYBOX);
+    //gameObject->setModelType(ModelType::OBJ_MODEL);
+    //gameObject->setModelSubType(ModelSubType::SKYBOX);
 
-    gameObject->texturePath = gameObject->texturePath;
-    gameObject->saveable = false;
-    gameObject->show = true;
+    //gameObject->texturePath = gameObject->texturePath;
+    //gameObject->saveable = false;
+    //gameObject->show = true;
 
-    GameObject::id_t id = gameObject->getId();
+    //GameObject::id_t id = gameObject->getId();
 
    
 
-    ModelBuilder modelBuilder(device, assetManager);
-    ModelManager::ModelID modelId = assetManager.models().create(modelBuilder.fromFile("model/cube.obj").withTexture(resultTexture));
+    //ModelBuilder modelBuilder(device, assetManager);
+    //ModelManager::ModelID modelId = assetManager.models().create(modelBuilder.fromFile("model/cube.obj").withTexture(resultTexture));
 
-    if (modelId)
-    {
-        createDescriptorSet(assetManager.models().get(modelId));
-        gameObject->setModel(modelId);
+    //if (modelId)
+    //{
+    //    createDescriptorSet(assetManager.models().get(modelId));
+    //    gameObject->setModel(modelId);
 
-        pushGameObject(std::move(gameObject));
-    }
+    //    pushGameObject(std::move(gameObject));
+    //}
 }
 
 

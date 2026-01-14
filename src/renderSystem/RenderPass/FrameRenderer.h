@@ -20,5 +20,4 @@ private:
     Device& device;
 
     std::vector<std::unique_ptr<RenderPassBase>> passes;
-
 };

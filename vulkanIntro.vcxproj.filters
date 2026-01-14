@@ -240,6 +240,15 @@
     <ClCompile Include="src\renderSystem\Renderer.cpp">
       <Filter>renderSystem</Filter>
     </ClCompile>
+    <ClCompile Include="src\renderSystem\RenderSystems\ShadowSkinnedRenderSystem.h">
+      <Filter>renderSystem\RenderSystems</Filter>
+    </ClCompile>
+    <ClCompile Include="src\renderSystem\RenderSystems\MainMeshRenderSystem.cpp">
+      <Filter>renderSystem\RenderSystems</Filter>
+    </ClCompile>
+    <ClCompile Include="src\renderSystem\RenderSystems\BaseRenderSystem.cpp">
+      <Filter>renderSystem\RenderSystems</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tiny_gltf.h">
@@ -442,11 +451,23 @@
     <ClInclude Include="src\renderSystem\RenderPass\FrameRenderer.h">
       <Filter>renderSystem\RenderPass</Filter>
     </ClInclude>
-    <ClInclude Include="src\renderSystem\RenderSystems\RenderSystem.h">
-      <Filter>renderSystem\RenderSystems</Filter>
-    </ClInclude>
     <ClInclude Include="src\renderSystem\FrameContext.h">
       <Filter>renderSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="src\renderSystem\RenderSystems\ShadowMeshRenderSystem.h">
+      <Filter>renderSystem\RenderSystems</Filter>
+    </ClInclude>
+    <ClInclude Include="src\renderSystem\RenderSystems\RenderSystemBuilder.h">
+      <Filter>renderSystem\RenderSystems</Filter>
+    </ClInclude>
+    <ClInclude Include="src\renderSystem\RenderSystems\MainSkinnedRenderSystem.h">
+      <Filter>renderSystem\RenderSystems</Filter>
+    </ClInclude>
+    <ClInclude Include="src\renderSystem\RenderSystems\MainMeshRenderSystem.h">
+      <Filter>renderSystem\RenderSystems</Filter>
+    </ClInclude>
+    <ClInclude Include="src\renderSystem\RenderSystems\BaseRenderSystem.h">
+      <Filter>renderSystem\RenderSystems</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

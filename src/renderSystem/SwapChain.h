@@ -39,26 +39,24 @@ public:
 
     VkImage getImage(uint32_t imageIndex) const;
     VkImageView getImageView(uint32_t imageIndex) const;
-    VkImageView getDepthImageView(uint32_t imageIndex) const;
-
-    // Framebuffers //
-
-    //VkFramebuffer getFramebuffer(uint32_t imageIndex) const;
-    //VkRenderPass getDefaultRenderPass() const;
 
     // Synchronization / presentation //
 
-    VkResult acquireNextImage(uint32_t* imageIndex);
+    VkResult acquireNextImage(uint32_t* imageIndex, uint32_t* outFrameSlot);
     VkResult present(uint32_t imageIndex);
+
+    // Accessors for synchronization
+    VkSemaphore getImageAvailableSemaphore(uint32_t frame) const;
+    VkSemaphore getRenderFinishedSemaphore(uint32_t frame) const;
+    VkFence getInFlightFence(uint32_t frame) const;
 
     bool compareSwapFormat(const Swapchain& swapChain) const;
 
 private:
+	void init(VkExtent2D extent);
+
     void createSwapchain(VkExtent2D extent);
     void createImageViews();
-    //void createDepthResources();
-    //void createRenderPass();
-    //void createFramebuffers();
     void createSyncObjects();
 
 private:
@@ -75,12 +73,6 @@ private:
 
     std::vector<VkImage> images;
     std::vector<VkImageView> imageViews;
-
-    // Depth //
-
-    std::vector<VkImage> depthImages;
-    std::vector<VkDeviceMemory> depthMemory;
-    std::vector<VkImageView> depthImageViews;
 
     // Presentation sync //
 

@@ -30,7 +30,7 @@ std::vector<VkDescriptorSetLayout> MainMeshRenderSystem::createSetLayout(RenderS
 {
 	std::vector<VkDescriptorSetLayout> layouts;  // to hold the unique ptr of the descriptor set layouts
 
-	modelDescriptorSetIndex = static_cast<uint32_t>(config.globalSetLayout.size()); // index of the model descriptor set in the pipeline layout
+	//modelDescriptorSetIndex = static_cast<uint32_t>(config.globalSetLayout.size()); // index of the model descriptor set in the pipeline layout
 
 	auto builder = DescriptorSetLayout::Builder(device);
 	std::unique_ptr<DescriptorSetLayout> newLayout = builder

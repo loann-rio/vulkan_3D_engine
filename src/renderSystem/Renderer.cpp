@@ -5,12 +5,13 @@
 
 
 #include "../base/Device.h"
+#include "RenderPass/MainPass.h"
 
 #include <stdexcept>
 #include <cassert>
 
-GlobalRenderer::GlobalRenderer(Device& device, Window& window)
-    : device(device), window(window) 
+GlobalRenderer::GlobalRenderer(Device& device, Window& window, AssetManager& assetManager, ObjectManager& objectManager)
+	: device(device), window(window), assetManager(assetManager), objectManager(objectManager)
 {
     recreateSwapchain();
     createSemaphore();
@@ -26,9 +27,8 @@ GlobalRenderer::~GlobalRenderer() {
     }
 }
 
-/// <summary>
-/// 	recreate swap chain after redimentionning of the window
-/// </summary>
+
+/// recreate swap chain after redimentionning of the window
 void GlobalRenderer::recreateSwapchain() {
    
     // get size window
@@ -77,73 +77,92 @@ void GlobalRenderer::createSemaphore()
 
 void GlobalRenderer::createFrameRenderer()
 {
-    frameRenderer = std::make_unique<FrameRenderer>();
+    frameRenderer = std::make_unique<FrameRenderer>(device);
 
-    /*auto mainPass = std::make_unique<MainPass>(device,
-        mainRenderPass,
-        swapchain->extent()
+	auto mainPass = std::make_unique<MainPass>(
+		device, assetManager, *swapchain,
+        Swapchain::MAX_FRAMES_IN_FLIGHT,
+		swapchain->getExtent()
     );
 
-    frameRenderer->addPass(std::move(mainPass));*/
-
-  
+    frameRenderer->addPass(std::move(mainPass));
 }
 
-void GlobalRenderer::renderFrame() 
+bool GlobalRenderer::aquireFrame()
 {
-    
-    frameContext.frameIndex = currentFrameIndex;
+    uint32_t imageIndex = 0;
+
+    uint32_t frameSlot = frameContext.frameIndex;
+
+    VkResult result = swapchain->acquireNextImage(
+        &imageIndex,
+        &frameSlot
+    );
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR)
+    {
+        recreateSwapchain();
+        return false;
+    }
+
+    if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+    {
+        throw std::runtime_error("Failed to acquire swapchain image");
+    }
+
+    // Populate frame context
+    frameContext.imageIndex = imageIndex;
+    frameContext.imageAvailable = swapchain->getImageAvailableSemaphore(frameSlot);
+    frameContext.swapchain = swapchain.get();
+
+    return true;
+}
+
+
+void GlobalRenderer::renderFrame()
+{
+    const uint64_t frameId = frameCounter;
+    const uint32_t frameSlot = frameId % Swapchain::MAX_FRAMES_IN_FLIGHT;
+
+    // Wait only if about to reuse frame slot in use by GPU
+    uint64_t requiredTimeline =
+        (frameId >= Swapchain::MAX_FRAMES_IN_FLIGHT)
+        ? frameId - Swapchain::MAX_FRAMES_IN_FLIGHT
+        : 0;
+
+    if (requiredTimeline > lastCompletedFrame)
+    {
+        VkSemaphoreWaitInfo waitInfo{};
+        waitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
+        waitInfo.semaphoreCount = 1;
+        waitInfo.pSemaphores = &timelineSemaphore;
+        waitInfo.pValues = &requiredTimeline;
+
+        vkWaitSemaphores(device.device(), &waitInfo, UINT64_MAX);
+        lastCompletedFrame = requiredTimeline;
+    }
+
+	// acquire frame
+    frameContext.frameIndex = frameSlot;
     frameContext.timeline = timelineSemaphore;
-    frameContext.timelineValue = timelineValue;
+    frameContext.timelineValue = frameId;
 
     if (!aquireFrame()) {
         return;
     }
 
+	// record and submit frame 
     frameRenderer->render(frameContext);
 
-    // wait for all passes to complete
-    VkSemaphoreWaitInfo waitInfo{};
-    waitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
-    waitInfo.semaphoreCount = 1;
-    waitInfo.pSemaphores = &timelineSemaphore;
-    waitInfo.pValues = &frameContext.timelineValue;
-
-    vkWaitSemaphores(device.device(), &waitInfo, UINT64_MAX);
-
-
+	// present frame
     presentFrame();
 
-    timelineValue = frameContext.timelineValue;
-    currentFrameIndex = (currentFrameIndex + 1) % Swapchain::MAX_FRAMES_IN_FLIGHT;
-    
-}
-
-bool GlobalRenderer::aquireFrame()
-{
-    vkWaitForFences(device.device(), 1, &frameContext.inFlightFence, VK_TRUE, UINT64_MAX);
-
-    VkResult result = swapchain->acquireNextImage(
-        frameContext.frameIndex
-    );
-
-    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-        recreateSwapchain();
-        return false;
-    }
-
-    if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-        throw std::runtime_error("Failed to acquire swapchain image");
-    }
-
-    vkResetFences(device.device(), 1, &frameContext.inFlightFence);
-    return true;
+    frameCounter++;
 }
 
 void GlobalRenderer::presentFrame()
 {
-
-    VkResult result = swapchain->present(frameContext.frameIndex, timelineSemaphore, frameContext.timelineBaseValue);
+    VkResult result = swapchain->present(frameContext.frameIndex);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR ||
         result == VK_SUBOPTIMAL_KHR ||

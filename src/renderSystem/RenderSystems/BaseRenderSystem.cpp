@@ -40,7 +40,7 @@ void BaseRenderSystem::record(VkCommandBuffer cmd, FrameContext& frameContext) c
 			if (!obj->modelAsset) continue;
 			
 			auto modelAsset = assets.models().get(obj->modelAsset);
-			renderModel(cmd, frameContext, *modelAsset, 0);
+			renderModel(cmd, frameContext, *modelAsset, 0, obj->getTransformMat(), obj->getNormalMat());
 			
 		}
 	}
@@ -132,7 +132,7 @@ void BaseRenderSystem::createPipeline(RenderSystemConfig& config)
 	configurePipeline(pipelineConfig);
 
 	// config vertex description
-	if (vertexLayout) {
+	if (vertexLayout_) {
 		configVertexBindingDescription(pipelineConfig);
 		configVertexAttributeDescription(pipelineConfig);
 	}
