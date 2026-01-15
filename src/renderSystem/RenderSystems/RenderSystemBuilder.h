@@ -26,11 +26,6 @@ public:
         return *this;
     }
 
-    RenderSystemBuilder& depthOnly(bool enable) {
-        config.depthOnly = enable;
-        return *this;
-    }
-
     RenderSystemBuilder& alphaBlend(bool enable) {
         config.alphaBlend = enable;
         return *this;
@@ -41,6 +36,11 @@ public:
         return *this;
     }
 
+    RenderSystemBuilder& renderPass(VkRenderPass pass) {
+        config.renderPass = pass;
+        return *this;
+	}
+
     RenderSystemBuilder& enableSkinning(bool enable) {
         skinningEnable = enable;
         return *this;
@@ -50,23 +50,24 @@ public:
         return *this;
     }
 
-    std::unique_ptr<BaseRenderSystem> buildShadow(Device& device) {
+    /*std::unique_ptr<BaseRenderSystem> buildShadow(Device& device) {
         if (skinningEnable) { 
             return std::make_unique<ShadowSkinnedRenderSystem>(device, layout);
         }
         return std::make_unique<ShadowMeshRenderSystem>(device, layout);
-    }
+    }*/
 
-    std::unique_ptr<BaseRenderSystem> buildMain(Device& device) {
-        if (skinningEnable) {
+    std::unique_ptr<BaseRenderSystem> buildMain(Device& device, AssetManager& assets) {
+        if (!layout) throw std::runtime_error("RenderSystemBuilder: vertexLayout not set");
+        /*if (skinningEnable) {
             return std::make_unique<MainSkinnedRenderSystem>(device, layout);
-        }
-        return std::make_unique<MainMeshRenderSystem>(device, layout);
+        }*/
+        return std::make_unique<MainMeshRenderSystem>(device, assets, *layout, config);
     }
 
 private:
 
-    RenderSystemConfig config;
+    RenderSystemCreateInfo config;
 
     IVertexLayout* layout = nullptr;
     bool skinningEnable = false;

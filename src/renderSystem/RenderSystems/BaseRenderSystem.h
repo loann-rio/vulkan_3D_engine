@@ -8,148 +8,99 @@
 #include <memory>
 #include <vector>
 #include <cstdint>
+#include <span>
+
 
 class Device;
-class RenderPassBase;
 class ModelAsset;
 class IVertexLayout;
 
-struct RenderSystemConfig {
-    // Shaders
+struct RenderSystemCreateInfo {
     std::string vertexShaderPath;
     std::string fragmentShaderPath;
+    VkRenderPass renderPass = VK_NULL_HANDLE;
 
-    // Raster state
     VkCullModeFlags cullMode = VK_CULL_MODE_BACK_BIT;
     VkFrontFace frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 
-    // Depth
     bool depthTest = true;
     bool depthWrite = true;
     VkCompareOp depthCompare = VK_COMPARE_OP_LESS;
 
-    // Blending
     bool alphaBlend = false;
-
-    // Pass type
-    bool depthOnly = false;
-
-    // Features
-    bool hasMultipleInstance = false;
-
-    // render pass
-    VkRenderPass renderPass;
-
 };
+
 
 
 class BaseRenderSystem {
 public:
-    BaseRenderSystem(
-        Device& device,
-        AssetManager& assets,
-        IVertexLayout* layout, 
-        RenderSystemConfig& config
-    );
+   BaseRenderSystem(
+        Device& device_, 
+        AssetManager& assets_, 
+        const IVertexLayout& vertexLayout_, 
+        const RenderSystemCreateInfo& createInfo_);
 
     ~BaseRenderSystem();
 
     BaseRenderSystem(const BaseRenderSystem&) = delete;
     BaseRenderSystem& operator=(const BaseRenderSystem&) = delete;
 
-    //// Recording ////
+	/// determine if this render system can render the given object
+    virtual bool accepts(
+        const GameObjectModel& object
+    ) const = 0;
+
+    //// recording ////
 
     void record(
         VkCommandBuffer cmd,
-        FrameContext& frameContext
+        FrameContext& frameContext,
+        const std::vector<RenderItem>& items
     ) const;
 
 protected:
-    /// Vertex layout compatibility
-    const IVertexLayout& vertexLayout() const;
+    struct PushConstantInfo {
+        VkShaderStageFlags stages;
+        uint32_t size;
+    };
 
-    // push constant
-    virtual VkShaderStageFlagBits pushStage() const = 0;
-    virtual uint32_t pushSize() const = 0;
-
+    virtual PushConstantInfo pushConstants() const = 0;
    
-    /// Descriptor layouts used by this system
-    virtual std::vector<VkDescriptorSetLayoutBinding>
-        descriptorBindings() const = 0;
+    /// descriptor layouts used by this system
+    virtual void createDescriptorSetLayouts(
+        std::vector<std::unique_ptr<DescriptorSetLayout>>& outLayouts
+    ) {};
     
     /// renderSystem-specific pipeline config
     virtual void configurePipeline(
         PipelineConfigInfo& pipelineConfig
-    ) const = 0;
+    ) const {}
 
-    /// add model descriptor set to global ones
-    virtual std::vector<VkDescriptorSetLayout>
-        createSetLayout(
-            RenderSystemConfig& config
-        ) = 0;
 
     /// render model: bind + draw
     virtual void renderModel(
         VkCommandBuffer cmd,
         FrameContext& frameContext,
-        const ModelAsset& model,
-        uint32_t lodIndex, 
-        glm::mat4 modelMat, glm::mat4 normalM
+        const RenderItem& item
     ) const = 0;
-
-    /// bind model specific
-    /*virtual void bindModelDescriptors(
-        VkCommandBuffer cmd,
-        const ModelAsset& model,
-        uint32_t lodIndex
-    ) const = 0;*/
-
-    /// Issue draw calls
-    virtual void drawModel(
-        VkCommandBuffer cmd,
-        const ModelAsset& model,
-        FrameContext& frameContext,
-        uint32_t lodIndex, uint32_t frameIndex,
-        glm::mat4 modelMat, glm::mat4 normalM
-    ) const = 0;
-
-    
 
 protected:
     Device& device;
     AssetManager& assets;
+    const IVertexLayout& vertexLayout;
 
-    IVertexLayout* vertexLayout_;
-      
-    std::unique_ptr<Pipeline> pipeline;
     VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
+    std::unique_ptr<Pipeline> pipeline;
 
+    std::vector<std::unique_ptr<DescriptorSetLayout>> descriptorLayouts;
 
-private:
-    void bindPipeline(
-        VkCommandBuffer cmd
-    ) const;
+    void createPipelineLayout();
+    void createPipeline(const RenderSystemCreateInfo& createInfo);
 
-    /// Pipeline state specialization
-    void createPipelineLayout(
-        RenderSystemConfig& config,
-        std::vector<VkDescriptorSetLayout> descriptorSetLayout
-    );
+    void configureVertexInput(PipelineConfigInfo& pipelineConfig) const;
+    void bindPipeline(VkCommandBuffer cmd) const;
 
-    /// create full pipeline
-    void createPipeline(
-        RenderSystemConfig& config
-    );
-
-    /// add vertex binding to pipeline
-    void configVertexBindingDescription(
-        PipelineConfigInfo& pipelineConfig
-    );
-
-    /// add vertex attribute to pipeline
-    void configVertexAttributeDescription(
-        PipelineConfigInfo& pipelineConfig
-    );
+    RenderSystemCreateInfo createInfo;
 
 
 };

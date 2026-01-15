@@ -56,7 +56,7 @@
 //    }
 //}
 //
-//void ShadowPass::record(VkCommandBuffer cmd, FrameContext& frame)
+//void ShadowPass::record(VkCommandBuffer cmd, FrameContext& frame)		
 //{
 //    VkCommandBufferBeginInfo begin{};
 //    begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;

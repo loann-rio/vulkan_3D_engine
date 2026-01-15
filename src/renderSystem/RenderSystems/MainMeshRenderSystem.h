@@ -2,82 +2,75 @@
 
 #include "BaseRenderSystem.h"
 
+#include <glm/glm.hpp>
+#include <vector>
+
+class ModelLOD;
+class Node;
+class Primitive;
+
 struct alignas(16) PushConstantData {
 	glm::mat4 modelMatrix{ 1.f };
 	glm::mat4 normalMatrix{ 1.f };
 };
 
-class DescriptorSetLayout;
-
 class MainMeshRenderSystem : public BaseRenderSystem {
 public:
 	
 	MainMeshRenderSystem(
-		Device& device, 
-		AssetManager& assets, 
-		IVertexLayout* vertexLayout, 
-		RenderSystemConfig& config
+		Device& device,
+		AssetManager& assets,
+		const IVertexLayout& vertexLayout,
+		const RenderSystemCreateInfo& createInfo
 	);
 
-	/// render model: bind + draw
+	bool accepts(const GameObjectModel& object) const;
+
+protected:
+	PushConstantInfo pushConstants() const override;
+
+	void createDescriptorSetLayouts(
+		std::vector<std::unique_ptr<DescriptorSetLayout>>& outLayouts
+	) override;
+
 	void renderModel(
 		VkCommandBuffer cmd,
 		FrameContext& frameContext,
-		const ModelAsset& model,
-		uint32_t lodIndex, 
-		glm::mat4 modelMat, glm::mat4 normalM
-	) const;
-
-protected:
-	VkShaderStageFlagBits pushStage() const override;
-	uint32_t pushSize() const override;
-
-	void configurePipeline(
-		PipelineConfigInfo& pipelineConfig
-	) const {
-	}; // no additionnal config needed
-
-
-	// create model specific set layout
-	std::vector<VkDescriptorSetLayout>
-		createSetLayout(
-			RenderSystemConfig& config
-		);
+		const RenderItem& item
+	) const override;
 
 private:
-	// draw all nodes primitives
-	void drawNode(
-		VkCommandBuffer& commandBuffer,
-		const ModelLOD& model, 
-		Node* node, 
-		uint16_t frameIndex,
-		glm::mat4 modelMat, glm::mat4 normalM
-	) const ;
-
-	/// bind model specific
-	void bindModelDescriptors(
+	void drawLOD(
 		VkCommandBuffer cmd,
-		const ModelLOD& model,
+		FrameContext& frameContext,
+		const ModelLOD& lod,
+		const glm::mat4& modelMat,
+		const glm::mat4& normalMat
+	) const;
+
+	void drawNode(
+		VkCommandBuffer cmd,
+		FrameContext& frameContext,
+		const ModelLOD& lod,
+		const Node* node,
+		const glm::mat4& modelMat,
+		const glm::mat4& normalMat
+	) const;
+
+	void bindMaterial(
+		VkCommandBuffer cmd,
+		const ModelLOD& lod,
 		uint32_t materialIndex,
 		uint32_t frameIndex
 	) const;
 
-	/// Issue draw calls
-	void drawModel(
-		VkCommandBuffer cmd,
-		const ModelAsset& model,
-		FrameContext& frameContext,
-		uint32_t lodIndex, uint32_t frameIndex,
-		glm::mat4 modelMat, glm::mat4 normalM
-	) const;
-
 	void drawPrimitive(
-		VkCommandBuffer& commandBuffer, 
-		Primitive& primitive, 
-		glm::mat4 modelMat, glm::mat4 normalM
+		VkCommandBuffer cmd,
+		const Primitive& primitive,
+		const glm::mat4& modelMat,
+		const glm::mat4& normalMat
 	) const;
 
-	uint32_t modelDescriptorSetIndex; 
 	std::vector<DescriptorSetLayout> layouts;
 
 };

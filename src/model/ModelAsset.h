@@ -19,6 +19,8 @@ struct ModelLOD {
 	ModelLOD(ModelLOD&&) noexcept = default;
 	ModelLOD& operator=(ModelLOD&&) noexcept = default;
 
+	ModelLOD(const IVertexLayout& vertexLayout_) : vertexLayout(vertexLayout_) {}
+
 	bool updateAnimation(uint32_t index, float timeInSeconds, float speed = 1.0f);
 
 
@@ -44,11 +46,22 @@ struct ModelLOD {
 
 	BoundingBox aabb;
 
+	const IVertexLayout& vertexLayout;
+
 	float switchDistance = std::numeric_limits<float>::infinity();
 };
 
+enum class AssetModelType {
+	UNDEFINED_MODEL = 0,
+	STATIC_MESH = 1,
+};
+
+
 class ModelAsset {
+	
 public:
+	
+
 	ModelAsset() = default;
 	~ModelAsset() = default;
 
@@ -62,6 +75,9 @@ public:
 
 	// Axis Aligned Bounding Box
 	BoundingBox aabb;
+
+	AssetModelType type = AssetModelType::UNDEFINED_MODEL; 
+	
 
 	size_t pickLODIndex(const glm::vec3& cameraPosition, const glm::vec3& worldPosition) const {
 		if (lods.empty()) return 0;

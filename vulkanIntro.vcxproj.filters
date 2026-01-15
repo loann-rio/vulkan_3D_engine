@@ -228,9 +228,6 @@
     <ClCompile Include="src\renderSystem\RenderPass\FrameRenderer.cpp">
       <Filter>renderSystem\RenderPass</Filter>
     </ClCompile>
-    <ClCompile Include="src\renderSystem\RenderPass\RenderPassBase.cpp">
-      <Filter>renderSystem\RenderPass</Filter>
-    </ClCompile>
     <ClCompile Include="src\renderSystem\RenderPass\ShadowPass.cpp">
       <Filter>renderSystem\RenderPass</Filter>
     </ClCompile>
@@ -248,6 +245,9 @@
     </ClCompile>
     <ClCompile Include="src\renderSystem\RenderSystems\BaseRenderSystem.cpp">
       <Filter>renderSystem\RenderSystems</Filter>
+    </ClCompile>
+    <ClCompile Include="src\model\Vertex\IVertexLayout.cpp">
+      <Filter>model\Vertex</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

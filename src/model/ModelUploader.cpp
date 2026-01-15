@@ -143,7 +143,7 @@ namespace {
 
 ModelLOD ModelUploader::uploadDecodedModel(Device& device, AssetManager& assets, DecodedModel& obj)
 {
-	ModelLOD asset{};
+	ModelLOD asset{ obj.vertices->layout() };
 
 	asset.LinearNodes = std::move(obj.nodes);
 	populateRootNodes(asset, obj.rootNodes);
@@ -192,7 +192,7 @@ ModelLOD ModelUploader::uploadDecodedModel(Device& device, AssetManager& assets,
 
 ModelLOD ModelUploader::uploadVertexList(Device& device, AssetManager& assets, std::unique_ptr<IVertexData> vertices, std::vector<uint32_t>& indices)
 {
-	ModelLOD asset{};
+	ModelLOD asset{ vertices->layout() };
 
 	asset.vertexBuffer = createVertexBuffers(device, vertices.get());
 	asset.indexBuffer = createIndexBuffers(device, indices);

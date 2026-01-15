@@ -10,6 +10,12 @@
 
 struct FrustumPlane;
 
+struct RenderItem {
+    const ModelAsset* model;
+    glm::mat4 modelMatrix;
+    glm::mat4 normalMatrix;
+};
+
 struct FrameContext {
     uint32_t frameIndex{};
     uint32_t imageIndex{};
@@ -17,7 +23,6 @@ struct FrameContext {
     VkCommandBuffer mainCommandBuffer{};
 
     VkSemaphore imageAvailable{};
-    VkFence inFlightFence{};
 
     VkSemaphore timeline{};
     uint64_t timelineValue{};
@@ -27,6 +32,7 @@ struct FrameContext {
     Swapchain* swapchain{};
 
     std::vector<GameObjectModel*> listGameObjects;
+    std::vector<RenderItem> renderItems;
 
     // cameras
     std::array<FrustumPlane, 6>* planes;

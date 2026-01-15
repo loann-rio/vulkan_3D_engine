@@ -7,6 +7,9 @@
 #include "../base/Device.h"
 #include "RenderPass/MainPass.h"
 
+#include "RenderSystems/RenderSystemBuilder.h"
+#include "../model/Vertex/ObjVertexData.h"
+
 #include <stdexcept>
 #include <cassert>
 
@@ -84,6 +87,18 @@ void GlobalRenderer::createFrameRenderer()
         Swapchain::MAX_FRAMES_IN_FLIGHT,
 		swapchain->getExtent()
     );
+
+    auto baseRenderSystem = RenderSystemBuilder()
+        .fragmentShader("")
+        .vertexShader("")
+        .cullMode(VK_CULL_MODE_FRONT_AND_BACK)
+        .renderPass(mainPass->getRenderPass())
+        .vertexLayout(new ObjVertexLayout)
+        .buildMain(device, assetManager);
+
+    mainPass->addRenderSystem(
+        std::move(baseRenderSystem)
+	);
 
     frameRenderer->addPass(std::move(mainPass));
 }

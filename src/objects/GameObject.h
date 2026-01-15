@@ -49,6 +49,7 @@ enum class ModelType {
 	OBJ_MODEL = 1,
 	GLTF_MODEL = 2,
 	PREBUILT_MODEL = 3,
+	STATIC_MESH = 4,
 	
 };
 

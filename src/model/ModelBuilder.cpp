@@ -183,10 +183,8 @@ std::unique_ptr<ModelAsset> ModelBuilder::buildObj()
             TextureBuilder builder(device);
             mat.albedoTexture = assets.textures().create(builder.fromFile("textures/whiteTexture.jpg"));
             model.materials.push_back(mat);
-        }
-
+        } 
         
-
         fullModel->lods.push_back(std::move(model));
     }
 

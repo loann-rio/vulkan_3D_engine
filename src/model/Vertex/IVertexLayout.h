@@ -21,4 +21,6 @@ public:
     };
 
     virtual const std::vector<Attribute>& attributes() const = 0;
+
+    bool isCompatibleWith(const IVertexLayout& other) const;
 };

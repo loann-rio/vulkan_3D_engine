@@ -35,12 +35,9 @@ public:
     ~MainPass() override;
 
     void record(FrameContext& frame) override;
-    void submit(FrameContext& frame) override; 
 
     VkCommandBuffer commandBuffer(uint32_t frameIndex) const override;
 
-    void setTimelineValue(uint64_t value) override;
-    uint64_t timelineValue() const override;
 
 
 private:
@@ -50,6 +47,8 @@ private:
     void createTargetTexture();
     void createFramebuffers();
 
+	void createRenderPass() override;
+
     VkCommandBuffer beginPass(uint32_t frameIndex);
 
     Device& device;
@@ -57,7 +56,7 @@ private:
     AssetManager& assets;
     VkExtent2D extent;
 
-    VkRenderPass renderPass{ VK_NULL_HANDLE };
+    
 
     std::vector<VkFramebuffer> framebuffers;
     std::vector<TextureManager::TextureID> textureTarget;

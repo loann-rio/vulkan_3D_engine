@@ -25,25 +25,14 @@ public:
     virtual void record(FrameContext& frame) = 0;
 
     /**
-     * submit commands for this pass
-     */
-    virtual void submit(FrameContext& frame) = 0;
-
-    /**
      * Returns the command buffer for a given frame index
      */
     virtual VkCommandBuffer commandBuffer(uint32_t frameIndex) const = 0;
 
     /**
-     * Called by FrameRenderer before submission to assign
-     * timeline semaphore value this pass will signal
-     */
-    virtual void setTimelineValue(uint64_t value) = 0;
-
-    /**
-     * Returns the last timeline value signaled by this pass
-     */
-    virtual uint64_t timelineValue() const = 0;
+     * Create the render pass
+	 */
+	virtual void createRenderPass() = 0;
 
     /**
      * Add a renderSytem for the pass
@@ -53,6 +42,13 @@ public:
     ) {
         renderSystems.emplace_back(std::move(system));
     };
+
+    /**
+	 * Get the render pass handle
+     */
+    VkRenderPass getRenderPass() const {
+        return renderPass;
+    }
 
 protected:
     RenderPassBase() = default;
@@ -65,5 +61,7 @@ protected:
 
     // Timeline semaphore value signaled by this pass
     uint64_t signaledTimelineValue{ 0 };
+
+    VkRenderPass renderPass{ VK_NULL_HANDLE };  
 
 };

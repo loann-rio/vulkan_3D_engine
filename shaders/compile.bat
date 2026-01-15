@@ -28,6 +28,9 @@ C:\VulkanSDK\1.4.313.2\Bin\glslc.exe skybox.vert -o skybox.vert.spv --target-env
 C:\VulkanSDK\1.4.313.2\Bin\glslc.exe equirectangular_to_cube.frag -o equirectangular_to_cube.frag.spv --target-env=vulkan1.2
 C:\VulkanSDK\1.4.313.2\Bin\glslc.exe fullscreen.vert -o fullscreen.vert.spv --target-env=vulkan1.2
 
+C:\VulkanSDK\1.4.313.2\Bin\glslc.exe MainMeshShader.frag -o MainMeshShader.frag.spv --target-env=vulkan1.2
+C:\VulkanSDK\1.4.313.2\Bin\glslc.exe MainMeshShader.vert -o MainMeshShader.vert.spv --target-env=vulkan1.2
+
 C:\VulkanSDK\1.4.313.2\Bin\glslc.exe CloudShader.frag -o CloudShader.frag.spv --target-env=vulkan1.2
 C:\VulkanSDK\1.4.313.2\Bin\glslc.exe CloudShader.vert -o CloudShader.vert.spv --target-env=vulkan1.2
 

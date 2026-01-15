@@ -1,7 +1,7 @@
-#pragma once
-
-#include "BaseRenderSystem.h"
-
-class MainSkinnedRenderSystem : public BaseRenderSystem {
-
-};
+//#pragma once
+//
+//#include "BaseRenderSystem.h"
+//
+//class MainSkinnedRenderSystem : public BaseRenderSystem {
+//
+//};

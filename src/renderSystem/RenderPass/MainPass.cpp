@@ -6,6 +6,7 @@ MainPass::MainPass(Device& device, AssetManager& assets, Swapchain& swapchain, u
 	allocateCommandBuffers(frame_in_flight);
     createTargetTexture();
 	createFramebuffers();
+    createRenderPass();
 }
 
 MainPass::~MainPass()
@@ -17,10 +18,10 @@ MainPass::~MainPass()
 
 void MainPass::record(FrameContext& frame)
 {
-    const uint32_t frameIndex = frame.frameIndex;
+    const uint32_t frameSlot = frame.frameIndex;
     const uint32_t imageIndex = frame.imageIndex;
 
-    VkCommandBuffer commandBuffer = beginPass(frameIndex);
+    VkCommandBuffer cmd = beginPass(frameSlot);
 
     VkRenderPassBeginInfo rpBegin{};
     rpBegin.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -30,67 +31,69 @@ void MainPass::record(FrameContext& frame)
     rpBegin.renderArea.extent = swapchain.getExtent();
 
     VkClearValue clear{};
-    clear.color = { {0.05f, 0.05f, 0.1f, 1.0f} };
+    clear.color = { { 0.05f, 0.05f, 0.1f, 1.0f } };
     rpBegin.clearValueCount = 1;
     rpBegin.pClearValues = &clear;
 
-    vkCmdBeginRenderPass(commandBuffer, &rpBegin, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(cmd, &rpBegin, VK_SUBPASS_CONTENTS_INLINE);
 
-    for (auto& system : renderSystems) {
-        system->record(commandBuffer, frame);
+    {
+        VkExtent2D extent = swapchain.getExtent();
+
+        VkViewport viewport{};
+        viewport.x = 0.0f;
+        viewport.y = 0.0f;
+        viewport.width = static_cast<float>(extent.width);
+        viewport.height = static_cast<float>(extent.height);
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+        vkCmdSetViewport(cmd, 0, 1, &viewport);
+
+        VkRect2D scissor{};
+        scissor.offset = { 0, 0 };
+        scissor.extent = extent;
+        vkCmdSetScissor(cmd, 0, 1, &scissor);
     }
 
-    vkCmdEndRenderPass(commandBuffer);
+    for (auto& system : renderSystems) {
 
-    if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
+        frame.renderItems.clear();
+
+        // Build render items for THIS system
+        for (GameObjectModel* obj : frame.listGameObjects)
+        {
+            if (!obj || !obj->show || obj->toBeRemoved)
+                continue;
+
+            if (!obj->modelAsset)
+                continue;
+
+            if (!system->accepts(*obj))
+                continue;
+
+            RenderItem item{};
+            item.model = assets.models().get(obj->modelAsset);
+            item.modelMatrix = obj->getTransformMat();
+            item.normalMatrix = obj->getNormalMat();
+
+            frame.renderItems.push_back(item);
+        }
+
+        if (!frame.renderItems.empty())
+            system->record(cmd, frame, frame.renderItems);
+    }
+
+    vkCmdEndRenderPass(cmd);
+
+    if (vkEndCommandBuffer(cmd) != VK_SUCCESS) {
         throw std::runtime_error("MainPass: vkEndCommandBuffer failed");
     }
 }
 
-void MainPass::submit(FrameContext& frame)
-{
-    // Submit command buffer and signal timeline semaphore
-    VkCommandBuffer cmd = commandBuffers[frame.frameIndex];
-
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &cmd;
-
-    // Timeline semaphore signal
-    VkTimelineSemaphoreSubmitInfo timelineInfo{};
-    timelineInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
-    uint64_t signalValue = frame.timelineValue;
-    timelineInfo.signalSemaphoreValueCount = 1;
-    timelineInfo.pSignalSemaphoreValues = &signalValue;
-
-    submitInfo.pNext = &timelineInfo;
-
-    VkSemaphore signalSemaphores[] = { frame.timeline };
-    submitInfo.signalSemaphoreCount = 1;
-    submitInfo.pSignalSemaphores = signalSemaphores;
-
-    // Reset and submit using Device helper (provides queue synchronization)
-    vkResetFences(device.device(), 1, &frame.inFlightFence);
-    device.submitToGraphicQueue(submitInfo, frame.inFlightFence);
-
-    // store last signaled value for this pass
-    signaledTimelineValue = signalValue;
-}
 
 VkCommandBuffer MainPass::commandBuffer(uint32_t frameIndex) const
 {
     return commandBuffers[frameIndex];
-}
-
-void MainPass::setTimelineValue(uint64_t value)
-{
-    signaledTimelineValue = value;
-}
-
-uint64_t MainPass::timelineValue() const
-{
-    return signaledTimelineValue;
 }
 
 void MainPass::allocateCommandBuffers(uint32_t framesInFlight)
@@ -143,6 +146,67 @@ void MainPass::createFramebuffers()
     }
 }
 
+void MainPass::createRenderPass()
+{
+    std::cout << "render path creation \n";
+    VkAttachmentDescription depthAttachment{};
+    depthAttachment.format = swapchain.depthFormat();
+    depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+    VkAttachmentReference depthAttachmentRef{};
+    depthAttachmentRef.attachment = 1;
+    depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+    VkAttachmentDescription colorAttachment = {};
+    colorAttachment.format = swapchain.format();
+    colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+    VkAttachmentReference colorAttachmentRef = {};
+    colorAttachmentRef.attachment = 0;
+    colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    VkSubpassDescription subpass = {};
+    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpass.colorAttachmentCount = 1;
+    subpass.pColorAttachments = &colorAttachmentRef;
+    subpass.pDepthStencilAttachment = &depthAttachmentRef;
+
+    VkSubpassDependency dependency = {};
+    dependency.dstSubpass = 0;
+    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependency.srcAccessMask = 0;
+    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+
+    std::array<VkAttachmentDescription, 2> attachments = { colorAttachment, depthAttachment };
+    VkRenderPassCreateInfo renderPassInfo = {};
+
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+    renderPassInfo.pAttachments = attachments.data();
+    renderPassInfo.subpassCount = 1;
+    renderPassInfo.pSubpasses = &subpass;
+    renderPassInfo.dependencyCount = 1;
+    renderPassInfo.pDependencies = &dependency;
+
+    if (vkCreateRenderPass(device.device(), &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create render pass!");
+    }
+}
+
 void MainPass::createTargetTexture()
 {
     size_t imageCount = swapchain.imageCount();
@@ -188,7 +252,7 @@ void MainPass::createTargetTexture()
         samplerInfo.maxLod = 100.0f;
 
         TextureBuilder builder(device);
-        textureTarget[imageCount * i] = assets.textures().create(
+        textureTarget[2 * i] = assets.textures().create(
             builder.fromTextureInfo(
                 swapchain.getImage(i), 
                 { swapChainExtent.width, swapChainExtent.height },
@@ -246,7 +310,7 @@ void MainPass::createTargetTexture()
         samplerInfo.maxLod = 100.0f;
 
         TextureBuilder builder(device);
-        textureTarget[imageCount * i + 1] = assets.textures().create(builder.fromTextureInfo(imageInfo, viewInfo, samplerInfo, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+        textureTarget[2 * i + 1] = assets.textures().create(builder.fromTextureInfo(imageInfo, viewInfo, samplerInfo, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
     }
 }
 

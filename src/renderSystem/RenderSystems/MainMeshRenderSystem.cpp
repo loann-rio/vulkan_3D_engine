@@ -1,98 +1,181 @@
 #include "MainMeshRenderSystem.h"
 
 #include "../../base/descriptors.h"
+#include "../../base/Device.h"
+
 #include <cstdint>
 #include <exception>
 #include <memory>
 #include <utility>
-#include <vector>
-#include "../../base/Device.h"
-#include "BaseRenderSystem.h"
 #include <vulkan/vulkan_core.h>
 
 
-
-
-MainMeshRenderSystem::MainMeshRenderSystem(Device& device, AssetManager& assets, IVertexLayout* vertexLayout, RenderSystemConfig& config)
-	: BaseRenderSystem(device, assets, vertexLayout, config) { }
-
-VkShaderStageFlagBits MainMeshRenderSystem::pushStage() const
+MainMeshRenderSystem::MainMeshRenderSystem(
+	Device& device,
+	AssetManager& assets,
+	const IVertexLayout& vertexLayout,
+	const RenderSystemCreateInfo& createInfo
+)
+	: BaseRenderSystem(device, assets, vertexLayout, createInfo) 
 {
-	return VK_SHADER_STAGE_VERTEX_BIT;
+	createDescriptorSetLayouts(descriptorLayouts);
+	createPipelineLayout();
+	createPipeline(createInfo);
 }
 
-uint32_t MainMeshRenderSystem::pushSize() const
+
+bool MainMeshRenderSystem::accepts(const GameObjectModel& object) const
 {
-	return sizeof(PushConstantData);
+	if (!object.modelAsset)
+		return false;
+
+	const ModelAsset* model = assets.models().get(object.modelAsset);
+
+	return (
+		(static_cast<int>(model->type) == static_cast<int>(AssetModelType::STATIC_MESH)) && 
+		(vertexLayout.isCompatibleWith(model->lods[0].vertexLayout))
+		);
 }
 
-std::vector<VkDescriptorSetLayout> MainMeshRenderSystem::createSetLayout(RenderSystemConfig& config)
+
+/// push constants
+
+BaseRenderSystem::PushConstantInfo MainMeshRenderSystem::pushConstants() const
 {
-	std::vector<VkDescriptorSetLayout> layouts;  // to hold the unique ptr of the descriptor set layouts
+	return {
+		VK_SHADER_STAGE_VERTEX_BIT,
+		sizeof(PushConstantData)
+	};
+}
 
-	//modelDescriptorSetIndex = static_cast<uint32_t>(config.globalSetLayout.size()); // index of the model descriptor set in the pipeline layout
+/// descriptor set layouts
 
-	auto builder = DescriptorSetLayout::Builder(device);
-	std::unique_ptr<DescriptorSetLayout> newLayout = builder
-		.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1)
+void MainMeshRenderSystem::createDescriptorSetLayouts(
+	std::vector<std::unique_ptr<DescriptorSetLayout>>& outLayouts
+)
+{
+	auto materialLayout = DescriptorSetLayout::Builder(device)
+		.addBinding(
+			0,
+			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			VK_SHADER_STAGE_FRAGMENT_BIT,
+			1
+		)
 		.build();
 
-	layouts.push_back(newLayout->getDescriptorSetLayout());
-
-	return layouts;
+	outLayouts.push_back(std::move(materialLayout));
 }
 
-void MainMeshRenderSystem::renderModel(VkCommandBuffer cmd, FrameContext& frameContext, const ModelAsset& model, uint32_t lodIndex, glm::mat4 modelMat, glm::mat4 normalM) const
+/// rendering
+
+void MainMeshRenderSystem::renderModel(
+	VkCommandBuffer cmd,
+	FrameContext& frameContext,
+	const RenderItem& item
+) const
 {
-	drawModel(cmd, model, frameContext, lodIndex, frameContext.frameIndex, modelMat, normalM);
+	assert(item.model);
+
+	const uint32_t lodIndex = 0; // TODO: LOD selection
+	const ModelLOD& lod = item.model->lods[lodIndex];
+
+	drawLOD(
+		cmd,
+		frameContext,
+		lod,
+		item.modelMatrix,
+		item.normalMatrix
+	);
 }
 
-void MainMeshRenderSystem::bindModelDescriptors(VkCommandBuffer cmd, const ModelLOD& model, uint32_t materialIndex, uint32_t frameIndex) const
+void MainMeshRenderSystem::drawLOD(
+	VkCommandBuffer cmd,
+	FrameContext& frameContext,
+	const ModelLOD& lod,
+	const glm::mat4& modelMat,
+	const glm::mat4& normalMat
+) const
 {
-	model.materials[materialIndex].descriptorSet;
-
-}
-
-void MainMeshRenderSystem::drawModel(VkCommandBuffer cmd, const ModelAsset& model, FrameContext& frameContext, uint32_t lodIndex, uint32_t frameIndex, glm::mat4 modelMat, glm::mat4 normalM) const
-{
-	for (auto& node : model.lods[lodIndex].nodes) {
-		drawNode(cmd, model.lods[lodIndex], node, static_cast<uint16_t>(frameIndex), modelMat, normalM);
+	for (const Node* node : lod.nodes) {
+		drawNode(cmd, frameContext, lod, node, modelMat, normalMat);
 	}
 }
 
-void MainMeshRenderSystem::drawNode(VkCommandBuffer& commandBuffer,
-	const ModelLOD& model, Node* node, uint16_t frameIndex, 
-	glm::mat4 modelMat, glm::mat4 normalM) const
+void MainMeshRenderSystem::drawNode(
+	VkCommandBuffer cmd,
+	FrameContext& frameContext,
+	const ModelLOD& lod,
+	const Node* node,
+	const glm::mat4& modelMat,
+	const glm::mat4& normalMat
+) const
 {
-
-	for (auto& child : node->children) {
-
-		drawNode(commandBuffer, model, child, frameIndex, modelMat, normalM);
+	for (const Node* child : node->children) {
+		drawNode(cmd, frameContext, lod, child, modelMat, normalMat);
 	}
 
-	for (auto primitive : node->primitives)
-	{
-		bindModelDescriptors(commandBuffer, model, primitive.materialIndex, frameIndex);
-		drawPrimitive(commandBuffer, primitive, modelMat, normalM);
+	for (const Primitive& primitive : node->primitives) {
+		bindMaterial(
+			cmd,
+			lod,
+			primitive.materialIndex,
+			frameContext.frameIndex
+		);
+
+		drawPrimitive(cmd, primitive, modelMat, normalMat);
 	}
 }
 
-
-void MainMeshRenderSystem::drawPrimitive(VkCommandBuffer& commandBuffer, Primitive& primitive, glm::mat4 modelMat, glm::mat4 normalM) const
+void MainMeshRenderSystem::bindMaterial(
+	VkCommandBuffer cmd,
+	const ModelLOD& lod,
+	uint32_t materialIndex,
+	uint32_t frameIndex
+) const
 {
-	struct { glm::mat4 model; glm::mat4 normal; } push{};
-	push.model = modelMat;
-	push.normal = normalM;
+	VkDescriptorSet set =
+		lod.materials[materialIndex].descriptorSet[frameIndex];
+
+	uint32_t materialSetIndex = 1; // TODO: make configurable
+
+	vkCmdBindDescriptorSets(
+		cmd,
+		VK_PIPELINE_BIND_POINT_GRAPHICS,
+		pipelineLayout,
+		materialSetIndex,
+		1,      /*    descriptor count    */
+		&set,   /*    pDescriptorSets     */
+		0,      /*  dynamic offset count  */
+		nullptr /*    pDynamicOffsets     */
+	);
+}
+
+void MainMeshRenderSystem::drawPrimitive(
+	VkCommandBuffer cmd,
+	const Primitive& primitive,
+	const glm::mat4& modelMat,
+	const glm::mat4& normalMat
+) const
+{
+	PushConstantData pc{};
+	pc.modelMatrix = modelMat;
+	pc.normalMatrix = normalMat;
 
 	vkCmdPushConstants(
-		commandBuffer,
+		cmd,
 		pipelineLayout,
 		VK_SHADER_STAGE_VERTEX_BIT,
 		0,
-		sizeof(push),
-		&push
+		sizeof(PushConstantData),
+		&pc
 	);
 
-	vkCmdDrawIndexed(commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
-
+	vkCmdDrawIndexed(
+		cmd,
+		primitive.indexCount,
+		1,
+		primitive.firstIndex,
+		0,
+		0
+	);
 }

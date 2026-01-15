@@ -14,69 +14,37 @@
 
 #include <vulkan/vulkan_core.h>
 
-BaseRenderSystem::BaseRenderSystem(Device& device, AssetManager& assets, IVertexLayout* layout, RenderSystemConfig& config) 
-	: device{ device }, assets{ assets }, vertexLayout_{layout}
-{
-	std::vector<VkDescriptorSetLayout> descriptorSetLayout 
-		= createSetLayout(config);
-
-	createPipelineLayout(config, descriptorSetLayout);
-	createPipeline(config);
-}
+BaseRenderSystem::BaseRenderSystem(
+	Device& device_,
+	AssetManager& assets_,
+	const IVertexLayout& vertexLayout_,
+	const RenderSystemCreateInfo& createInfo_
+)
+	: device(device_)
+	, assets(assets_)
+	, vertexLayout(vertexLayout_)
+	, createInfo(createInfo_)
+{ }
 
 BaseRenderSystem::~BaseRenderSystem()
 {
-	vkDestroyPipelineLayout(device.device(), pipelineLayout, nullptr);
+	if (pipelineLayout != VK_NULL_HANDLE) {
+		vkDestroyPipelineLayout(device.device(), pipelineLayout, nullptr);
+	}
 }
 
-void BaseRenderSystem::record(VkCommandBuffer cmd, FrameContext& frameContext) const
+void BaseRenderSystem::record(
+	VkCommandBuffer cmd,
+	FrameContext& frameContext,
+	const std::vector<RenderItem>& items
+) const
 {
 	bindPipeline(cmd);
 
-	for (auto& obj : frameContext.listGameObjects)
-	{
-		if (obj->show && !obj->toBeRemoved)
-		{
-			if (!obj->modelAsset) continue;
-			
-			auto modelAsset = assets.models().get(obj->modelAsset);
-			renderModel(cmd, frameContext, *modelAsset, 0, obj->getTransformMat(), obj->getNormalMat());
-			
-		}
+	for (const RenderItem& item : items) {
+		if (!item.model) continue;
+		renderModel(cmd, frameContext, item);
 	}
-}
-
-void BaseRenderSystem::configVertexBindingDescription(PipelineConfigInfo& pipelineConfig)
-{
-	assert(vertexLayout().stride() != 0 && "pipeline creation: stride must not be null");
-
-	std::vector<VkVertexInputBindingDescription> bindingDescription(1);
-	bindingDescription[0].binding = 0;
-	bindingDescription[0].stride = vertexLayout().stride();
-	bindingDescription[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-	
-	pipelineConfig.bindingDescription = bindingDescription;
-}
-
-void BaseRenderSystem::configVertexAttributeDescription(PipelineConfigInfo& pipelineConfig)
-{
-	std::vector<VkVertexInputAttributeDescription> attributeDescription;
-
-	for (uint32_t i = 0; i < vertexLayout().attributeCount(); i++) {
-		attributeDescription.push_back(
-			{
-				i, 0,
-				vertexLayout().attributes()[i].format,
-				vertexLayout().attributes()[i].offset
-			}
-		);
-	}
-
-	if (attributeDescription.empty()) {
-		throw std::exception("pipeline creation :vertex layout attribute connot be empty if defined");
-	}
-
-	pipelineConfig.attributeDescription = attributeDescription;
 }
 
 void BaseRenderSystem::bindPipeline(VkCommandBuffer cmd) const
@@ -84,72 +52,101 @@ void BaseRenderSystem::bindPipeline(VkCommandBuffer cmd) const
 	pipeline->bind(cmd);
 }
 
-const IVertexLayout& BaseRenderSystem::vertexLayout() const
+void BaseRenderSystem::createPipelineLayout()
 {
-	return *vertexLayout_;
-}
+	std::vector<VkDescriptorSetLayout> vkLayouts;
+	vkLayouts.reserve(descriptorLayouts.size());
 
-void BaseRenderSystem::createPipelineLayout(RenderSystemConfig& config, std::vector<VkDescriptorSetLayout> descriptorSetLayout)
-{
-	VkPushConstantRange pushConstantRange{
-		pushStage(),
-		0, /*offset*/
-		pushSize()
-	};
+	for (const auto& layout : descriptorLayouts) {
+		vkLayouts.push_back(layout->getDescriptorSetLayout());
+	}
 
-	VkDescriptorBindingFlags descriptorBindingFlags[] = {
-		0,											  // For non-dynamic descriptor sets
-		VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT // For dynamic descriptor sets
-	};
+	PushConstantInfo pc = pushConstants();
+	assert(pc.size <= device.properties.limits.maxPushConstantsSize);
 
-	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	
-	pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayout.size());
-	pipelineLayoutInfo.pSetLayouts = descriptorSetLayout.data();
+	VkPushConstantRange pushRange{};
+	pushRange.stageFlags = pc.stages;
+	pushRange.offset = 0;
+	pushRange.size = pc.size;
 
-	pipelineLayoutInfo.pushConstantRangeCount = 1;
-	pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
+	VkPipelineLayoutCreateInfo info{};
+	info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	info.setLayoutCount = static_cast<uint32_t>(vkLayouts.size());
+	info.pSetLayouts = vkLayouts.data();
+	info.pushConstantRangeCount = pc.size > 0 ? 1u : 0u;
+	info.pPushConstantRanges = pc.size > 0 ? &pushRange : nullptr;
 
-	// create layout
-	if (vkCreatePipelineLayout(device.device(), &pipelineLayoutInfo, nullptr, &pipelineLayout) !=
-		VK_SUCCESS) {
-		throw std::runtime_error("fail to create pipeline layout");
+	if (vkCreatePipelineLayout(device.device(), &info, nullptr, &pipelineLayout) != VK_SUCCESS) {
+		throw std::runtime_error("Failed to create pipeline layout");
 	}
 }
 
-void BaseRenderSystem::createPipeline(RenderSystemConfig& config)
+void BaseRenderSystem::createPipeline(const RenderSystemCreateInfo& ci)
 {
-	// check if pipeline layout is created
-	assert(pipelineLayout != nullptr && "Cannot create pipeline before pipeline layout");
+	assert(pipelineLayout != VK_NULL_HANDLE);
 
-	PipelineConfigInfo pipelineConfig{};
+	PipelineConfigInfo config{};
+	Pipeline::defaultPipelineConfigInfo(config);
 
-	// get default pipeline configuration
-	Pipeline::defaultPipelineConfigInfo(pipelineConfig);
+	/// vertex input
+	configureVertexInput(config);
 
-	// config render system specific
-	configurePipeline(pipelineConfig);
+	/// raster state
+	config.rasterizationInfo.cullMode = ci.cullMode;
+	config.rasterizationInfo.frontFace = ci.frontFace;
 
-	// config vertex description
-	if (vertexLayout_) {
-		configVertexBindingDescription(pipelineConfig);
-		configVertexAttributeDescription(pipelineConfig);
+	/// depth
+	config.depthStencilInfo.depthTestEnable = ci.depthTest;
+	config.depthStencilInfo.depthWriteEnable = ci.depthWrite;
+	config.depthStencilInfo.depthCompareOp = ci.depthCompare;
+
+	/// blending
+	if (ci.alphaBlend) {
+		Pipeline::enableAlphaBlending(config);
 	}
 
-	// alpha
-	if (config.alphaBlend) Pipeline::enableAlphaBlending(pipelineConfig);
+	config.renderPass = ci.renderPass;
+	config.pipelineLayout = pipelineLayout;
 
-	// render pass and pipeline layout
-	pipelineConfig.renderPass = config.renderPass;
-	pipelineConfig.pipelineLayout = pipelineLayout;
+	configurePipeline(config);
 
-	// create the pipeline
 	pipeline = std::make_unique<Pipeline>(
 		device,
-		config.vertexShaderPath,
-		config.fragmentShaderPath,
-		pipelineConfig
+		ci.vertexShaderPath,
+		ci.fragmentShaderPath,
+		config
 	);
 }
 
+
+void BaseRenderSystem::configureVertexInput(
+	PipelineConfigInfo& pipelineConfig
+) const
+{
+	assert(vertexLayout.stride() > 0);
+
+	pipelineConfig.bindingDescription = {
+		{
+			0,
+			vertexLayout.stride(),
+			VK_VERTEX_INPUT_RATE_VERTEX
+		}
+	};
+
+	pipelineConfig.attributeDescription.clear();
+	pipelineConfig.attributeDescription.reserve(vertexLayout.attributeCount());
+
+	for (uint32_t i = 0; i < vertexLayout.attributeCount(); ++i) {
+		const auto& attr = vertexLayout.attributes()[i];
+		pipelineConfig.attributeDescription.push_back({
+			i,
+			0,
+			attr.format,
+			attr.offset
+			});
+	}
+
+	if (pipelineConfig.attributeDescription.empty()) {
+		throw std::runtime_error("Vertex layout has no attributes");
+	}
+}
