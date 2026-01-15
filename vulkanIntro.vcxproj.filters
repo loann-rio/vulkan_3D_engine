@@ -537,5 +537,11 @@
     <None Include="shaders\CloudShader.frag">
       <Filter>shaders</Filter>
     </None>
+    <None Include="shaders\MainMeshShader.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\MainMeshShader.vert">
+      <Filter>shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

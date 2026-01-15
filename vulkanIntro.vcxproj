@@ -320,6 +320,8 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <None Include="shaders\GlTFAssetRenderer.vert" />
     <None Include="shaders\GlTFshader.frag" />
     <None Include="shaders\GlTFshader.vert" />
+    <None Include="shaders\MainMeshShader.frag" />
+    <None Include="shaders\MainMeshShader.vert" />
     <None Include="shaders\point_light.frag" />
     <None Include="shaders\point_light.vert" />
     <None Include="shaders\shadowmap.vert" />

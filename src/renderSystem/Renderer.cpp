@@ -89,8 +89,8 @@ void GlobalRenderer::createFrameRenderer()
     );
 
     auto baseRenderSystem = RenderSystemBuilder()
-        .fragmentShader("")
-        .vertexShader("")
+        .fragmentShader("MainMeshShader.frag.spv")
+        .vertexShader("MainMeshShader.vert.spv")
         .cullMode(VK_CULL_MODE_FRONT_AND_BACK)
         .renderPass(mainPass->getRenderPass())
         .vertexLayout(new ObjVertexLayout)
