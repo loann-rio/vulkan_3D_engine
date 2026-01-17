@@ -22,6 +22,8 @@ public:
 	uint32_t getNextFrameIndex() const { return (currentFrameIndex + 1) % Swapchain::MAX_FRAMES_IN_FLIGHT; }
 
 private:
+
+    void createUboDescriptorPool();
     
     void createSemaphore();
     void createFrameRenderer();
@@ -36,6 +38,8 @@ private:
     Window& window;
     AssetManager& assetManager;
     ObjectManager& objectManager;
+
+    std::unique_ptr<DescriptorPool> globalPool; 
 
     FrameContext frameContext{};
 

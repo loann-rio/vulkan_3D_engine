@@ -3,8 +3,6 @@
 #include <vulkan/vulkan.h>
 #include <string>
 
-#include "RenderSystemBuilder.h"
-
 #include "ShadowMeshRenderSystem.h"
 #include "ShadowSkinnedRenderSystem.h"
 #include "MainMeshRenderSystem.h"
@@ -45,9 +43,35 @@ public:
         skinningEnable = enable;
         return *this;
     }
+
     RenderSystemBuilder& vertexLayout(IVertexLayout* layout_) {
         layout = layout_;
         return *this;
+    }
+
+    RenderSystemBuilder& asMainRenderSystem() {
+		asMain = true;
+        asShadow = false;
+        return *this;
+	}
+
+	RenderSystemBuilder& asShadowRenderSystem() {
+        asMain = false;
+        asShadow = true;
+		return *this;
+	}
+
+    RenderSystemBuilder& setGlobalSetLayout(DescriptorSetLayout* layout_) {
+        config.globalSetLayout = layout_;
+        return *this;
+	}
+
+    std::unique_ptr<BaseRenderSystem> build(Device& device, AssetManager& assets) {
+        if (asShadow) {
+            //return buildShadow(device);
+			throw std::runtime_error("RenderSystemBuilder: shadow render system not implemented yet");
+        }
+		return buildMain(device, assets);
     }
 
     /*std::unique_ptr<BaseRenderSystem> buildShadow(Device& device) {
@@ -66,6 +90,9 @@ public:
     }
 
 private:
+
+    bool asMain = true;
+	bool asShadow = false;
 
     RenderSystemCreateInfo config;
 

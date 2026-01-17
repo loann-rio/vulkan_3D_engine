@@ -52,15 +52,25 @@ void BaseRenderSystem::bindPipeline(VkCommandBuffer cmd) const
 	pipeline->bind(cmd);
 }
 
-void BaseRenderSystem::createPipelineLayout()
+void BaseRenderSystem::createPipelineLayout(DescriptorSetLayout* globalSetLayout)
 {
 	std::vector<VkDescriptorSetLayout> vkLayouts;
-	vkLayouts.reserve(descriptorLayouts.size());
+	vkLayouts.reserve(
+		(globalSetLayout ? 1 : 0) + 
+		descriptorLayouts.size()
+	);
 
+	// global layouts
+	if (globalSetLayout != nullptr) {
+		vkLayouts.push_back(globalSetLayout->getDescriptorSetLayout());
+	}
+
+	// local layouts
 	for (const auto& layout : descriptorLayouts) {
 		vkLayouts.push_back(layout->getDescriptorSetLayout());
 	}
 
+	// push constants
 	PushConstantInfo pc = pushConstants();
 	assert(pc.size <= device.properties.limits.maxPushConstantsSize);
 
@@ -69,6 +79,7 @@ void BaseRenderSystem::createPipelineLayout()
 	pushRange.offset = 0;
 	pushRange.size = pc.size;
 
+	// create info
 	VkPipelineLayoutCreateInfo info{};
 	info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	info.setLayoutCount = static_cast<uint32_t>(vkLayouts.size());

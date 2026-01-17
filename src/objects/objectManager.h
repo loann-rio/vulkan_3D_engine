@@ -102,7 +102,6 @@ private:
 
     std::unique_ptr<DescriptorPool> globalPool{};
 
-
     void createDescriptorSet(ModelAsset* model);
 };
 

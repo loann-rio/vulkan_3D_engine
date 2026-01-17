@@ -28,6 +28,8 @@ struct RenderSystemCreateInfo {
     VkCompareOp depthCompare = VK_COMPARE_OP_LESS;
 
     bool alphaBlend = false;
+
+    DescriptorSetLayout* globalSetLayout; 
 };
 
 
@@ -57,6 +59,10 @@ public:
         FrameContext& frameContext,
         const std::vector<RenderItem>& items
     ) const;
+
+    VkPipelineLayout getPipelineLayout() const { 
+        return pipelineLayout; 
+    }
 
 protected:
     struct PushConstantInfo {
@@ -94,7 +100,7 @@ protected:
 
     std::vector<std::unique_ptr<DescriptorSetLayout>> descriptorLayouts;
 
-    void createPipelineLayout();
+    void createPipelineLayout(DescriptorSetLayout* globalSetLayout);
     void createPipeline(const RenderSystemCreateInfo& createInfo);
 
     void configureVertexInput(PipelineConfigInfo& pipelineConfig) const;

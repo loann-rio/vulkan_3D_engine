@@ -17,7 +17,10 @@ GlobalRenderer::GlobalRenderer(Device& device, Window& window, AssetManager& ass
 	: device(device), window(window), assetManager(assetManager), objectManager(objectManager)
 {
     recreateSwapchain();
+
     createSemaphore();
+	createUboDescriptorPool();
+    
     createFrameRenderer();
 }
 
@@ -62,6 +65,14 @@ void GlobalRenderer::recreateSwapchain() {
     frameContext.swapchain = swapchain.get();
 }
 
+void GlobalRenderer::createUboDescriptorPool()
+{
+    globalPool = DescriptorPool::Builder(device)
+        .setMaxSets(Swap_chain::MAX_FRAMES_IN_FLIGHT * 20)
+        .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Swap_chain::MAX_FRAMES_IN_FLIGHT * 20)
+        .build();
+}
+
 void GlobalRenderer::createSemaphore()
 {
     VkSemaphoreTypeCreateInfo timelineInfo{};
@@ -83,22 +94,23 @@ void GlobalRenderer::createFrameRenderer()
     frameRenderer = std::make_unique<FrameRenderer>(device);
 
 	auto mainPass = std::make_unique<MainPass>(
-		device, assetManager, *swapchain,
+		device, assetManager, 
+        *swapchain, globalPool.get(),
         Swapchain::MAX_FRAMES_IN_FLIGHT,
 		swapchain->getExtent()
     );
 
-    auto baseRenderSystem = RenderSystemBuilder()
-        .fragmentShader("MainMeshShader.frag.spv")
-        .vertexShader("MainMeshShader.vert.spv")
-        .cullMode(VK_CULL_MODE_FRONT_AND_BACK)
-        .renderPass(mainPass->getRenderPass())
-        .vertexLayout(new ObjVertexLayout)
-        .buildMain(device, assetManager);
+    {
+        auto baseRenderSystem = RenderSystemBuilder()
+            .fragmentShader("MainMeshShader.frag.spv")
+            .vertexShader("MainMeshShader.vert.spv")
+            .cullMode(VK_CULL_MODE_FRONT_AND_BACK)
+            .renderPass(mainPass->getRenderPass())
+            .vertexLayout(new ObjVertexLayout)
+            .asMainRenderSystem();
 
-    mainPass->addRenderSystem(
-        std::move(baseRenderSystem)
-	);
+        mainPass->addRenderSystem(baseRenderSystem);
+    }
 
     frameRenderer->addPass(std::move(mainPass));
 }

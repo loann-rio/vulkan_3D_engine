@@ -19,7 +19,7 @@ MainMeshRenderSystem::MainMeshRenderSystem(
 	: BaseRenderSystem(device, assets, vertexLayout, createInfo) 
 {
 	createDescriptorSetLayouts(descriptorLayouts);
-	createPipelineLayout();
+	createPipelineLayout(createInfo.globalSetLayouts);
 	createPipeline(createInfo);
 }
 
@@ -54,12 +54,13 @@ void MainMeshRenderSystem::createDescriptorSetLayouts(
 	std::vector<std::unique_ptr<DescriptorSetLayout>>& outLayouts
 )
 {
+
+	/// material layout
 	auto materialLayout = DescriptorSetLayout::Builder(device)
 		.addBinding(
 			0,
 			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-			VK_SHADER_STAGE_FRAGMENT_BIT,
-			1
+			VK_SHADER_STAGE_FRAGMENT_BIT
 		)
 		.build();
 

@@ -6,6 +6,7 @@
 #include "../RenderSystems/BaseRenderSystem.h"
 
 #include "../../assetManager/AssetManager.h"
+#include "../RenderSystems/RenderSystemBuilder.h"
 
 #include <vulkan/vulkan_core.h>
 #include <vector>
@@ -16,41 +17,56 @@ public:
     
     virtual ~RenderPassBase() = default; 
 
+	RenderPassBase(Device& device_, AssetManager& assets_)
+        : device(device_), assets(assets_) {}
+
     RenderPassBase(const RenderPassBase&) = delete;
     RenderPassBase& operator=(const RenderPassBase&) = delete;
 
     /**
-     * Record commands for this pass into command buffer
+     * record commands for this pass into command buffer
      */
     virtual void record(FrameContext& frame) = 0;
 
     /**
-     * Returns the command buffer for a given frame index
+     * returns the command buffer for a given frame index
      */
     virtual VkCommandBuffer commandBuffer(uint32_t frameIndex) const = 0;
 
     /**
-     * Create the render pass
+     * create the render pass
 	 */
 	virtual void createRenderPass() = 0;
 
     /**
-     * Add a renderSytem for the pass
+     * create the global descriptor sets for the pass
+	 */
+	virtual void createPassDescriptorSetLayout() = 0;
+
+    /**
+	 * add a renderSytem for the pass with global descriptor set layouts
      */
     void addRenderSystem(
-        std::unique_ptr<BaseRenderSystem> system
+        RenderSystemBuilder system
     ) {
-        renderSystems.emplace_back(std::move(system));
+		system.setGlobalSetLayout(setLayout.get());
+        renderSystems.emplace_back(system.build(device, assets));
     };
 
     /**
-	 * Get the render pass handle
+	 * get the render pass handle
      */
     VkRenderPass getRenderPass() const {
         return renderPass;
     }
 
 protected:
+
+    virtual void bindGlobalDescriptorSet(
+        VkCommandBuffer cmd,
+        FrameContext& frameContext
+    ) const {}
+
     RenderPassBase() = default;
 
     // One primary command buffer per frame in flight and per target
@@ -64,4 +80,9 @@ protected:
 
     VkRenderPass renderPass{ VK_NULL_HANDLE };  
 
+    std::unique_ptr<DescriptorSetLayout> setLayout;
+
+    Device& device;
+
+    AssetManager& assets;
 };

@@ -13,6 +13,13 @@
 
 class RenderSystem;
 
+
+enum class PassSet : uint32_t {
+    Frame = 0,
+    System = 1,
+    Material = 2
+};
+
 /*
 
 Main color rendering pass
@@ -28,6 +35,7 @@ public:
         Device& device,
         AssetManager& assets,
         Swapchain& swapchain,
+        DescriptorPool& renderPool,
         uint32_t frame_in_flight, 
         VkExtent2D extent
     );
@@ -38,8 +46,6 @@ public:
 
     VkCommandBuffer commandBuffer(uint32_t frameIndex) const override;
 
-
-
 private:
 
     void allocateCommandBuffers(uint32_t framesInFlight);
@@ -48,16 +54,35 @@ private:
     void createFramebuffers();
 
 	void createRenderPass() override;
+	void createPassDescriptorSetLayout() override;
+
+    void bindGlobalDescriptorSet(
+        VkCommandBuffer cmd,
+        FrameContext& frameContext
+    ) const override;
+
+	void createGlobalUniformBuffer(DescriptorPool& renderPool);
 
     VkCommandBuffer beginPass(uint32_t frameIndex);
 
-    Device& device;
     Swapchain& swapchain;
-    AssetManager& assets;
-    VkExtent2D extent;
-
     
+    VkExtent2D extent;
 
     std::vector<VkFramebuffer> framebuffers;
     std::vector<TextureManager::TextureID> textureTarget;
+
+
+	/// Global UBO for the pass
+    std::vector<std::unique_ptr<Buffer>> uboBuffers;
+    std::vector<VkDescriptorSet> globalDescriptorSet;
+};
+
+
+struct GlobalUbo { 
+    glm::mat4 projection{ 1.0f };
+    glm::mat4 view{ 1.0f };
+    glm::mat4 inverseView{ 1.f };
+    glm::vec4 ambientLightColor{ 1.f, 1.f,  1.f, .1f };
+    glm::vec4 globalLightDir{ 1.f, -3.f, 0.5f, 0.f };
 };
