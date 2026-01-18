@@ -16,7 +16,7 @@
 #include <vector>
 
 
-struct RenderSystemBuilder {
+struct RenderSystemBuilder_s {
 	std::string vertFilepath;
 	std::string fragFilepath = "";
 	std::vector<VkDescriptorSetLayout> globalSetLayout;
@@ -35,7 +35,7 @@ class GlobalRenderSystem
 public:
 
 	// external builder to allow the use of template, take a RenderSystemBuilder as arg
-	template <class T> static std::shared_ptr<GlobalRenderSystem> create(Device& device, AssetManager& assets, RenderSystemBuilder builder);
+	template <class T> static std::shared_ptr<GlobalRenderSystem> create(Device& device, AssetManager& assets, RenderSystemBuilder_s builder);
 
 	GlobalRenderSystem(Device& device, AssetManager& assets,
 		VkRenderPass renderPass,
@@ -107,7 +107,7 @@ private:
 /// <param name="builder"> RenderSystemBuilder </param>
 /// <returns> return an instance of render system </returns>
 template<class T>
-inline std::shared_ptr<GlobalRenderSystem> GlobalRenderSystem::create(Device& device, AssetManager& assets, RenderSystemBuilder builder)
+inline std::shared_ptr<GlobalRenderSystem> GlobalRenderSystem::create(Device& device, AssetManager& assets, RenderSystemBuilder_s builder)
 {
 	std::vector<DescriptorSetObject> bindings;
 	std::vector<VkVertexInputAttributeDescription> attributeDescription;

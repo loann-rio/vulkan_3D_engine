@@ -19,7 +19,7 @@ MainMeshRenderSystem::MainMeshRenderSystem(
 	: BaseRenderSystem(device, assets, vertexLayout, createInfo) 
 {
 	createDescriptorSetLayouts(descriptorLayouts);
-	createPipelineLayout(createInfo.globalSetLayouts);
+	createPipelineLayout(createInfo.globalSetLayout);
 	createPipeline(createInfo);
 }
 
@@ -31,11 +31,13 @@ bool MainMeshRenderSystem::accepts(const GameObjectModel& object) const
 
 	const ModelAsset* model = assets.models().get(object.modelAsset);
 
+
 	return (
 		(static_cast<int>(model->type) == static_cast<int>(AssetModelType::STATIC_MESH)) && 
 		(vertexLayout.isCompatibleWith(model->lods[0].vertexLayout))
 		);
 }
+
 
 
 /// push constants

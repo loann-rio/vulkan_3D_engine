@@ -95,15 +95,15 @@ void GlobalRenderer::createFrameRenderer()
 
 	auto mainPass = std::make_unique<MainPass>(
 		device, assetManager, 
-        *swapchain, globalPool.get(),
+        *swapchain, *globalPool,
         Swapchain::MAX_FRAMES_IN_FLIGHT,
 		swapchain->getExtent()
     );
 
     {
         auto baseRenderSystem = RenderSystemBuilder()
-            .fragmentShader("MainMeshShader.frag.spv")
-            .vertexShader("MainMeshShader.vert.spv")
+            .fragmentShader("shaders/MainMeshShader.frag.spv")
+            .vertexShader("shaders/MainMeshShader.vert.spv")
             .cullMode(VK_CULL_MODE_FRONT_AND_BACK)
             .renderPass(mainPass->getRenderPass())
             .vertexLayout(new ObjVertexLayout)

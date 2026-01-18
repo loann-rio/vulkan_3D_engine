@@ -5,8 +5,9 @@ MainPass::MainPass(Device& device, AssetManager& assets, Swapchain& swapchain, D
 { 
 	allocateCommandBuffers(frame_in_flight);
     createTargetTexture();
-	createFramebuffers();
     createRenderPass();
+	createFramebuffers();
+    
     createPassDescriptorSetLayout();
 	createGlobalUniformBuffer(renderPool);
 }
