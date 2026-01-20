@@ -27,6 +27,7 @@ private:
     
     void createSemaphore();
     void createFrameRenderer();
+	void createFrameBuffers();
 
     void recreateSwapchain();
 

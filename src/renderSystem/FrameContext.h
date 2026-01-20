@@ -27,7 +27,7 @@ struct FrameContext {
     VkSemaphore timeline{};
     uint64_t timelineValue{};
 
-    VkFramebuffer swapchainFramebuffer{};
+    VkFramebuffer* swapchainFramebuffer;
 
     Swapchain* swapchain{};
 

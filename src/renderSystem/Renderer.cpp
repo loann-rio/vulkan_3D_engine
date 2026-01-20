@@ -51,11 +51,11 @@ void GlobalRenderer::recreateSwapchain() {
 
     // if the swapchain does not already exist create a new one
     if (swapchain == nullptr) {
-        swapchain = std::make_unique<Swapchain>(device, extent);
+        swapchain = std::make_unique<Swapchain>(device, assetManager, extent);
     }
     else {
         std::shared_ptr<Swapchain> oldSwapChain = std::move(swapchain);
-        swapchain = std::make_unique<Swapchain>(device, extent, oldSwapChain);
+        swapchain = std::make_unique<Swapchain>(device, assetManager, extent, oldSwapChain);
 
         if (!oldSwapChain->compareSwapFormat(*swapchain.get())) {
             throw std::runtime_error("Swap chain image format as changed");
@@ -113,6 +113,21 @@ void GlobalRenderer::createFrameRenderer()
     }
 
     frameRenderer->addPass(std::move(mainPass));
+
+    createFrameBuffers();
+}
+
+void GlobalRenderer::createFrameBuffers()
+{
+    for (size_t i = 0; i < frameRenderer->getPassCount() - 1; ++i) {
+		auto& pass = frameRenderer->getPass(i);
+		pass.createLocalFramebuffers();
+    }
+
+	// final pass uses swapchain framebuffers
+	auto& finalPass = frameRenderer->getLastPass();
+	swapchain->createFramebuffers(finalPass.getRenderPass());
+	finalPass.setAsFinal();
 }
 
 bool GlobalRenderer::aquireFrame()
@@ -179,7 +194,7 @@ void GlobalRenderer::renderFrame()
     }
 
 	// record and submit frame 
-    frameRenderer->render(frameContext);
+    //frameRenderer->render(frameContext);
 
 	// present frame
     presentFrame();

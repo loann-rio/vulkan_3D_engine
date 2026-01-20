@@ -13,11 +13,16 @@ public:
 
     void render(FrameContext& frame);
 
+	size_t getPassCount() const { return passes.size(); }
+    
+    RenderPassBase& getPass(size_t index) const { return *passes[index]; }
+	RenderPassBase& getLastPass() const { return *passes.back(); }
+
 private:
     void recordPasses(FrameContext& frame);
     void submitPasses(FrameContext& frame);
 
-    Device& device;
+    Device& device; 
 
     std::vector<std::unique_ptr<RenderPassBase>> passes;
 };

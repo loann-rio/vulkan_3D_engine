@@ -183,6 +183,8 @@ void Device::createLogicalDevice() {
     features12.shaderSampledImageArrayNonUniformIndexing = VK_TRUE; 
     features12.descriptorBindingVariableDescriptorCount = VK_TRUE; 
     features12.descriptorBindingPartiallyBound = VK_TRUE; 
+    features12.timelineSemaphore = VK_TRUE;
+    features12.pNext = nullptr;
 
     createInfo.pNext = &features12;
 

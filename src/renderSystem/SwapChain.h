@@ -1,12 +1,13 @@
-#pragma once
+ #pragma once
 
 #include <vulkan/vulkan.h>
 #include <vector>
 #include <cstdint>
 #include <memory>
 
+#include "../assetManager/AssetManager.h"
+
 class Device;
-class AssetManager;
 
 class Swapchain {
 public:
@@ -14,11 +15,13 @@ public:
 
     Swapchain(
         Device& device, 
+        AssetManager& assets,
         VkExtent2D windowExtent
     );
     
     Swapchain(
         Device& device, 
+        AssetManager& assets,
         VkExtent2D windowExtent, 
         std::shared_ptr<Swapchain> oldSwapchain
     );
@@ -40,6 +43,10 @@ public:
     VkImage getImage(uint32_t imageIndex) const;
     VkImageView getImageView(uint32_t imageIndex) const;
 
+	// final pass frameBuffer //
+    VkFramebuffer getFramebuffer(uint32_t imageIndex) const;
+	const std::vector<VkFramebuffer>& getFramebuffer() const { return swapChainFramebuffers; }
+
     // Synchronization / presentation //
 
     VkResult acquireNextImage(uint32_t* imageIndex, uint32_t* outFrameSlot);
@@ -52,15 +59,19 @@ public:
 
     bool compareSwapFormat(const Swapchain& swapChain) const;
 
+    void createFramebuffers(VkRenderPass renderPass);
 private:
 	void init(VkExtent2D extent);
 
     void createSwapchain(VkExtent2D extent);
+
     void createImageViews();
+    void createDepthResources();
     void createSyncObjects();
 
 private:
     Device& device;
+    AssetManager& assets;
 
     VkSwapchainKHR swapchain{ VK_NULL_HANDLE };
     std::shared_ptr<Swapchain> oldSwapchain;
@@ -71,8 +82,13 @@ private:
 
     // Swapchain images //
 
+    // color
     std::vector<VkImage> images;
     std::vector<VkImageView> imageViews;
+    std::vector<VkFramebuffer> swapChainFramebuffers;
+
+	// depth
+    std::vector<TextureManager::TextureID> depthTextures;  
 
     // Presentation sync //
 

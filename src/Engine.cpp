@@ -43,7 +43,7 @@ void Engine::run()
         // add loaded async model to gameObjectmap 
         objectManager.pushModel();
 
-		uint16_t frameIndex = renderer.getNextFrameIndex();
+        uint16_t frameIndex = 0; //renderer.getNextFrameIndex();
 
         // update camera
         {

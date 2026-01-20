@@ -60,6 +60,16 @@ public:
         return renderPass;
     }
 
+	/**
+     * create local framebuffers for the pass
+	 */
+	virtual void createLocalFramebuffers() {}
+
+    /**
+	 * set as final pass with swapchain framebuffers
+     */
+    virtual void setAsFinal() { isFinalPass = true; }
+
 protected:
 
     virtual void bindGlobalDescriptorSet(
@@ -68,6 +78,8 @@ protected:
     ) const {}
 
     RenderPassBase() = default;
+
+    bool isFinalPass = false;
 
     // One primary command buffer per frame in flight and per target
     std::vector<VkCommandBuffer> commandBuffers;

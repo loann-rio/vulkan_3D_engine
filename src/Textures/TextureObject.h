@@ -26,10 +26,10 @@ public:
     TextureObject(const TextureObject&) = delete;
     TextureObject& operator=(const TextureObject&) = delete;
 
-    // Descriptor helper for writes
+    // descriptor helper for writes
     VkDescriptorImageInfo getImageInfo() const;
 
-    // When the texture type changes
+    // when the texture type changes
     void recreateImageView(bool isCubeMap, bool isHdr);
 
 	void updateSampler(VkFilter minFilter, VkFilter magFilter, VkSamplerAddressMode addressMode);
@@ -43,10 +43,10 @@ public:
     bool loaded() const { return isLoaded; }
 
 private:
-    // Private constructor used only by TextureUploader
+    // private constructor used only by TextureUploader
 	TextureObject(Device&, const TextureInitInfo& info);
 
-    // Helpers called by recreateImageView()
+    // helpers called by recreateImageView()
     VkImageView createImageView(VkImage image,
         VkFormat format,
         uint32_t mipmapLevel,
@@ -55,7 +55,6 @@ private:
 
     VkImageView createCubeMapView(VkFormat format) const;
 
-    // Internal Vulkan resource creators (used by uploader only)
     void destroyResources();
 private:
 
@@ -72,6 +71,9 @@ private:
     VkImageCreateFlags createdImageFlags = 0;
 
     bool isLoaded = false;
+
+    bool ownsImage = false;
+
 
     friend class TextureUploader;
     friend class TextureBuilder;

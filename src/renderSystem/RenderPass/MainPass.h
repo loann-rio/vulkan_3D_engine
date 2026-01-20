@@ -46,12 +46,13 @@ public:
 
     VkCommandBuffer commandBuffer(uint32_t frameIndex) const override;
 
+    void createLocalFramebuffers() override;
+
 private:
 
     void allocateCommandBuffers(uint32_t framesInFlight);
     
     void createTargetTexture();
-    void createFramebuffers();
 
 	void createRenderPass() override;
 	void createPassDescriptorSetLayout() override;
@@ -71,8 +72,7 @@ private:
 
     std::vector<VkFramebuffer> framebuffers;
     std::vector<TextureManager::TextureID> textureTarget;
-
-
+    
 	/// Global UBO for the pass
     std::vector<std::unique_ptr<Buffer>> uboBuffers;
     std::vector<VkDescriptorSet> globalDescriptorSet;

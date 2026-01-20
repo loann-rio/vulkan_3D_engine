@@ -16,8 +16,19 @@ class Swap_chain {
 public:
     static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
-    Swap_chain(Device& deviceRef, AssetManager& assets, VkExtent2D windowExtent);
-    Swap_chain(Device& deviceRef, AssetManager& assets, VkExtent2D windowExtent, std::shared_ptr<Swap_chain> previous);
+    Swap_chain(
+        Device& deviceRef, 
+        AssetManager& assets, 
+        VkExtent2D windowExtent
+    );
+
+    Swap_chain(
+        Device& deviceRef, 
+        AssetManager& assets, 
+        VkExtent2D windowExtent, 
+        std::shared_ptr<Swap_chain> previous
+    );
+
     ~Swap_chain();
 
     Swap_chain(const Swap_chain&) = delete;

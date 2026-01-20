@@ -5,9 +5,9 @@ MainPass::MainPass(Device& device, AssetManager& assets, Swapchain& swapchain, D
 { 
 	allocateCommandBuffers(frame_in_flight);
     createTargetTexture();
+
     createRenderPass();
-	createFramebuffers();
-    
+
     createPassDescriptorSetLayout();
 	createGlobalUniformBuffer(renderPool);
 }
@@ -15,7 +15,8 @@ MainPass::MainPass(Device& device, AssetManager& assets, Swapchain& swapchain, D
 MainPass::~MainPass()
 {
 	for (VkFramebuffer fb : framebuffers) {
-		vkDestroyFramebuffer(device.device(), fb, nullptr);
+		if (fb != VK_NULL_HANDLE)
+		    vkDestroyFramebuffer(device.device(), fb, nullptr);
 	}
 }
 
@@ -29,7 +30,14 @@ void MainPass::record(FrameContext& frame)
     VkRenderPassBeginInfo rpBegin{};
     rpBegin.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     rpBegin.renderPass = renderPass;
-    rpBegin.framebuffer = framebuffers[imageIndex];
+
+    if (isFinalPass) {
+        rpBegin.framebuffer = swapchain.getFramebuffer(imageIndex);
+    }
+	else {
+        rpBegin.framebuffer = framebuffers[imageIndex];
+    }
+
     rpBegin.renderArea.offset = { 0, 0 };
     rpBegin.renderArea.extent = swapchain.getExtent();
 
@@ -99,32 +107,14 @@ VkCommandBuffer MainPass::commandBuffer(uint32_t frameIndex) const
     return commandBuffers[frameIndex];
 }
 
-void MainPass::allocateCommandBuffers(uint32_t framesInFlight)
-{
-    commandBuffers.resize(framesInFlight);
-
-    VkCommandBufferAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.commandPool = device.getThreadCommandPool();
-    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandBufferCount = framesInFlight;
-
-    if (vkAllocateCommandBuffers(
-        device.device(),
-        &allocInfo,
-        commandBuffers.data()) != VK_SUCCESS) {
-        throw std::runtime_error("MainPass: failed to allocate command buffers");
-    }
-}
-
-void MainPass::createFramebuffers()
+void MainPass::createLocalFramebuffers()
 {
     size_t imageCount = swapchain.imageCount();
 
     framebuffers.resize(Swapchain::MAX_FRAMES_IN_FLIGHT);
-    for (size_t i = 0; i < framebuffers.size(); i++) 
+    for (size_t i = 0; i < framebuffers.size(); i++)
     {
-        std::array<VkImageView, 2> attachments = { 
+        std::array<VkImageView, 2> attachments = {
             assets.textures().get(textureTarget[imageCount * i])->view(),
             assets.textures().get(textureTarget[imageCount * i + 1])->view()
         };
@@ -148,6 +138,25 @@ void MainPass::createFramebuffers()
         }
     }
 }
+
+void MainPass::allocateCommandBuffers(uint32_t framesInFlight)
+{
+    commandBuffers.resize(framesInFlight);
+
+    VkCommandBufferAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.commandPool = device.getThreadCommandPool();
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandBufferCount = framesInFlight;
+
+    if (vkAllocateCommandBuffers(
+        device.device(),
+        &allocInfo,
+        commandBuffers.data()) != VK_SUCCESS) {
+        throw std::runtime_error("MainPass: failed to allocate command buffers");
+    }
+}
+
 
 void MainPass::createRenderPass()
 {

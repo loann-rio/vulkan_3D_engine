@@ -27,7 +27,8 @@ TextureObject::TextureObject(Device& device, const TextureInitInfo& info)
     mipLevel(info.mipLevels),
     createdArrayLayers(info.arrayLayers),
     createdImageFlags(info.flags),
-    isLoaded(true) {
+    isLoaded(true),
+    ownsImage(true) {
 }
 
 
@@ -58,6 +59,7 @@ void TextureObject::destroyResources() {
         vkFreeMemory(logicalDevice, textureImageMemory, nullptr);
         textureImageMemory = VK_NULL_HANDLE;
     }
+   
 
     isLoaded = false;
 }
