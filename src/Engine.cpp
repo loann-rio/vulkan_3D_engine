@@ -58,7 +58,15 @@ void Engine::run()
         uboBuffers[frameIndex]->writeToBuffer(&ubo);
         uboBuffers[frameIndex]->flush();
 
-		renderer.renderFrame();
+        try 
+        {
+            renderer.renderFrame();
+        }
+        catch (const std::runtime_error& e) 
+        {
+			std::cerr << e.what() << std::endl;
+			return;
+		}
     }
 
 	// wait before destroying resources

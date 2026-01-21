@@ -68,8 +68,10 @@ void GlobalRenderer::recreateSwapchain() {
 void GlobalRenderer::createUboDescriptorPool()
 {
     globalPool = DescriptorPool::Builder(device)
-        .setMaxSets(Swap_chain::MAX_FRAMES_IN_FLIGHT * 20)
-        .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Swap_chain::MAX_FRAMES_IN_FLIGHT * 20)
+        .setMaxSets(Swapchain::MAX_FRAMES_IN_FLIGHT * 20)
+        .addPoolSize(
+            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 
+            Swapchain::MAX_FRAMES_IN_FLIGHT * 20)
         .build();
 }
 
@@ -164,13 +166,27 @@ bool GlobalRenderer::aquireFrame()
 void GlobalRenderer::renderFrame()
 {
     const uint64_t frameId = frameCounter;
+    const uint64_t frameSignalValue = frameId + 1;
     const uint32_t frameSlot = frameId % Swapchain::MAX_FRAMES_IN_FLIGHT;
 
-    // Wait only if about to reuse frame slot in use by GPU
+    assert(frameSignalValue != 0); // never zero, should be frameId + 1
+    if (timelineSemaphore == VK_NULL_HANDLE) {
+        throw std::runtime_error("Timeline semaphore not initialized");
+    }
+
+    frameContext.frameIndex = frameSlot; 
+    frameContext.timeline = timelineSemaphore; 
+    frameContext.timelineValue = frameSignalValue;
+
+    // wait only if about to reuse frame slot in use by GPU
     uint64_t requiredTimeline =
         (frameId >= Swapchain::MAX_FRAMES_IN_FLIGHT)
         ? frameId - Swapchain::MAX_FRAMES_IN_FLIGHT
         : 0;
+
+    if (requiredTimeline > (frameSignalValue - 1)) {
+        throw std::runtime_error("Required timeline wait value exceeds last signaled value -> possible underflow or logic error");
+    }
 
     if (requiredTimeline > lastCompletedFrame)
     {
@@ -180,21 +196,25 @@ void GlobalRenderer::renderFrame()
         waitInfo.pSemaphores = &timelineSemaphore;
         waitInfo.pValues = &requiredTimeline;
 
-        vkWaitSemaphores(device.device(), &waitInfo, UINT64_MAX);
+        VkResult waitRes = vkWaitSemaphores(device.device(), &waitInfo, UINT64_MAX);
+        if (waitRes != VK_SUCCESS) {
+            throw std::runtime_error("vkWaitSemaphores failed");
+        }
+
         lastCompletedFrame = requiredTimeline;
     }
 
 	// acquire frame
     frameContext.frameIndex = frameSlot;
     frameContext.timeline = timelineSemaphore;
-    frameContext.timelineValue = frameId;
+    //frameContext.timelineValue = frameId;
 
     if (!aquireFrame()) {
         return;
     }
 
 	// record and submit frame 
-    //frameRenderer->render(frameContext);
+    frameRenderer->render(frameContext);
 
 	// present frame
     presentFrame();

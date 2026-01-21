@@ -8,7 +8,7 @@ FrameRenderer::FrameRenderer(Device& device)
 
 void FrameRenderer::addPass(std::unique_ptr<RenderPassBase> pass) 
 {
-    assert(pass && "Cannot add null render pass");
+    assert(pass && "cannot add null render pass");
     passes.emplace_back(std::move(pass));
 }
 
@@ -35,6 +35,14 @@ void FrameRenderer::submitPasses(FrameContext& frame)
     const uint64_t frameSignalValue = frame.timelineValue;
     const size_t passCount = passes.size();
 
+    if (frame.timeline == VK_NULL_HANDLE) {
+        throw std::runtime_error("FrameContext.timeline is VK_NULL_HANDLE");
+    }
+
+    if (frameSignalValue == 0) {
+        throw std::runtime_error("invalid timeline signal value: 0");
+    }
+
     for (size_t i = 0; i < passCount; ++i)
     {
         auto& pass = passes[i];
@@ -44,12 +52,13 @@ void FrameRenderer::submitPasses(FrameContext& frame)
         // Build wait semaphores
         std::vector<VkSemaphore> waitSemaphores;
         std::vector<VkPipelineStageFlags> waitStages;
-        std::vector<uint64_t> waitValues; // only timeline values
+        std::vector<uint64_t> waitValues; // timeline values
 
         // swapchain image availability
         if (i == 0 && frame.imageAvailable != VK_NULL_HANDLE) {
             waitSemaphores.push_back(frame.imageAvailable);
             waitStages.push_back(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+            waitValues.push_back(0);
         }
 
 
@@ -76,6 +85,7 @@ void FrameRenderer::submitPasses(FrameContext& frame)
                 signalSemaphores.push_back(
                     frame.swapchain->getRenderFinishedSemaphore(frame.frameIndex)
                 );
+                signalValues.push_back(0); // placeholder for binary semaphore
             }
         }
 
@@ -87,6 +97,9 @@ void FrameRenderer::submitPasses(FrameContext& frame)
         timelineInfo.signalSemaphoreValueCount = static_cast<uint32_t>(signalValues.size());
         timelineInfo.pSignalSemaphoreValues = signalValues.data();
 
+        assert(timelineInfo.waitSemaphoreValueCount == waitValues.size());
+        assert(timelineInfo.signalSemaphoreValueCount == signalValues.size());
+
         VkSubmitInfo submit{};
         submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         submit.pNext = &timelineInfo;
@@ -96,7 +109,7 @@ void FrameRenderer::submitPasses(FrameContext& frame)
         submit.commandBufferCount = 1;
         submit.pCommandBuffers = &cmd;
         submit.signalSemaphoreCount = static_cast<uint32_t>(signalSemaphores.size());
-        submit.pSignalSemaphores = signalSemaphores.data();
+        submit.pSignalSemaphores = signalSemaphores.empty() ? nullptr : signalSemaphores.data();
 
         device.submitToGraphicQueue(submit, VK_NULL_HANDLE);
 
