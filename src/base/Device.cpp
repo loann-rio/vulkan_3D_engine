@@ -485,9 +485,8 @@ void Device::submitToGraphicQueue(VkSubmitInfo& submitInfo, VkFence fence)
     }
 }
 
-VkResult Device::present(const VkPresentInfoKHR* presentInfo)
+VkResult Device::present(const VkPresentInfoKHR* presentInfo) const
 {
-    std::lock_guard<std::mutex> lock(graphicQueueMutex);
     return vkQueuePresentKHR(presentQueue_, presentInfo);
 }
 

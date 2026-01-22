@@ -7,6 +7,7 @@
 #include <limits>
 #include <array>
 #include <algorithm>
+#include <iostream>
 
 namespace {
     VkSurfaceFormatKHR chooseSurfaceFormat(
@@ -20,9 +21,21 @@ namespace {
 
     VkPresentModeKHR choosePresentMode(
         const std::vector<VkPresentModeKHR>& modes) {
-        for (auto m : modes)
-            if (m == VK_PRESENT_MODE_MAILBOX_KHR)
-                return m;
+        /*for (const auto& availablepresentmode : modes) {
+        if (availablepresentmode == VK_PRESENT_MODE_MAILBOX_KHR) {
+            std::cout << "present mode: mailbox" << std::endl;
+            return availablepresentmode;
+        }
+        }*/
+
+        /*for (const auto &availablePresentMode : modes) {
+           if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
+             std::cout << "Present mode: Immediate" << std::endl;
+             return availablePresentMode;
+           }
+        }*/
+
+        std::cout << "Present mode: V-Sync" << std::endl;
         return VK_PRESENT_MODE_FIFO_KHR;
     }
 
@@ -74,11 +87,8 @@ Swapchain::~Swapchain()
     for (auto fence : inFlightFences)
         vkDestroyFence(device.device(), fence, nullptr);
 
-    for (auto sem : imageAvailable)
-        vkDestroySemaphore(device.device(), sem, nullptr);
-
-    for (auto sem : renderFinished)
-        vkDestroySemaphore(device.device(), sem, nullptr);
+    for (auto fence : imagesInFlight)
+        vkDestroyFence(device.device(), fence, nullptr);
 
     for (auto view : imageViews)
         vkDestroyImageView(device.device(), view, nullptr);
@@ -119,7 +129,7 @@ VkFramebuffer Swapchain::getFramebuffer(uint32_t imageIndex) const
 	return swapChainFramebuffers[imageIndex];
 }
 
-VkResult Swapchain::acquireNextImage(uint32_t* imageIndex, uint32_t* outFrameSlot) {
+VkResult Swapchain::acquireNextImage(uint32_t* imageIndex) {
     vkWaitForFences(
         device.device(),
         1,
@@ -131,25 +141,33 @@ VkResult Swapchain::acquireNextImage(uint32_t* imageIndex, uint32_t* outFrameSlo
         device.device(),
         swapchain,
         std::numeric_limits<uint64_t>::max(),
-        imageAvailable[currentFrame],
+        imageAvailableSemaphores[currentFrame],
         VK_NULL_HANDLE,
         imageIndex);
-
-    if (outFrameSlot) *outFrameSlot = currentFrame;
 
     return result;
 }
 
 VkResult Swapchain::present(uint32_t imageIndex) {
+
+
+   
+
     VkPresentInfoKHR present{};
     present.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
     present.waitSemaphoreCount = 1;
-    present.pWaitSemaphores = &renderFinished[currentFrame];
+    present.pWaitSemaphores = &renderFinishedSemaphores[currentFrame];
+
     present.swapchainCount = 1;
     present.pSwapchains = &swapchain;
+
     present.pImageIndices = &imageIndex;
 
-    VkResult result = vkQueuePresentKHR(device.presentQueue(), &present);
+	// reset fence for next frame
+    vkResetFences(device.device(), 1, &inFlightFences[currentFrame]);
+
+    VkResult result = device.present(&present);
 
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
     return result;
@@ -363,12 +381,15 @@ void Swapchain::createSyncObjects() {
     }
 }
 
-VkSemaphore Swapchain::getImageAvailableSemaphore(uint32_t frame) const {
-    return imageAvailable.at(frame);
+void Swapchain::waitForImageInFlight(uint32_t imageIndex)
+{
+    if (imagesInFlight[imageIndex] != VK_NULL_HANDLE) {
+        vkWaitForFences(device.device(), 1, &imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
+    }
+
+    imagesInFlight[imageIndex] = inFlightFences[currentFrame];
 }
-VkSemaphore Swapchain::getRenderFinishedSemaphore(uint32_t frame) const {
-    return renderFinished.at(frame);
-}
+
 VkFence Swapchain::getInFlightFence(uint32_t frame) const {
     return inFlightFences.at(frame);
 }

@@ -49,7 +49,8 @@ public:
 
     // Synchronization / presentation //
 
-    VkResult acquireNextImage(uint32_t* imageIndex, uint32_t* outFrameSlot);
+    VkResult acquireNextImage(uint32_t* imageIndex);
+	void ResetFence();    
     VkResult present(uint32_t imageIndex);
 
     // Accessors for synchronization
@@ -68,6 +69,8 @@ private:
     void createImageViews();
     void createDepthResources();
     void createSyncObjects();
+
+	void waitForImageInFlight(uint32_t imageIndex);
 
 private:
     Device& device;
@@ -91,10 +94,11 @@ private:
     std::vector<TextureManager::TextureID> depthTextures;  
 
     // Presentation sync //
-
-    std::vector<VkSemaphore> imageAvailable;
-    std::vector<VkSemaphore> renderFinished;
-    std::vector<VkFence> inFlightFences;
-
     uint32_t currentFrame{ 0 };
+
+    std::vector<VkFence> inFlightFences;
+    std::vector<VkFence> imagesInFlight;
+
+    std::vector<VkSemaphore> imageAvailableSemaphores;
+    std::vector<VkSemaphore> renderFinishedSemaphores;
 };

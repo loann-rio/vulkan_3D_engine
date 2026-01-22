@@ -132,16 +132,10 @@ void GlobalRenderer::createFrameBuffers()
 	finalPass.setAsFinal();
 }
 
-bool GlobalRenderer::aquireFrame()
+bool GlobalRenderer::aquireNextImage()
 {
-    uint32_t imageIndex = 0;
-
-    uint32_t frameSlot = frameContext.frameIndex;
-
-    VkResult result = swapchain->acquireNextImage(
-        &imageIndex,
-        &frameSlot
-    );
+	swapchain->waitForImageInFlight(currentFrameIndex);
+    VkResult result = swapchain->acquireNextImage(&currentImageIndex);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR)
     {
@@ -154,62 +148,13 @@ bool GlobalRenderer::aquireFrame()
         throw std::runtime_error("Failed to acquire swapchain image");
     }
 
-    // Populate frame context
-    frameContext.imageIndex = imageIndex;
-    frameContext.imageAvailable = swapchain->getImageAvailableSemaphore(frameSlot);
-    frameContext.swapchain = swapchain.get();
-
     return true;
 }
 
 
 void GlobalRenderer::renderFrame()
 {
-    const uint64_t frameId = frameCounter;
-    const uint64_t frameSignalValue = frameId + 1;
-    const uint32_t frameSlot = frameId % Swapchain::MAX_FRAMES_IN_FLIGHT;
-
-    assert(frameSignalValue != 0); // never zero, should be frameId + 1
-    if (timelineSemaphore == VK_NULL_HANDLE) {
-        throw std::runtime_error("Timeline semaphore not initialized");
-    }
-
-    frameContext.frameIndex = frameSlot; 
-    frameContext.timeline = timelineSemaphore; 
-    frameContext.timelineValue = frameSignalValue;
-
-    // wait only if about to reuse frame slot in use by GPU
-    uint64_t requiredTimeline =
-        (frameId >= Swapchain::MAX_FRAMES_IN_FLIGHT)
-        ? frameId - Swapchain::MAX_FRAMES_IN_FLIGHT
-        : 0;
-
-    if (requiredTimeline > (frameSignalValue - 1)) {
-        throw std::runtime_error("Required timeline wait value exceeds last signaled value -> possible underflow or logic error");
-    }
-
-    if (requiredTimeline > lastCompletedFrame)
-    {
-        VkSemaphoreWaitInfo waitInfo{};
-        waitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
-        waitInfo.semaphoreCount = 1;
-        waitInfo.pSemaphores = &timelineSemaphore;
-        waitInfo.pValues = &requiredTimeline;
-
-        VkResult waitRes = vkWaitSemaphores(device.device(), &waitInfo, UINT64_MAX);
-        if (waitRes != VK_SUCCESS) {
-            throw std::runtime_error("vkWaitSemaphores failed");
-        }
-
-        lastCompletedFrame = requiredTimeline;
-    }
-
-	// acquire frame
-    frameContext.frameIndex = frameSlot;
-    frameContext.timeline = timelineSemaphore;
-    //frameContext.timelineValue = frameId;
-
-    if (!aquireFrame()) {
+    if (!aquireNextImage()) {
         return;
     }
 
@@ -218,8 +163,6 @@ void GlobalRenderer::renderFrame()
 
 	// present frame
     presentFrame();
-
-    frameCounter++;
 }
 
 void GlobalRenderer::presentFrame()
@@ -236,4 +179,6 @@ void GlobalRenderer::presentFrame()
     else if (result != VK_SUCCESS) {
         throw std::runtime_error("Failed to present frame");
     }
+
+    currentFrameIndex = (currentFrameIndex + 1) % Swap_chain::MAX_FRAMES_IN_FLIGHT;
 }

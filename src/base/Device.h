@@ -78,7 +78,7 @@ public:
 
     void submitToTransferQueue(VkSubmitInfo& submitInfo, VkFence fence);
     void submitToGraphicQueue(VkSubmitInfo& submitInfo, VkFence fence);
-    VkResult present(const VkPresentInfoKHR* presentInfo);
+    VkResult present(const VkPresentInfoKHR* presentInfo) const;
 	VkResult submitAndPresent(VkSubmitInfo& submitInfo, VkFence fence, const VkPresentInfoKHR* presentInfo);
 
     std::mutex& getTransferMutex() { return transferQueueMutex; }

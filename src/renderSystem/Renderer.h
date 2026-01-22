@@ -18,8 +18,6 @@ public:
     GlobalRenderer& operator=(const GlobalRenderer&) = delete;
 
     void renderFrame();
-	uint32_t getCurrentFrameIndex() const { return currentFrameIndex; }
-	uint32_t getNextFrameIndex() const { return (currentFrameIndex + 1) % Swapchain::MAX_FRAMES_IN_FLIGHT; }
 
 private:
 
@@ -31,7 +29,7 @@ private:
 
     void recreateSwapchain();
 
-    bool aquireFrame();
+    bool aquireNextImage();
     void presentFrame();
 
 private:
@@ -47,12 +45,7 @@ private:
     std::unique_ptr<Swapchain> swapchain;
     std::unique_ptr<FrameRenderer> frameRenderer;
 
-    VkSemaphore timelineSemaphore = VK_NULL_HANDLE;
-    uint64_t timelineValue = 0;
-
-    uint32_t currentFrameIndex = 0; 
-
-    uint64_t frameCounter = 0;      
-    uint64_t lastCompletedFrame = 0; // cached timeline value
+    uint32_t currentImageIndex;
+    int currentFrameIndex = 0; 
 
 };
