@@ -27,10 +27,6 @@ GlobalRenderer::GlobalRenderer(Device& device, Window& window, AssetManager& ass
 
 GlobalRenderer::~GlobalRenderer() {
     device.waitIdle();
-
-    if (timelineSemaphore != VK_NULL_HANDLE) {
-        vkDestroySemaphore(device.device(), timelineSemaphore, nullptr);
-    }
 }
 
 
@@ -73,22 +69,6 @@ void GlobalRenderer::createUboDescriptorPool()
             VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 
             Swapchain::MAX_FRAMES_IN_FLIGHT * 20)
         .build();
-}
-
-void GlobalRenderer::createSemaphore()
-{
-    VkSemaphoreTypeCreateInfo timelineInfo{};
-    timelineInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
-    timelineInfo.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
-    timelineInfo.initialValue = 0;
-
-    VkSemaphoreCreateInfo createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-    createInfo.pNext = &timelineInfo;
-
-    if (vkCreateSemaphore(device.device(), &createInfo, nullptr, &timelineSemaphore) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create timeline semaphore");
-    }
 }
 
 void GlobalRenderer::createFrameRenderer()
@@ -134,7 +114,10 @@ void GlobalRenderer::createFrameBuffers()
 
 bool GlobalRenderer::aquireNextImage()
 {
+	// wait for the current frame to be finished
 	swapchain->waitForImageInFlight(currentFrameIndex);
+
+	// acquire next image from swapchain
     VkResult result = swapchain->acquireNextImage(&currentImageIndex);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR)
@@ -158,8 +141,13 @@ void GlobalRenderer::renderFrame()
         return;
     }
 
-	// record and submit frame 
-    frameRenderer->render(frameContext);
+	// record passes 
+    frameRenderer->recordPasses(frameContext);
+
+	// submit passes
+	swapchain->waitForImageInFlight(frameContext.imageIndex);
+	swapchain->ResetFence();
+	frameRenderer->submitPasses(frameContext);
 
 	// present frame
     presentFrame();

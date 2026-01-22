@@ -47,16 +47,22 @@ public:
     VkFramebuffer getFramebuffer(uint32_t imageIndex) const;
 	const std::vector<VkFramebuffer>& getFramebuffer() const { return swapChainFramebuffers; }
 
-    // Synchronization / presentation //
+	//////// render loop functions ////////
 
     VkResult acquireNextImage(uint32_t* imageIndex);
+
+    // submit
+    void waitForImageInFlight(uint32_t imageIndex);
 	void ResetFence();    
+	VkFence getInFlightFence(uint32_t frame) const;  // or submit commandBuffers?
+
+    // present
     VkResult present(uint32_t imageIndex);
 
-    // Accessors for synchronization
-    VkSemaphore getImageAvailableSemaphore(uint32_t frame) const;
-    VkSemaphore getRenderFinishedSemaphore(uint32_t frame) const;
+   
     VkFence getInFlightFence(uint32_t frame) const;
+	VkSemaphore getImageAvailableSemaphore(uint32_t frame) const;
+	VkSemaphore getRenderFinishedSemaphore(uint32_t frame) const;
 
     bool compareSwapFormat(const Swapchain& swapChain) const;
 
@@ -70,7 +76,7 @@ private:
     void createDepthResources();
     void createSyncObjects();
 
-	void waitForImageInFlight(uint32_t imageIndex);
+	
 
 private:
     Device& device;

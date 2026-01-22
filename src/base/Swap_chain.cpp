@@ -119,8 +119,6 @@ VkResult Swap_chain::submitCommandBuffers(
     submitInfo.pSignalSemaphores = signalSemaphores;
 
     vkResetFences(device.device(), 1, &inFlightFences[currentFrame]);
-
-    
      
     VkPresentInfoKHR presentInfo = {};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;

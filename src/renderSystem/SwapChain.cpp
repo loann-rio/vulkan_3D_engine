@@ -148,10 +148,13 @@ VkResult Swapchain::acquireNextImage(uint32_t* imageIndex) {
     return result;
 }
 
+
+void Swapchain::ResetFence()
+{
+    vkResetFences(device.device(), 1, &inFlightFences[currentFrame]);
+}
+
 VkResult Swapchain::present(uint32_t imageIndex) {
-
-
-   
 
     VkPresentInfoKHR present{};
     present.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -163,9 +166,7 @@ VkResult Swapchain::present(uint32_t imageIndex) {
     present.pSwapchains = &swapchain;
 
     present.pImageIndices = &imageIndex;
-
-	// reset fence for next frame
-    vkResetFences(device.device(), 1, &inFlightFences[currentFrame]);
+    
 
     VkResult result = device.present(&present);
 
@@ -392,4 +393,14 @@ void Swapchain::waitForImageInFlight(uint32_t imageIndex)
 
 VkFence Swapchain::getInFlightFence(uint32_t frame) const {
     return inFlightFences.at(frame);
+}
+
+VkSemaphore Swapchain::getImageAvailableSemaphore(uint32_t frame) const
+{
+	return imageAvailableSemaphores.at(frame);
+}
+
+VkSemaphore Swapchain::getRenderFinishedSemaphore(uint32_t frame) const
+{
+	return renderFinishedSemaphores.at(frame);
 }
