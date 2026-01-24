@@ -18,7 +18,7 @@
 #include <vector>
 
 
-#include "renderSystem/Renderer.h"
+#include "renderSystem/GlobalRenderer.h"
 
 
 

@@ -62,8 +62,6 @@ private:
         FrameContext& frameContext
     ) const override;
 
-	void createGlobalUniformBuffer(DescriptorPool& renderPool);
-
     VkCommandBuffer beginPass(uint32_t frameIndex);
 
     Swapchain& swapchain;
@@ -72,17 +70,4 @@ private:
 
     std::vector<VkFramebuffer> framebuffers;
     std::vector<TextureManager::TextureID> textureTarget;
-    
-	/// Global UBO for the pass
-    std::vector<std::unique_ptr<Buffer>> uboBuffers;
-    std::vector<VkDescriptorSet> globalDescriptorSet;
-};
-
-
-struct GlobalUbo { 
-    glm::mat4 projection{ 1.0f };
-    glm::mat4 view{ 1.0f };
-    glm::mat4 inverseView{ 1.f };
-    glm::vec4 ambientLightColor{ 1.f, 1.f,  1.f, .1f };
-    glm::vec4 globalLightDir{ 1.f, -3.f, 0.5f, 0.f };
 };

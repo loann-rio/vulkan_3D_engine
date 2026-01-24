@@ -162,7 +162,7 @@ private:
     VkQueue presentQueue_;
     VkQueue transferQueue_;
 
-    std::mutex graphicQueueMutex;
+    mutable std::mutex graphicQueueMutex;
     std::mutex transferQueueMutex;
 
     const std::vector<const char*> validationLayers = { "VK_LAYER_KHRONOS_validation"};

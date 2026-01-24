@@ -59,9 +59,7 @@ public:
     // present
     VkResult present(uint32_t imageIndex);
 
-   
-    VkFence getInFlightFence(uint32_t frame) const;
-	VkSemaphore getImageAvailableSemaphore(uint32_t frame) const;
+   	VkSemaphore getImageAvailableSemaphore(uint32_t frame) const;
 	VkSemaphore getRenderFinishedSemaphore(uint32_t frame) const;
 
     bool compareSwapFormat(const Swapchain& swapChain) const;

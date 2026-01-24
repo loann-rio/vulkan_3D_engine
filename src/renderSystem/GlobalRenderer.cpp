@@ -1,4 +1,4 @@
-#include "Renderer.h"
+#include "GlobalRenderer.h"
 
 #include "Swapchain.h"
 #include "FrameContext.h"
@@ -9,7 +9,7 @@
 
 #include "RenderSystems/RenderSystemBuilder.h"
 #include "../model/Vertex/ObjVertexData.h"
-
+ 
 #include <stdexcept>
 #include <cassert>
 
@@ -17,11 +17,9 @@ GlobalRenderer::GlobalRenderer(Device& device, Window& window, AssetManager& ass
 	: device(device), window(window), assetManager(assetManager), objectManager(objectManager)
 {
     recreateSwapchain();
-
-    createSemaphore();
-	createUboDescriptorPool();
-    
+    createUboDescriptorPool();
     createFrameRenderer();
+    createGlobalUniformBuffer();
 }
 
 
@@ -86,7 +84,7 @@ void GlobalRenderer::createFrameRenderer()
         auto baseRenderSystem = RenderSystemBuilder()
             .fragmentShader("shaders/MainMeshShader.frag.spv")
             .vertexShader("shaders/MainMeshShader.vert.spv")
-            .cullMode(VK_CULL_MODE_FRONT_AND_BACK)
+            .cullMode(VK_CULL_MODE_NONE)
             .renderPass(mainPass->getRenderPass())
             .vertexLayout(new ObjVertexLayout)
             .asMainRenderSystem();
@@ -112,11 +110,40 @@ void GlobalRenderer::createFrameBuffers()
 	finalPass.setAsFinal();
 }
 
+void GlobalRenderer::createGlobalUniformBuffer()
+{
+    uboBuffers.resize(Swapchain::MAX_FRAMES_IN_FLIGHT);
+    for (int i = 0; i < uboBuffers.size(); i++)
+    {
+        uboBuffers[i] = std::make_unique<Buffer>(
+            device,
+            sizeof(GlobalUbo_),
+            1,
+            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+            device.properties.limits.minUniformBufferOffsetAlignment
+        );
+
+        uboBuffers[i]->map();
+    }
+
+    auto globalSetLayout = DescriptorSetLayout::Builder(device)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+        .build();
+
+    globalDescriptorSet.resize(Swapchain::MAX_FRAMES_IN_FLIGHT);
+    for (int i = 0; i < globalDescriptorSet.size() && i < 2; i++)
+    {
+        auto bufferInfo = uboBuffers[i]->descriptorInfo();
+
+        DescriptorWriter(*globalSetLayout, *globalPool)
+            .writeBuffer(0, &bufferInfo)
+            .build(globalDescriptorSet[i]);
+    }
+}
+
 bool GlobalRenderer::aquireNextImage()
 {
-	// wait for the current frame to be finished
-	swapchain->waitForImageInFlight(currentFrameIndex);
-
 	// acquire next image from swapchain
     VkResult result = swapchain->acquireNextImage(&currentImageIndex);
 
@@ -135,18 +162,34 @@ bool GlobalRenderer::aquireNextImage()
 }
 
 
-void GlobalRenderer::renderFrame()
+void GlobalRenderer::renderFrame(std::vector<GameObjectModel*> listGameObjects)
 {
+	// acquire next image
     if (!aquireNextImage()) {
         return;
     }
+
+	// setup frame context
+    frameContext.frameIndex = static_cast<uint32_t>(currentFrameIndex);
+    frameContext.imageIndex = static_cast<uint32_t>(currentImageIndex);
+	frameContext.listGameObjects = listGameObjects;
+	frameContext.globalSet = globalDescriptorSet[frameContext.frameIndex];
+    frameContext.swapchain = swapchain.get();
+
+	// update global UBO
+	updateGlobalUniformBuffer(frameContext.frameIndex);
 
 	// record passes 
     frameRenderer->recordPasses(frameContext);
 
 	// submit passes
 	swapchain->waitForImageInFlight(frameContext.imageIndex);
-	swapchain->ResetFence();
+
+	// reset fence
+    VkFence fenceToReset = swapchain->getInFlightFence(frameContext.frameIndex);
+    vkResetFences(device.device(), 1, &fenceToReset);
+
+    // submit passes
 	frameRenderer->submitPasses(frameContext);
 
 	// present frame
@@ -155,7 +198,7 @@ void GlobalRenderer::renderFrame()
 
 void GlobalRenderer::presentFrame()
 {
-    VkResult result = swapchain->present(frameContext.frameIndex);
+    VkResult result = swapchain->present(frameContext.imageIndex);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR ||
         result == VK_SUBOPTIMAL_KHR ||
@@ -168,5 +211,11 @@ void GlobalRenderer::presentFrame()
         throw std::runtime_error("Failed to present frame");
     }
 
-    currentFrameIndex = (currentFrameIndex + 1) % Swap_chain::MAX_FRAMES_IN_FLIGHT;
+    currentFrameIndex = (currentFrameIndex + 1) % Swapchain::MAX_FRAMES_IN_FLIGHT;
+}
+
+void GlobalRenderer::updateGlobalUniformBuffer(uint32_t frameIndex)
+{
+    uboBuffers[frameIndex]->writeToBuffer(&ubo);
+	uboBuffers[frameIndex]->flush();
 }

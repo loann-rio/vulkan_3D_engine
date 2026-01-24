@@ -34,8 +34,6 @@ void Engine::run()
 {
     KeyboardMovementController cameraController{};
 
-    GlobalUbo ubo{};
-
     vkQueueWaitIdle(device.presentQueue());
     while (!window.shouldClose()) {
         glfwPollEvents();
@@ -43,24 +41,23 @@ void Engine::run()
         // add loaded async model to gameObjectmap 
         objectManager.pushModel();
 
-        uint16_t frameIndex = 0; //renderer.getNextFrameIndex();
-
         // update camera
         {
+
+            cameraController.moveInPlaneXZ(window.getGLFWwindow(), 0.01, objectManager.get(objectManager.mainCamera));
+            dynamic_cast<GameObjectCamera*>(objectManager.get(objectManager.mainCamera))->updateCameraView();
+
             auto* camObj = dynamic_cast<GameObjectCamera*>(objectManager.get(objectManager.mainCamera));
-           
+			auto& ubo = renderer.ubo;
+
             ubo.projection = camObj->camera->getProjection();
             ubo.view = camObj->camera->getView(); 
             ubo.inverseView = camObj->camera->getInverseView();
-            ubo.lightPos = camObj->transform.translation; 
         }
-
-        uboBuffers[frameIndex]->writeToBuffer(&ubo);
-        uboBuffers[frameIndex]->flush();
 
         try 
         {
-            renderer.renderFrame();
+			renderer.renderFrame(objectManager.getByType<GameObjectModel>());
         }
         catch (const std::runtime_error& e) 
         {

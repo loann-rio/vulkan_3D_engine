@@ -234,7 +234,7 @@
     <ClCompile Include="src\renderSystem\RenderPass\MainPass.cpp">
       <Filter>renderSystem\RenderPass</Filter>
     </ClCompile>
-    <ClCompile Include="src\renderSystem\Renderer.cpp">
+    <ClCompile Include="src\renderSystem\GlobalRenderer.cpp">
       <Filter>renderSystem</Filter>
     </ClCompile>
     <ClCompile Include="src\renderSystem\RenderSystems\ShadowSkinnedRenderSystem.h">
@@ -436,7 +436,7 @@
     <ClInclude Include="src\renderSystem\SwapChain.h">
       <Filter>renderSystem</Filter>
     </ClInclude>
-    <ClInclude Include="src\renderSystem\Renderer.h">
+    <ClInclude Include="src\renderSystem\GlobalRenderer.h">
       <Filter>renderSystem</Filter>
     </ClInclude>
     <ClInclude Include="src\renderSystem\RenderPass\RenderPassBase.h">

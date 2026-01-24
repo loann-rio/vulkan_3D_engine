@@ -31,10 +31,11 @@ bool MainMeshRenderSystem::accepts(const GameObjectModel& object) const
 
 	const ModelAsset* model = assets.models().get(object.modelAsset);
 
+	/*if (static_cast<int>(model->type) != static_cast<int>(AssetModelType::STATIC_MESH))
+		return false;*/
 
 	return (
-		(static_cast<int>(model->type) == static_cast<int>(AssetModelType::STATIC_MESH)) && 
-		(vertexLayout.isCompatibleWith(model->lods[0].vertexLayout))
+		vertexLayout.isCompatibleWith(model->lods[0].vertexLayout)
 		);
 }
 
@@ -99,6 +100,20 @@ void MainMeshRenderSystem::drawLOD(
 	const glm::mat4& normalMat
 ) const
 {
+
+	if (lod.vertexBuffer && lod.vertexBuffer->getBuffer() != VK_NULL_HANDLE) {
+		VkBuffer vb = lod.vertexBuffer->getBuffer();
+		VkDeviceSize offset = 0;
+		vkCmdBindVertexBuffers(cmd, 0, 1, &vb, &offset);
+	}
+	else {
+		return;
+	}
+
+	if (lod.indexBuffer && lod.indexBuffer->getBuffer() != VK_NULL_HANDLE) {
+		vkCmdBindIndexBuffer(cmd, lod.indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
+	}
+
 	for (const Node* node : lod.nodes) {
 		drawNode(cmd, frameContext, lod, node, modelMat, normalMat);
 	}

@@ -36,4 +36,6 @@ struct FrameContext {
 
     // cameras
     std::array<FrustumPlane, 6>* planes;
+
+	VkDescriptorSet globalSet{};
 };

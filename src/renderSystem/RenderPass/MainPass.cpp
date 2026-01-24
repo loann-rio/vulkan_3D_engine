@@ -9,7 +9,6 @@ MainPass::MainPass(Device& device, AssetManager& assets, Swapchain& swapchain, D
     createRenderPass();
 
     createPassDescriptorSetLayout();
-	createGlobalUniformBuffer(renderPool);
 }
 
 MainPass::~MainPass()
@@ -42,7 +41,7 @@ void MainPass::record(FrameContext& frame)
     rpBegin.renderArea.extent = swapchain.getExtent();
 
     std::array<VkClearValue, 2> clearValues{};
-    clearValues[0].color = { { 0.05f, 0.05f, 0.1f, 1.0f } };
+    clearValues[0].color = { { 1.f, 0.05f, 0.1f, 1.0f } };
     clearValues[1].depthStencil = { 1.0f, 0 };
 
     rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
@@ -67,6 +66,8 @@ void MainPass::record(FrameContext& frame)
         scissor.extent = extent;
         vkCmdSetScissor(cmd, 0, 1, &scissor);
     }
+
+	bindGlobalDescriptorSet(cmd, frame);
 
     for (auto& system : renderSystems) {
 
@@ -233,9 +234,7 @@ void MainPass::createPassDescriptorSetLayout()
 }
 
 void MainPass::bindGlobalDescriptorSet(VkCommandBuffer cmd, FrameContext& frameContext) const
-{
-    VkDescriptorSet set = globalDescriptorSet[frameContext.frameIndex];
-       
+{       
     uint32_t globalSetIndex = 0; // TODO: make configurable
 
     vkCmdBindDescriptorSets(
@@ -243,44 +242,11 @@ void MainPass::bindGlobalDescriptorSet(VkCommandBuffer cmd, FrameContext& frameC
         VK_PIPELINE_BIND_POINT_GRAPHICS,
         renderSystems[0]->getPipelineLayout(),
         globalSetIndex,
-        1,      /*    descriptor count    */
-        &set,   /*    pDescriptorSets     */
-        0,      /*  dynamic offset count  */
-        nullptr /*    pDynamicOffsets     */
+        1,                         /*    descriptor count    */
+        &frameContext.globalSet,   /*    pDescriptorSets     */
+        0,                         /*  dynamic offset count  */
+        nullptr                    /*    pDynamicOffsets     */
     );
-}
-
-void MainPass::createGlobalUniformBuffer(DescriptorPool& renderPool)
-{
-    uboBuffers.resize(Swapchain::MAX_FRAMES_IN_FLIGHT);
-    for (int i = 0; i < uboBuffers.size(); i++)
-    {
-        uboBuffers[i] = std::make_unique<Buffer>(
-            device,
-            sizeof(GlobalUbo),
-            1,
-            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-            device.properties.limits.minUniformBufferOffsetAlignment
-        );
-
-        uboBuffers[i]->map();
-    }
-
-    auto globalSetLayout = DescriptorSetLayout::Builder(device)
-        .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
-        .build();
-
-    globalDescriptorSet.resize(Swapchain::MAX_FRAMES_IN_FLIGHT);
-    for (int i = 0; i < globalDescriptorSet.size() && i < 2; i++)
-    {
-        auto bufferInfo = uboBuffers[i]->descriptorInfo();
-
-        DescriptorWriter(*globalSetLayout, renderPool)
-            .writeBuffer(0, &bufferInfo)
-            .build(globalDescriptorSet[i]);
-    }
-
 }
 
 void MainPass::createTargetTexture()
