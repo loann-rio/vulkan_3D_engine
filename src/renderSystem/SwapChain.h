@@ -27,6 +27,7 @@ public:
     );
 
     ~Swapchain();
+    void destroySwapchainOnly();
 
     Swapchain(const Swapchain&) = delete;
     Swapchain& operator=(const Swapchain&) = delete;

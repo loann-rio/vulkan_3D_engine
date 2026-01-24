@@ -84,20 +84,34 @@ void Swapchain::init(VkExtent2D extent)
 
 Swapchain::~Swapchain()
 {
+    destroySwapchainOnly();
+
     for (auto fence : inFlightFences)
         vkDestroyFence(device.device(), fence, nullptr);
 
-    for (auto fence : imagesInFlight)
-        vkDestroyFence(device.device(), fence, nullptr);
+    for (auto sem : imageAvailableSemaphores)
+        vkDestroySemaphore(device.device(), sem, nullptr);
+
+    for (auto sem : renderFinishedSemaphores)
+        vkDestroySemaphore(device.device(), sem, nullptr);
+}
+
+void Swapchain::destroySwapchainOnly()
+{
+    for (auto fb : swapChainFramebuffers)
+        vkDestroyFramebuffer(device.device(), fb, nullptr);
+
+    swapChainFramebuffers.clear();
 
     for (auto view : imageViews)
         vkDestroyImageView(device.device(), view, nullptr);
 
-	for (auto fb : swapChainFramebuffers)
-        vkDestroyFramebuffer(device.device(), fb, nullptr);
-     
-    if (swapchain)
+    imageViews.clear();
+
+    if (swapchain) {
         vkDestroySwapchainKHR(device.device(), swapchain, nullptr);
+        swapchain = VK_NULL_HANDLE;
+    }
 }
 
 uint32_t Swapchain::imageCount() const {
@@ -126,6 +140,7 @@ VkImageView Swapchain::getImageView(uint32_t index) const {
 
 VkFramebuffer Swapchain::getFramebuffer(uint32_t imageIndex) const
 {
+    assert(imageIndex < swapChainFramebuffers.size());
 	return swapChainFramebuffers[imageIndex];
 }
 
@@ -182,7 +197,16 @@ bool Swapchain::compareSwapFormat(const Swapchain& swapChain) const
 
 void Swapchain::createSwapchain(VkExtent2D windowExtent)
 {
+
+    assert(device.device() != VK_NULL_HANDLE);
+    assert(device.surface() != VK_NULL_HANDLE);
+
+
     depthImageFormat = findDepthFormat(device);
+
+    if (device.surface() == VK_NULL_HANDLE) {
+        throw std::runtime_error("Swapchain::createSwapchain: device surface is VK_NULL_HANDLE");
+    }
 
     VkSurfaceCapabilitiesKHR capabilities;
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
@@ -190,6 +214,7 @@ void Swapchain::createSwapchain(VkExtent2D windowExtent)
         device.surface(), 
         &capabilities
     );
+
 
     uint32_t formatCount;
     vkGetPhysicalDeviceSurfaceFormatsKHR(
@@ -225,7 +250,7 @@ void Swapchain::createSwapchain(VkExtent2D windowExtent)
 
     VkSurfaceFormatKHR surfaceFormat = chooseSurfaceFormat(formats);
     VkPresentModeKHR presentMode = choosePresentMode(presentModes);
-    extent = chooseExtent(capabilities, extent);
+    extent = chooseExtent(capabilities, windowExtent);
 
     uint32_t imageCount = capabilities.minImageCount + 1;
     if (capabilities.maxImageCount > 0 &&
@@ -320,6 +345,10 @@ void Swapchain::createDepthResources()
 
 void Swapchain::createFramebuffers(VkRenderPass renderPass)
 {
+
+    assert(!imageViews.empty());
+    assert(imageViews.size() == depthTextures.size());
+
     swapChainFramebuffers.resize(imageViews.size());
 
     for (size_t i = 0; i < imageViews.size(); ++i) {

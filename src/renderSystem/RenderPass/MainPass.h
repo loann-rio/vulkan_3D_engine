@@ -48,11 +48,20 @@ public:
 
     void createLocalFramebuffers() override;
 
+    void cleanupLocalFramebuffers() override;
+    void cleanupTargetTextures() override;
+
+    void resizeTargets(VkExtent2D newExtent) override;
+
+    void createTargetTexture() override;
+
+    void updateSwapchain(Swapchain& swapchain_) override;
+
 private:
 
     void allocateCommandBuffers(uint32_t framesInFlight);
     
-    void createTargetTexture();
+    
 
 	void createRenderPass() override;
 	void createPassDescriptorSetLayout() override;
@@ -64,7 +73,7 @@ private:
 
     VkCommandBuffer beginPass(uint32_t frameIndex);
 
-    Swapchain& swapchain;
+    Swapchain* swapchain;
     
     VkExtent2D extent;
 

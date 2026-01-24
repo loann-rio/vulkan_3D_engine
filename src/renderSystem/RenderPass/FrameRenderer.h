@@ -10,12 +10,13 @@ public:
     explicit FrameRenderer(Device& device);
 
     void addPass(std::unique_ptr<RenderPassBase> pass);
+    
+    void resizePasses(VkExtent2D newExtent);
 
 	size_t getPassCount() const { return passes.size(); }
     
     RenderPassBase& getPass(size_t index) const { return *passes[index]; }
 	RenderPassBase& getLastPass() const { return *passes.back(); }
-
 
     void recordPasses(FrameContext& frame);
     void submitPasses(FrameContext& frame);

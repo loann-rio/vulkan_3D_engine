@@ -43,20 +43,50 @@ void GlobalRenderer::recreateSwapchain() {
     // wait for device to finish frame creation
     device.waitIdle();
 
+    if (frameRenderer) {
+        for (size_t i = 0; i < frameRenderer->getPassCount(); ++i) {
+            auto& pass = frameRenderer->getPass(i);
+
+            pass.cleanupLocalFramebuffers();
+            //pass.cleanupTargetTextures();
+        }
+    }
+
     // if the swapchain does not already exist create a new one
     if (swapchain == nullptr) {
         swapchain = std::make_unique<Swapchain>(device, assetManager, extent);
     }
     else {
         std::shared_ptr<Swapchain> oldSwapChain = std::move(swapchain);
+       
         swapchain = std::make_unique<Swapchain>(device, assetManager, extent, oldSwapChain);
 
         if (!oldSwapChain->compareSwapFormat(*swapchain.get())) {
             throw std::runtime_error("Swap chain image format as changed");
         }
+
+        oldSwapChain->destroySwapchainOnly();
+        
+
+        
     }
 
     frameContext.swapchain = swapchain.get();
+
+    if (frameRenderer) {
+        for (size_t i = 0; i < frameRenderer->getPassCount() - 1; ++i) {
+            auto& pass = frameRenderer->getPass(i);
+			pass.updateSwapchain(*swapchain);
+            pass.createTargetTexture();
+            pass.createLocalFramebuffers();
+        }
+
+        // final pass uses swapchain framebuffers
+        auto& finalPass = frameRenderer->getLastPass();
+        finalPass.updateSwapchain(*swapchain);
+        swapchain->createFramebuffers(finalPass.getRenderPass());
+        finalPass.setAsFinal();
+    }
 }
 
 void GlobalRenderer::createUboDescriptorPool()
@@ -150,6 +180,7 @@ bool GlobalRenderer::aquireNextImage()
     if (result == VK_ERROR_OUT_OF_DATE_KHR)
     {
         recreateSwapchain();
+		
         return false;
     }
 

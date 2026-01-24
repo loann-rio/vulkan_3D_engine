@@ -1,7 +1,7 @@
 #include "MainPass.h"
 
 MainPass::MainPass(Device& device, AssetManager& assets, Swapchain& swapchain, DescriptorPool& renderPool, uint32_t frame_in_flight, VkExtent2D extent)
-	: RenderPassBase(device, assets), swapchain( swapchain ), extent( extent )
+	: RenderPassBase(device, assets), swapchain( &swapchain ), extent( extent )
 { 
 	allocateCommandBuffers(frame_in_flight);
     createTargetTexture();
@@ -13,10 +13,8 @@ MainPass::MainPass(Device& device, AssetManager& assets, Swapchain& swapchain, D
 
 MainPass::~MainPass()
 {
-	for (VkFramebuffer fb : framebuffers) {
-		if (fb != VK_NULL_HANDLE)
-		    vkDestroyFramebuffer(device.device(), fb, nullptr);
-	}
+    cleanupLocalFramebuffers();
+    cleanupTargetTextures();
 }
 
 void MainPass::record(FrameContext& frame)
@@ -31,14 +29,14 @@ void MainPass::record(FrameContext& frame)
     rpBegin.renderPass = renderPass;
 
     if (isFinalPass) {
-        rpBegin.framebuffer = swapchain.getFramebuffer(imageIndex);
+        rpBegin.framebuffer = swapchain->getFramebuffer(imageIndex);
     }
 	else {
         rpBegin.framebuffer = framebuffers[imageIndex];
     }
 
     rpBegin.renderArea.offset = { 0, 0 };
-    rpBegin.renderArea.extent = swapchain.getExtent();
+    rpBegin.renderArea.extent = swapchain->getExtent();
 
     std::array<VkClearValue, 2> clearValues{};
     clearValues[0].color = { { 1.f, 0.05f, 0.1f, 1.0f } };
@@ -50,7 +48,7 @@ void MainPass::record(FrameContext& frame)
     vkCmdBeginRenderPass(cmd, &rpBegin, VK_SUBPASS_CONTENTS_INLINE);
 
     {
-        VkExtent2D extent = swapchain.getExtent();
+        VkExtent2D extent = swapchain->getExtent();
 
         VkViewport viewport{};
         viewport.x = 0.0f;
@@ -112,9 +110,9 @@ VkCommandBuffer MainPass::commandBuffer(uint32_t frameIndex) const
 
 void MainPass::createLocalFramebuffers()
 {
-    size_t imageCount = swapchain.imageCount();
+    size_t imageCount = swapchain->imageCount();
 
-    framebuffers.resize(Swapchain::MAX_FRAMES_IN_FLIGHT);
+    framebuffers.resize(imageCount);
     for (size_t i = 0; i < framebuffers.size(); i++)
     {
         std::array<VkImageView, 2> attachments = {
@@ -122,7 +120,7 @@ void MainPass::createLocalFramebuffers()
             assets.textures().get(textureTarget[imageCount * i + 1])->view()
         };
 
-        VkExtent2D swapChainExtent = swapchain.getExtent();
+        VkExtent2D swapChainExtent = swapchain->getExtent();
         VkFramebufferCreateInfo framebufferInfo = {};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         framebufferInfo.renderPass = renderPass;
@@ -140,6 +138,37 @@ void MainPass::createLocalFramebuffers()
             throw std::runtime_error("failed to create framebuffer!");
         }
     }
+}
+
+void MainPass::cleanupLocalFramebuffers()
+{
+    for (VkFramebuffer fb : framebuffers) {
+        if (fb != VK_NULL_HANDLE) {
+            vkDestroyFramebuffer(device.device(), fb, nullptr);
+        }
+    }
+
+    framebuffers.clear();
+}
+
+void MainPass::cleanupTargetTextures()
+{
+    for (auto texId : textureTarget) {
+        if (texId != TextureManager::InvalidTextureID) {
+            assets.textures().remove(texId);
+        }
+    }
+
+    textureTarget.clear();
+}
+
+void MainPass::resizeTargets(VkExtent2D newExtent)
+{
+    extent = newExtent;
+    cleanupTargetTextures();
+    createTargetTexture();
+    cleanupLocalFramebuffers();
+    createLocalFramebuffers();
 }
 
 void MainPass::allocateCommandBuffers(uint32_t framesInFlight)
@@ -165,7 +194,7 @@ void MainPass::createRenderPass()
 {
     std::cout << "render path creation \n";
     VkAttachmentDescription depthAttachment{};
-    depthAttachment.format = swapchain.depthFormat();
+    depthAttachment.format = swapchain->depthFormat();
     depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
     depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -179,7 +208,7 @@ void MainPass::createRenderPass()
     depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
     VkAttachmentDescription colorAttachment = {};
-    colorAttachment.format = swapchain.format();
+    colorAttachment.format = swapchain->format();
     colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
     colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -251,12 +280,12 @@ void MainPass::bindGlobalDescriptorSet(VkCommandBuffer cmd, FrameContext& frameC
 
 void MainPass::createTargetTexture()
 {
-    size_t imageCount = swapchain.imageCount();
+    size_t imageCount = swapchain->imageCount();
 
-    VkFormat format = swapchain.format();
-    VkFormat depthFormat = swapchain.depthFormat();
+    VkFormat format = swapchain->format();
+    VkFormat depthFormat = swapchain->depthFormat();
 
-    VkExtent2D swapChainExtent = swapchain.getExtent();
+    VkExtent2D swapChainExtent = swapchain->getExtent();
 
     // textures include both depth and color in alternative order
     textureTarget.resize(imageCount * 2);
@@ -296,7 +325,7 @@ void MainPass::createTargetTexture()
         TextureBuilder builder(device);
         textureTarget[2 * i] = assets.textures().create(
             builder.fromTextureInfo(
-                swapchain.getImage(i), 
+                swapchain->getImage(i),
                 { swapChainExtent.width, swapChainExtent.height },
                 viewInfo, 
                 samplerInfo, 
@@ -354,6 +383,11 @@ void MainPass::createTargetTexture()
         TextureBuilder builder(device);
         textureTarget[2 * i + 1] = assets.textures().create(builder.fromTextureInfo(imageInfo, viewInfo, samplerInfo, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
     }
+}
+
+void MainPass::updateSwapchain(Swapchain& swapchain_)
+{
+	this->swapchain = &swapchain_;
 }
 
 VkCommandBuffer MainPass::beginPass(uint32_t frameIndex)

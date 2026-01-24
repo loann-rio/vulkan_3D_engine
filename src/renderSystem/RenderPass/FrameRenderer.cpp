@@ -12,6 +12,13 @@ void FrameRenderer::addPass(std::unique_ptr<RenderPassBase> pass)
     passes.emplace_back(std::move(pass));
 }
 
+void FrameRenderer::resizePasses(VkExtent2D newExtent)
+{
+    for (auto& pass : passes) {
+        pass->resizeTargets(newExtent);
+    }
+}
+
 void FrameRenderer::recordPasses(FrameContext& frame) 
 {
     for (auto& pass : passes) 
