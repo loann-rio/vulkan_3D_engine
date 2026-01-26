@@ -35,7 +35,7 @@ void FrameRenderer::submitPasses(FrameContext& frame)
     {
         auto& pass = passes[i];
 
-        VkCommandBuffer cmd = pass->commandBuffer(frame.frameIndex);
+        VkCommandBuffer cmd = pass->getCommandBuffer(frame.frameIndex);
 
         std::vector<VkSemaphore> waitSemaphores{};
         waitSemaphores.push_back(frame.swapchain->getImageAvailableSemaphore(frame.frameIndex));

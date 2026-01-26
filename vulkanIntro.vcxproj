@@ -214,6 +214,7 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClCompile Include="src\renderSystem\GlobalRenderer.cpp" />
     <ClCompile Include="src\renderSystem\RenderPass\FrameRenderer.cpp" />
     <ClCompile Include="src\renderSystem\RenderPass\MainPass.cpp" />
+    <ClCompile Include="src\renderSystem\RenderPass\RenderPassBase.cpp" />
     <ClCompile Include="src\renderSystem\RenderPass\ShadowPass.cpp" />
     <ClCompile Include="src\renderSystem\RenderSystems\BaseRenderSystem.cpp" />
     <ClCompile Include="src\renderSystem\RenderSystems\MainMeshRenderSystem.cpp" />

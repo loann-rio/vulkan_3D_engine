@@ -20,15 +20,6 @@ enum class PassSet : uint32_t {
     Material = 2
 };
 
-/*
-
-Main color rendering pass
-
-record command buffer
-bind framebuffer
-execute all renderSystems
-
-*/
 class MainPass final : public RenderPassBase {
 public:
     MainPass(
@@ -44,7 +35,7 @@ public:
 
     void record(FrameContext& frame) override;
 
-    VkCommandBuffer commandBuffer(uint32_t frameIndex) const override;
+    VkCommandBuffer getCommandBuffer(uint32_t frameIndex) const override;
 
     void createLocalFramebuffers() override;
 
@@ -58,8 +49,8 @@ public:
     void updateSwapchain(Swapchain& swapchain_) override;
 
 private:
-
-    void allocateCommandBuffers(uint32_t framesInFlight);
+    std::unique_ptr<PassCommandBuffers> commandBuffers;
+    //void allocateCommandBuffers(uint32_t framesInFlight);
     
     
 

@@ -12,13 +12,145 @@
 #include <vector>
 #include <memory>
 
+//class IRenderPass {
+//public:
+//    virtual ~IRenderPass() = default;
+//
+//    virtual void record(FrameContext& frame) = 0;
+//
+//    virtual VkCommandBuffer commandBuffer(uint32_t frameIndex) const = 0;
+//
+//protected:
+//    IRenderPass() = default;
+//
+//    IRenderPass(const IRenderPass&) = delete;
+//    IRenderPass& operator=(const IRenderPass&) = delete;
+//};
+//
+//class RenderSystemGroup {
+//public:
+//    void add(std::unique_ptr<BaseRenderSystem> system) {
+//        systems.emplace_back(std::move(system));
+//    }
+//
+//    void record(
+//        VkCommandBuffer cmd,
+//        FrameContext& frame
+//    ) {
+//        for (auto& system : systems)
+//            system->record(cmd, frame);
+//    }
+//
+//private:
+//    std::vector<std::unique_ptr<BaseRenderSystem>> systems;
+//};
+//
+//struct PassTarget {
+//    TextureManager::TextureID color;
+//    TextureManager::TextureID depth;
+//};
+//
+//class MainPassResources {
+//public:
+//    MainPassResources(
+//        Device& device,
+//        AssetManager& assets,
+//        Swapchain& swapchain
+//    );
+//
+//    ~MainPassResources();
+//
+//    void create();
+//    void destroy();
+//
+//    void resize(VkExtent2D newExtent);
+//
+//    VkFramebuffer framebuffer(uint32_t imageIndex) const;
+//    VkRenderPass renderPass() const;
+//
+//private:
+//    void createRenderPass();
+//    void createTargets();
+//    void createFramebuffers();
+//
+//    void destroyFramebuffers();
+//    void destroyTargets();
+//
+//private:
+//    Device& device;
+//    AssetManager& assets;
+//    Swapchain* swapchain;
+//
+//    VkExtent2D extent;
+//
+//    VkRenderPass renderPass{ VK_NULL_HANDLE };
+//    std::vector<PassTarget> targets;
+//    std::vector<VkFramebuffer> framebuffers;
+//};
+
+
+class PassCommandBuffers {
+public:
+    PassCommandBuffers(Device& device, uint32_t nbCommandBuffer)
+        : device(device)
+    {
+        buffers.resize(nbCommandBuffer);
+        allocate();
+    }
+
+    VkCommandBuffer get(uint32_t frame) const {
+        return buffers[frame];
+    }
+
+private:
+    void allocate();
+    Device& device;
+    std::vector<VkCommandBuffer> buffers;
+};
+
+class PassTarget {
+
+public:
+    PassTarget(
+        Device& device_,
+        Swapchain& swapchain_,
+        VkExtent2D extent_
+    )
+        : device(device_), swapchain(&swapchain_), extent(extent_) {
+        createTargetTexture();
+    }
+
+    std::vector < TextureManager::TextureID> color;
+    std::vector < TextureManager::TextureID> depth;
+
+    std::vector<VkFramebuffer> framebuffers;
+
+    void resizeTargets(VkExtent2D newExtent);
+
+    void createLocalFramebuffers();
+
+private:
+    void cleanupLocalFramebuffers();
+    void cleanupTargetTextures();
+   
+    void createTargetTexture();
+
+    VkExtent2D extent;
+
+    Swapchain* swapchain;
+	Device& device;
+};
+
+
+
 class RenderPassBase {
 public:
     
     virtual ~RenderPassBase() = default; 
 
 	RenderPassBase(Device& device_, AssetManager& assets_)
-        : device(device_), assets(assets_) {}
+        : device(device_), assets(assets_) {
+    }
 
     RenderPassBase(const RenderPassBase&) = delete;
     RenderPassBase& operator=(const RenderPassBase&) = delete;
@@ -31,7 +163,7 @@ public:
     /**
      * returns the command buffer for a given frame index
      */
-    virtual VkCommandBuffer commandBuffer(uint32_t frameIndex) const = 0;
+    virtual VkCommandBuffer getCommandBuffer(uint32_t frameIndex) const = 0;
 
     /**
      * create the render pass
@@ -108,7 +240,7 @@ protected:
     bool isFinalPass = false;
 
     // One primary command buffer per frame in flight and per target
-    std::vector<VkCommandBuffer> commandBuffers;
+    //std::vector<VkCommandBuffer> commandBuffers;
 
     // Render systems used by this pass
     std::vector<std::unique_ptr<BaseRenderSystem>> renderSystems;
@@ -119,8 +251,6 @@ protected:
     VkRenderPass renderPass{ VK_NULL_HANDLE };  
 
     std::unique_ptr<DescriptorSetLayout> setLayout;
-
     Device& device;
-
     AssetManager& assets;
 };

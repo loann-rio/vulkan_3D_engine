@@ -249,6 +249,7 @@
     <ClCompile Include="src\model\Vertex\IVertexLayout.cpp">
       <Filter>model\Vertex</Filter>
     </ClCompile>
+    <ClCompile Include="src\renderSystem\RenderPass\RenderPassBase.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tiny_gltf.h">
