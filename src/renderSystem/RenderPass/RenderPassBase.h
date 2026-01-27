@@ -114,30 +114,35 @@ public:
     PassTarget(
         Device& device_,
         Swapchain& swapchain_,
-        VkExtent2D extent_
+		AssetManager& assets_,
+        VkExtent2D extent_,
+		bool isFinal = false
     )
-        : device(device_), swapchain(&swapchain_), extent(extent_) {
-        createTargetTexture();
-    }
+        : device(device_), extent(extent_), assets(assets_) {
 
-    std::vector < TextureManager::TextureID> color;
-    std::vector < TextureManager::TextureID> depth;
+        createColorTargetTexture(swapchain_.imageCount(), swapchain_.format(), (isFinal) ? swapchain_.getImages() : std::vector<VkImage>{});
+		createDepthTargetTexture(swapchain_.imageCount(), swapchain_.depthFormat());
+    }
 
     std::vector<VkFramebuffer> framebuffers;
 
-    void resizeTargets(VkExtent2D newExtent);
+    void resizeTargets(VkExtent2D newExtent, uint32_t imageCount, VkFormat format, VkFormat depthFormat);
 
-    void createLocalFramebuffers();
+    void createLocalFramebuffers(VkRenderPass renderPass); 
 
 private:
     void cleanupLocalFramebuffers();
     void cleanupTargetTextures();
    
-    void createTargetTexture();
+	void createColorTargetTexture(uint32_t imageCount, VkFormat format, std::vector<VkImage> swapImage = {});
+	void createDepthTargetTexture(uint32_t imageCount, VkFormat format);
+
+    std::vector<TextureManager::TextureID> color;
+    std::vector<TextureManager::TextureID> depth;
 
     VkExtent2D extent;
 
-    Swapchain* swapchain;
+    AssetManager& assets;
 	Device& device;
 };
 
@@ -238,9 +243,6 @@ protected:
     RenderPassBase() = default;
 
     bool isFinalPass = false;
-
-    // One primary command buffer per frame in flight and per target
-    //std::vector<VkCommandBuffer> commandBuffers;
 
     // Render systems used by this pass
     std::vector<std::unique_ptr<BaseRenderSystem>> renderSystems;

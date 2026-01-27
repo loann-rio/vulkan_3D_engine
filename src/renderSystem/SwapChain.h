@@ -42,6 +42,7 @@ public:
     // image //
 
     VkImage getImage(uint32_t imageIndex) const;
+	const std::vector<VkImage>& getImages() const { return images; }
     VkImageView getImageView(uint32_t imageIndex) const;
 
 	// final pass frameBuffer //

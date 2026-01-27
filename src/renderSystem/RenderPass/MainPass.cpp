@@ -4,6 +4,9 @@ MainPass::MainPass(Device& device, AssetManager& assets, Swapchain& swapchain, D
 	: RenderPassBase(device, assets), swapchain( &swapchain ), extent( extent )
 { 
     commandBuffers = std::make_unique<PassCommandBuffers>(device, frame_in_flight);
+	passTarget = std::make_unique<PassTarget>(device, swapchain, assets, extent);
+
+
     createTargetTexture();
 
     createRenderPass();
@@ -110,6 +113,10 @@ VkCommandBuffer MainPass::getCommandBuffer(uint32_t frameIndex) const
 
 void MainPass::createLocalFramebuffers()
 {
+	passTarget->createLocalFramebuffers(renderPass);
+
+
+
     size_t imageCount = swapchain->imageCount();
 
     framebuffers.resize(imageCount);
@@ -165,30 +172,18 @@ void MainPass::cleanupTargetTextures()
 void MainPass::resizeTargets(VkExtent2D newExtent)
 {
     extent = newExtent;
+	passTarget->resizeTargets(
+        newExtent, 
+        swapchain->imageCount(),
+        swapchain->format(), swapchain->depthFormat()
+    );
+    
+    
     cleanupTargetTextures();
     createTargetTexture();
     cleanupLocalFramebuffers();
     createLocalFramebuffers();
 }
-
-//void MainPass::allocateCommandBuffers(uint32_t framesInFlight)
-//{
-//    commandBuffers.resize(framesInFlight);
-//
-//    VkCommandBufferAllocateInfo allocInfo{};
-//    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-//    allocInfo.commandPool = device.getThreadCommandPool();
-//    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-//    allocInfo.commandBufferCount = framesInFlight;
-//
-//    if (vkAllocateCommandBuffers(
-//        device.device(),
-//        &allocInfo,
-//        commandBuffers.data()) != VK_SUCCESS) {
-//        throw std::runtime_error("MainPass: failed to allocate command buffers");
-//    }
-//}
-
 
 void MainPass::createRenderPass()
 {

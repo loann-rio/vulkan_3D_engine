@@ -50,10 +50,8 @@ public:
 
 private:
     std::unique_ptr<PassCommandBuffers> commandBuffers;
-    //void allocateCommandBuffers(uint32_t framesInFlight);
-    
-    
-
+	std::unique_ptr<PassTarget> passTarget;
+  
 	void createRenderPass() override;
 	void createPassDescriptorSetLayout() override;
 

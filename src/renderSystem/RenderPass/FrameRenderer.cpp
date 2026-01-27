@@ -14,9 +14,16 @@ void FrameRenderer::addPass(std::unique_ptr<RenderPassBase> pass)
 
 void FrameRenderer::resizePasses(VkExtent2D newExtent)
 {
-    for (auto& pass : passes) {
+    const size_t passCount = passes.size();
+    for (size_t i = 0; i < passCount; ++i)
+    {
+        auto& pass = passes[i];
         pass->resizeTargets(newExtent);
+        pass->createLocalFramebuffers();
     }
+
+    auto& lastPass = passes.back();
+    lastPass->resizeTargets(newExtent);
 }
 
 void FrameRenderer::recordPasses(FrameContext& frame) 
