@@ -13,7 +13,6 @@
 
 class RenderSystem;
 
-
 enum class PassSet : uint32_t {
     Frame = 0,
     System = 1,
@@ -31,7 +30,7 @@ public:
         VkExtent2D extent
     );
 
-    ~MainPass() override;
+    ~MainPass() override {};
 
     void record(FrameContext& frame) override;
 
@@ -39,12 +38,7 @@ public:
 
     void createLocalFramebuffers() override;
 
-    void cleanupLocalFramebuffers() override;
-    void cleanupTargetTextures() override;
-
     void resizeTargets(VkExtent2D newExtent) override;
-
-    void createTargetTexture() override;
 
     void updateSwapchain(Swapchain& swapchain_) override;
 
@@ -60,12 +54,13 @@ private:
         FrameContext& frameContext
     ) const override;
 
-    VkCommandBuffer beginPass(uint32_t frameIndex);
+    VkCommandBuffer beginCommandBuffer(uint32_t frameIndex);
+	void beginRenderPass(VkCommandBuffer cmd, uint32_t imageIndex);
+	void setupViewportAndScissor(VkCommandBuffer cmd);
+	void renderScene(VkCommandBuffer cmd, FrameContext& frame);
+	void endCommandBuffer(VkCommandBuffer cmd);
+
 
     Swapchain* swapchain;
-    
     VkExtent2D extent;
-
-    std::vector<VkFramebuffer> framebuffers;
-    std::vector<TextureManager::TextureID> textureTarget;
 };

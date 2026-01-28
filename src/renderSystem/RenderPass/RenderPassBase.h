@@ -207,31 +207,15 @@ public:
      */
     void setAsFinal() { isFinalPass = true; }
 
-	/**
-	 * cleanup local framebuffers for the pass 
-     */
-    virtual void cleanupLocalFramebuffers() {}
-
-    /**
-	 * cleanup target textures for the pass
-     */
-    virtual void cleanupTargetTextures() {}
-
     /**
 	 * resize targets for the pass
      */
     virtual void resizeTargets(VkExtent2D newExtent) {};
 
 	/**
-     * create target textures for the pass
-	 */
-    virtual void createTargetTexture() {};
-
-	/**
      * update local reference to swapchain
 	 */
     virtual void updateSwapchain(Swapchain& swapchain_) {};
-
 
 protected:
 

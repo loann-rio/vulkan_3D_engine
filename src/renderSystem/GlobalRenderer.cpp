@@ -43,14 +43,14 @@ void GlobalRenderer::recreateSwapchain() {
     // wait for device to finish frame creation
     device.waitIdle();
 
-    if (frameRenderer) {
-        for (size_t i = 0; i < frameRenderer->getPassCount(); ++i) {
-            auto& pass = frameRenderer->getPass(i);
+    //if (frameRenderer) {
+    //    for (size_t i = 0; i < frameRenderer->getPassCount(); ++i) {
+    //        auto& pass = frameRenderer->getPass(i);
 
-            pass.cleanupLocalFramebuffers();
-            //pass.cleanupTargetTextures();
-        }
-    }
+    //        //pass.cleanupLocalFramebuffers();
+    //        //pass.cleanupTargetTextures();
+    //    }
+    //}
 
     // if the swapchain does not already exist create a new one
     if (swapchain == nullptr) {
@@ -77,7 +77,7 @@ void GlobalRenderer::recreateSwapchain() {
         for (size_t i = 0; i < frameRenderer->getPassCount() - 1; ++i) {
             auto& pass = frameRenderer->getPass(i);
 			pass.updateSwapchain(*swapchain);
-            pass.createTargetTexture();
+            //pass.createTargetTexture();
             pass.createLocalFramebuffers();
         }
 

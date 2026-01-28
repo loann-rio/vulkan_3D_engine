@@ -6,18 +6,9 @@ MainPass::MainPass(Device& device, AssetManager& assets, Swapchain& swapchain, D
     commandBuffers = std::make_unique<PassCommandBuffers>(device, frame_in_flight);
 	passTarget = std::make_unique<PassTarget>(device, swapchain, assets, extent);
 
-
-    createTargetTexture();
-
     createRenderPass();
 
     createPassDescriptorSetLayout();
-}
-
-MainPass::~MainPass()
-{
-    cleanupLocalFramebuffers();
-    cleanupTargetTextures();
 }
 
 void MainPass::record(FrameContext& frame)
@@ -25,84 +16,19 @@ void MainPass::record(FrameContext& frame)
     const uint32_t frameSlot = frame.frameIndex;
     const uint32_t imageIndex = frame.imageIndex;
 
-    VkCommandBuffer cmd = beginPass(frameSlot);
+    VkCommandBuffer cmd = beginCommandBuffer(frameSlot);
 
-    VkRenderPassBeginInfo rpBegin{};
-    rpBegin.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    rpBegin.renderPass = renderPass;
-
-    if (isFinalPass) {
-        rpBegin.framebuffer = swapchain->getFramebuffer(imageIndex);
-    }
-	else {
-        rpBegin.framebuffer = framebuffers[imageIndex];
-    }
-
-    rpBegin.renderArea.offset = { 0, 0 };
-    rpBegin.renderArea.extent = swapchain->getExtent();
-
-    std::array<VkClearValue, 2> clearValues{};
-    clearValues[0].color = { { 1.f, 0.05f, 0.1f, 1.0f } };
-    clearValues[1].depthStencil = { 1.0f, 0 };
-
-    rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
-    rpBegin.pClearValues = clearValues.data();
-
-    vkCmdBeginRenderPass(cmd, &rpBegin, VK_SUBPASS_CONTENTS_INLINE);
-
-    {
-        VkExtent2D extent = swapchain->getExtent();
-
-        VkViewport viewport{};
-        viewport.x = 0.0f;
-        viewport.y = 0.0f;
-        viewport.width = static_cast<float>(extent.width);
-        viewport.height = static_cast<float>(extent.height);
-        viewport.minDepth = 0.0f;
-        viewport.maxDepth = 1.0f;
-        vkCmdSetViewport(cmd, 0, 1, &viewport);
-
-        VkRect2D scissor{};
-        scissor.offset = { 0, 0 };
-        scissor.extent = extent;
-        vkCmdSetScissor(cmd, 0, 1, &scissor);
-    }
+	beginRenderPass(cmd, imageIndex);
+    
+	setupViewportAndScissor(cmd);
 
 	bindGlobalDescriptorSet(cmd, frame);
 
-    for (auto& system : renderSystems) {
-
-        frame.renderItems.clear();
-
-        // Build render items for THIS system
-        for (GameObjectModel* obj : frame.listGameObjects)
-        {
-            if (!obj || !obj->show || obj->toBeRemoved)
-                continue;
-
-            if (!obj->modelAsset)
-                continue;
-
-            if (!system->accepts(*obj))
-                continue;
-
-            RenderItem item{};
-            item.model = assets.models().get(obj->modelAsset);
-            item.modelMatrix = obj->getTransformMat();
-            item.normalMatrix = obj->getNormalMat();
-
-            frame.renderItems.push_back(item);
-        }
-
-        if (!frame.renderItems.empty())
-            system->record(cmd, frame, frame.renderItems);
-    }
+	renderScene(cmd, frame);
 
     vkCmdEndRenderPass(cmd);
 
-    if (vkEndCommandBuffer(cmd) != VK_SUCCESS) {
-        throw std::runtime_error("MainPass: vkEndCommandBuffer failed");
-    }
+	endCommandBuffer(cmd);
 }
 
 
@@ -114,59 +40,6 @@ VkCommandBuffer MainPass::getCommandBuffer(uint32_t frameIndex) const
 void MainPass::createLocalFramebuffers()
 {
 	passTarget->createLocalFramebuffers(renderPass);
-
-
-
-    size_t imageCount = swapchain->imageCount();
-
-    framebuffers.resize(imageCount);
-    for (size_t i = 0; i < framebuffers.size(); i++)
-    {
-        std::array<VkImageView, 2> attachments = {
-            assets.textures().get(textureTarget[imageCount * i])->view(),
-            assets.textures().get(textureTarget[imageCount * i + 1])->view()
-        };
-
-        VkExtent2D swapChainExtent = swapchain->getExtent();
-        VkFramebufferCreateInfo framebufferInfo = {};
-        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        framebufferInfo.renderPass = renderPass;
-        framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-        framebufferInfo.pAttachments = attachments.data();
-        framebufferInfo.width = swapChainExtent.width;
-        framebufferInfo.height = swapChainExtent.height;
-        framebufferInfo.layers = 1;
-
-        if (vkCreateFramebuffer(
-            device.device(),
-            &framebufferInfo,
-            nullptr,
-            &framebuffers[i]) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create framebuffer!");
-        }
-    }
-}
-
-void MainPass::cleanupLocalFramebuffers()
-{
-    for (VkFramebuffer fb : framebuffers) {
-        if (fb != VK_NULL_HANDLE) {
-            vkDestroyFramebuffer(device.device(), fb, nullptr);
-        }
-    }
-
-    framebuffers.clear();
-}
-
-void MainPass::cleanupTargetTextures()
-{
-    for (auto texId : textureTarget) {
-        if (texId != TextureManager::InvalidTextureID) {
-            assets.textures().remove(texId);
-        }
-    }
-
-    textureTarget.clear();
 }
 
 void MainPass::resizeTargets(VkExtent2D newExtent)
@@ -177,12 +50,6 @@ void MainPass::resizeTargets(VkExtent2D newExtent)
         swapchain->imageCount(),
         swapchain->format(), swapchain->depthFormat()
     );
-    
-    
-    cleanupTargetTextures();
-    createTargetTexture();
-    cleanupLocalFramebuffers();
-    createLocalFramebuffers();
 }
 
 void MainPass::createRenderPass()
@@ -273,119 +140,14 @@ void MainPass::bindGlobalDescriptorSet(VkCommandBuffer cmd, FrameContext& frameC
     );
 }
 
-void MainPass::createTargetTexture()
-{
-    size_t imageCount = swapchain->imageCount();
 
-    VkFormat format = swapchain->format();
-    VkFormat depthFormat = swapchain->depthFormat();
-
-    VkExtent2D swapChainExtent = swapchain->getExtent();
-
-    // textures include both depth and color in alternative order
-    textureTarget.resize(imageCount * 2);
-
-    for (int i = 0; i < imageCount; i++)
-    {
-      
-        VkImageViewCreateInfo viewInfo{};
-        viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        viewInfo.format = format;
-        viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        viewInfo.subresourceRange.baseMipLevel = 0;
-        viewInfo.subresourceRange.levelCount = 1;
-        viewInfo.subresourceRange.baseArrayLayer = 0;
-        viewInfo.subresourceRange.layerCount = 1;
-
-        VkSamplerCreateInfo samplerInfo{};
-        samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-        samplerInfo.magFilter = VK_FILTER_LINEAR;
-        samplerInfo.minFilter = VK_FILTER_LINEAR;
-        samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        samplerInfo.anisotropyEnable = VK_FALSE;
-        samplerInfo.maxAnisotropy = device.properties.limits.maxSamplerAnisotropy;
-        samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-        samplerInfo.unnormalizedCoordinates = VK_FALSE;
-        samplerInfo.compareEnable = VK_TRUE;
-        samplerInfo.compareOp = VK_COMPARE_OP_LESS;
-
-        samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-        samplerInfo.mipLodBias = 0.0f;
-        samplerInfo.minLod = 0.0f;
-        samplerInfo.maxLod = 100.0f;
-
-        TextureBuilder builder(device);
-        textureTarget[2 * i] = assets.textures().create(
-            builder.fromTextureInfo(
-                swapchain->getImage(i),
-                { swapChainExtent.width, swapChainExtent.height },
-                viewInfo, 
-                samplerInfo, 
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 
-                1, format)
-        );
-    }
-
-    for (int i = 0; i < imageCount; i++)
-    {
-        VkImageCreateInfo imageInfo{};
-        imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-        imageInfo.imageType = VK_IMAGE_TYPE_2D;
-        imageInfo.extent = { swapChainExtent.width, swapChainExtent.height, 1 };
-        imageInfo.mipLevels = 1;
-        imageInfo.arrayLayers = 1;
-        imageInfo.format = depthFormat;
-        imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-        imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-        imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-        imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        imageInfo.flags = 0;
-        imageInfo.pNext = NULL;
-
-        VkImageViewCreateInfo viewInfo{};
-        viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        viewInfo.format = depthFormat;
-        viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-        viewInfo.subresourceRange.baseMipLevel = 0;
-        viewInfo.subresourceRange.levelCount = 1;
-        viewInfo.subresourceRange.baseArrayLayer = 0;
-        viewInfo.subresourceRange.layerCount = 1;
-
-        VkSamplerCreateInfo samplerInfo{};
-        samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-        samplerInfo.magFilter = VK_FILTER_LINEAR;
-        samplerInfo.minFilter = VK_FILTER_LINEAR;
-        samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        samplerInfo.anisotropyEnable = VK_FALSE;
-        samplerInfo.maxAnisotropy = device.properties.limits.maxSamplerAnisotropy;
-        samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-        samplerInfo.unnormalizedCoordinates = VK_FALSE;
-        samplerInfo.compareEnable = VK_TRUE;
-        samplerInfo.compareOp = VK_COMPARE_OP_LESS;
-
-        samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-        samplerInfo.mipLodBias = 0.0f;
-        samplerInfo.minLod = 0.0f;
-        samplerInfo.maxLod = 100.0f;
-
-        TextureBuilder builder(device);
-        textureTarget[2 * i + 1] = assets.textures().create(builder.fromTextureInfo(imageInfo, viewInfo, samplerInfo, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
-    }
-}
 
 void MainPass::updateSwapchain(Swapchain& swapchain_)
 {
 	this->swapchain = &swapchain_;
 }
 
-VkCommandBuffer MainPass::beginPass(uint32_t frameIndex)
+VkCommandBuffer MainPass::beginCommandBuffer(uint32_t frameIndex)
 {
     VkCommandBuffer cmd = commandBuffers->get(frameIndex);
 
@@ -399,4 +161,86 @@ VkCommandBuffer MainPass::beginPass(uint32_t frameIndex)
     }
 
     return cmd;
+}
+
+void MainPass::beginRenderPass(VkCommandBuffer cmd, uint32_t imageIndex)
+{
+    VkRenderPassBeginInfo rpBegin{};
+    rpBegin.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    rpBegin.renderPass = renderPass;
+
+    if (isFinalPass) {
+        rpBegin.framebuffer = swapchain->getFramebuffer(imageIndex);
+    }
+    else {
+        rpBegin.framebuffer = passTarget->framebuffers[imageIndex];
+    }
+
+    rpBegin.renderArea.offset = { 0, 0 };
+    rpBegin.renderArea.extent = swapchain->getExtent();
+
+    std::array<VkClearValue, 2> clearValues{};
+    clearValues[0].color = { { 1.f, 0.05f, 0.1f, 1.0f } };
+    clearValues[1].depthStencil = { 1.0f, 0 };
+
+    rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
+    rpBegin.pClearValues = clearValues.data();
+
+    vkCmdBeginRenderPass(cmd, &rpBegin, VK_SUBPASS_CONTENTS_INLINE);
+}
+
+void MainPass::setupViewportAndScissor(VkCommandBuffer cmd)
+{
+    VkExtent2D extent = swapchain->getExtent();
+
+    VkViewport viewport{};
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = static_cast<float>(extent.width);
+    viewport.height = static_cast<float>(extent.height);
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+    vkCmdSetViewport(cmd, 0, 1, &viewport);
+
+    VkRect2D scissor{};
+    scissor.offset = { 0, 0 };
+    scissor.extent = extent;
+    vkCmdSetScissor(cmd, 0, 1, &scissor);
+}
+
+void MainPass::renderScene(VkCommandBuffer cmd, FrameContext& frame)
+{
+    for (auto& system : renderSystems) {
+
+        frame.renderItems.clear();
+
+        for (GameObjectModel* obj : frame.listGameObjects)
+        {
+            if (!obj || !obj->show || obj->toBeRemoved)
+                continue;
+
+            if (!obj->modelAsset)
+                continue;
+
+            if (!system->accepts(*obj))
+                continue;
+
+            RenderItem item{};
+            item.model = assets.models().get(obj->modelAsset);
+            item.modelMatrix = obj->getTransformMat();
+            item.normalMatrix = obj->getNormalMat();
+
+            frame.renderItems.push_back(item);
+        }
+
+        if (!frame.renderItems.empty())
+            system->record(cmd, frame, frame.renderItems);
+    }
+}
+
+void MainPass::endCommandBuffer(VkCommandBuffer cmd)
+{
+    if (vkEndCommandBuffer(cmd) != VK_SUCCESS) {
+        throw std::runtime_error("MainPass: vkEndCommandBuffer failed");
+    }
 }
