@@ -17,8 +17,10 @@ void ShadowPass::record(FrameContext& frame)
 	const uint32_t frameSlot = frame.frameIndex;
 	const uint32_t imageIndex = frame.imageIndex;
 
+	const size_t renderCount = std::min<size_t>(MAX_DEPTH_RENDER_COUNT, shadowUbo.numLights);
 
-	for (size_t i = 0; i < MAX_DEPTH_RENDER_COUNT; i++) {
+
+	for (size_t i = 0; i < renderCount; i++) {
         VkCommandBuffer cmd = beginCommandBuffer(frameSlot * MAX_DEPTH_RENDER_COUNT + i);
 
         beginRenderPass(cmd, frame.imageIndex, i);
@@ -120,15 +122,15 @@ void ShadowPass::createPassDescriptorSetLayout()
 
 void ShadowPass::bindGlobalDescriptorSet(VkCommandBuffer cmd, FrameContext& frameContext) const
 {
-    uint32_t globalSetIndex = 0; // TODO: make configurable
+    uint32_t passSetIndex = 0; // TODO: make configurable
 
     vkCmdBindDescriptorSets(
         cmd,
         VK_PIPELINE_BIND_POINT_GRAPHICS,
         renderSystems[0]->getPipelineLayout(),
-        globalSetIndex,
+        passSetIndex,
         1,                         /*    descriptor count    */
-        &frameContext.globalSet,   /*    pDescriptorSets     */
+        &shadowUbosetLayout[frameContext.frameIndex],   /*    pDescriptorSets     */
         0,                         /*  dynamic offset count  */
         nullptr                    /*    pDynamicOffsets     */
     );

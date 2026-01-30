@@ -6,6 +6,7 @@
 
 #include "../base/Device.h"
 #include "RenderPass/MainPass.h"
+#include "RenderPass/ShadowPass.h"
 
 #include "RenderSystems/RenderSystemBuilder.h"
 #include "../model/Vertex/ObjVertexData.h"
@@ -43,15 +44,6 @@ void GlobalRenderer::recreateSwapchain() {
     // wait for device to finish frame creation
     device.waitIdle();
 
-    //if (frameRenderer) {
-    //    for (size_t i = 0; i < frameRenderer->getPassCount(); ++i) {
-    //        auto& pass = frameRenderer->getPass(i);
-
-    //        //pass.cleanupLocalFramebuffers();
-    //        //pass.cleanupTargetTextures();
-    //    }
-    //}
-
     // if the swapchain does not already exist create a new one
     if (swapchain == nullptr) {
         swapchain = std::make_unique<Swapchain>(device, assetManager, extent);
@@ -66,9 +58,6 @@ void GlobalRenderer::recreateSwapchain() {
         }
 
         oldSwapChain->destroySwapchainOnly();
-        
-
-        
     }
 
     frameContext.swapchain = swapchain.get();
@@ -77,7 +66,6 @@ void GlobalRenderer::recreateSwapchain() {
         for (size_t i = 0; i < frameRenderer->getPassCount() - 1; ++i) {
             auto& pass = frameRenderer->getPass(i);
 			pass.updateSwapchain(*swapchain);
-            //pass.createTargetTexture();
             pass.createLocalFramebuffers();
         }
 
@@ -123,6 +111,27 @@ void GlobalRenderer::createFrameRenderer()
     }
 
     frameRenderer->addPass(std::move(mainPass));
+
+
+    auto shadowPass = std::make_unique<ShadowPass>(
+		device, assetManager,
+        *swapchain, *globalPool,
+		Swapchain::MAX_FRAMES_IN_FLIGHT,
+        swapchain->getExtent()
+
+    );
+
+   /* {
+        auto shadowRenderSystem = RenderSystemBuilder()
+            .fragmentShader("shaders/ShadowPass.frag.spv")
+            .vertexShader("shaders/ShadowPass.vert.spv")
+            .cullMode(VK_CULL_MODE_NONE)
+            .renderPass(shadowPass->getRenderPass())
+            .vertexLayout(new ObjVertexLayout)
+            .asMainRenderSystem();
+        shadowPass->addRenderSystem(shadowRenderSystem);
+    }*/
+
 
     createFrameBuffers();
 }

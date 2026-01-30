@@ -10,17 +10,26 @@
 #include <memory>
 #include <vector>
 
+#define MAX_SPOTLIGHT 4
+
+struct SpotLightUbo {
+    SpotLight spotLight[MAX_SPOTLIGHT];
+    int numLights;
+};
 
 class RenderSystem;
 
-enum class PassSet : uint32_t {
-    Frame = 0,
-    System = 1,
-    Material = 2
-};
 
 class ShadowPass final : public RenderPassBase {
-    static constexpr int MAX_DEPTH_RENDER_COUNT = 4;
+
+    enum class PassSet : uint32_t {
+        Frame = 0,
+        System = 1,
+        Material = 2
+    };
+
+
+    static constexpr int MAX_DEPTH_RENDER_COUNT = MAX_SPOTLIGHT;
 
 public:
     ShadowPass(
@@ -44,6 +53,8 @@ public:
 
     void updateSwapchain(Swapchain& swapchain_) override;
 
+	SpotLightUbo shadowUbo{};
+
 private:
     std::unique_ptr<PassCommandBuffers> commandBuffers;
     std::vector<std::unique_ptr<PassTarget>> passTarget;
@@ -56,12 +67,19 @@ private:
         FrameContext& frameContext
     ) const override;
 
+    void bindPassDescriptorSet(
+        VkCommandBuffer cmd,
+        FrameContext& frameContext
+    ) const override;
+
     VkCommandBuffer beginCommandBuffer(uint32_t frameIndex);
     void beginRenderPass(VkCommandBuffer cmd, uint32_t imageIndex, uint32_t targetIndex);
     void setupViewportAndScissor(VkCommandBuffer cmd);
     void renderScene(VkCommandBuffer cmd, FrameContext& frame);
     void endCommandBuffer(VkCommandBuffer cmd);
 
+    std::vector<std::unique_ptr<Buffer>> shadowUboBuffer;
+    std::vector<VkDescriptorSet> shadowUbosetLayout;
 
     Swapchain* swapchain;
     VkExtent2D extent;

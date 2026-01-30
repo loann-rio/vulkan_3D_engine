@@ -13,13 +13,16 @@
 
 class RenderSystem;
 
-enum class PassSet : uint32_t {
-    Frame = 0,
-    System = 1,
-    Material = 2
-};
+
 
 class MainPass final : public RenderPassBase {
+
+    enum class PassSet : uint32_t {
+        Frame = 0,
+        System = 1,
+        Material = 2
+    };
+
 public:
     MainPass(
         Device& device,

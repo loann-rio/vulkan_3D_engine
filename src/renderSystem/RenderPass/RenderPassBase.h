@@ -224,6 +224,11 @@ protected:
         FrameContext& frameContext
     ) const {}
 
+    virtual void bindPassDescriptorSet(
+        VkCommandBuffer cmd,
+        FrameContext& frameContext
+    ) const {}
+
     RenderPassBase() = default;
 
     bool isFinalPass = false;
