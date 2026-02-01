@@ -53,65 +53,94 @@ void FrameRenderer::submitPasses(FrameContext& frame)
         const bool isFirstPass = (i == 0);
         const bool isLastPass = (i == passCount - 1);
 
-        for (VkCommandBuffer cmd : cmds)
+        //////// timeline semaphore info ////////
+
+        uint64_t signalValue = ++frame.timelineValue;
+
+        VkTimelineSemaphoreSubmitInfo timelineInfo{};
+        timelineInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
+
+        timelineInfo.signalSemaphoreValueCount = 1;
+        timelineInfo.pSignalSemaphoreValues = &signalValue;
+
+        uint64_t waitValue = lastTimelineValue;
+
+        if (!isFirstPass)
         {
+            timelineInfo.waitSemaphoreValueCount = 1;
+            timelineInfo.pWaitSemaphoreValues = &waitValue;
+        }
 
-            uint64_t signalValue = ++frame.timelineValue;
-            lastTimelineValue = signalValue;
+        //////// wait semaphores ////////
+        std::vector<VkSemaphore> waitSemaphores{};
+        std::vector<VkPipelineStageFlags> waitStages{};
+
+        if (isFirstPass)
+        {
+            waitSemaphores.push_back(
+                frame.swapchain->getImageAvailableSemaphore(frame.frameIndex));
+            waitStages.push_back(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+        }
+        else
+        {
+            waitSemaphores.push_back(frame.timelineSemaphore);
+            waitStages.push_back(VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+        }
+
+        ////////// signal semaphores ////////
+        //std::vector<VkSemaphore> signalSemaphores;
+        //signalSemaphores.push_back(frame.timelineSemaphore);
+
+        //if (isLastPass)
+        //{
+        //    signalSemaphores.push_back(
+        //        frame.swapchain->getRenderFinishedSemaphore(frame.frameIndex));
+        //}
 
 
-            VkTimelineSemaphoreSubmitInfo timelineInfo{};
-            timelineInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
-            timelineInfo.signalSemaphoreValueCount = 1;
-            timelineInfo.pSignalSemaphoreValues = &signalValue;
+		////// submit info ////////
 
-            uint64_t waitValue = lastTimelineValue - 1;
-            VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        VkSubmitInfo submit{};
+        submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submit.pNext = &timelineInfo;
+            
+        submit.signalSemaphoreCount = 1;
+        submit.pSignalSemaphores = &frame.timelineSemaphore;
 
-            if (!isFirstPass)
-            {
-                timelineInfo.waitSemaphoreValueCount = 1;
-                timelineInfo.pWaitSemaphoreValues = &waitValue;
-            }
+        submit.waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size());
+        submit.pWaitSemaphores = waitSemaphores.data();
+        submit.pWaitDstStageMask = waitStages.data();
+            
+        submit.commandBufferCount = static_cast<uint32_t>(cmds.size());
+        submit.pCommandBuffers = cmds.data();
 
-            std::vector<VkSemaphore> waitSemaphores{};
-            std::vector<VkPipelineStageFlags> waitStages{};
+        device.submitToGraphicQueue(submit, VK_NULL_HANDLE);
+        
+        lastTimelineValue = signalValue;
 
-            if (isFirstPass)
-            {
-                waitSemaphores.push_back(
-                    frame.swapchain->getImageAvailableSemaphore(frame.frameIndex));
-                waitStages.push_back(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
-            }
-            else
-            {
-                waitSemaphores.push_back(frame.timelineSemaphore);
-                waitStages.push_back(waitStage);
-            }
+        if (isLastPass)
+        {
+            VkSemaphore waitSemaphore = frame.timelineSemaphore;
+            VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
 
-            VkSubmitInfo submit{};
-            submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-            submit.waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size());
-            submit.pWaitSemaphores = waitSemaphores.empty() ? nullptr : waitSemaphores.data();
-            submit.pWaitDstStageMask = waitStages.empty() ? nullptr : waitStages.data();
-            submit.commandBufferCount = 1;
-            submit.pCommandBuffers = &cmd;
+            VkSubmitInfo presentSubmit{};
+            presentSubmit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-            std::vector<VkSemaphore> signalSemaphores{};
-            if (i == passCount - 1) {
-                // last pass signals render finished semaphore
-                signalSemaphores.push_back(frame.swapchain->getRenderFinishedSemaphore(frame.frameIndex));
-            }
-            else {
-                throw std::runtime_error("FrameRenderer::submitPasses: Intermediate passes not supported yet");
-                // intermediate pass signals timeline semaphore
-                signalSemaphores.push_back(frame.timelineSemaphore);
-            }
+            presentSubmit.waitSemaphoreCount = 1;
+            presentSubmit.pWaitSemaphores = &waitSemaphore;
+            presentSubmit.pWaitDstStageMask = &waitStage;
 
-            submit.signalSemaphoreCount = static_cast<uint32_t>(signalSemaphores.size());
-            submit.pSignalSemaphores = signalSemaphores.empty() ? nullptr : signalSemaphores.data();
+            VkSemaphore signal = frame.swapchain
+                ->getRenderFinishedSemaphore(frame.frameIndex);
 
-            device.submitToGraphicQueue(submit, frame.swapchain->getInFlightFence(frame.frameIndex));
+            presentSubmit.signalSemaphoreCount = 1;
+            presentSubmit.pSignalSemaphores = &signal;
+
+            presentSubmit.commandBufferCount = 0;
+
+            device.submitToGraphicQueue(
+                presentSubmit,
+                frame.swapchain->getInFlightFence(frame.frameIndex));
         }
     }
 

@@ -21,6 +21,8 @@ GlobalRenderer::GlobalRenderer(Device& device, Window& window, AssetManager& ass
     createUboDescriptorPool();
     createFrameRenderer();
     createGlobalUniformBuffer();
+
+    createFrameContext();
 }
 
 
@@ -214,7 +216,7 @@ void GlobalRenderer::renderFrame(std::vector<GameObjectModel*> listGameObjects)
     frameContext.imageIndex = static_cast<uint32_t>(currentImageIndex);
 	frameContext.listGameObjects = listGameObjects;
 	frameContext.globalSet = globalDescriptorSet[frameContext.frameIndex];
-    frameContext.swapchain = swapchain.get();
+   
 
 	// update global UBO
 	updateGlobalUniformBuffer(frameContext.frameIndex);
@@ -258,4 +260,30 @@ void GlobalRenderer::updateGlobalUniformBuffer(uint32_t frameIndex)
 {
     uboBuffers[frameIndex]->writeToBuffer(&ubo);
 	uboBuffers[frameIndex]->flush();
+}
+
+void GlobalRenderer::createFrameContext()
+{
+    frameContext.swapchain = swapchain.get();
+
+    createTimelineSemaphore();
+}
+
+void GlobalRenderer::createTimelineSemaphore()
+{
+    VkSemaphoreTypeCreateInfo typeInfo{};
+    typeInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
+    typeInfo.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
+    typeInfo.initialValue = 1;
+
+    VkSemaphoreCreateInfo info{};
+    info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    info.pNext = &typeInfo;
+
+
+    VkResult result = vkCreateSemaphore(device.device(), &info, nullptr, &frameContext.timelineSemaphore);
+    
+    if (result != VK_SUCCESS) {
+        throw std::runtime_error("failed to create timeline semaphore");
+	}
 }

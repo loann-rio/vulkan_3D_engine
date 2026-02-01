@@ -49,6 +49,9 @@ private:
 
 	void updateGlobalUniformBuffer(uint32_t frameIndex);
 
+	void createFrameContext();
+	void createTimelineSemaphore();
+
 
 
 private:
