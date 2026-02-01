@@ -32,9 +32,11 @@ void MainPass::record(FrameContext& frame)
 }
 
 
-VkCommandBuffer MainPass::getCommandBuffer(uint32_t frameIndex) const
+std::vector<VkCommandBuffer> MainPass::getFrameCommandBuffers(uint32_t frameIndex) const
 {
-    return commandBuffers->get(frameIndex);
+    std::vector<VkCommandBuffer> cmds;
+    cmds.push_back(commandBuffers->get(frameIndex));
+	return cmds;
 }
 
 void MainPass::createLocalFramebuffers()

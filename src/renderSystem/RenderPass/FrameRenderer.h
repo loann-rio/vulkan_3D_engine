@@ -5,6 +5,12 @@
 
 #include "RenderPassBase.h"
 
+struct SubmitSync {
+    std::vector<VkSemaphore> waitSemaphores;
+    std::vector<VkPipelineStageFlags> waitStages;
+    std::vector<VkSemaphore> signalSemaphores;
+};
+
 class FrameRenderer {
 public:
     explicit FrameRenderer(Device& device);
@@ -22,6 +28,12 @@ public:
     void submitPasses(FrameContext& frame);
 
 private:
+
+    SubmitSync buildSubmitSync(
+        FrameContext& frame,
+        bool isFirstPass,
+        bool isLastPass
+    );
 
     Device& device; 
 

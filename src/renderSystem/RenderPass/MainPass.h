@@ -37,7 +37,7 @@ public:
 
     void record(FrameContext& frame) override;
 
-    VkCommandBuffer getCommandBuffer(uint32_t frameIndex) const override;
+	std::vector<VkCommandBuffer> getFrameCommandBuffers(uint32_t frameIndex) const override;
 
     void createLocalFramebuffers() override;
 

@@ -17,8 +17,7 @@ void ShadowPass::record(FrameContext& frame)
 	const uint32_t frameSlot = frame.frameIndex;
 	const uint32_t imageIndex = frame.imageIndex;
 
-	const size_t renderCount = std::min<size_t>(MAX_DEPTH_RENDER_COUNT, shadowUbo.numLights);
-
+	renderCount = std::min<size_t>(MAX_DEPTH_RENDER_COUNT, shadowUbo.numLights);
 
 	for (size_t i = 0; i < renderCount; i++) {
         VkCommandBuffer cmd = beginCommandBuffer(frameSlot * MAX_DEPTH_RENDER_COUNT + i);
@@ -37,9 +36,13 @@ void ShadowPass::record(FrameContext& frame)
     }
 }
 
-VkCommandBuffer ShadowPass::getCommandBuffer(uint32_t frameIndex) const
+std::vector<VkCommandBuffer> ShadowPass::getFrameCommandBuffers(uint32_t frameIndex) const
 {
-	return commandBuffers->get(frameIndex);
+    std::vector<VkCommandBuffer> cmds;
+    for (size_t i = 0; i < renderCount; i++) {
+        cmds.push_back(commandBuffers->get(frameIndex * renderCount + i));
+    }
+	return cmds;
 }
 
 void ShadowPass::createLocalFramebuffers()
@@ -129,10 +132,10 @@ void ShadowPass::bindGlobalDescriptorSet(VkCommandBuffer cmd, FrameContext& fram
         VK_PIPELINE_BIND_POINT_GRAPHICS,
         renderSystems[0]->getPipelineLayout(),
         passSetIndex,
-        1,                         /*    descriptor count    */
+        1,                                              /*    descriptor count    */
         &shadowUbosetLayout[frameContext.frameIndex],   /*    pDescriptorSets     */
-        0,                         /*  dynamic offset count  */
-        nullptr                    /*    pDynamicOffsets     */
+        0,                                              /*  dynamic offset count  */
+        nullptr                                         /*    pDynamicOffsets     */
     );
 }
 

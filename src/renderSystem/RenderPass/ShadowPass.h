@@ -28,7 +28,6 @@ class ShadowPass final : public RenderPassBase {
         Material = 2
     };
 
-
     static constexpr int MAX_DEPTH_RENDER_COUNT = MAX_SPOTLIGHT;
 
 public:
@@ -45,7 +44,7 @@ public:
 
     void record(FrameContext& frame) override;
 
-    VkCommandBuffer getCommandBuffer(uint32_t frameIndex) const override;
+	std::vector<VkCommandBuffer> getFrameCommandBuffers(uint32_t frameIndex) const override;
 
     void createLocalFramebuffers() override;
 
@@ -67,11 +66,6 @@ private:
         FrameContext& frameContext
     ) const override;
 
-    void bindPassDescriptorSet(
-        VkCommandBuffer cmd,
-        FrameContext& frameContext
-    ) const override;
-
     VkCommandBuffer beginCommandBuffer(uint32_t frameIndex);
     void beginRenderPass(VkCommandBuffer cmd, uint32_t imageIndex, uint32_t targetIndex);
     void setupViewportAndScissor(VkCommandBuffer cmd);
@@ -80,6 +74,8 @@ private:
 
     std::vector<std::unique_ptr<Buffer>> shadowUboBuffer;
     std::vector<VkDescriptorSet> shadowUbosetLayout;
+
+	size_t renderCount = 0;
 
     Swapchain* swapchain;
     VkExtent2D extent;

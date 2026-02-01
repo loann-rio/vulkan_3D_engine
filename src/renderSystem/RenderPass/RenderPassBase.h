@@ -160,15 +160,17 @@ public:
     RenderPassBase(const RenderPassBase&) = delete;
     RenderPassBase& operator=(const RenderPassBase&) = delete;
 
+	
+
     /**
      * record commands for this pass into command buffer
      */
     virtual void record(FrameContext& frame) = 0;
 
     /**
-     * returns the command buffer for a given frame index
+     * returns the command buffers for a given frame index
      */
-    virtual VkCommandBuffer getCommandBuffer(uint32_t frameIndex) const = 0;
+    virtual std::vector<VkCommandBuffer> getFrameCommandBuffers(uint32_t frameIndex) const = 0;
 
     /**
      * create the render pass
