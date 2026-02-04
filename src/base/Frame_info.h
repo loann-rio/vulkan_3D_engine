@@ -13,10 +13,10 @@ struct PointLight {
 	glm::vec4 color{};
 };
 
-struct SpotLightUbo {
-	SpotLight spotLight[MAX_SPOTLIGHT];
-	int numLights;
-};
+//struct SpotLightUbo {
+//	SpotLight spotLight[MAX_SPOTLIGHT];
+//	int numLights;
+//};
 
 struct GlobalUbo {
 	glm::mat4 projection{ 1.0f };

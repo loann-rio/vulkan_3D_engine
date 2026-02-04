@@ -5,6 +5,9 @@
 
 #include "RenderPass/FrameRenderer.h"
 
+// imgui
+#include "../objects/BasicUI.h"
+
 
 class Device;
 class Swapchain;
@@ -59,6 +62,7 @@ private:
     Window& window;
     AssetManager& assetManager;
     ObjectManager& objectManager;
+    std::unique_ptr<BasicUI> imgui;
 
     std::unique_ptr<DescriptorPool> globalPool; 
 
@@ -69,6 +73,8 @@ private:
 
     uint32_t currentImageIndex;
     int currentFrameIndex = 0; 
+
+	VkRenderPass globalRenderPass;
 
     /// Global UBO
     std::vector<std::unique_ptr<Buffer>> uboBuffers; 

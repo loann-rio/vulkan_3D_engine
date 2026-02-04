@@ -23,6 +23,9 @@ GlobalRenderer::GlobalRenderer(Device& device, Window& window, AssetManager& ass
     createGlobalUniformBuffer();
 
     createFrameContext();
+
+
+    imgui = std::make_unique<BasicUI>(device, assetManager, window.getGLFWwindow(), globalRenderPass);
 }
 
 
@@ -146,9 +149,9 @@ void GlobalRenderer::createFrameBuffers()
     }
 
 	// final pass uses swapchain framebuffers
-	auto& finalPass = frameRenderer->getLastPass();
-	swapchain->createFramebuffers(finalPass.getRenderPass());
-	finalPass.setAsFinal();
+    globalRenderPass = frameRenderer->getLastPass().getRenderPass();
+	swapchain->createFramebuffers(globalRenderPass);
+    frameRenderer->getLastPass().setAsFinal();
 }
 
 void GlobalRenderer::createGlobalUniformBuffer()
@@ -287,3 +290,5 @@ void GlobalRenderer::createTimelineSemaphore()
         throw std::runtime_error("failed to create timeline semaphore");
 	}
 }
+
+

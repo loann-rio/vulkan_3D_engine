@@ -14,9 +14,6 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 
-// imgui
-#include "objects/BasicUI.h"
-
 // std
 #include <array>
 #include <chrono>
@@ -33,6 +30,8 @@ Engine::Engine() {
 void Engine::run()
 {
     KeyboardMovementController cameraController{};
+
+    //BasicUI imgui{ device, assetManager, window.getGLFWwindow(), renderer.getGlobalRenderPass() };
 
     vkQueueWaitIdle(device.presentQueue());
     while (!window.shouldClose()) {

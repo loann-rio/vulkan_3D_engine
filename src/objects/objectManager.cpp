@@ -598,6 +598,8 @@ void ObjectManager::loadObjectAsync(Device& device, AssetManager& assets, const 
 
 void ObjectManager::loadObjectAsync(Device& device, AssetManager& assets, const std::string& filePath, const std::string filePathTexture, TransformComponent transform, const std::string& name)
 {   
+
+	std::cout << " Loading OBJ model: " << filePath << " with texture: " << filePathTexture << std::endl;
     auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
     gameObject->transform = transform;  
     gameObject->setName(name.empty() ? filePath : name); 

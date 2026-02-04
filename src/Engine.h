@@ -43,7 +43,6 @@ private:
 	Window window{ WIDTH, HEIGHT, "vulkan engine" };
 	Device device{ window };
 	AssetManager assetManager{};
-	//Renderer renderer{ window, device, assetManager };
 	ObjectManager objectManager{ device, assetManager };
 
 	GlobalRenderer renderer{ device, window, assetManager, objectManager };
@@ -56,21 +55,6 @@ private:
 	std::vector<std::unique_ptr<Buffer>> shadowUboBuffer;
 	std::vector<std::unique_ptr<Buffer>> terrainBuffers;
 	std::vector<std::unique_ptr<Buffer>> cloudBuffers;
-
-
-
-	// render systems
-	/*std::shared_ptr<GlobalRenderSystem> gltfRenderSystem;
-	std::shared_ptr<GlobalRenderSystem> GlTFAssetRenderSystem;
-	std::shared_ptr<GlobalRenderSystem> objRenderSystem;
-	std::shared_ptr<GlobalRenderSystem> depthRenderSystem;
-	std::shared_ptr<GlobalRenderSystem> depthRenderSystemGltf;
-	std::shared_ptr<GlobalRenderSystem> terrainRenderSystem;
-	std::shared_ptr<GlobalRenderSystem> depthTerrainRenderSystem;
-	std::shared_ptr<GlobalRenderSystem> skyboxRenderSystem;
-	std::shared_ptr<GlobalRenderSystem> skyboxCreationRenderSystem;*/
-
-	//std::shared_ptr<GlobalRenderSystem> cloudRenderSystem;
 
 	// global descriptor sets
 	std::vector<VkDescriptorSet> globalDescriptorSet;
