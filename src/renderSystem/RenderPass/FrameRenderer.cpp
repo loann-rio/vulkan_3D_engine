@@ -45,7 +45,7 @@ void FrameRenderer::submitPasses(FrameContext& frame)
     {
         auto& pass = passes[i];
 
-		std::vector<VkCommandBuffer> cmds = pass->getFrameCommandBuffers(frame.frameIndex);
+        auto cmds = pass->getFrameCommandBuffers(frame.frameIndex);
 
         if (cmds.empty())
             continue;
@@ -60,9 +60,6 @@ void FrameRenderer::submitPasses(FrameContext& frame)
         VkTimelineSemaphoreSubmitInfo timelineInfo{};
         timelineInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
 
-        timelineInfo.signalSemaphoreValueCount = 1;
-        timelineInfo.pSignalSemaphoreValues = &signalValue;
-
         uint64_t waitValue = lastTimelineValue;
 
         if (!isFirstPass)
@@ -70,6 +67,9 @@ void FrameRenderer::submitPasses(FrameContext& frame)
             timelineInfo.waitSemaphoreValueCount = 1;
             timelineInfo.pWaitSemaphoreValues = &waitValue;
         }
+
+        timelineInfo.signalSemaphoreValueCount = 1;
+        timelineInfo.pSignalSemaphoreValues = &signalValue;
 
         //////// wait semaphores ////////
         std::vector<VkSemaphore> waitSemaphores{};
@@ -87,25 +87,16 @@ void FrameRenderer::submitPasses(FrameContext& frame)
             waitStages.push_back(VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
         }
 
-        ////////// signal semaphores ////////
-        //std::vector<VkSemaphore> signalSemaphores;
-        //signalSemaphores.push_back(frame.timelineSemaphore);
-
-        //if (isLastPass)
-        //{
-        //    signalSemaphores.push_back(
-        //        frame.swapchain->getRenderFinishedSemaphore(frame.frameIndex));
-        //}
-
-
 		////// submit info ////////
+
+        VkSemaphore signalSemaphore = frame.timelineSemaphore;
 
         VkSubmitInfo submit{};
         submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         submit.pNext = &timelineInfo;
             
         submit.signalSemaphoreCount = 1;
-        submit.pSignalSemaphores = &frame.timelineSemaphore;
+        submit.pSignalSemaphores = &signalSemaphore;
 
         submit.waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size());
         submit.pWaitSemaphores = waitSemaphores.data();
@@ -120,18 +111,28 @@ void FrameRenderer::submitPasses(FrameContext& frame)
 
         if (isLastPass)
         {
+            uint64_t finalWaitValue = signalValue;
+
+            VkTimelineSemaphoreSubmitInfo presentTimelineInfo{};
+            presentTimelineInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
+            presentTimelineInfo.waitSemaphoreValueCount = 1;
+            presentTimelineInfo.pWaitSemaphoreValues = &finalWaitValue;
+
             VkSemaphore waitSemaphore = frame.timelineSemaphore;
             VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
 
+            VkSemaphore signal = frame.swapchain
+                ->getRenderFinishedSemaphore(frame.frameIndex);
+
             VkSubmitInfo presentSubmit{};
             presentSubmit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+            presentSubmit.pNext = &presentTimelineInfo;
 
             presentSubmit.waitSemaphoreCount = 1;
             presentSubmit.pWaitSemaphores = &waitSemaphore;
             presentSubmit.pWaitDstStageMask = &waitStage;
 
-            VkSemaphore signal = frame.swapchain
-                ->getRenderFinishedSemaphore(frame.frameIndex);
+            
 
             presentSubmit.signalSemaphoreCount = 1;
             presentSubmit.pSignalSemaphores = &signal;

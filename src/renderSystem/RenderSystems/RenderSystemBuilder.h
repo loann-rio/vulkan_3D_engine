@@ -68,18 +68,17 @@ public:
 
     std::unique_ptr<BaseRenderSystem> build(Device& device, AssetManager& assets) {
         if (asShadow) {
-            //return buildShadow(device);
-			throw std::runtime_error("RenderSystemBuilder: shadow render system not implemented yet");
+            return buildShadow(device);
         }
 		return buildMain(device, assets);
     }
 
-    /*std::unique_ptr<BaseRenderSystem> buildShadow(Device& device) {
-        if (skinningEnable) { 
+    std::unique_ptr<BaseRenderSystem> buildShadow(Device& device, AssetManager& assets) {
+        /*if (skinningEnable) { 
             return std::make_unique<ShadowSkinnedRenderSystem>(device, layout);
-        }
+        }*/
         return std::make_unique<ShadowMeshRenderSystem>(device, layout);
-    }*/
+    }
 
     std::unique_ptr<BaseRenderSystem> buildMain(Device& device, AssetManager& assets) {
         if (!layout) throw std::runtime_error("RenderSystemBuilder: vertexLayout not set");

@@ -214,10 +214,12 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClCompile Include="src\renderSystem\GlobalRenderer.cpp" />
     <ClCompile Include="src\renderSystem\RenderPass\FrameRenderer.cpp" />
     <ClCompile Include="src\renderSystem\RenderPass\MainPass.cpp" />
+    <ClCompile Include="src\renderSystem\RenderPass\PostProcessingPass.cpp" />
     <ClCompile Include="src\renderSystem\RenderPass\RenderPassBase.cpp" />
     <ClCompile Include="src\renderSystem\RenderPass\ShadowPass.cpp" />
     <ClCompile Include="src\renderSystem\RenderSystems\BaseRenderSystem.cpp" />
     <ClCompile Include="src\renderSystem\RenderSystems\MainMeshRenderSystem.cpp" />
+    <ClCompile Include="src\renderSystem\RenderSystems\ShadowMeshRenderSystem.cpp" />
     <ClCompile Include="src\renderSystem\RenderSystems\ShadowSkinnedRenderSystem.h" />
     <ClCompile Include="src\renderSystem\SwapChain.cpp" />
     <ClCompile Include="src\render\Camera.cpp" />
@@ -286,6 +288,7 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClInclude Include="src\renderSystem\GlobalRenderer.h" />
     <ClInclude Include="src\renderSystem\RenderPass\FrameRenderer.h" />
     <ClInclude Include="src\renderSystem\RenderPass\MainPass.h" />
+    <ClInclude Include="src\renderSystem\RenderPass\PostProcessingPass.h" />
     <ClInclude Include="src\renderSystem\RenderPass\RenderPassBase.h" />
     <ClInclude Include="src\renderSystem\RenderPass\ShadowPass.h" />
     <ClInclude Include="src\renderSystem\RenderSystems\BaseRenderSystem.h" />

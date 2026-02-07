@@ -249,7 +249,13 @@
     <ClCompile Include="src\model\Vertex\IVertexLayout.cpp">
       <Filter>model\Vertex</Filter>
     </ClCompile>
-    <ClCompile Include="src\renderSystem\RenderPass\RenderPassBase.cpp" />
+    <ClCompile Include="src\renderSystem\RenderPass\RenderPassBase.cpp">
+      <Filter>renderSystem\RenderPass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\renderSystem\RenderSystems\ShadowMeshRenderSystem.cpp">
+      <Filter>renderSystem\RenderPass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\renderSystem\RenderPass\PostProcessingPass.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tiny_gltf.h">
@@ -469,6 +475,9 @@
     </ClInclude>
     <ClInclude Include="src\renderSystem\RenderSystems\BaseRenderSystem.h">
       <Filter>renderSystem\RenderSystems</Filter>
+    </ClInclude>
+    <ClInclude Include="src\renderSystem\RenderPass\PostProcessingPass.h">
+      <Filter>renderSystem\RenderPass</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

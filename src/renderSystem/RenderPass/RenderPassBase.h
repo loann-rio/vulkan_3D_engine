@@ -238,9 +238,6 @@ protected:
     // Render systems used by this pass
     std::vector<std::unique_ptr<BaseRenderSystem>> renderSystems;
 
-    // Timeline semaphore value signaled by this pass
-    uint64_t signaledTimelineValue{ 0 };
-
     VkRenderPass renderPass{ VK_NULL_HANDLE };  
 
     std::unique_ptr<DescriptorSetLayout> setLayout;

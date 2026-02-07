@@ -25,7 +25,7 @@ GlobalRenderer::GlobalRenderer(Device& device, Window& window, AssetManager& ass
     createFrameContext();
 
 
-    imgui = std::make_unique<BasicUI>(device, assetManager, window.getGLFWwindow(), globalRenderPass);
+    //imgui = std::make_unique<BasicUI>(device, assetManager, window.getGLFWwindow(), globalRenderPass);
 }
 
 
@@ -126,16 +126,14 @@ void GlobalRenderer::createFrameRenderer()
 
     );
 
-   /* {
+   {
         auto shadowRenderSystem = RenderSystemBuilder()
-            .fragmentShader("shaders/ShadowPass.frag.spv")
             .vertexShader("shaders/ShadowPass.vert.spv")
             .cullMode(VK_CULL_MODE_NONE)
             .renderPass(shadowPass->getRenderPass())
-            .vertexLayout(new ObjVertexLayout)
-            .asMainRenderSystem();
+            .asShadowRenderSystem();
         shadowPass->addRenderSystem(shadowRenderSystem);
-    }*/
+    }
 
 
     createFrameBuffers();

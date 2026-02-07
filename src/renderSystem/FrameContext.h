@@ -24,7 +24,7 @@ struct FrameContext {
 
     VkSemaphore imageAvailable{};
 
-    uint64_t timelineValue{};
+    uint64_t timelineValue{1};
 	VkSemaphore timelineSemaphore{};
 
     VkFramebuffer* swapchainFramebuffer;
