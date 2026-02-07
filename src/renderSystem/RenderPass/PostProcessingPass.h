@@ -30,6 +30,8 @@ private:
     void createRenderPass() override;
     void createPassDescriptorSetLayout() override;
 
+	void bindGlobalDescriptorSet(VkCommandBuffer cmd, FrameContext& frameContext) const override;
+
     VkCommandBuffer beginCommandBuffer(uint32_t frameIndex);
     void beginRenderPass(VkCommandBuffer cmd, uint32_t imageIndex);
     void setupViewportAndScissor(VkCommandBuffer cmd);

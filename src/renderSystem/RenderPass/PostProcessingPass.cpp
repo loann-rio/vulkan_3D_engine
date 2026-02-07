@@ -85,6 +85,24 @@ void PostProcessingPass::createPassDescriptorSetLayout()
         .build();
 }
 
+void PostProcessingPass::bindGlobalDescriptorSet(VkCommandBuffer cmd, FrameContext& frameContext) const
+{
+
+    VkDescriptorSet set =
+        inputColor->getColorDescriptorSet(frameContext.frameIndex);
+
+    vkCmdBindDescriptorSets(
+        cmd,
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        renderSystems[0]->getPipelineLayout(),
+        0,
+        1,
+        &set,
+        0,
+        nullptr
+	);
+}
+
 VkCommandBuffer PostProcessingPass::beginCommandBuffer(uint32_t frameIndex)
 {
     VkCommandBuffer cmd = commandBuffers->get(frameIndex);
@@ -150,7 +168,7 @@ void PostProcessingPass::record(FrameContext& frame)
 
     beginRenderPass(cmd, frame.imageIndex);
     setupViewportAndScissor(cmd);
-
+	bindGlobalDescriptorSet(cmd, frame);
     drawFullscreen(cmd);
 
     vkCmdEndRenderPass(cmd);

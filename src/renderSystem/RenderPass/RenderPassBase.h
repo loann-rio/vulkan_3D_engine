@@ -129,6 +129,11 @@ public:
     void resizeTargets(VkExtent2D newExtent, uint32_t imageCount, VkFormat format, VkFormat depthFormat);
 
     void createLocalFramebuffers(VkRenderPass renderPass); 
+    
+	void createDescriptorSets(DescriptorPool& pool, DescriptorSetLayout& layout);
+
+	VkDescriptorSet getColorDescriptorSet(uint32_t index) { return colorDescriptorSets[index]; }
+	VkDescriptorSet getDepthDescriptorSet(uint32_t index) { return depthDescriptorSets[index]; }
 
 private:
     void cleanupLocalFramebuffers();
@@ -139,6 +144,9 @@ private:
 
     std::vector<TextureManager::TextureID> color;
     std::vector<TextureManager::TextureID> depth;
+
+	std::vector<VkDescriptorSet> colorDescriptorSets;
+	std::vector<VkDescriptorSet> depthDescriptorSets;
 
     VkExtent2D extent;
 

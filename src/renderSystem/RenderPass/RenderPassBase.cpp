@@ -60,6 +60,32 @@ void PassTarget::createLocalFramebuffers(VkRenderPass renderPass)
     }
 }
 
+void PassTarget::createDescriptorSets(DescriptorPool& pool, DescriptorSetLayout& layout)
+{
+    auto textureSetLayout = DescriptorSetLayout::Builder(device)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .build();
+
+    colorDescriptorSets.resize(color.size());
+    for (int i = 0; i < colorDescriptorSets.size(); i++)
+    {
+        auto imageInfo = assets.textures().get(color[i])->getImageInfo();
+        DescriptorWriter(*textureSetLayout, pool)
+            .writeImage(0, &imageInfo)
+            .build(colorDescriptorSets[i]);
+    }
+
+    depthDescriptorSets.resize(depth.size());
+    for (int i = 0; i < depthDescriptorSets.size(); i++)
+    {
+        auto imageInfo = assets.textures().get(color[i])->getImageInfo();
+        DescriptorWriter(*textureSetLayout, pool)
+            .writeImage(0, &imageInfo)
+            .build(depthDescriptorSets[i]);
+    }
+
+}
+
 void PassTarget::cleanupLocalFramebuffers()
 {
     for (VkFramebuffer fb : framebuffers) {
