@@ -45,6 +45,8 @@ public:
 
     void updateSwapchain(Swapchain& swapchain_) override;
 
+    PassTarget* getTarget() override { return passTarget.get(); }
+
 private:
     std::unique_ptr<PassCommandBuffers> commandBuffers;
 	std::unique_ptr<PassTarget> passTarget;

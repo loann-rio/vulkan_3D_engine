@@ -61,23 +61,40 @@ public:
 		return *this;
 	}
 
+    RenderSystemBuilder& asFullScreenRenderSystem() {
+        asMain = false;
+        asShadow = false;
+        asFullScreen = true;
+        return *this;
+    }
+
     RenderSystemBuilder& setGlobalSetLayout(DescriptorSetLayout* layout_) {
         config.globalSetLayout = layout_;
         return *this;
 	}
 
     std::unique_ptr<BaseRenderSystem> build(Device& device, AssetManager& assets) {
-        if (asShadow) {
-            return buildShadow(device);
-        }
-		return buildMain(device, assets);
+        
+
+        if (asShadow)
+            return buildShadow(device, assets);
+
+        if (asFullScreen)
+            return buildFullScreen(device, assets);
+		
+        return buildMain(device, assets);
+    }
+
+    std::unique_ptr<BaseRenderSystem> buildFullScreen(Device& device, AssetManager& assets) {
+        return std::make_unique<>(device, config);
     }
 
     std::unique_ptr<BaseRenderSystem> buildShadow(Device& device, AssetManager& assets) {
+        if (!layout) throw std::runtime_error("RenderSystemBuilder: vertexLayout not set");
         /*if (skinningEnable) { 
             return std::make_unique<ShadowSkinnedRenderSystem>(device, layout);
         }*/
-        return std::make_unique<ShadowMeshRenderSystem>(device, layout);
+        return std::make_unique<ShadowMeshRenderSystem>(device, assets, *layout, config);
     }
 
     std::unique_ptr<BaseRenderSystem> buildMain(Device& device, AssetManager& assets) {
@@ -92,6 +109,7 @@ private:
 
     bool asMain = true;
 	bool asShadow = false;
+    bool asFullScreen = false;
 
     RenderSystemCreateInfo config;
 

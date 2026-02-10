@@ -47,6 +47,16 @@ void BaseRenderSystem::record(
 	}
 }
 
+void BaseRenderSystem::renderFullScreen(VkCommandBuffer cmd, FrameContext& frameContext) const
+{
+	bindPipeline(cmd);
+
+	bindMaterial(cmd);
+
+	vkCmdDraw(cmd, 3, 1, 0, 0);
+
+}
+
 void BaseRenderSystem::bindPipeline(VkCommandBuffer cmd) const
 {
 	pipeline->bind(cmd);

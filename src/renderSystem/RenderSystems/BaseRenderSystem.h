@@ -60,6 +60,11 @@ public:
         const std::vector<RenderItem>& items
     ) const;
 
+    void renderFullScreen(
+        VkCommandBuffer cmd,
+        FrameContext& frameContext
+    ) const;
+
     VkPipelineLayout getPipelineLayout() const { 
         return pipelineLayout; 
     }

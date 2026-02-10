@@ -7,6 +7,7 @@
 #include "../base/Device.h"
 #include "RenderPass/MainPass.h"
 #include "RenderPass/ShadowPass.h"
+#include "RenderPass/PostProcessingPass.h"
 
 #include "RenderSystems/RenderSystemBuilder.h"
 #include "../model/Vertex/ObjVertexData.h"
@@ -117,8 +118,18 @@ void GlobalRenderer::createFrameRenderer()
 
     frameRenderer->addPass(std::move(mainPass));
 
+    auto* targetMainPass = frameRenderer->getLastPass().getTarget();
 
-    auto shadowPass = std::make_unique<ShadowPass>(
+    auto postProcessPass = std::make_unique<PostProcessingPass>(
+        device, assetManager,
+        *swapchain,
+        Swapchain::MAX_FRAMES_IN_FLIGHT,
+        swapchain->getExtent(), 
+        targetMainPass,
+        true
+    );
+
+    /*auto shadowPass = std::make_unique<ShadowPass>(
 		device, assetManager,
         *swapchain, *globalPool,
 		Swapchain::MAX_FRAMES_IN_FLIGHT,
@@ -131,9 +142,10 @@ void GlobalRenderer::createFrameRenderer()
             .vertexShader("shaders/ShadowPass.vert.spv")
             .cullMode(VK_CULL_MODE_NONE)
             .renderPass(shadowPass->getRenderPass())
+            .vertexLayout(new ObjVertexLayout)
             .asShadowRenderSystem();
         shadowPass->addRenderSystem(shadowRenderSystem);
-    }
+    }*/
 
 
     createFrameBuffers();

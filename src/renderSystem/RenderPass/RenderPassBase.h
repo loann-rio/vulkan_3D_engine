@@ -168,6 +168,8 @@ public:
     RenderPassBase(const RenderPassBase&) = delete;
     RenderPassBase& operator=(const RenderPassBase&) = delete;
 
+
+    virtual PassTarget* getTarget() = 0;
 	
 
     /**
