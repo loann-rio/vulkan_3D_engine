@@ -47,7 +47,7 @@ BaseRenderSystem::PushConstantInfo MainMeshRenderSystem::pushConstants() const
 {
 	return {
 		VK_SHADER_STAGE_VERTEX_BIT,
-		sizeof(MainMeshRenderSystem::PushConstantData)
+		sizeof(PushConstantData)
 	};
 }
 
@@ -175,7 +175,7 @@ void MainMeshRenderSystem::drawPrimitive(
 	const glm::mat4& normalMat
 ) const
 {
-	MainMeshRenderSystem::PushConstantData pc{};
+	PushConstantData pc{};
 	pc.modelMatrix = modelMat;
 	pc.normalMatrix = normalMat;
 
@@ -184,7 +184,7 @@ void MainMeshRenderSystem::drawPrimitive(
 		pipelineLayout,
 		VK_SHADER_STAGE_VERTEX_BIT,
 		0,
-		sizeof(MainMeshRenderSystem::PushConstantData),
+		sizeof(PushConstantData),
 		&pc
 	);
 

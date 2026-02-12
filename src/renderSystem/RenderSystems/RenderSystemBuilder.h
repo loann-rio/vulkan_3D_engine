@@ -7,6 +7,7 @@
 #include "ShadowSkinnedRenderSystem.h"
 #include "MainMeshRenderSystem.h"
 #include "MainSkinnedRenderSystem.h"
+#include "FullScreenRenderSystem.h"
 
 #include "BaseRenderSystem.h"
 #include "../../base/Device.h"
@@ -86,7 +87,7 @@ public:
     }
 
     std::unique_ptr<BaseRenderSystem> buildFullScreen(Device& device, AssetManager& assets) {
-        return std::make_unique<>(device, config);
+        return std::make_unique<FullScreenRenderSystem>(device, config);
     }
 
     std::unique_ptr<BaseRenderSystem> buildShadow(Device& device, AssetManager& assets) {

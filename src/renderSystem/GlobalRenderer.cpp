@@ -129,6 +129,14 @@ void GlobalRenderer::createFrameRenderer()
         true
     );
 
+    {
+        auto postProcessRenderSystem = RenderSystemBuilder()
+            .vertexShader("shaders/fullscreen.vert.spv")
+            .fragmentShader("shader/postpro_shader.frag.spv")
+            .renderPass(postProcessPass->getRenderPass())
+            .asFullScreenRenderSystem();
+    }
+
     /*auto shadowPass = std::make_unique<ShadowPass>(
 		device, assetManager,
         *swapchain, *globalPool,

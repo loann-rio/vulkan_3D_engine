@@ -11,15 +11,13 @@ class Primitive;
 
 class FullScreenRenderSystem : public BaseRenderSystem {
 	struct alignas(16) PushConstantData {
-		
+		bool inverseColor = false;
 	};
 
 public:
 
 	FullScreenRenderSystem(
 		Device& device,
-		AssetManager& assets,
-		const IVertexLayout& vertexLayout,
 		const RenderSystemCreateInfo& createInfo
 	);
 
@@ -34,7 +32,7 @@ protected:
 		VkCommandBuffer cmd,
 		FrameContext& frameContext,
 		const RenderItem& item
-	) const override;
+	) const override {};
 
 private:
 
