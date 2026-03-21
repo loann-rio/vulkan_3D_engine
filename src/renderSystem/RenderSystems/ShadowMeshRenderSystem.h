@@ -20,7 +20,7 @@ public:
 	ShadowMeshRenderSystem(
 		Device& device,
 		AssetManager& assets,
-		const IVertexLayout& vertexLayout,
+		const IVertexLayout* vertexLayout,
 		const RenderSystemCreateInfo& createInfo
 	);
 

@@ -6,7 +6,6 @@
 #include "../../base/Pipeline.h"
 #include "../FrameContext.h"
 
-#include <exception>
 #include <cassert>
 #include <cstdint>
 #include <memory>
@@ -17,7 +16,7 @@
 BaseRenderSystem::BaseRenderSystem(
 	Device& device_,
 	AssetManager& assets_,
-	const IVertexLayout& vertexLayout_,
+	const IVertexLayout* vertexLayout_,
 	const RenderSystemCreateInfo& createInfo_
 )
 	: device(device_)
@@ -45,16 +44,8 @@ void BaseRenderSystem::record(
 		if (!item.model) continue;
 		renderModel(cmd, frameContext, item);
 	}
-}
 
-void BaseRenderSystem::renderFullScreen(VkCommandBuffer cmd, FrameContext& frameContext) const
-{
-	bindPipeline(cmd);
-
-	bindMaterial(cmd);
-
-	vkCmdDraw(cmd, 3, 1, 0, 0);
-
+	renderFullScreen(cmd, frameContext);
 }
 
 void BaseRenderSystem::bindPipeline(VkCommandBuffer cmd) const
@@ -110,7 +101,8 @@ void BaseRenderSystem::createPipeline(const RenderSystemCreateInfo& ci)
 	Pipeline::defaultPipelineConfigInfo(config);
 
 	/// vertex input
-	configureVertexInput(config);
+	if (vertexLayout != nullptr)
+		configureVertexInput(config);
 
 	/// raster state
 	config.rasterizationInfo.cullMode = ci.cullMode;
@@ -144,21 +136,21 @@ void BaseRenderSystem::configureVertexInput(
 	PipelineConfigInfo& pipelineConfig
 ) const
 {
-	assert(vertexLayout.stride() > 0);
+	assert(vertexLayout->stride() > 0);
 
 	pipelineConfig.bindingDescription = {
 		{
 			0,
-			vertexLayout.stride(),
+			vertexLayout->stride(),
 			VK_VERTEX_INPUT_RATE_VERTEX
 		}
 	};
 
 	pipelineConfig.attributeDescription.clear();
-	pipelineConfig.attributeDescription.reserve(vertexLayout.attributeCount());
+	pipelineConfig.attributeDescription.reserve(vertexLayout->attributeCount());
 
-	for (uint32_t i = 0; i < vertexLayout.attributeCount(); ++i) {
-		const auto& attr = vertexLayout.attributes()[i];
+	for (uint32_t i = 0; i < vertexLayout->attributeCount(); ++i) {
+		const auto& attr = vertexLayout->attributes()[i];
 		pipelineConfig.attributeDescription.push_back({
 			i,
 			0,

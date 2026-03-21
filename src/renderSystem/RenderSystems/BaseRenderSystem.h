@@ -8,7 +8,6 @@
 #include <memory>
 #include <vector>
 #include <cstdint>
-#include <span>
 
 
 class Device;
@@ -39,7 +38,7 @@ public:
    BaseRenderSystem(
         Device& device_, 
         AssetManager& assets_, 
-        const IVertexLayout& vertexLayout_, 
+        const IVertexLayout* vertexLayout_, 
         const RenderSystemCreateInfo& createInfo_);
 
     ~BaseRenderSystem();
@@ -60,10 +59,10 @@ public:
         const std::vector<RenderItem>& items
     ) const;
 
-    void renderFullScreen(
+    virtual void renderFullScreen(
         VkCommandBuffer cmd,
         FrameContext& frameContext
-    ) const;
+    ) const {};
 
     VkPipelineLayout getPipelineLayout() const { 
         return pipelineLayout; 
@@ -98,7 +97,7 @@ protected:
 protected:
     Device& device;
     AssetManager& assets;
-    const IVertexLayout& vertexLayout;
+    const IVertexLayout* vertexLayout;
 
     VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
     std::unique_ptr<Pipeline> pipeline;

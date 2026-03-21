@@ -175,7 +175,7 @@ VkResult Swapchain::present(uint32_t imageIndex) {
     present.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
     present.waitSemaphoreCount = 1;
-    present.pWaitSemaphores = &renderFinishedSemaphores[currentFrame];
+    present.pWaitSemaphores = &renderFinishedSemaphores[imageIndex];
 
     present.swapchainCount = 1;
     present.pSwapchains = &swapchain;
@@ -360,7 +360,7 @@ void Swapchain::createFramebuffers(VkRenderPass renderPass)
         VkFramebufferCreateInfo framebufferInfo{};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         framebufferInfo.renderPass = renderPass;
-        framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+        framebufferInfo.attachmentCount = 1;// static_cast<uint32_t>(attachments.size());
         framebufferInfo.pAttachments = attachments.data();
         framebufferInfo.width = extent.width;
         framebufferInfo.height = extent.height;
@@ -396,9 +396,9 @@ void Swapchain::createImageViews() {
 
 void Swapchain::createSyncObjects() {
     imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
 
+    renderFinishedSemaphores.resize(imageCount());
 
     imagesInFlight.resize(imageCount(), VK_NULL_HANDLE);
 
@@ -408,14 +408,18 @@ void Swapchain::createSyncObjects() {
 
     VkFenceCreateInfo fenceInfo{};
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-
     fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
     for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
         if (vkCreateSemaphore(device.device(), &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
-            vkCreateSemaphore(device.device(), &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
             vkCreateFence(device.device(), &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
             throw std::runtime_error("Swapchain::createSyncObjects: failed to create synchronization objects for a frame");
+        }
+    }
+
+    for (uint32_t i = 0; i < imageCount(); ++i) {
+        if (vkCreateSemaphore(device.device(), &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS) {
+            throw std::runtime_error("Swapchain::createSyncObjects: failed to create render-finished semaphore for image");
         }
     }
 }

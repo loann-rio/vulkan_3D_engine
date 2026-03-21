@@ -19,7 +19,7 @@ PostProcessingPass::PostProcessingPass(
 
     if (!isFinal) {
         passTarget = std::make_unique<PassTarget>(
-            device, swapchain, assets, extent, false
+            device, swapchain, assets, extent, VK_FORMAT_UNDEFINED, false
         );
     }
     else {
@@ -137,7 +137,7 @@ void PostProcessingPass::beginRenderPass(VkCommandBuffer cmd, uint32_t imageInde
     rpBegin.renderArea.extent = swapchain->getExtent();
 
     std::array<VkClearValue, 1> clearValues{};
-    clearValues[0].color = { { 1.f, 0.05f, 0.1f, 1.0f } };
+    clearValues[0].color = { { 0.f, 1.f, 0.1f, 1.0f } };
 
     rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
     rpBegin.pClearValues = clearValues.data();

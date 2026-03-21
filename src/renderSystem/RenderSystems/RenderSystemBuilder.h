@@ -5,12 +5,19 @@
 
 #include "ShadowMeshRenderSystem.h"
 #include "ShadowSkinnedRenderSystem.h"
-#include "MainMeshRenderSystem.h"
+#include "MainMeshRenderSystem.h"*
 #include "MainSkinnedRenderSystem.h"
+
 #include "FullScreenRenderSystem.h"
 
 #include "BaseRenderSystem.h"
 #include "../../base/Device.h"
+
+enum RenderPassType {
+    MAIN = 0,
+    SHADOW = 1,
+    FULLSCREEN = 2
+};
 
 
 class RenderSystemBuilder {
@@ -66,6 +73,9 @@ public:
         asMain = false;
         asShadow = false;
         asFullScreen = true;
+        config.depthTest = false;
+        config.depthWrite = false;
+        config.depthCompare = VK_COMPARE_OP_ALWAYS;
         return *this;
     }
 
@@ -87,7 +97,7 @@ public:
     }
 
     std::unique_ptr<BaseRenderSystem> buildFullScreen(Device& device, AssetManager& assets) {
-        return std::make_unique<FullScreenRenderSystem>(device, config);
+        return std::make_unique<FullScreenRenderSystem>(device, assets, layout, config);
     }
 
     std::unique_ptr<BaseRenderSystem> buildShadow(Device& device, AssetManager& assets) {
@@ -95,7 +105,7 @@ public:
         /*if (skinningEnable) { 
             return std::make_unique<ShadowSkinnedRenderSystem>(device, layout);
         }*/
-        return std::make_unique<ShadowMeshRenderSystem>(device, assets, *layout, config);
+        return std::make_unique<ShadowMeshRenderSystem>(device, assets, layout, config);
     }
 
     std::unique_ptr<BaseRenderSystem> buildMain(Device& device, AssetManager& assets) {
@@ -103,7 +113,7 @@ public:
         /*if (skinningEnable) {
             return std::make_unique<MainSkinnedRenderSystem>(device, layout);
         }*/
-        return std::make_unique<MainMeshRenderSystem>(device, assets, *layout, config);
+        return std::make_unique<MainMeshRenderSystem>(device, assets, layout, config);
     }
 
 private:

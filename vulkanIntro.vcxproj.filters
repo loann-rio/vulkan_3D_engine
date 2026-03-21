@@ -255,7 +255,12 @@
     <ClCompile Include="src\renderSystem\RenderSystems\ShadowMeshRenderSystem.cpp">
       <Filter>renderSystem\RenderPass</Filter>
     </ClCompile>
-    <ClCompile Include="src\renderSystem\RenderPass\PostProcessingPass.cpp" />
+    <ClCompile Include="src\renderSystem\RenderPass\PostProcessingPass.cpp">
+      <Filter>renderSystem\RenderPass</Filter>
+    </ClCompile>
+    <ClCompile Include="src\renderSystem\RenderSystems\FullScreenRenderSystem.cpp">
+      <Filter>renderSystem\RenderSystems</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tiny_gltf.h">
@@ -479,6 +484,9 @@
     <ClInclude Include="src\renderSystem\RenderPass\PostProcessingPass.h">
       <Filter>renderSystem\RenderPass</Filter>
     </ClInclude>
+    <ClInclude Include="src\renderSystem\RenderSystems\FullScreenRenderSystem.h">
+      <Filter>renderSystem\RenderSystems</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\compile.bat">
@@ -551,6 +559,9 @@
       <Filter>shaders</Filter>
     </None>
     <None Include="shaders\MainMeshShader.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\postproShader.frag">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>

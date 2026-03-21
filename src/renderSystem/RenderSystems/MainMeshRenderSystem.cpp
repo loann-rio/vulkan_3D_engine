@@ -13,7 +13,7 @@
 MainMeshRenderSystem::MainMeshRenderSystem(
 	Device& device,
 	AssetManager& assets,
-	const IVertexLayout& vertexLayout,
+	const IVertexLayout* vertexLayout,
 	const RenderSystemCreateInfo& createInfo
 )
 	: BaseRenderSystem(device, assets, vertexLayout, createInfo) 
@@ -35,7 +35,7 @@ bool MainMeshRenderSystem::accepts(const GameObjectModel& object) const
 		return false;*/
 
 	return (
-		vertexLayout.isCompatibleWith(model->lods[0].vertexLayout)
+		vertexLayout->isCompatibleWith(model->lods[0].vertexLayout)
 		);
 }
 

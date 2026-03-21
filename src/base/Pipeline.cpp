@@ -28,6 +28,7 @@ std::vector<char> Pipeline::readFile(const std::string& filepath)
 {
 	std::ifstream file(filepath, std::ios::ate | std::ios::binary);
 	if (!file.is_open()) {
+		std::cout << filepath << "\n";
 		throw std::runtime_error("failed to open file: " + filepath);
 	}
 

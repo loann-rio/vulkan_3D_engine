@@ -60,7 +60,7 @@ void PassTarget::createLocalFramebuffers(VkRenderPass renderPass)
     }
 }
 
-void PassTarget::createDescriptorSets(DescriptorPool& pool, DescriptorSetLayout& layout)
+void PassTarget::createDescriptorSets(DescriptorPool& pool)
 {
     auto textureSetLayout = DescriptorSetLayout::Builder(device)
         .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
@@ -78,7 +78,7 @@ void PassTarget::createDescriptorSets(DescriptorPool& pool, DescriptorSetLayout&
     depthDescriptorSets.resize(depth.size());
     for (int i = 0; i < depthDescriptorSets.size(); i++)
     {
-        auto imageInfo = assets.textures().get(color[i])->getImageInfo();
+        auto imageInfo = assets.textures().get(depth[i])->getImageInfo();
         DescriptorWriter(*textureSetLayout, pool)
             .writeImage(0, &imageInfo)
             .build(depthDescriptorSets[i]);

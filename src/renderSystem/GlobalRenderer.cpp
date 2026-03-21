@@ -24,9 +24,6 @@ GlobalRenderer::GlobalRenderer(Device& device, Window& window, AssetManager& ass
     createGlobalUniformBuffer();
 
     createFrameContext();
-
-
-    //imgui = std::make_unique<BasicUI>(device, assetManager, window.getGLFWwindow(), globalRenderPass);
 }
 
 
@@ -90,6 +87,9 @@ void GlobalRenderer::createUboDescriptorPool()
         .addPoolSize(
             VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 
             Swapchain::MAX_FRAMES_IN_FLIGHT * 20)
+        .addPoolSize(
+            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            Swapchain::MAX_FRAMES_IN_FLIGHT * 20)
         .build();
 }
 
@@ -132,10 +132,14 @@ void GlobalRenderer::createFrameRenderer()
     {
         auto postProcessRenderSystem = RenderSystemBuilder()
             .vertexShader("shaders/fullscreen.vert.spv")
-            .fragmentShader("shader/postpro_shader.frag.spv")
+            .fragmentShader("shaders/postproShader.frag.spv")
             .renderPass(postProcessPass->getRenderPass())
             .asFullScreenRenderSystem();
+
+        postProcessPass->addRenderSystem(postProcessRenderSystem);
     }
+
+    frameRenderer->addPass(std::move(postProcessPass));
 
     /*auto shadowPass = std::make_unique<ShadowPass>(
 		device, assetManager,
@@ -164,6 +168,7 @@ void GlobalRenderer::createFrameBuffers()
     for (size_t i = 0; i < frameRenderer->getPassCount() - 1; ++i) {
 		auto& pass = frameRenderer->getPass(i);
 		pass.createLocalFramebuffers();
+        pass.getTarget()->createDescriptorSets(*globalPool);
     }
 
 	// final pass uses swapchain framebuffers

@@ -37,4 +37,6 @@ C:\VulkanSDK\1.4.313.2\Bin\glslc.exe CloudShader.vert -o CloudShader.vert.spv --
 
 C:\VulkanSDK\1.4.313.2\Bin\glslc.exe shadowMapTerrain.vert -o shadowMapTerrain.vert.spv --target-env=vulkan1.2
 
+C:\VulkanSDK\1.4.313.2\Bin\glslc.exe postproShader.frag -o postproShader.frag.spv --target-env=vulkan1.2
+
 pause

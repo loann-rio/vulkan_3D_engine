@@ -4,7 +4,7 @@ MainPass::MainPass(Device& device, AssetManager& assets, Swapchain& swapchain, D
 	: RenderPassBase(device, assets), swapchain( &swapchain ), extent( extent )
 { 
     commandBuffers = std::make_unique<PassCommandBuffers>(device, frame_in_flight);
-	passTarget = std::make_unique<PassTarget>(device, swapchain, assets, extent);
+	passTarget = std::make_unique<PassTarget>(device, swapchain, assets, extent, swapchain.depthFormat());
 
     createRenderPass();
 
@@ -79,7 +79,8 @@ void MainPass::createRenderPass()
     colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    colorAttachment.finalLayout = isFinalPass ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+        : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     VkAttachmentReference colorAttachmentRef = {};
     colorAttachmentRef.attachment = 0;

@@ -218,6 +218,7 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClCompile Include="src\renderSystem\RenderPass\RenderPassBase.cpp" />
     <ClCompile Include="src\renderSystem\RenderPass\ShadowPass.cpp" />
     <ClCompile Include="src\renderSystem\RenderSystems\BaseRenderSystem.cpp" />
+    <ClCompile Include="src\renderSystem\RenderSystems\FullScreenRenderSystem.cpp" />
     <ClCompile Include="src\renderSystem\RenderSystems\MainMeshRenderSystem.cpp" />
     <ClCompile Include="src\renderSystem\RenderSystems\ShadowMeshRenderSystem.cpp" />
     <ClCompile Include="src\renderSystem\RenderSystems\ShadowSkinnedRenderSystem.h" />
@@ -292,6 +293,7 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClInclude Include="src\renderSystem\RenderPass\RenderPassBase.h" />
     <ClInclude Include="src\renderSystem\RenderPass\ShadowPass.h" />
     <ClInclude Include="src\renderSystem\RenderSystems\BaseRenderSystem.h" />
+    <ClInclude Include="src\renderSystem\RenderSystems\FullScreenRenderSystem.h" />
     <ClInclude Include="src\renderSystem\RenderSystems\MainMeshRenderSystem.h" />
     <ClInclude Include="src\renderSystem\RenderSystems\MainSkinnedRenderSystem.h" />
     <ClInclude Include="src\renderSystem\RenderSystems\RenderSystemBuilder.h" />
@@ -328,6 +330,7 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <None Include="shaders\MainMeshShader.vert" />
     <None Include="shaders\point_light.frag" />
     <None Include="shaders\point_light.vert" />
+    <None Include="shaders\postproShader.frag" />
     <None Include="shaders\shadowmap.vert" />
     <None Include="shaders\shadowmapgltf.vert" />
     <None Include="shaders\shadowMapTerrain.vert" />

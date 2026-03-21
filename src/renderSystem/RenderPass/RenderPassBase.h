@@ -116,12 +116,15 @@ public:
         Swapchain& swapchain_,
 		AssetManager& assets_,
         VkExtent2D extent_,
+        VkFormat depthFormat = VK_FORMAT_UNDEFINED,
 		bool isFinal = false
     )
         : device(device_), extent(extent_), assets(assets_) {
 
         createColorTargetTexture(swapchain_.imageCount(), swapchain_.format(), (isFinal) ? swapchain_.getImages() : std::vector<VkImage>{});
-		createDepthTargetTexture(swapchain_.imageCount(), swapchain_.depthFormat());
+		
+        if (depthFormat != VK_FORMAT_UNDEFINED)
+            createDepthTargetTexture(swapchain_.imageCount(), swapchain_.depthFormat());
     }
 
     std::vector<VkFramebuffer> framebuffers;
@@ -130,7 +133,7 @@ public:
 
     void createLocalFramebuffers(VkRenderPass renderPass); 
     
-	void createDescriptorSets(DescriptorPool& pool, DescriptorSetLayout& layout);
+	void createDescriptorSets(DescriptorPool& pool);
 
 	VkDescriptorSet getColorDescriptorSet(uint32_t index) { return colorDescriptorSets[index]; }
 	VkDescriptorSet getDepthDescriptorSet(uint32_t index) { return depthDescriptorSets[index]; }
@@ -199,7 +202,7 @@ public:
         RenderSystemBuilder system
     ) {
 		system.setGlobalSetLayout(setLayout.get());
-        renderSystems.emplace_back(system.build(device, assets));
+        renderSystems.push_back(system.build(device, assets));
     };
 
     /**

@@ -26,7 +26,7 @@ public:
     void resizeTargets(VkExtent2D newExtent) override;
     void updateSwapchain(Swapchain& swapchain_) override;
 
-    PassTarget* getTarget() override { return passTarget.get(); }
+    PassTarget* getTarget() override { return nullptr; }// passTarget.get();}
 
 private:
     void createRenderPass() override;

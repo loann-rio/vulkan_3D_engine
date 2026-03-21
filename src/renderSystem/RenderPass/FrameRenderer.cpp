@@ -1,6 +1,5 @@
 #include "FrameRenderer.h"
 
-#include <future>
 #include <cassert>
 
 FrameRenderer::FrameRenderer(Device& device) 
@@ -122,7 +121,7 @@ void FrameRenderer::submitPasses(FrameContext& frame)
             VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
 
             VkSemaphore signal = frame.swapchain
-                ->getRenderFinishedSemaphore(frame.frameIndex);
+                ->getRenderFinishedSemaphore(frame.imageIndex);
 
             VkSubmitInfo presentSubmit{};
             presentSubmit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -167,7 +166,7 @@ SubmitSync FrameRenderer::buildSubmitSync(FrameContext& frame, bool isFirstPass,
 
     if (isLastPass) {
         sync.signalSemaphores.push_back(
-            frame.swapchain->getRenderFinishedSemaphore(frame.frameIndex));
+            frame.swapchain->getRenderFinishedSemaphore(frame.imageIndex));
     }
 
     return sync;

@@ -12,7 +12,7 @@
 ShadowMeshRenderSystem::ShadowMeshRenderSystem(
 	Device& device,
 	AssetManager& assets,
-	const IVertexLayout& vertexLayout,
+	const IVertexLayout* vertexLayout,
 	const RenderSystemCreateInfo& createInfo
 )
 	: BaseRenderSystem(device, assets, vertexLayout, createInfo)
