@@ -37,7 +37,8 @@ void ObjectManager::startLoadModel()
 
     }
 
-    /* {
+    if (false)
+    {
         auto behavior = GameObjectBehavior::createBehaviorFromType("ChunkManager", device);
 		auto gameObject = GameObjectFactory::createGameObject<GameObject>(device);
 		gameObject->setName("terrainGenerator");
@@ -59,7 +60,7 @@ void ObjectManager::startLoadModel()
 			}
 		}
 
-        std::shared_ptr<Model> cube = Model::createModelFromFile(device, {{"model/grassLOD/grassLod1.obj", "textures/whiteTexture.jpg"}, {"model/grassLOD/grassLod2.obj", ""} , {"model/grassLOD/grassLod3.obj", ""} , {"model/grassLOD/grassLod4.obj", "textures/GrassBillboard.png"} });
+        std::shared_ptr<Model> cube = Model::createModelFromFile(device, {{"assets/model/grassLOD/grassLod1.obj", "assets/textures/whiteTexture.jpg"}, {"assets/model/grassLOD/grassLod2.obj", ""} , {"assets/model/grassLOD/grassLod3.obj", ""} , {"assets/model/grassLOD/grassLod4.obj", "assets/textures/GrassBillboard.png"} });
         cube->computeShadow = false;
 
         auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
@@ -70,7 +71,7 @@ void ObjectManager::startLoadModel()
 		gameObject->setMultipleInstances(instances);
         gameObject->createDescriptorSet(*globalPool);
         pushGameObject(std::move(gameObject));
-    }*/
+    }
 
 }
 
@@ -242,7 +243,7 @@ void ObjectManager::loadScene(std::string name)
                     loadObjectAsync(device, modelPath, transform, objName);
                 else 
                 {
-                    std::string texturePath = element.value().contains("texturePath") ? element.value()["texturePath"] : "textures/whiteTexture.jpg";
+                    std::string texturePath = element.value().contains("texturePath") ? element.value()["texturePath"] : "assets/textures/whiteTexture.jpg";
                     loadObjectAsync(device, modelPath, texturePath, transform, objName);
                 }
             }

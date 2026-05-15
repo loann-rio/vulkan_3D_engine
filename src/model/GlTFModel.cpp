@@ -814,7 +814,7 @@ void GlTFModel::ModelGltf::loadTextures(tinygltf::Model& gltfModel, Device& devi
 		TextureBuilder builder(device);
 
 		TextureModel textureModel;
-		textureModel.texture = builder.fromFile("textures/whiteTexture.jpg").build();;
+		textureModel.texture = builder.fromFile("assets/textures/whiteTexture.jpg").build();;
 		textures.push_back(textureModel);
 	}
 }

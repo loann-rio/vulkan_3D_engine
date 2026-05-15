@@ -29,7 +29,7 @@ std::shared_ptr<Model> PrebuiltModel::createFullScreenQuad(Device& device)
     auto model = std::make_unique<Model>(device, modelBuilder);
 
     TextureBuilder builder(device);
-    model->setTexture(std::move(builder.fromFile("textures/whiteTexture.jpg").build()));
+    model->setTexture(std::move(builder.fromFile("assets/textures/whiteTexture.jpg").build()));
 
     return model;
 }
@@ -93,7 +93,7 @@ std::shared_ptr<Model> PrebuiltModel::createPlane(Device& device, float width, f
     auto model = std::make_unique<Model>(device, modelBuilder);
 
     TextureBuilder builder(device);
-    model->setTexture(std::move(builder.fromFile("textures/whiteTexture.jpg").build()));
+    model->setTexture(std::move(builder.fromFile("assets/textures/whiteTexture.jpg").build()));
 
     return model;
 }
@@ -258,7 +258,7 @@ std::shared_ptr<Model> PrebuiltModel::createCube(Device& device)
     auto model = std::make_unique<Model>(device, modelBuilder);
 
     TextureBuilder builder(device);
-    model->setTexture(std::move(builder.fromFile("textures/whiteTexture.jpg").build()));
+    model->setTexture(std::move(builder.fromFile("assets/textures/whiteTexture.jpg").build()));
 
     return model;
 }
@@ -351,7 +351,7 @@ std::shared_ptr<Model> PrebuiltModel::createTerrain(Device& device,
     auto model = std::make_unique<Model>(device, modelBuilder);
 
     TextureBuilder builder(device);
-    model->setTexture(std::move(builder.fromFile("textures/whiteTexture.jpg").build()));
+    model->setTexture(std::move(builder.fromFile("assets/textures/whiteTexture.jpg").build()));
 
     return model;
 }
@@ -465,7 +465,7 @@ std::shared_ptr<Model> PrebuiltModel::createTerrain(Device& device, float width,
     auto model = std::make_unique<Model>(device, modelBuilder);
 
     TextureBuilder builder(device);
-    model->setTexture(std::move(builder.fromFile("textures/whiteTexture.jpg").build()));
+    model->setTexture(std::move(builder.fromFile("assets/textures/whiteTexture.jpg").build()));
 
     return model;
 }
