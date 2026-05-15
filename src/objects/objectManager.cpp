@@ -23,7 +23,7 @@ void ObjectManager::startLoadModel()
         TextureBuilder builder(device);
         std::unique_ptr<TextureObject> texture = builder.fromFile("skybox/cubemap_space.ktx").asCubemap().build();
 
-        std::shared_ptr<Model> cube = Model::createModelFromFile(device, "model/cube.obj");
+        std::shared_ptr<Model> cube = Model::createModelFromFile(device, "assets/model/cube.obj");
         cube->setTexture(std::move(texture));
 
         auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
@@ -93,7 +93,7 @@ void ObjectManager::createPrimitive(PrimitivesModelType type, int detail, Transf
 
         switch (type) {
         case PrimitivesModelType::PLANE:
-            primitive = PrebuiltModel::createPlane(this->device, detail, 1, { 0, 0, 0 }, filePathTexture.empty() ? "textures/whiteTexture.jpg" : filePathTexture, 20);
+            primitive = PrebuiltModel::createPlane(this->device, detail, 1, { 0, 0, 0 }, filePathTexture.empty() ? "assets/textures/whiteTexture.jpg" : filePathTexture, 20);
             break;
         case PrimitivesModelType::CUBE:
             primitive = PrebuiltModel::createCube(this->device);

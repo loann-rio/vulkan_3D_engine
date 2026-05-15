@@ -1,0 +1,3 @@
+[submodule "assets"]
+	path = assets
+	url = https://github.com/loann-rio/assets_vulkan_engine.git
