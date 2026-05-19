@@ -3,7 +3,6 @@
 // local
 #include "base/Buffer.h"
 #include "base/Frame_info.h"
-//#include "objects/Texture.h"
 #include "objects/KeyboardMovementController.h"
 #include "render/Camera.h"
 #include "model/GlTFModel.h"
@@ -34,9 +33,6 @@ void Engine::run()
 {
     // ui
     BasicUI imgui{ device, assetManager, window.getGLFWwindow(), renderer.getSwapChainRenderPass() };
-
-    //TextOverlay textOverlay(device, renderer.getSwapChainRenderPass());
-    //textOverlay.prepareResources(*globalPool);
 
     objectManager.generateSkybox("skybox/citrus_orchard_puresky_4k.hdr", "testSkybox", &renderer, skyboxCreationRenderSystem);
 
@@ -85,19 +81,6 @@ void Engine::run()
         if (!renderer.aquireNextImage()) continue;
         
         int frameIndex = renderer.getFrameIndex();
-
-        /* {
-            // show fps count on screen
-            
-            cpuFrameRate.update(frameTime);
-
-            std::stringstream ss("");
-            ss << std::fixed << std::setprecision(2) << cpuFrameRate.get() << " fps";
-
-            textOverlay.beginTextUpdate(frameIndex);
-            textOverlay.addText(frameIndex, ss.str(), 10, 10, TextOverlay::alignLeft, renderer.getWidth(), renderer.getHeight()); 
-            textOverlay.endTextUpdate(frameIndex); 
-        }*/
 
         /////// update objects ///////
 
@@ -170,10 +153,10 @@ void Engine::run()
 
 
         // update terrain ubo
-        {
+        /*{
             terrainBuffers[frameIndex]->writeToBuffer(&terrainUbo);
             terrainBuffers[frameIndex]->flush();
-		}
+		}*/
 
         std::vector<std::array<FrustumPlane, 6>> frustrumPlanesList;
         // update spotLight
@@ -206,12 +189,13 @@ void Engine::run()
 		
         /////// render frame ///////
         {
+            auto newGpuTime = std::chrono::high_resolution_clock::now();
+
             std::vector<VkDescriptorSet> descriptorSets{ globalDescriptorSet[frameIndex], shadowDescriptorSet[renderer.getDepthIndex()]};
 			std::array<FrustumPlane, 6> frustrumPlanes = dynamic_cast<GameObjectCamera*>(objectManager.get(objectManager.mainCamera))->getFrustumPlanes();
 
             vkQueueWaitIdle(device.presentQueue());
 
-            auto newGpuTime = std::chrono::high_resolution_clock::now();
            
 			// render shadow map
             renderer.renderDepthImage(frameInfo, { depthRenderSystem, depthRenderSystemGltf, depthTerrainRenderSystem }, descriptorSets);
@@ -222,19 +206,22 @@ void Engine::run()
                 renderer.beginSwapChainRenderPass(commandBuffer); 
 
                 if (textureObject)
-                    gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo,
-                    {
-                        globalDescriptorSet[frameIndex],
-                        shadowDescriptorSet[renderer.getDepthIndex()],
-                        assetManager.models().get(textureObject->modelAsset)->lods[0].materials[0].descriptorSet[frameIndex]
-                    },
-                    frustrumPlanes);
+                    gltfRenderSystem->renderGameObjects(
+                        commandBuffer, 
+                        frameInfo,
+                        {
+                            globalDescriptorSet[frameIndex],
+                            shadowDescriptorSet[renderer.getDepthIndex()],
+                            assetManager.models().get(textureObject->modelAsset)->lods[0].materials[0].descriptorSet[frameIndex]
+                        },
+                        frustrumPlanes
+                    );
                 
                 
                 objRenderSystem->renderGameObjects(commandBuffer, frameInfo, descriptorSets); 
 
-                std::vector<VkDescriptorSet> terrainDescriptorSets{ globalDescriptorSet[frameIndex], shadowDescriptorSet[renderer.getDepthIndex()], terrainDescriptorSet[frameIndex] };
-                terrainRenderSystem->renderGameObjects(commandBuffer, frameInfo, terrainDescriptorSets);
+                //std::vector<VkDescriptorSet> terrainDescriptorSets{ globalDescriptorSet[frameIndex], shadowDescriptorSet[renderer.getDepthIndex()], terrainDescriptorSet[frameIndex] };
+                //terrainRenderSystem->renderGameObjects(commandBuffer, frameInfo, terrainDescriptorSets);
 
 				skyboxRenderSystem->renderGameObjects(commandBuffer, frameInfo, { globalDescriptorSet[frameIndex] });
 
