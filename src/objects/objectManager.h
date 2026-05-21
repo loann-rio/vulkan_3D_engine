@@ -7,8 +7,6 @@
 #include <typeindex>
 
 #include "GameObject.h"
-#include "../render/Renderer.h"
-#include "../render/GlobalRenderSystem.h" 
 
 #include "../assetManager/AssetManager.h"
 
@@ -77,8 +75,6 @@ public:
 
     DescriptorPool* getPool() const { return globalPool.get(); }
 
-    void generateSkybox(const std::string pathTexture, const std::string goName, Renderer* renderer, std::shared_ptr<GlobalRenderSystem> skyboxRenedrSystem);
-
     // camera
     std::string mainCamera = "mainCamera"; 
 
@@ -86,6 +82,10 @@ public:
     std::string mainSkybox = "cubemap";
 
     AssetManager& assetManager;
+
+    void createDescriptorSet(ModelAsset* model);
+    void updateGameObject(float frameTime);
+
 private:
     Device& device;
     
@@ -100,10 +100,7 @@ private:
 
     void addObjectToScene(GameObject* gameObject);
 
-    std::unique_ptr<DescriptorPool> globalPool{};
-
-
-    void createDescriptorSet(ModelAsset* model);
+    std::unique_ptr<DescriptorPool> globalPool{};    
 };
 
 

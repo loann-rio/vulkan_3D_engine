@@ -3,8 +3,11 @@
 #include <stdexcept>
 #include <array>
 #include <cassert>
+#include "../model/ModelAsset.h"
+#include "../model/ModelBuilder.h"
+#include "../assetManager/ModelManager.h"
 
-Renderer::Renderer(Window& window, Device& device, AssetManager& assets) : window{window} , device{device}, assets{assets}
+Renderer::Renderer(Window& window, Device& device, AssetManager& assets, ObjectManager& objectManager) : window{window} , device{device}, assets{assets}
 {
 	recreateSwapChain();
 
@@ -13,13 +16,16 @@ Renderer::Renderer(Window& window, Device& device, AssetManager& assets) : windo
 
 	createDepthCommandBuffer();
 	createCommandBuffer();
+
+	createRenderSystems(objectManager);
+
+	imgui = std::make_unique<BasicUI>(device, assets, window.getGLFWwindow(), getSwapChainRenderPass() );
 }
 
 Renderer::~Renderer() { freeCommandBuffers(); }
 
 /*
 	recreate swap chain after redimentionning of the window
-
 */
 void Renderer::recreateSwapChain()
 {
@@ -37,10 +43,12 @@ void Renderer::recreateSwapChain()
 	vkDeviceWaitIdle(device.device());
 
 	// if the swapchain does not already exist create a new one
-	if (swapChain == nullptr) {
+	if (swapChain == nullptr) 
+	{
 		swapChain = std::make_unique<Swap_chain>(device, assets, extent);
 	}
-	else {
+	else
+	{
 		std::shared_ptr<Swap_chain> oldSwapChain = std::move(swapChain);
 		swapChain = std::make_unique<Swap_chain>(device, assets, extent, oldSwapChain);
 
@@ -50,6 +58,204 @@ void Renderer::recreateSwapChain()
 	}
 }
 
+void Renderer::createRenderSystems(ObjectManager& objectManager)
+{
+	/// global buffer
+	uboBuffers.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
+	for (int i = 0; i < uboBuffers.size(); i++)
+	{
+		uboBuffers[i] = std::make_unique<Buffer>(
+			device,
+			sizeof(GlobalUbo),
+			1,
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+			device.properties.limits.minUniformBufferOffsetAlignment
+		);
+
+		uboBuffers[i]->map();
+	}
+
+	auto globalSetLayout = DescriptorSetLayout::Builder(device)
+		.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+		.build();
+
+	globalDescriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
+	for (int i = 0; i < globalDescriptorSet.size() && i < 2; i++)
+	{
+		auto bufferInfo = uboBuffers[i]->descriptorInfo();
+
+		DescriptorWriter(*globalSetLayout, *objectManager.getPool())
+			.writeBuffer(0, &bufferInfo)
+			.build(globalDescriptorSet[i]);
+	}
+
+	//// terrain buffer 
+
+	terrainBuffers.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
+	for (int i = 0; i < terrainBuffers.size(); i++)
+	{
+		terrainBuffers[i] = std::make_unique<Buffer>(
+			device,
+			sizeof(TerrainUbo),
+			1,
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+			device.properties.limits.minUniformBufferOffsetAlignment
+		);
+
+		terrainBuffers[i]->map();
+	}
+
+	auto terrainSetLayout = DescriptorSetLayout::Builder(device)
+		.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
+		.build();
+
+	terrainDescriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
+	for (int i = 0; i < terrainDescriptorSet.size() && i < 2; i++)
+	{
+		auto bufferInfo = terrainBuffers[i]->descriptorInfo();
+
+		DescriptorWriter(*terrainSetLayout, *objectManager.getPool())
+			.writeBuffer(0, &bufferInfo)
+			.build(terrainDescriptorSet[i]);
+	}
+
+	//// shadow buffer
+	shadowUboBuffer.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
+	for (int i = 0; i < shadowUboBuffer.size(); i++)
+	{
+		shadowUboBuffer[i] = std::make_unique<Buffer>(
+			device,
+			sizeof(SpotLightUbo),
+			1,
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+			device.properties.limits.minUniformBufferOffsetAlignment
+		);
+
+		shadowUboBuffer[i]->map();
+	}
+
+	auto shadowSetLayout = DescriptorSetLayout::Builder(device)
+		.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+		.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, DepthSwapChain::MAX_DEPTH_RENDER_COUNT)
+		.build();
+
+	shadowDescriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
+	for (int i = 0; i < shadowDescriptorSet.size() && i < 2; i++)
+	{
+		auto bufferInfo = shadowUboBuffer[i]->descriptorInfo();
+		auto depthInfo = getShadowImageInfo(i);
+
+		DescriptorWriter(*shadowSetLayout, *objectManager.getPool())
+			.writeBuffer(0, &bufferInfo)
+			.writeImage(1, depthInfo, DepthSwapChain::MAX_DEPTH_RENDER_COUNT)
+			.build(shadowDescriptorSet[i]);
+	}
+
+	/// skybox 
+	auto skyboxSetLayout = DescriptorSetLayout::Builder(device)
+		.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+		.build();
+
+	/// render systems
+
+	{
+		{
+			RenderSystemBuilder gltfBuilder{};
+			gltfBuilder.fragFilepath = "shaders\\GlTFshader.frag.spv";
+			gltfBuilder.vertFilepath = "shaders\\GlTFshader.vert.spv";
+			gltfBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout(), skyboxSetLayout->getDescriptorSetLayout() };
+			gltfBuilder.renderPass = getSwapChainRenderPass();
+			gltfBuilder.hasMultipleInstance = true;
+
+			gltfRenderSystem = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, assets, gltfBuilder);
+		}
+
+		{
+			RenderSystemBuilder gltfShadowBuilder{};
+			gltfShadowBuilder.vertFilepath = "shaders\\shadowmapgltf.vert.spv";
+			gltfShadowBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
+			gltfShadowBuilder.renderPass = getDepthRenderPass();
+			gltfShadowBuilder.hasMultipleInstance = true;
+
+			depthRenderSystemGltf = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, assets, gltfShadowBuilder);
+		}
+	}
+
+	{
+		{
+			RenderSystemBuilder objBuilder{};
+			objBuilder.fragFilepath = "shaders\\simple_shader.frag.spv";
+			objBuilder.vertFilepath = "shaders\\simple_shader.vert.spv";
+			objBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
+			objBuilder.renderPass = getSwapChainRenderPass();
+			objBuilder.hasMultipleInstance = true;
+
+			objRenderSystem = GlobalRenderSystem::create<Model>(device, assets, objBuilder);
+		}
+
+		{
+			RenderSystemBuilder objShadowBuilder{};
+			objShadowBuilder.vertFilepath = "shaders\\shadowmap.vert.spv";
+			objShadowBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
+			objShadowBuilder.renderPass = getDepthRenderPass();
+			objShadowBuilder.hasMultipleInstance = true;
+
+			depthRenderSystem = GlobalRenderSystem::create<Model>(device, assets, objShadowBuilder);
+		}
+	}
+
+	{
+		{
+			RenderSystemBuilder terrainBuilder{};
+
+			terrainBuilder.vertFilepath = "shaders\\terrainShader.vert.spv";
+			terrainBuilder.fragFilepath = "shaders\\terrainShader.frag.spv";
+			terrainBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() , terrainSetLayout->getDescriptorSetLayout() };
+			terrainBuilder.renderPass = getSwapChainRenderPass();
+			terrainBuilder.hasMultipleInstance = true;
+			terrainBuilder.subModelType = ModelSubType::TERRAIN;
+
+			terrainRenderSystem = GlobalRenderSystem::create<Model>(device, assets, terrainBuilder);
+		}
+
+		{
+			RenderSystemBuilder terrainShadowBuilder{};
+			terrainShadowBuilder.vertFilepath = "shaders\\shadowMapTerrain.vert.spv";
+			terrainShadowBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
+			terrainShadowBuilder.renderPass = getDepthRenderPass();
+			terrainShadowBuilder.hasMultipleInstance = true;
+			terrainShadowBuilder.subModelType = ModelSubType::TERRAIN;
+
+			depthTerrainRenderSystem = GlobalRenderSystem::create<Model>(device, assets, terrainShadowBuilder);
+		}
+	}
+
+	{
+		RenderSystemBuilder skyboxBuilder{};
+		skyboxBuilder.fragFilepath = "shaders\\skybox.frag.spv";
+		skyboxBuilder.vertFilepath = "shaders\\skybox.vert.spv";
+		skyboxBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout() };
+		skyboxBuilder.renderPass = getSwapChainRenderPass();
+		skyboxBuilder.subModelType = ModelSubType::SKYBOX;
+		skyboxBuilder.isSkyBox = true;
+		skyboxRenderSystem = GlobalRenderSystem::create<Model>(device, assets, skyboxBuilder);
+	}
+
+	{
+		RenderSystemBuilder skyboxBuilder{};
+		skyboxBuilder.fragFilepath = "shaders\\equirectangular_to_cube.frag.spv";
+		skyboxBuilder.vertFilepath = "shaders\\fullscreen.vert.spv";
+		skyboxBuilder.renderPass = getSecondarySwapRenderPass();
+		skyboxBuilder.isFullscreenRender = true;
+		skyboxBuilder.pushStage = static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_FRAGMENT_BIT);
+		skyboxCreationRenderSystem = GlobalRenderSystem::create<Model>(device, assets, skyboxBuilder);
+	}
+
+}
+	
 
 /// <summary>
 /// create command buffer
@@ -264,7 +470,7 @@ bool Renderer::aquireNextImage()
 	return true;
 }
 
-void Renderer::renderDepthImage(FrameInfo& frameInfo, std::vector<std::shared_ptr<GlobalRenderSystem>> renderSystems, std::vector<VkDescriptorSet> globalDescriptorSets)
+void Renderer::renderDepthImage(FrameInfo& frameInfo)
 {
 
 	size_t countDepthRender = 0; 
@@ -274,8 +480,22 @@ void Renderer::renderDepthImage(FrameInfo& frameInfo, std::vector<std::shared_pt
 
 			beginShadowRenderPass(depthCommandBuffer, commandBufferIndex); 
 
-			for (auto renderSystem : renderSystems)
-				renderSystem->renderGameObjectsDepth(depthCommandBuffer, frameInfo, globalDescriptorSets,  commandBufferIndex, frameInfo.frameIndex);
+			for (auto renderSystem : {
+					depthRenderSystem,
+					depthRenderSystemGltf,
+					depthTerrainRenderSystem
+				})
+
+				renderSystem->renderGameObjectsDepth(
+					depthCommandBuffer, 
+					frameInfo, 
+					{
+						globalDescriptorSet[frameInfo.frameIndex],
+						shadowDescriptorSet[getDepthIndex()]
+					},  
+					commandBufferIndex, 
+					frameInfo.frameIndex
+				);
 
 			endShadowRenderPass(depthCommandBuffer, commandBufferIndex);
 			endDepthFrame(commandBufferIndex);
@@ -292,16 +512,112 @@ void Renderer::renderDepthImage(FrameInfo& frameInfo, std::vector<std::shared_pt
 	currentDepthFrameIndex = (currentDepthFrameIndex + 1) % Swap_chain::MAX_FRAMES_IN_FLIGHT; 
 }
 
+void Renderer::renderColorImage(
+	ObjectManager& objectManager,
+	FrameInfo& frameInfo)
+{
+	if (auto commandBuffer = beginFrame()) {
+
+		// render
+		beginSwapChainRenderPass(commandBuffer);
+
+		if (base_skybox)
+			gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo,
+				{
+					globalDescriptorSet[frameInfo.frameIndex],
+					shadowDescriptorSet[getDepthIndex()],
+					assets.models().get(base_skybox->modelAsset)->lods[0].materials[0].descriptorSet[frameInfo.frameIndex]
+				},
+				frameInfo.mainCameraFrustrumPlanes);
+		else
+			base_skybox = dynamic_cast<GameObjectModel*>(objectManager.get("cubemap1"));
+
+
+		objRenderSystem->renderGameObjects(commandBuffer, frameInfo, {globalDescriptorSet[frameInfo.frameIndex], shadowDescriptorSet[frameInfo.frameIndex] });
+		skyboxRenderSystem->renderGameObjects(commandBuffer, frameInfo, { globalDescriptorSet[frameInfo.frameIndex] });
+
+		imgui->drawUI(commandBuffer, &objectManager, frameInfo.gpuFrameRate);
+
+		endSwapChainRenderPass(commandBuffer);
+		endFrame();
+	}
+}
+
+void Renderer::generateSkybox(const std::string pathTexture, const std::string goName, ObjectManager& objectManager)
+{
+	auto textureSetLayout = DescriptorSetLayout::Builder(device)
+		.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+		.build();
+
+	TextureBuilder builder(device);
+	TextureManager::TextureID texture = assets.textures().create(builder.fromFile(pathTexture));
+
+	auto imageInfo = assets.textures().get(texture)->getImageInfo();
+
+	VkDescriptorSet descriptorSet;
+	DescriptorWriter(*textureSetLayout, *objectManager.getPool())
+		.writeImage(0, &imageInfo)
+		.build(descriptorSet);
+
+	// render new texture
+	auto resultTexture = renderHdriToCubeTexture(skyboxCreationRenderSystem, descriptorSet);
+
+	// remove builder texture
+	assets.textures().remove(texture);
+
+	// create go with new texture
+	auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assets);
+	gameObject->setName(goName);
+
+	gameObject->setModelType(ModelType::OBJ_MODEL);
+	gameObject->setModelSubType(ModelSubType::SKYBOX);
+
+	gameObject->texturePath = gameObject->texturePath;
+	gameObject->saveable = false;
+	gameObject->show = true;
+
+	GameObject::id_t id = gameObject->getId();
+
+	ModelBuilder modelBuilder(device, assets);
+	ModelManager::ModelID modelId = assets.models().create(modelBuilder.fromFile("model/cube.obj").withTexture(resultTexture));
+
+	objectManager.createDescriptorSet(assets.models().get(modelId));
+	gameObject->setModel(modelId);
+
+	objectManager.pushGameObject(std::move(gameObject));
+}
+
+void Renderer::renderFrame(FrameInfo& frameInfo, ObjectManager& objectManager)
+{
+	frameInfo.gpuFrameRate = gpuFrameRate.get();
+
+	auto newGpuTime = std::chrono::high_resolution_clock::now();
+
+	vkQueueWaitIdle(device.presentQueue()); // TODO remove
+
+	// render shadow map
+	renderDepthImage(frameInfo);
+
+	renderColorImage(
+		objectManager,
+		frameInfo
+	);
+
+	auto endGpuTime = std::chrono::high_resolution_clock::now();
+	gpuTime = std::chrono::duration<float, std::chrono::seconds::period>(endGpuTime - newGpuTime).count();
+	gpuFrameRate.update(gpuTime);
+}
+
 TextureManager::TextureID Renderer::renderHdriToCubeTexture(std::shared_ptr<GlobalRenderSystem> renderSystem, VkDescriptorSet descriptorSet)
 {
 
 	glm::mat4 captureViews[] = {
-	glm::lookAt(glm::vec3(0), glm::vec3(1,  0,  0), glm::vec3(0, -1,  0)), // +X
-	glm::lookAt(glm::vec3(0), glm::vec3(-1, 0,  0), glm::vec3(0, -1,  0)), // -X
-	glm::lookAt(glm::vec3(0), glm::vec3(0, -1,  0), glm::vec3(0,  0, -1)), // +Y
-	glm::lookAt(glm::vec3(0), glm::vec3(0,  1,  0), glm::vec3(0,  0,  1)), // -Y
-	glm::lookAt(glm::vec3(0), glm::vec3(0,  0,  1), glm::vec3(0, -1,  0)), // +Z
-	glm::lookAt(glm::vec3(0), glm::vec3(0,  0, -1), glm::vec3(0, -1,  0))  // -Z
+		glm::lookAt(glm::vec3(0), glm::vec3(1,  0,  0), glm::vec3(0, -1,  0)), // +X
+		glm::lookAt(glm::vec3(0), glm::vec3(-1, 0,  0), glm::vec3(0, -1,  0)), // -X
+		glm::lookAt(glm::vec3(0), glm::vec3(0, -1,  0), glm::vec3(0,  0, -1)), // +Y
+		glm::lookAt(glm::vec3(0), glm::vec3(0,  1,  0), glm::vec3(0,  0,  1)), // -Y
+		glm::lookAt(glm::vec3(0), glm::vec3(0,  0,  1), glm::vec3(0, -1,  0)), // +Z
+		glm::lookAt(glm::vec3(0), glm::vec3(0,  0, -1), glm::vec3(0, -1,  0))  // -Z
 	};
 
 	glm::mat4 captureProj = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
@@ -313,7 +629,6 @@ TextureManager::TextureID Renderer::renderHdriToCubeTexture(std::shared_ptr<Glob
 			beginSingleTimeRender(commandBuffer, face);
 
 			renderSystem->renderFullScreen(commandBuffer, descriptorSet, captureViews[face], captureProj);
-
 
 			endSingleTimeRender(commandBuffer);
 			device.endSingleTimeCommands(commandBuffer);
@@ -331,9 +646,7 @@ TextureManager::TextureID Renderer::renderHdriToCubeTexture(std::shared_ptr<Glob
 	);
 
 	return skyboxSwapChain.getTextureColor();
-
 }
-
 
 void Renderer::createCommandBuffer()
 {

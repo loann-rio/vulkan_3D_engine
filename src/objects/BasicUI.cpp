@@ -58,7 +58,7 @@ BasicUI::~BasicUI()
     vkDestroyDescriptorPool(device.device(), imguiPool, nullptr); 
 }
 
-void BasicUI::drawUI(VkCommandBuffer commandBuffer, ObjectManager* manager, TerrainUbo& terrainUbo, float fps)
+void BasicUI::drawUI(VkCommandBuffer commandBuffer, ObjectManager* manager, float fps)
 {
     isWindowSelected = false;
 
@@ -76,8 +76,6 @@ void BasicUI::drawUI(VkCommandBuffer commandBuffer, ObjectManager* manager, Terr
     }   
 
     objectSelectionWindow(listObjectsName, manager, fps);
-
-	terrainUboWindow(terrainUbo);
 
     auto gameObject = manager->get(selected_object);
     if (gameObject != nullptr) {

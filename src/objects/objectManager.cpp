@@ -2,10 +2,6 @@
 
 #include "../model/preBuild.h"
 
-#include "../GameObjectClassAssets/TerrainGenerator.h"
-#include "../GameObjectClassAssets/mainLightBehavior.h"
-#include "../GameObjectClassAssets/ChunkManager.h"
-
 #include "../Textures/TextureObject.h"
 #include "../Textures/TextureBuilder.h"
 
@@ -27,7 +23,6 @@ void ObjectManager::startLoadModel()
 
         createDescriptorSet(assetManager.models().get(id));
 
-
         auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
         gameObject->setName("testModelBuilder");
         gameObject->setModelType(ModelType::OBJ_MODEL);
@@ -39,9 +34,6 @@ void ObjectManager::startLoadModel()
         gameObject->createDescriptorSet(*globalPool);
         pushGameObject(std::move(gameObject));
     }
-
-
-
 
     if (true)
     {
@@ -416,8 +408,45 @@ void ObjectManager::createDescriptorSet(ModelAsset* model)
                     .build(material.descriptorSet[i]);
             }
         }
+    }  
+}
+
+void ObjectManager::updateGameObject(float frameTime)
+{
+    std::vector<GameObject::id_t> toRemove;
+
+    for (auto& [id, obj] : *gameObjects) {
+        if (!obj->toBeRemoved) {
+            obj->loop(this);
+            continue;
+        }
+
+        // Handle removal
+        if (obj->getType() == GameObjectType::MODEL) {
+            auto* modelObj = dynamic_cast<GameObjectModel*>(obj.get());
+            if (modelObj->show) {
+                modelObj->show = false; // Hide first to avoid descriptor issues
+                continue;
+            }
+        }
+
+        // Either not a model, or already hidden — safe to remove
+        toRemove.push_back(id);
     }
-    
+
+    // Remove after iteration
+    for (auto id : toRemove) {
+        removeGameObject(id);
+    }
+
+    // update GLTF game objects
+    {
+        std::vector<GameObjectModel*> objects = getByType<GameObjectModel>();
+        for (auto obj : objects) {
+            obj->update(frameTime);
+        }
+    }
+
 }
 
 void ObjectManager::createScene(std::string name)
@@ -549,56 +578,6 @@ void ObjectManager::loadObjectAsync(Device& device, AssetManager& assets, const 
         }) 
      );
 }
-
-///// skybox /////
-
-void ObjectManager::generateSkybox(const std::string pathTexture, const std::string goName, Renderer* renderer, std::shared_ptr<GlobalRenderSystem> skyboxRenedrSystem)
-{
-    auto textureSetLayout = DescriptorSetLayout::Builder(device)
-        .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .build();
-  
-    TextureBuilder builder(device);
-    TextureManager::TextureID texture  = assetManager.textures().create(builder.fromFile(pathTexture));
-  
-    auto imageInfo = assetManager.textures().get(texture)->getImageInfo();
-
-    VkDescriptorSet descriptorSet;
-    DescriptorWriter(*textureSetLayout, *globalPool)
-        .writeImage(0, &imageInfo)
-        .build(descriptorSet);
-
-    // render new texture
-    auto resultTexture = renderer->renderHdriToCubeTexture(skyboxRenedrSystem, descriptorSet);
-
-
-    // remove builder texture
-    assetManager.textures().remove(texture);
-
-    // create go with new texture
-    auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
-    gameObject->setName(goName);
-
-    gameObject->setModelType(ModelType::OBJ_MODEL);
-    gameObject->setModelSubType(ModelSubType::SKYBOX);
-
-    gameObject->texturePath = gameObject->texturePath;
-    gameObject->saveable = false;
-    gameObject->show = true;
-
-    GameObject::id_t id = gameObject->getId();
-
-   
-
-    ModelBuilder modelBuilder(device, assetManager);
-    ModelManager::ModelID modelId = assetManager.models().create(modelBuilder.fromFile("model/cube.obj").withTexture(resultTexture));
-
-    createDescriptorSet(assetManager.models().get(modelId));
-    gameObject->setModel(modelId);
-
-    pushGameObject(std::move(gameObject));
-}
-
 
 ObjectManager::ObjectManager(Device& device, AssetManager& assetManager) : device{ device }, assetManager{ assetManager }
 {
