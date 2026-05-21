@@ -15,7 +15,7 @@
 #include "../objects/objectManager.h"
 
 // imgui
-//include "../objects/BasicUI.h"
+#include "../objects/BasicUI.h"
 
 
 #include "../base/Frame_info.h"
@@ -96,6 +96,8 @@ public:
 		assert(std::all_of(isDepthStarted.begin(), (isDepthStarted.begin() + commandBufferCount), [](bool v) { return v; }) && "cannot get command buffer when not all frames in progress");
 		return { depthCommandBuffers.begin() + DepthSwapChain::MAX_DEPTH_RENDER_COUNT * currentDepthFrameIndex, depthCommandBuffers.begin() + DepthSwapChain::MAX_DEPTH_RENDER_COUNT * currentDepthFrameIndex + commandBufferCount };
 	}
+
+	bool isUiSelected() { return imgui->isWindowSelected; }
 	
 private:
 
@@ -130,7 +132,7 @@ private:
 	bool isFrameStarted = false; 
 	std::vector<bool> isDepthStarted;
 
-	//std::unique_ptr<BasicUI> imgui;
+	std::unique_ptr<BasicUI> imgui;
 
 	GameObjectModel* base_skybox;
 };

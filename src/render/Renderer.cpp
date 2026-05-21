@@ -17,7 +17,7 @@ Renderer::Renderer(Window& window, Device& device, AssetManager& assets) : windo
 	createDepthCommandBuffer();
 	createCommandBuffer();
 
-	//imgui = std::make_unique<BasicUI>(device, assets, window.getGLFWwindow(), getSwapChainRenderPass() );
+	imgui = std::make_unique<BasicUI>(device, assets, window.getGLFWwindow(), getSwapChainRenderPass() );
 }
 
 Renderer::~Renderer() { freeCommandBuffers(); }
@@ -332,7 +332,7 @@ void Renderer::renderColorImage(
 
 		skyboxRenderSystem->renderGameObjects(commandBuffer, frameInfo, { globalDescriptorSet[frameInfo.frameIndex] });
 
-		//imgui->drawUI(commandBuffer, &objectManager, terrainUbo, frameInfo.gpuFrameRate);
+		imgui->drawUI(commandBuffer, &objectManager, frameInfo.gpuFrameRate);
 
 		endSwapChainRenderPass(commandBuffer);
 		endFrame();

@@ -33,7 +33,7 @@ Engine::Engine() {
 void Engine::run()
 {
     // ui
-    BasicUI imgui{ device, assetManager, window.getGLFWwindow(), renderer.getSwapChainRenderPass() };
+    //BasicUI imgui{ device, assetManager, window.getGLFWwindow(), renderer.getSwapChainRenderPass() };
 
     renderer.generateSkybox("skybox/citrus_orchard_puresky_4k.hdr", "testSkybox", objectManager, skyboxCreationRenderSystem);
 
@@ -73,7 +73,7 @@ void Engine::run()
         
         //// move camera on event ////
         {
-            if (!imgui.isWindowSelected)
+            if (!renderer.isUiSelected())
                 cameraController.moveInPlaneXZ(window.getGLFWwindow(), frameTime, objectManager.get(objectManager.mainCamera));
             dynamic_cast<GameObjectCamera*>(objectManager.get(objectManager.mainCamera))->updateCameraView();
         }
@@ -211,33 +211,6 @@ void Engine::run()
                 terrainRenderSystem.get(),
                 skyboxRenderSystem.get()
             );
-/*            if (auto commandBuffer = renderer.beginFrame()) {
-                 
-                // render
-                renderer.beginSwapChainRenderPass(commandBuffer); 
-
-                if (textureObject)
-                    gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo,
-                    {
-                        globalDescriptorSet[frameIndex],
-                        shadowDescriptorSet[renderer.getDepthIndex()],
-                        assetManager.models().get(textureObject->modelAsset)->lods[0].materials[0].descriptorSet[frameIndex]
-                    },
-                    frameInfo.mainCameraFrustrumPlanes);
-                
-                
-                objRenderSystem->renderGameObjects(commandBuffer, frameInfo, descriptorSets); 
-
-                std::vector<VkDescriptorSet> terrainDescriptorSets{ globalDescriptorSet[frameIndex], shadowDescriptorSet[renderer.getDepthIndex()], terrainDescriptorSet[frameIndex] };
-                terrainRenderSystem->renderGameObjects(commandBuffer, frameInfo, terrainDescriptorSets);
-
-				skyboxRenderSystem->renderGameObjects(commandBuffer, frameInfo, { globalDescriptorSet[frameIndex] });
-
-                imgui.drawUI(commandBuffer, &objectManager, terrainUbo, gpuFrameRate.get());
-
-                renderer.endSwapChainRenderPass(commandBuffer); 
-                renderer.endFrame();
-            } */
 
 			auto endGpuTime = std::chrono::high_resolution_clock::now();
 			gpuTime = std::chrono::duration<float, std::chrono::seconds::period>(endGpuTime - newGpuTime).count();
