@@ -550,56 +550,6 @@ void ObjectManager::loadObjectAsync(Device& device, AssetManager& assets, const 
      );
 }
 
-///// skybox /////
-
-void ObjectManager::generateSkybox(const std::string pathTexture, const std::string goName, Renderer* renderer, std::shared_ptr<GlobalRenderSystem> skyboxRenedrSystem)
-{
-    auto textureSetLayout = DescriptorSetLayout::Builder(device)
-        .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .build();
-  
-    TextureBuilder builder(device);
-    TextureManager::TextureID texture  = assetManager.textures().create(builder.fromFile(pathTexture));
-  
-    auto imageInfo = assetManager.textures().get(texture)->getImageInfo();
-
-    VkDescriptorSet descriptorSet;
-    DescriptorWriter(*textureSetLayout, *globalPool)
-        .writeImage(0, &imageInfo)
-        .build(descriptorSet);
-
-    // render new texture
-    auto resultTexture = renderer->renderHdriToCubeTexture(skyboxRenedrSystem, descriptorSet);
-
-
-    // remove builder texture
-    assetManager.textures().remove(texture);
-
-    // create go with new texture
-    auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
-    gameObject->setName(goName);
-
-    gameObject->setModelType(ModelType::OBJ_MODEL);
-    gameObject->setModelSubType(ModelSubType::SKYBOX);
-
-    gameObject->texturePath = gameObject->texturePath;
-    gameObject->saveable = false;
-    gameObject->show = true;
-
-    GameObject::id_t id = gameObject->getId();
-
-   
-
-    ModelBuilder modelBuilder(device, assetManager);
-    ModelManager::ModelID modelId = assetManager.models().create(modelBuilder.fromFile("model/cube.obj").withTexture(resultTexture));
-
-    createDescriptorSet(assetManager.models().get(modelId));
-    gameObject->setModel(modelId);
-
-    pushGameObject(std::move(gameObject));
-}
-
-
 ObjectManager::ObjectManager(Device& device, AssetManager& assetManager) : device{ device }, assetManager{ assetManager }
 {
     globalPool = DescriptorPool::Builder(device)

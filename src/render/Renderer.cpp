@@ -3,6 +3,9 @@
 #include <stdexcept>
 #include <array>
 #include <cassert>
+#include "../model/ModelAsset.h"
+#include "../model/ModelBuilder.h"
+#include "../assetManager/ModelManager.h"
 
 Renderer::Renderer(Window& window, Device& device, AssetManager& assets) : window{window} , device{device}, assets{assets}
 {
@@ -13,6 +16,8 @@ Renderer::Renderer(Window& window, Device& device, AssetManager& assets) : windo
 
 	createDepthCommandBuffer();
 	createCommandBuffer();
+
+	//imgui = std::make_unique<BasicUI>(device, assets, window.getGLFWwindow(), getSwapChainRenderPass() );
 }
 
 Renderer::~Renderer() { freeCommandBuffers(); }
@@ -290,6 +295,93 @@ void Renderer::renderDepthImage(FrameInfo& frameInfo, std::vector<std::shared_pt
 		isDepthStarted[i] = false;  
 
 	currentDepthFrameIndex = (currentDepthFrameIndex + 1) % Swap_chain::MAX_FRAMES_IN_FLIGHT; 
+}
+
+void Renderer::renderColorImage(
+	ObjectManager& objectManager,
+	FrameInfo& frameInfo,
+	std::vector<VkDescriptorSet> globalDescriptorSet,
+	std::vector<VkDescriptorSet> shadowDescriptorSet,
+	std::vector<VkDescriptorSet> terrainDescriptorSet,
+	GlobalRenderSystem* gltfRenderSystem,
+	GlobalRenderSystem* objRenderSystem,
+	GlobalRenderSystem* terrainRenderSystem,
+	GlobalRenderSystem* skyboxRenderSystem)
+{
+	if (auto commandBuffer = beginFrame()) {
+
+		// render
+		beginSwapChainRenderPass(commandBuffer);
+
+		if (base_skybox)
+			gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo,
+				{
+					globalDescriptorSet[frameInfo.frameIndex],
+					shadowDescriptorSet[getDepthIndex()],
+					assets.models().get(base_skybox->modelAsset)->lods[0].materials[0].descriptorSet[frameInfo.frameIndex]
+				},
+				frameInfo.mainCameraFrustrumPlanes);
+		else
+			base_skybox = dynamic_cast<GameObjectModel*>(objectManager.get("cubemap1"));
+
+
+		objRenderSystem->renderGameObjects(commandBuffer, frameInfo, {globalDescriptorSet[frameInfo.frameIndex], shadowDescriptorSet[frameInfo.frameIndex] });
+
+		//std::vector<VkDescriptorSet> terrainDescriptorSet{ globalDescriptorSet[frameInfo.frameIndex], shadowDescriptorSet[getDepthIndex()], terrainDescriptorSet[frameInfo.frameIndex] };
+		//terrainRenderSystem->renderGameObjects(commandBuffer, frameInfo, terrainDescriptorSet);
+
+		skyboxRenderSystem->renderGameObjects(commandBuffer, frameInfo, { globalDescriptorSet[frameInfo.frameIndex] });
+
+		//imgui->drawUI(commandBuffer, &objectManager, terrainUbo, frameInfo.gpuFrameRate);
+
+		endSwapChainRenderPass(commandBuffer);
+		endFrame();
+	}
+}
+
+void Renderer::generateSkybox(const std::string pathTexture, const std::string goName, ObjectManager& objectManager, std::shared_ptr<GlobalRenderSystem> skyboxRenedrSystem)
+{
+	auto textureSetLayout = DescriptorSetLayout::Builder(device)
+		.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+		.build();
+
+	TextureBuilder builder(device);
+	TextureManager::TextureID texture = assets.textures().create(builder.fromFile(pathTexture));
+
+	auto imageInfo = assets.textures().get(texture)->getImageInfo();
+
+	VkDescriptorSet descriptorSet;
+	DescriptorWriter(*textureSetLayout, *objectManager.getPool())
+		.writeImage(0, &imageInfo)
+		.build(descriptorSet);
+
+	// render new texture
+	auto resultTexture = renderHdriToCubeTexture(skyboxRenedrSystem, descriptorSet);
+
+
+	// remove builder texture
+	assets.textures().remove(texture);
+
+	// create go with new texture
+	auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assets);
+	gameObject->setName(goName);
+
+	gameObject->setModelType(ModelType::OBJ_MODEL);
+	gameObject->setModelSubType(ModelSubType::SKYBOX);
+
+	gameObject->texturePath = gameObject->texturePath;
+	gameObject->saveable = false;
+	gameObject->show = true;
+
+	GameObject::id_t id = gameObject->getId();
+
+	ModelBuilder modelBuilder(device, assets);
+	ModelManager::ModelID modelId = assets.models().create(modelBuilder.fromFile("model/cube.obj").withTexture(resultTexture));
+
+	objectManager.createDescriptorSet(assets.models().get(modelId));
+	gameObject->setModel(modelId);
+
+	objectManager.pushGameObject(std::move(gameObject));
 }
 
 TextureManager::TextureID Renderer::renderHdriToCubeTexture(std::shared_ptr<GlobalRenderSystem> renderSystem, VkDescriptorSet descriptorSet)

@@ -35,10 +35,7 @@ void Engine::run()
     // ui
     BasicUI imgui{ device, assetManager, window.getGLFWwindow(), renderer.getSwapChainRenderPass() };
 
-    //TextOverlay textOverlay(device, renderer.getSwapChainRenderPass());
-    //textOverlay.prepareResources(*globalPool);
-
-    objectManager.generateSkybox("skybox/citrus_orchard_puresky_4k.hdr", "testSkybox", &renderer, skyboxCreationRenderSystem);
+    renderer.generateSkybox("skybox/citrus_orchard_puresky_4k.hdr", "testSkybox", objectManager, skyboxCreationRenderSystem);
 
     // user inputs
     KeyboardMovementController cameraController{};
@@ -85,19 +82,6 @@ void Engine::run()
         if (!renderer.aquireNextImage()) continue;
         
         int frameIndex = renderer.getFrameIndex();
-
-        /* {
-            // show fps count on screen
-            
-            cpuFrameRate.update(frameTime);
-
-            std::stringstream ss("");
-            ss << std::fixed << std::setprecision(2) << cpuFrameRate.get() << " fps";
-
-            textOverlay.beginTextUpdate(frameIndex);
-            textOverlay.addText(frameIndex, ss.str(), 10, 10, TextOverlay::alignLeft, renderer.getWidth(), renderer.getHeight()); 
-            textOverlay.endTextUpdate(frameIndex); 
-        }*/
 
         /////// update objects ///////
 
@@ -200,14 +184,15 @@ void Engine::run()
             spotLightUbo.numLights,
             objectManager.get(objectManager.mainCamera)->transform.translation,
             objectManager.getByType<GameObjectModel>(),
-            frustrumPlanesList
+            frustrumPlanesList,
+            dynamic_cast<GameObjectCamera*>(objectManager.get(objectManager.mainCamera))->getFrustumPlanes(),
+            gpuFrameRate.get(),
         };
 
 		
         /////// render frame ///////
         {
             std::vector<VkDescriptorSet> descriptorSets{ globalDescriptorSet[frameIndex], shadowDescriptorSet[renderer.getDepthIndex()]};
-			std::array<FrustumPlane, 6> frustrumPlanes = dynamic_cast<GameObjectCamera*>(objectManager.get(objectManager.mainCamera))->getFrustumPlanes();
 
             vkQueueWaitIdle(device.presentQueue());
 
@@ -215,8 +200,18 @@ void Engine::run()
            
 			// render shadow map
             renderer.renderDepthImage(frameInfo, { depthRenderSystem, depthRenderSystemGltf, depthTerrainRenderSystem }, descriptorSets);
-
-            if (auto commandBuffer = renderer.beginFrame()) {
+            renderer.renderColorImage(
+                objectManager,
+                frameInfo,
+                globalDescriptorSet,
+                shadowDescriptorSet,
+                terrainDescriptorSet,
+                gltfRenderSystem.get(),
+                objRenderSystem.get(),
+                terrainRenderSystem.get(),
+                skyboxRenderSystem.get()
+            );
+/*            if (auto commandBuffer = renderer.beginFrame()) {
                  
                 // render
                 renderer.beginSwapChainRenderPass(commandBuffer); 
@@ -228,7 +223,7 @@ void Engine::run()
                         shadowDescriptorSet[renderer.getDepthIndex()],
                         assetManager.models().get(textureObject->modelAsset)->lods[0].materials[0].descriptorSet[frameIndex]
                     },
-                    frustrumPlanes);
+                    frameInfo.mainCameraFrustrumPlanes);
                 
                 
                 objRenderSystem->renderGameObjects(commandBuffer, frameInfo, descriptorSets); 
@@ -238,13 +233,11 @@ void Engine::run()
 
 				skyboxRenderSystem->renderGameObjects(commandBuffer, frameInfo, { globalDescriptorSet[frameIndex] });
 
-                //textOverlay.renderText(commandBuffer, frameInfo); 
-
                 imgui.drawUI(commandBuffer, &objectManager, terrainUbo, gpuFrameRate.get());
 
                 renderer.endSwapChainRenderPass(commandBuffer); 
                 renderer.endFrame();
-            } 
+            } */
 
 			auto endGpuTime = std::chrono::high_resolution_clock::now();
 			gpuTime = std::chrono::duration<float, std::chrono::seconds::period>(endGpuTime - newGpuTime).count();

@@ -12,14 +12,18 @@
 #include "../Textures/TextureObject.h"
 #include "../assetManager/AssetManager.h"
 
+#include "../objects/objectManager.h"
+
+// imgui
+//include "../objects/BasicUI.h"
+
+
 #include "../base/Frame_info.h"
 #include "GlobalRenderSystem.h"
 
 #include <memory>
 #include <vector>
 #include <cassert>
-
-
 
 class Renderer
 {
@@ -57,7 +61,23 @@ public:
 
 	bool aquireNextImage();
 
-	void renderDepthImage(FrameInfo& frameInfo, std::vector<std::shared_ptr<GlobalRenderSystem>> renderSystems, std::vector<VkDescriptorSet> globalDescriptorSets);
+	void renderDepthImage(
+		FrameInfo& frameInfo, 
+		std::vector<std::shared_ptr<GlobalRenderSystem>> renderSystems,
+		std::vector<VkDescriptorSet> globalDescriptorSets);
+
+	void renderColorImage(ObjectManager& objectManager,
+		FrameInfo& frameInfo,
+		std::vector<VkDescriptorSet> globalDescriptorSet,
+		std::vector<VkDescriptorSet> shadowDescriptorSet,
+		std::vector<VkDescriptorSet> terrainDescriptorSet,
+		GlobalRenderSystem* gltfRenderSystem,
+		GlobalRenderSystem* objRenderSystem,
+		GlobalRenderSystem* terrainRenderSystem,
+		GlobalRenderSystem* skyboxRenderSystem);
+
+	void generateSkybox(const std::string pathTexture, const std::string goName, ObjectManager& objectManager, std::shared_ptr<GlobalRenderSystem> skyboxRenedrSystem);
+
 	
 	TextureManager::TextureID renderHdriToCubeTexture(std::shared_ptr<GlobalRenderSystem> renderSystem, VkDescriptorSet descriptorSet);
 
@@ -110,5 +130,8 @@ private:
 	bool isFrameStarted = false; 
 	std::vector<bool> isDepthStarted;
 
+	//std::unique_ptr<BasicUI> imgui;
+
+	GameObjectModel* base_skybox;
 };
 
