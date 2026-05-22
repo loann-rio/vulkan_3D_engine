@@ -2,10 +2,6 @@
 
 #include "../model/preBuild.h"
 
-#include "../GameObjectClassAssets/TerrainGenerator.h"
-#include "../GameObjectClassAssets/mainLightBehavior.h"
-#include "../GameObjectClassAssets/ChunkManager.h"
-
 #include "../Textures/TextureObject.h"
 #include "../Textures/TextureBuilder.h"
 
@@ -27,7 +23,6 @@ void ObjectManager::startLoadModel()
 
         createDescriptorSet(assetManager.models().get(id));
 
-
         auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
         gameObject->setName("testModelBuilder");
         gameObject->setModelType(ModelType::OBJ_MODEL);
@@ -39,9 +34,6 @@ void ObjectManager::startLoadModel()
         gameObject->createDescriptorSet(*globalPool);
         pushGameObject(std::move(gameObject));
     }
-
-
-
 
     if (true)
     {
@@ -416,8 +408,45 @@ void ObjectManager::createDescriptorSet(ModelAsset* model)
                     .build(material.descriptorSet[i]);
             }
         }
+    }  
+}
+
+void ObjectManager::updateGameObject(float frameTime)
+{
+    std::vector<GameObject::id_t> toRemove;
+
+    for (auto& [id, obj] : *gameObjects) {
+        if (!obj->toBeRemoved) {
+            obj->loop(this);
+            continue;
+        }
+
+        // Handle removal
+        if (obj->getType() == GameObjectType::MODEL) {
+            auto* modelObj = dynamic_cast<GameObjectModel*>(obj.get());
+            if (modelObj->show) {
+                modelObj->show = false; // Hide first to avoid descriptor issues
+                continue;
+            }
+        }
+
+        // Either not a model, or already hidden — safe to remove
+        toRemove.push_back(id);
     }
-    
+
+    // Remove after iteration
+    for (auto id : toRemove) {
+        removeGameObject(id);
+    }
+
+    // update GLTF game objects
+    {
+        std::vector<GameObjectModel*> objects = getByType<GameObjectModel>();
+        for (auto obj : objects) {
+            obj->update(frameTime);
+        }
+    }
+
 }
 
 void ObjectManager::createScene(std::string name)

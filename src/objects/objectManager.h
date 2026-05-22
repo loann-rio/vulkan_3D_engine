@@ -84,6 +84,8 @@ public:
     AssetManager& assetManager;
 
     void createDescriptorSet(ModelAsset* model);
+    void updateGameObject(float frameTime);
+
 private:
     Device& device;
     
@@ -98,10 +100,7 @@ private:
 
     void addObjectToScene(GameObject* gameObject);
 
-    std::unique_ptr<DescriptorPool> globalPool{};
-
-
-    
+    std::unique_ptr<DescriptorPool> globalPool{};    
 };
 
 

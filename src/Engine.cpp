@@ -3,19 +3,13 @@
 // local
 #include "base/Buffer.h"
 #include "base/Frame_info.h"
-//#include "objects/Texture.h"
 #include "objects/KeyboardMovementController.h"
 #include "render/Camera.h"
-#include "model/GlTFModel.h"
-#include "base/FrameRateCounter.h"
 
 // glm
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
-
-// imgui
-#include "objects/BasicUI.h"
 
 // std
 #include <array>
@@ -26,17 +20,12 @@
 
 Engine::Engine() { 
     objectManager.startLoadModel(); 
-    createRenderSystems();
+    renderer.generateSkybox("skybox/citrus_orchard_puresky_4k.hdr", "testSkybox", objectManager);
 }
 
 
 void Engine::run()
 {
-    // ui
-    //BasicUI imgui{ device, assetManager, window.getGLFWwindow(), renderer.getSwapChainRenderPass() };
-
-    renderer.generateSkybox("skybox/citrus_orchard_puresky_4k.hdr", "testSkybox", objectManager, skyboxCreationRenderSystem);
-
     // user inputs
     KeyboardMovementController cameraController{};
 
@@ -44,17 +33,9 @@ void Engine::run()
     GlobalUbo ubo{};
     SpotLightUbo spotLightUbo{};
     TerrainUbo terrainUbo{};
-    
-    // frame counter
-    FrameRateCounter gpuFrameRate;
-    FrameRateCounter cpuFrameRate;
-
 
     auto currentTime = std::chrono::high_resolution_clock::now();
 	float frameTime = 0.1f;
-	float gpuTime = 0.0f;
-
-    int frame = 0;
 
     auto* textureObject = dynamic_cast<GameObjectModel*>(objectManager.get("cubemap1"));
 
@@ -86,43 +67,7 @@ void Engine::run()
         /////// update objects ///////
 
         // loop on games objects
-        {
-            std::shared_ptr<GameObject::Map> objects = objectManager.getGameObjects();
-            std::vector<GameObject::id_t> toRemove;
-
-            for (auto& [id, obj] : *objects) {
-                if (!obj->toBeRemoved) {
-                    obj->loop(&objectManager);
-                    continue;
-                }
-
-                // Handle removal
-                if (obj->getType() == GameObjectType::MODEL) {
-                    auto* modelObj = dynamic_cast<GameObjectModel*>(obj.get());
-                    if (modelObj->show) {
-                        modelObj->show = false; // Hide first to avoid descriptor issues
-                        continue;
-                    }
-                }
-
-                // Either not a model, or already hidden — safe to remove
-                toRemove.push_back(id);
-            }
-
-            // Remove after iteration
-            for (auto id : toRemove) {
-                objectManager.removeGameObject(id);
-            }
-
-        }
-
-        // update GLTF game objects
-        {
-            std::vector<GameObjectModel*> objects = objectManager.getByType<GameObjectModel>();
-            for (auto obj : objects) {
-                obj->update(frameTime);
-            }
-        }
+        objectManager.updateGameObject(frameTime);        
 
         // update camera
         {
@@ -149,15 +94,8 @@ void Engine::run()
             ubo.numLights = i;
         }
 
-        uboBuffers[frameIndex]->writeToBuffer(&ubo); 
-        uboBuffers[frameIndex]->flush();
-
-
-        // update terrain ubo
-        {
-            terrainBuffers[frameIndex]->writeToBuffer(&terrainUbo);
-            terrainBuffers[frameIndex]->flush();
-		}
+        renderer.uboBuffers[frameIndex]->writeToBuffer(&ubo); 
+        renderer.uboBuffers[frameIndex]->flush();
 
         std::vector<std::array<FrustumPlane, 6>> frustrumPlanesList;
         // update spotLight
@@ -174,8 +112,8 @@ void Engine::run()
             }
             spotLightUbo.numLights = i;
 
-            shadowUboBuffer[frameIndex]->writeToBuffer(&spotLightUbo);
-            shadowUboBuffer[frameIndex]->flush();
+            renderer.shadowUboBuffer[frameIndex]->writeToBuffer(&spotLightUbo);
+            renderer.shadowUboBuffer[frameIndex]->flush();
         }
 
         FrameInfo frameInfo{
@@ -186,239 +124,11 @@ void Engine::run()
             objectManager.getByType<GameObjectModel>(),
             frustrumPlanesList,
             dynamic_cast<GameObjectCamera*>(objectManager.get(objectManager.mainCamera))->getFrustumPlanes(),
-            gpuFrameRate.get(),
         };
 
-		
         /////// render frame ///////
-        {
-            std::vector<VkDescriptorSet> descriptorSets{ globalDescriptorSet[frameIndex], shadowDescriptorSet[renderer.getDepthIndex()]};
-
-            vkQueueWaitIdle(device.presentQueue());
-
-            auto newGpuTime = std::chrono::high_resolution_clock::now();
-           
-			// render shadow map
-            renderer.renderDepthImage(frameInfo, { depthRenderSystem, depthRenderSystemGltf, depthTerrainRenderSystem }, descriptorSets);
-            renderer.renderColorImage(
-                objectManager,
-                frameInfo,
-                globalDescriptorSet,
-                shadowDescriptorSet,
-                terrainDescriptorSet,
-                gltfRenderSystem.get(),
-                objRenderSystem.get(),
-                terrainRenderSystem.get(),
-                skyboxRenderSystem.get()
-            );
-
-			auto endGpuTime = std::chrono::high_resolution_clock::now();
-			gpuTime = std::chrono::duration<float, std::chrono::seconds::period>(endGpuTime - newGpuTime).count();
-			gpuFrameRate.update(gpuTime);
-        }   
+        renderer.renderFrame(frameInfo, objectManager);
 	}
 
     vkQueueWaitIdle(device.presentQueue());
-}
- 
- 
-void Engine::createRenderSystems()
-{
-
-    /// global buffer
-    uboBuffers.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
-    for (int i = 0; i < uboBuffers.size(); i++)
-    {
-        uboBuffers[i] = std::make_unique<Buffer>(
-            device,
-            sizeof(GlobalUbo),
-            1,
-            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-            device.properties.limits.minUniformBufferOffsetAlignment
-        );
-
-        uboBuffers[i]->map();
-    }
-
-    auto globalSetLayout = DescriptorSetLayout::Builder(device)
-        .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
-        .build();
-
-    globalDescriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
-    for (int i = 0; i < globalDescriptorSet.size() && i < 2; i++)
-    {
-        auto bufferInfo = uboBuffers[i]->descriptorInfo();
-
-        DescriptorWriter(*globalSetLayout, *objectManager.getPool())
-            .writeBuffer(0, &bufferInfo)
-            .build(globalDescriptorSet[i]); 
-    } 
-
-    //// terrain buffer 
-
-    terrainBuffers.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
-    for (int i = 0; i < terrainBuffers.size(); i++)
-    {
-        terrainBuffers[i] = std::make_unique<Buffer>(
-            device,
-            sizeof(TerrainUbo),
-            1,
-            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-            device.properties.limits.minUniformBufferOffsetAlignment
-        );
-
-        terrainBuffers[i]->map();
-    }
-
-    auto terrainSetLayout = DescriptorSetLayout::Builder(device)
-        .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .build();
-
-    terrainDescriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
-    for (int i = 0; i < terrainDescriptorSet.size() && i < 2; i++)
-    {
-        auto bufferInfo = terrainBuffers[i]->descriptorInfo();
-
-        DescriptorWriter(*terrainSetLayout, *objectManager.getPool())
-            .writeBuffer(0, &bufferInfo)
-            .build(terrainDescriptorSet[i]);
-    }
-
-    //// shadow buffer
-    shadowUboBuffer.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT); 
-    for (int i = 0; i < shadowUboBuffer.size(); i++)
-    {
-        shadowUboBuffer[i] = std::make_unique<Buffer>( 
-            device, 
-            sizeof(SpotLightUbo),
-            1,
-            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-            device.properties.limits.minUniformBufferOffsetAlignment 
-        ); 
-
-        shadowUboBuffer[i]->map(); 
-    } 
-     
-    auto shadowSetLayout = DescriptorSetLayout::Builder(device)
-        .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS) 
-        .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, DepthSwapChain::MAX_DEPTH_RENDER_COUNT)
-        .build();
-
-    shadowDescriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
-    for (int i = 0; i < shadowDescriptorSet.size() && i < 2; i++)
-    {
-        auto bufferInfo = shadowUboBuffer[i]->descriptorInfo();
-        auto depthInfo = renderer.getShadowImageInfo(i);
-
-        DescriptorWriter(*shadowSetLayout, *objectManager.getPool())
-            .writeBuffer(0, &bufferInfo)
-            .writeImage(1, depthInfo, DepthSwapChain::MAX_DEPTH_RENDER_COUNT)
-            .build(shadowDescriptorSet[i]); 
-    }
-
-
-    /// skybox 
-    auto skyboxSetLayout = DescriptorSetLayout::Builder(device)
-        .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) 
-        .build();
-
-    /// render systems
-
-    {
-        {
-            RenderSystemBuilder gltfBuilder{};
-            gltfBuilder.fragFilepath = "shaders\\GlTFshader.frag.spv";
-            gltfBuilder.vertFilepath = "shaders\\GlTFshader.vert.spv";
-            gltfBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout(), skyboxSetLayout->getDescriptorSetLayout() };
-            gltfBuilder.renderPass = renderer.getSwapChainRenderPass();
-			gltfBuilder.hasMultipleInstance = true;
-
-            gltfRenderSystem = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, assetManager, gltfBuilder);
-        }
-
-        {
-            RenderSystemBuilder gltfShadowBuilder{};
-            gltfShadowBuilder.vertFilepath = "shaders\\shadowmapgltf.vert.spv";
-            gltfShadowBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
-            gltfShadowBuilder.renderPass = renderer.getDepthRenderPass();
-			gltfShadowBuilder.hasMultipleInstance = true;
-
-            depthRenderSystemGltf = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, assetManager, gltfShadowBuilder);
-        }
-    }
-
-    {
-        {
-            RenderSystemBuilder objBuilder{};
-            objBuilder.fragFilepath = "shaders\\simple_shader.frag.spv";
-            objBuilder.vertFilepath = "shaders\\simple_shader.vert.spv";
-            objBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
-            objBuilder.renderPass = renderer.getSwapChainRenderPass();
-            objBuilder.hasMultipleInstance = true;
-
-            objRenderSystem = GlobalRenderSystem::create<Model>(device, assetManager, objBuilder);
-        }
-
-        {
-            RenderSystemBuilder objShadowBuilder{};
-            objShadowBuilder.vertFilepath = "shaders\\shadowmap.vert.spv";
-            objShadowBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
-            objShadowBuilder.renderPass = renderer.getDepthRenderPass();
-            objShadowBuilder.hasMultipleInstance = true;
-
-            depthRenderSystem = GlobalRenderSystem::create<Model>(device, assetManager, objShadowBuilder);
-        }
-    }
-    
-    
-
-    {
-        {
-            RenderSystemBuilder terrainBuilder{};
-
-            terrainBuilder.vertFilepath = "shaders\\terrainShader.vert.spv";
-            terrainBuilder.fragFilepath = "shaders\\terrainShader.frag.spv";
-            terrainBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() , terrainSetLayout->getDescriptorSetLayout() };
-            terrainBuilder.renderPass = renderer.getSwapChainRenderPass();
-            terrainBuilder.hasMultipleInstance = true;
-            terrainBuilder.subModelType = ModelSubType::TERRAIN;
-
-            terrainRenderSystem = GlobalRenderSystem::create<Model>(device, assetManager, terrainBuilder);
-        }
-
-        {
-            RenderSystemBuilder terrainShadowBuilder{};
-            terrainShadowBuilder.vertFilepath = "shaders\\shadowMapTerrain.vert.spv";
-            terrainShadowBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
-            terrainShadowBuilder.renderPass = renderer.getDepthRenderPass();
-            terrainShadowBuilder.hasMultipleInstance = true;
-            terrainShadowBuilder.subModelType = ModelSubType::TERRAIN;
-
-            depthTerrainRenderSystem = GlobalRenderSystem::create<Model>(device, assetManager, terrainShadowBuilder);
-        }
-    }
-
-    {
-        RenderSystemBuilder skyboxBuilder{};
-        skyboxBuilder.fragFilepath = "shaders\\skybox.frag.spv";
-        skyboxBuilder.vertFilepath = "shaders\\skybox.vert.spv";
-        skyboxBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout() };
-        skyboxBuilder.renderPass = renderer.getSwapChainRenderPass();
-        skyboxBuilder.subModelType = ModelSubType::SKYBOX;
-        skyboxBuilder.isSkyBox = true;
-        skyboxRenderSystem = GlobalRenderSystem::create<Model>(device, assetManager, skyboxBuilder);
-    }
-
-    {
-        RenderSystemBuilder skyboxBuilder{};
-        skyboxBuilder.fragFilepath = "shaders\\equirectangular_to_cube.frag.spv";
-        skyboxBuilder.vertFilepath = "shaders\\fullscreen.vert.spv";
-        skyboxBuilder.renderPass = renderer.getSecondarySwapRenderPass();
-        skyboxBuilder.isFullscreenRender = true;
-        skyboxBuilder.pushStage = static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_FRAGMENT_BIT);
-        skyboxCreationRenderSystem = GlobalRenderSystem::create<Model>(device, assetManager, skyboxBuilder);
-    }
 }

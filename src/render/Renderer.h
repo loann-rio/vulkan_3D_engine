@@ -6,11 +6,11 @@
 
 #include "../base/Swap_chain.h"
 #include "../base/DepthSwapChain.h"
-#include "../base/secondarySwapchain.h"
 #include "../base/SingleRenderSwap.h"
 
-#include "../Textures/TextureObject.h"
 #include "../assetManager/AssetManager.h"
+
+#include "../base/FrameRateCounter.h"
 
 #include "../objects/objectManager.h"
 
@@ -32,7 +32,7 @@ public:
 	TextureManager::TextureID getDepthTexture() { return depthSwapChain->getTexture(0); }
 	TextureManager::TextureID getSingleTexture() { return skyboxSwapChain.getTextureColor(); }
 
-	Renderer(Window& window, Device& device, AssetManager& assets);
+	Renderer(Window& window, Device& device, AssetManager& assets, ObjectManager& objectManager);
 	~Renderer();
 
 	Renderer(const Renderer&) = delete;
@@ -61,23 +61,15 @@ public:
 
 	bool aquireNextImage();
 
-	void renderDepthImage(
-		FrameInfo& frameInfo, 
-		std::vector<std::shared_ptr<GlobalRenderSystem>> renderSystems,
-		std::vector<VkDescriptorSet> globalDescriptorSets);
+	void renderDepthImage(FrameInfo& frameInfo);
 
-	void renderColorImage(ObjectManager& objectManager,
-		FrameInfo& frameInfo,
-		std::vector<VkDescriptorSet> globalDescriptorSet,
-		std::vector<VkDescriptorSet> shadowDescriptorSet,
-		std::vector<VkDescriptorSet> terrainDescriptorSet,
-		GlobalRenderSystem* gltfRenderSystem,
-		GlobalRenderSystem* objRenderSystem,
-		GlobalRenderSystem* terrainRenderSystem,
-		GlobalRenderSystem* skyboxRenderSystem);
+	void renderColorImage(
+		ObjectManager& objectManager,
+		FrameInfo& frameInfo);
 
-	void generateSkybox(const std::string pathTexture, const std::string goName, ObjectManager& objectManager, std::shared_ptr<GlobalRenderSystem> skyboxRenedrSystem);
+	void generateSkybox(const std::string pathTexture, const std::string goName, ObjectManager& objectManager);
 
+	void renderFrame(FrameInfo& frameInfo, ObjectManager& objectManager);
 	
 	TextureManager::TextureID renderHdriToCubeTexture(std::shared_ptr<GlobalRenderSystem> renderSystem, VkDescriptorSet descriptorSet);
 
@@ -98,6 +90,11 @@ public:
 	}
 
 	bool isUiSelected() { return imgui->isWindowSelected; }
+
+	// buffers
+	std::vector<std::unique_ptr<Buffer>> uboBuffers;
+	std::vector<std::unique_ptr<Buffer>> shadowUboBuffer;
+	std::vector<std::unique_ptr<Buffer>> terrainBuffers;
 	
 private:
 
@@ -105,6 +102,7 @@ private:
 	void createDepthCommandBuffer();
 	void freeCommandBuffers();
 	void recreateSwapChain();
+	void createRenderSystems(ObjectManager& objectManager);
 
 	VkCommandBuffer beginDepthFrame(int depthCommandBufferIndex);
 	void endDepthFrame(int depthCommandBufferIndex);
@@ -135,5 +133,24 @@ private:
 	std::unique_ptr<BasicUI> imgui;
 
 	GameObjectModel* base_skybox;
+
+	float gpuTime = 0.0f;
+	FrameRateCounter gpuFrameRate;
+	
+
+	// render systems
+	std::shared_ptr<GlobalRenderSystem> gltfRenderSystem;
+	std::shared_ptr<GlobalRenderSystem> objRenderSystem;
+	std::shared_ptr<GlobalRenderSystem> depthRenderSystem;
+	std::shared_ptr<GlobalRenderSystem> depthRenderSystemGltf;
+	std::shared_ptr<GlobalRenderSystem> terrainRenderSystem;
+	std::shared_ptr<GlobalRenderSystem> depthTerrainRenderSystem;
+	std::shared_ptr<GlobalRenderSystem> skyboxRenderSystem;
+	std::shared_ptr<GlobalRenderSystem> skyboxCreationRenderSystem;
+
+	// global descriptor sets
+	std::vector<VkDescriptorSet> globalDescriptorSet;
+	std::vector<VkDescriptorSet> shadowDescriptorSet;
+	std::vector<VkDescriptorSet> terrainDescriptorSet;
 };
 
