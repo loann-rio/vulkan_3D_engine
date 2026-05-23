@@ -8,7 +8,7 @@ class TextureObject;
 struct DecodedImage;
 struct DecodedCubemap;
 
-class TextureLoader {
+class TextureAssetLoader {
 public:
 
     /// <summary>
@@ -18,7 +18,7 @@ public:
     /// <param name="path">Filesystem path to the texture file</param>
     /// <returns>loaded texture</returns>
     static std::unique_ptr<TextureObject> load(
-        Device& device, 
+        Device& device,
         const std::filesystem::path& path,
         bool useMipmap
     );
@@ -29,7 +29,7 @@ public:
     /// <param name="device">Device used to create GPU resources and upload the texture.</param>
     /// <returns>loaded cubemap texture</returns>
     static std::unique_ptr<TextureObject> loadCubemap(
-        Device& device, 
+        Device& device,
         const std::filesystem::path& Path
     );
 
@@ -43,9 +43,9 @@ public:
     /// <param name="srgb">If true, interpret the texture as sRGB; otherwise treat it as linear color space</param>
     /// <returns>created Texture</returns>
     static std::unique_ptr<TextureObject> load2D(
-        Device& device, 
+        Device& device,
         const std::filesystem::path& path,
-        bool useMipmap, 
+        bool useMipmap,
         bool srgb = true
     );
 
@@ -56,7 +56,7 @@ public:
     /// <param name="path">Path to the image file to load</param>
     /// <returns>created Texture</returns>
     static std::unique_ptr<TextureObject> loadHDR(
-        Device& device, 
+        Device& device,
         const std::filesystem::path& path,
         bool useMipmap
     );
@@ -68,7 +68,7 @@ public:
     /// <param name="path">Path to the image file to load</param>
     /// <returns>created Texture</returns>
     static std::unique_ptr<TextureObject> loadKTX(
-        Device& device, 
+        Device& device,
         const std::filesystem::path& path,
         bool useMipmap
     );
@@ -80,14 +80,14 @@ public:
     /// <param name="path">Path to the image file to load</param>
     /// <returns>created Texture</returns>
     static std::unique_ptr<TextureObject> loadKTX2(
-        Device& device, 
+        Device& device,
         const std::filesystem::path& path,
         bool useMipmap
     );
 
     // Async version TODO
     static std::future<std::unique_ptr<TextureObject>> loadAsync(
-        Device& device, 
+        Device& device,
         const std::filesystem::path& path,
         bool srgb = true
     );
@@ -100,7 +100,7 @@ private:
     /// <param name="directoryPath">Filesystem path to a directory containing the cubemap image files</param>
     /// <returns> loaded cubemap texture </returns>
     static std::unique_ptr<TextureObject> loadCubemapFromDir(
-        Device& device, 
+        Device& device,
         const std::filesystem::path& directoryPath
     );
 
@@ -108,9 +108,9 @@ private:
     /// Creates and uploads a Texture from a decoded image
     /// </summary>
     static std::unique_ptr<TextureObject> loadFromDecoded(
-        Device& device, 
-        const DecodedImage& img, 
-        bool useMipmap, 
+        Device& device,
+        const DecodedImage& img,
+        bool useMipmap,
         bool srgb
     );
 
@@ -120,9 +120,8 @@ private:
     /// <param name="cube">const reference to the DecodedCubemap containing the six faces image data to upload</param>
     /// <returns>uploaded cubemap Texture</returns>
     static std::unique_ptr<TextureObject> loadFromDecoded(
-        Device& device, 
-        const DecodedCubemap& cube, 
+        Device& device,
+        const DecodedCubemap& cube,
         bool srgb
     );
 };
-
