@@ -28,16 +28,16 @@ private:
 	std::vector<std::vector<glm::vec2>> generateChunckHeight(float Xoffset, float Yoffset, uint16_t sizeX, uint16_t sizeY);
 	float weightedRegionValue(const std::vector<glm::vec2>& lookupVoronoi, float RegionVariables::* member);
 
-	const unsigned int seed = 7653456789;
+	const unsigned int seed = 7653456789u;
 	float globalScale = 20.f;
 	float biomeScale = 10;
 
 	//float globalHeightMultiplier = 0.2 * 2 * (1 + 0.5 * sum(int(globalScale / 100) - 1));
-	float globalHeightMultiplier = 0.1;
+	float globalHeightMultiplier = 0.1f;
 
 	PerlinNoise pn{ seed };
 
-	const uint16_t chunkSize = 32; // number of vertices per side of a chunk
+	const uint16_t chunkSize = 32u; // number of vertices per side of a chunk
 
 	RegionVariables noiseVariable{ 8, 0.45f, 2, 0, 3 };
 
