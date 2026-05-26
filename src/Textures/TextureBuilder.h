@@ -43,6 +43,7 @@ public:
 
 	//// from existing texture ////
     TextureBuilder& fromTextureInfo(VkImageCreateInfo imageInfo, VkImageViewCreateInfo viewInfo, VkSamplerCreateInfo samplerInfo, VkImageLayout initImageLayout, uint32_t layerCount = 1);
+    TextureBuilder& fromTextureInfo(VkImage image, VkExtent3D extent, VkImageViewCreateInfo viewInfo, VkSamplerCreateInfo samplerInfo, VkImageLayout initImageLayout, uint32_t layerCount = 1, VkFormat format = VK_FORMAT_UNDEFINED);
 
 private:
 
