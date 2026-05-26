@@ -72,6 +72,7 @@ private:
     VkImageCreateFlags createdImageFlags = 0;
 
     bool isLoaded = false;
+    const bool ownsImage = false;
 
     friend class TextureUploader;
     friend class TextureBuilder;
