@@ -45,4 +45,6 @@ struct FrameInfo {
 	glm::vec3 cameraPos;
 	std::vector<GameObjectModel*> listGameObjects; 
 	std::vector<std::array<FrustumPlane, 6>> listFrustrumPlanes;
+	std::array<FrustumPlane, 6> mainCameraFrustrumPlanes;
+	float gpuFrameRate;
 };
