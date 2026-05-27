@@ -579,7 +579,7 @@ void Renderer::generateSkybox(const std::string pathTexture, const std::string g
 	GameObject::id_t id = gameObject->getId();
 
 	ModelBuilder modelBuilder(device, assets);
-	ModelManager::ModelID modelId = assets.models().create(modelBuilder.fromFile("model/cube.obj").withTexture(resultTexture));
+	ModelManager::ModelID modelId = assets.models().create(modelBuilder.fromFile("assets/model/cube.obj").withTexture(resultTexture));
 
 	objectManager.createDescriptorSet(assets.models().get(modelId));
 	gameObject->setModel(modelId);
