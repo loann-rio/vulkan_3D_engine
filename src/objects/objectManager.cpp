@@ -68,10 +68,10 @@ void ObjectManager::startLoadModel()
     {
 
 		std::vector<Model::Instance> instances;
-		for (int x = 0; x < 150; x++) {
-			for (int z = 0; z < 150; z++) {
+		for (int x = 0; x < 300; x++) {
+			for (int z = 0; z < 300; z++) {
 				Model::Instance instance;
-                instance.position = { x / 5.f - 15.f, 0.0f, z / 5.f - 15.f };
+                instance.position = { x / 10.f - 15.f, 0.0f, z / 10.f - 15.f };
 				instance.rotation = { 0.0f, static_cast<float>(rand() % 360), 0.0f };
                 instance.scale = { 1, 1, 1 };
 				instances.push_back(instance);

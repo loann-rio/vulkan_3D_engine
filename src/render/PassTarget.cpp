@@ -3,7 +3,7 @@
 PassTarget::PassTarget(Device& device_, Swap_chain& swapchain_, AssetManager& assets_, VkExtent2D extent_, bool hasDepth, bool hasColor, VkFormat depthFormat, size_t imageCount, bool isFinal) : device(device_), extent(extent_), assets(assets_) {
 
     if (hasColor)
-        createColorTargetTexture(imageCount, swapchain_.getSwapChainImageFormat(), (isFinal) ? swapchain_.getSwapChainImages() : std::vector<VkImage>{});
+        createColorTargetTexture(imageCount, swapchain_.getSwapChainImageFormat(), std::vector<VkImage>{});
 
     if (depthFormat != VK_FORMAT_UNDEFINED and hasDepth)
         createDepthTargetTexture(imageCount, swapchain_.getSwapChainDepthFormat());

@@ -21,7 +21,6 @@ Renderer::Renderer(
 	createCommandBuffer();
 	
 	createTextureTarget(objectManager);
-
 	createRenderSystems(objectManager);
 
 	imgui = std::make_unique<BasicUI>(
