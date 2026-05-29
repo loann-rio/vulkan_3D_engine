@@ -27,9 +27,16 @@ public:
     VkRenderPass getRenderPass() { return renderPass; }
     VkImageView getImageView(int index) { return swapChainImageViews[index]; }
 
-    size_t imageCount() { return swapChainImages.size(); }
-    VkFormat getSwapChainImageFormat() { return swapChainImageFormat; }
-    VkExtent2D getSwapChainExtent() { return swapChainExtent; }
+    size_t imageCount() const { return swapChainImages.size(); }
+
+    VkFormat getSwapChainImageFormat() const { return swapChainImageFormat; }
+    VkFormat getSwapChainDepthFormat() const { return swapChainDepthFormat; }
+
+    VkExtent2D getSwapChainExtent() const { return swapChainExtent; }
+
+    std::vector<VkImage> getSwapChainImages() const { return swapChainImages; };
+
+
 
     uint32_t width() { return swapChainExtent.width; }
     uint32_t height() { return swapChainExtent.height; }

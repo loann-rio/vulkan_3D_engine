@@ -189,6 +189,9 @@
     <ClCompile Include="src\model\Vertex\ObjVertexData.cpp">
       <Filter>model\Vertex</Filter>
     </ClCompile>
+    <ClCompile Include="src\render\PassTarget.cpp">
+      <Filter>render</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tiny_gltf.h">
@@ -363,6 +366,9 @@
     </ClInclude>
     <ClInclude Include="src\model\Vertex\GltfVertexData.h">
       <Filter>model\Vertex</Filter>
+    </ClInclude>
+    <ClInclude Include="src\render\PassTarget.h">
+      <Filter>render</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

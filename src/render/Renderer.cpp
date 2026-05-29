@@ -7,19 +7,31 @@
 #include "../model/ModelBuilder.h"
 #include "../assetManager/ModelManager.h"
 
-Renderer::Renderer(Window& window, Device& device, AssetManager& assets, ObjectManager& objectManager) : window{window} , device{device}, assets{assets}
+Renderer::Renderer(
+	Window& window, 
+	Device& device, 
+	AssetManager& assets, 
+	ObjectManager& objectManager) 
+	: window{window}, device{device}, assets{assets}
 {
 	recreateSwapChain();
 
 	isDepthStarted.resize(DepthSwapChain::MAX_DEPTH_RENDER_COUNT);
-	depthSwapChain = std::make_unique<DepthSwapChain>(device, assets, VkExtent2D{ 2048, 2048 });
+	depthSwapChain = std::make_unique<DepthSwapChain>(device, VkExtent2D{ 2048, 2048 });
 
 	createDepthCommandBuffer();
 	createCommandBuffer();
+	
+	createTextureTarget(objectManager);
 
 	createRenderSystems(objectManager);
 
-	imgui = std::make_unique<BasicUI>(device, assets, window.getGLFWwindow(), getSwapChainRenderPass() );
+	imgui = std::make_unique<BasicUI>(
+		device, 
+		assets, 
+		window.getGLFWwindow(), 
+		getSwapChainRenderPass() 
+	);
 }
 
 Renderer::~Renderer() { freeCommandBuffers(); }
@@ -29,7 +41,6 @@ Renderer::~Renderer() { freeCommandBuffers(); }
 */
 void Renderer::recreateSwapChain()
 {
-
 	// get size window
 	auto extent = window.getExtent();
 
@@ -146,11 +157,14 @@ void Renderer::createRenderSystems(ObjectManager& objectManager)
 	for (int i = 0; i < shadowDescriptorSet.size() && i < 2; i++)
 	{
 		auto bufferInfo = shadowUboBuffer[i]->descriptorInfo();
-		auto depthInfo = getShadowImageInfo(i);
+
+		std::array<VkDescriptorImageInfo, DepthSwapChain::MAX_DEPTH_RENDER_COUNT> imagesInfo;
+		for (uint16_t depthImageIndex = 0; depthImageIndex < DepthSwapChain::MAX_DEPTH_RENDER_COUNT; depthImageIndex++)
+			imagesInfo[depthImageIndex] = getDepthImageInfo(i * DepthSwapChain::MAX_DEPTH_RENDER_COUNT + depthImageIndex);
 
 		DescriptorWriter(*shadowSetLayout, *objectManager.getPool())
 			.writeBuffer(0, &bufferInfo)
-			.writeImage(1, depthInfo, DepthSwapChain::MAX_DEPTH_RENDER_COUNT)
+			.writeImage(1, imagesInfo.data(), DepthSwapChain::MAX_DEPTH_RENDER_COUNT)
 			.build(shadowDescriptorSet[i]);
 	}
 
@@ -254,6 +268,24 @@ void Renderer::createRenderSystems(ObjectManager& objectManager)
 		skyboxCreationRenderSystem = GlobalRenderSystem::create<Model>(device, assets, skyboxBuilder);
 	}
 
+}
+
+void Renderer::createTextureTarget(ObjectManager& objectManager)
+{
+	depthFrameTarget = std::make_unique<PassTarget>(
+		device,
+		*swapChain.get(),
+		assets,
+		depthSwapChain->getDepthSwapChainExtent(),
+		true,  /*depth*/
+		false, /*color*/
+		depthSwapChain->findDepthFormat(),
+		DepthSwapChain::MAX_DEPTH_RENDER_COUNT * Swap_chain::MAX_FRAMES_IN_FLIGHT,
+		false
+	);
+
+	depthFrameTarget->createLocalFramebuffers(depthSwapChain->getDepthRenderPass());
+	depthFrameTarget->createDescriptorSets(*objectManager.getPool());
 }
 	
 
@@ -376,7 +408,8 @@ void Renderer::beginShadowRenderPass(VkCommandBuffer commandBuffer, int depthCom
 	VkRenderPassBeginInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	renderPassInfo.renderPass = depthSwapChain->getDepthRenderPass();
-	renderPassInfo.framebuffer = depthSwapChain->getDepthFramebuffers(depthCommandBufferIndex + currentDepthFrameIndex * DepthSwapChain::MAX_DEPTH_RENDER_COUNT);
+	//renderPassInfo.framebuffer = depthSwapChain->getDepthFramebuffers(depthCommandBufferIndex + currentDepthFrameIndex * DepthSwapChain::MAX_DEPTH_RENDER_COUNT);
+	renderPassInfo.framebuffer = depthFrameTarget->getFrameBuffer(depthCommandBufferIndex + currentDepthFrameIndex * DepthSwapChain::MAX_DEPTH_RENDER_COUNT);
 
 	renderPassInfo.renderArea.offset = { 0, 0 };
 	renderPassInfo.renderArea.extent = depthSwapChain->getDepthSwapChainExtent();
@@ -596,7 +629,9 @@ void Renderer::renderFrame(FrameInfo& frameInfo, ObjectManager& objectManager)
 	vkQueueWaitIdle(device.presentQueue()); // TODO remove
 
 	// render shadow map
-	renderDepthImage(frameInfo);
+	renderDepthImage(
+		frameInfo
+	);
 
 	renderColorImage(
 		objectManager,

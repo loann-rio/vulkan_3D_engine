@@ -15,6 +15,7 @@ class TextureManager {
 
 public:
     using TextureID = uint64_t;
+    static const uint16_t InvalidTextureID = 0;
 
     explicit TextureManager();
 
