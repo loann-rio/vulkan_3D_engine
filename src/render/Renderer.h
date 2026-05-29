@@ -39,7 +39,6 @@ public:
 	uint32_t getHeight() const { return swapChain->height(); }
 
 	int getFrameIndex() const {	return currentFrameIndex; }
-	int getDepthIndex() const {	return currentDepthFrameIndex; }
 
 	VkDescriptorImageInfo getDepthImageInfo(uint16_t index) { return depthFrameTarget->getDepthImageInfo(index); }
 
@@ -54,16 +53,6 @@ public:
 		return commandBuffers[currentFrameIndex];
 	}
 
-	VkCommandBuffer getCurrentDepthCommandBuffer(int depthCommandBufferIndex) const {
-		assert(isDepthStarted[depthCommandBufferIndex] && "cannot get command buffer when frame not in progress");
-		return depthCommandBuffers[depthCommandBufferIndex + currentDepthFrameIndex * DepthSwapChain::MAX_DEPTH_RENDER_COUNT];
-	}
-
-	std::vector<VkCommandBuffer> getCurrentDepthCommandBuffers(size_t commandBufferCount) const {
-		assert(std::all_of(isDepthStarted.begin(), (isDepthStarted.begin() + commandBufferCount), [](bool v) { return v; }) && "cannot get command buffer when not all frames in progress");
-		return { depthCommandBuffers.begin() + DepthSwapChain::MAX_DEPTH_RENDER_COUNT * currentDepthFrameIndex, depthCommandBuffers.begin() + DepthSwapChain::MAX_DEPTH_RENDER_COUNT * currentDepthFrameIndex + commandBufferCount };
-	}
-
 	bool isUiSelected() { return imgui->isWindowSelected; }
 
 	// buffers
@@ -74,19 +63,14 @@ public:
 private:
 
 	void createCommandBuffer();
-	void createDepthCommandBuffer();
 	void freeCommandBuffers();
 	void recreateSwapChain();
 	void createRenderSystems(ObjectManager& objectManager);
 	void createTextureTarget(ObjectManager& objectManager);
 
-
-	// render depth
-	VkCommandBuffer beginDepthFrame(int depthCommandBufferIndex);
-	void endDepthFrame(int depthCommandBufferIndex);
 	void beginShadowRenderPass(VkCommandBuffer commandBuffer, int depthCommandBufferIndex);
-	void endShadowRenderPass(VkCommandBuffer commandBuffer, int depthCommandBufferIndex); 
-	void renderDepthImage(FrameInfo& frameInfo);
+	void endShadowRenderPass(VkCommandBuffer commandBuffer); 
+	void renderDepthImage(FrameInfo& frameInfo, VkCommandBuffer& commandBuffer);
 
 
 	// render color
@@ -95,7 +79,7 @@ private:
 	void beginSwapChainRenderPass(VkCommandBuffer commandBuffer);
 	void endSwapChainRenderPass(VkCommandBuffer commandBuffer);
 
-	void renderColorImage(ObjectManager& objectManager, FrameInfo& frameInfo);
+	void renderColorImage(ObjectManager& objectManager, FrameInfo& frameInfo, VkCommandBuffer& commandBuffer);
 
 
 	void beginSingleTimeRender(VkCommandBuffer commandBuffer, int buffer_index = 0);
@@ -115,7 +99,6 @@ private:
 	SingleSwapChain skyboxSwapChain{ device, assets, {2000, 2000} };
 
 	std::vector<VkCommandBuffer> commandBuffers;
-	std::vector<VkCommandBuffer> depthCommandBuffers;
 
 	std::unique_ptr<BasicUI> imgui;
 
@@ -125,13 +108,9 @@ private:
 
 	// syncro
 	uint32_t currentImageIndex;
-	uint32_t currentDepthImageIndex;
-
 	int currentFrameIndex;
-	int currentDepthFrameIndex;
 
 	bool isFrameStarted = false;
-	std::vector<bool> isDepthStarted;
 
 	// fps
 	float gpuTime = 0.0f;
