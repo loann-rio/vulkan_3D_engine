@@ -104,8 +104,6 @@ private:
 	TextureManager::TextureID renderHdriToCubeTexture(std::shared_ptr<GlobalRenderSystem> renderSystem, VkDescriptorSet descriptorSet);
 
 
-
-
 	Window& window;
 	Device& device;
 	AssetManager& assets; 
@@ -123,6 +121,7 @@ private:
 
 	// target
 	std::unique_ptr<PassTarget> depthFrameTarget;
+	std::unique_ptr<PassTarget> finalFrameTarget;
 
 	// syncro
 	uint32_t currentImageIndex;

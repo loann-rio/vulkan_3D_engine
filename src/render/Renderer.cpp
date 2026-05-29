@@ -272,6 +272,7 @@ void Renderer::createRenderSystems(ObjectManager& objectManager)
 
 void Renderer::createTextureTarget(ObjectManager& objectManager)
 {
+	// shadow
 	depthFrameTarget = std::make_unique<PassTarget>(
 		device,
 		*swapChain.get(),

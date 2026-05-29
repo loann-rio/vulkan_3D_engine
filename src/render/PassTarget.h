@@ -22,31 +22,24 @@ public:
         VkFormat depthFormat = VK_FORMAT_UNDEFINED,
         size_t imageCount = 1,
         bool isFinal = false
-    )
-        : device(device_), extent(extent_), assets(assets_) {
+    );
 
-        if (hasColor)
-            createColorTargetTexture(imageCount, swapchain_.getSwapChainImageFormat(), (isFinal) ? swapchain_.getSwapChainImages() : std::vector<VkImage>{});
+    ~PassTarget();
 
-        if (depthFormat != VK_FORMAT_UNDEFINED and hasDepth)
-            createDepthTargetTexture(imageCount, swapchain_.getSwapChainDepthFormat());
+    void resizeTargets(
+        VkExtent2D newExtent, 
+        uint32_t imageCount, 
+        VkFormat format, 
+        VkFormat depthFormat
+    );
 
-        createImageInfo();
-    }
+    void createLocalFramebuffers(
+        VkRenderPass renderPass
+    );
 
-    ~PassTarget() {
-        for (auto framebuffer : framebuffers) {
-            vkDestroyFramebuffer(device.device(), framebuffer, nullptr);
-        }
-    }
-
-    std::vector<VkFramebuffer> framebuffers;
-
-    void resizeTargets(VkExtent2D newExtent, uint32_t imageCount, VkFormat format, VkFormat depthFormat);
-
-    void createLocalFramebuffers(VkRenderPass renderPass);
-
-    void createDescriptorSets(DescriptorPool& pool);
+    void createDescriptorSets(
+        DescriptorPool& pool
+    );
 
     VkDescriptorSet getColorDescriptorSet(uint32_t index) { return colorDescriptorSets[index]; }
     VkDescriptorSet getDepthDescriptorSet(uint32_t index) { return depthDescriptorSets[index]; }
@@ -61,8 +54,16 @@ private:
     void cleanupLocalFramebuffers();
     void cleanupTargetTextures();
 
-    void createColorTargetTexture(uint32_t imageCount, VkFormat format, std::vector<VkImage> swapImage = {});
-    void createDepthTargetTexture(uint32_t imageCount, VkFormat format);
+    void createColorTargetTexture(
+        uint32_t imageCount, 
+        VkFormat format, 
+        std::vector<VkImage> swapImage = {}
+    );
+
+    void createDepthTargetTexture(
+        uint32_t imageCount, 
+        VkFormat format
+    );
 
     void createImageInfo();
 
@@ -74,6 +75,8 @@ private:
 
     std::vector<VkDescriptorImageInfo> colorImageInfo;
     std::vector<VkDescriptorImageInfo> depthImageInfo;
+
+    std::vector<VkFramebuffer> framebuffers;
 
     VkExtent2D extent;
 
