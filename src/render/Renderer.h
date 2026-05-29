@@ -1,25 +1,20 @@
 #pragma once
 
 #include "../base/Window.h"
-
 #include "../base/device.h"
-
 #include "../base/Swap_chain.h"
 #include "../base/DepthSwapChain.h"
 #include "../base/SingleRenderSwap.h"
+#include "../base/FrameRateCounter.h"
+#include "../base/Frame_info.h"
 
 #include "../assetManager/AssetManager.h"
 
-#include "../base/FrameRateCounter.h"
-
 #include "../objects/objectManager.h"
-
-// imgui
 #include "../objects/BasicUI.h"
 
-
-#include "../base/Frame_info.h"
 #include "GlobalRenderSystem.h"
+#include "PassTarget.h"
 
 #include <memory>
 #include <vector>
@@ -28,9 +23,6 @@
 class Renderer
 {
 public:
-
-	TextureManager::TextureID getDepthTexture() { return depthSwapChain->getTexture(0); }
-	TextureManager::TextureID getSingleTexture() { return skyboxSwapChain.getTextureColor(); }
 
 	Renderer(Window& window, Device& device, AssetManager& assets, ObjectManager& objectManager);
 	~Renderer();
@@ -41,37 +33,20 @@ public:
 	VkRenderPass getSwapChainRenderPass() const { return swapChain->getRenderPass(); }
 	VkRenderPass getDepthRenderPass() const { return depthSwapChain->getDepthRenderPass(); }
 	VkRenderPass getSecondarySwapRenderPass() const { return skyboxSwapChain.getRenderPass(); }
+	
 	float getAspectRatio() const { return swapChain->extentAspectRatio(); }
-
 	uint32_t getWidth() const { return swapChain->width(); }
 	uint32_t getHeight() const { return swapChain->height(); }
 
 	int getFrameIndex() const {	return currentFrameIndex; }
 	int getDepthIndex() const {	return currentDepthFrameIndex; }
 
-	VkDescriptorImageInfo* getShadowImageInfo(int i) { return depthSwapChain->getShadowImageInfo(i); }
-
-	VkCommandBuffer beginFrame();
-	void endFrame();
-	void beginSwapChainRenderPass(VkCommandBuffer commandBuffer);
-	void endSwapChainRenderPass(VkCommandBuffer commandBuffer);
-
-	void beginSingleTimeRender(VkCommandBuffer commandBuffer, int buffer_index = 0);
-	void endSingleTimeRender(VkCommandBuffer commandBuffer);
-
-	bool aquireNextImage();
-
-	void renderDepthImage(FrameInfo& frameInfo);
-
-	void renderColorImage(
-		ObjectManager& objectManager,
-		FrameInfo& frameInfo);
+	VkDescriptorImageInfo getDepthImageInfo(uint16_t index) { return depthFrameTarget->getDepthImageInfo(index); }
 
 	void generateSkybox(const std::string pathTexture, const std::string goName, ObjectManager& objectManager);
 
 	void renderFrame(FrameInfo& frameInfo, ObjectManager& objectManager);
-	
-	TextureManager::TextureID renderHdriToCubeTexture(std::shared_ptr<GlobalRenderSystem> renderSystem, VkDescriptorSet descriptorSet);
+	bool aquireNextImage();
 
 
 	VkCommandBuffer getCurrentCommandBuffer() const {
@@ -103,15 +78,36 @@ private:
 	void freeCommandBuffers();
 	void recreateSwapChain();
 	void createRenderSystems(ObjectManager& objectManager);
+	void createTextureTarget(ObjectManager& objectManager);
 
+
+	// render depth
 	VkCommandBuffer beginDepthFrame(int depthCommandBufferIndex);
 	void endDepthFrame(int depthCommandBufferIndex);
 	void beginShadowRenderPass(VkCommandBuffer commandBuffer, int depthCommandBufferIndex);
 	void endShadowRenderPass(VkCommandBuffer commandBuffer, int depthCommandBufferIndex); 
+	void renderDepthImage(FrameInfo& frameInfo);
+
+
+	// render color
+	VkCommandBuffer beginFrame();
+	void endFrame();
+	void beginSwapChainRenderPass(VkCommandBuffer commandBuffer);
+	void endSwapChainRenderPass(VkCommandBuffer commandBuffer);
+
+	void renderColorImage(ObjectManager& objectManager, FrameInfo& frameInfo);
+
+
+	void beginSingleTimeRender(VkCommandBuffer commandBuffer, int buffer_index = 0);
+	void endSingleTimeRender(VkCommandBuffer commandBuffer);
+
+	TextureManager::TextureID renderHdriToCubeTexture(std::shared_ptr<GlobalRenderSystem> renderSystem, VkDescriptorSet descriptorSet);
+
 
 	Window& window;
 	Device& device;
 	AssetManager& assets; 
+	GameObjectModel* base_skybox;
 
 	std::unique_ptr<Swap_chain> swapChain;
 	std::unique_ptr<DepthSwapChain> depthSwapChain;
@@ -121,22 +117,25 @@ private:
 	std::vector<VkCommandBuffer> commandBuffers;
 	std::vector<VkCommandBuffer> depthCommandBuffers;
 
+	std::unique_ptr<BasicUI> imgui;
+
+	// target
+	std::unique_ptr<PassTarget> depthFrameTarget;
+	std::unique_ptr<PassTarget> finalFrameTarget;
+
+	// syncro
 	uint32_t currentImageIndex;
 	uint32_t currentDepthImageIndex;
 
 	int currentFrameIndex;
 	int currentDepthFrameIndex;
 
-	bool isFrameStarted = false; 
+	bool isFrameStarted = false;
 	std::vector<bool> isDepthStarted;
 
-	std::unique_ptr<BasicUI> imgui;
-
-	GameObjectModel* base_skybox;
-
+	// fps
 	float gpuTime = 0.0f;
 	FrameRateCounter gpuFrameRate;
-	
 
 	// render systems
 	std::shared_ptr<GlobalRenderSystem> gltfRenderSystem;

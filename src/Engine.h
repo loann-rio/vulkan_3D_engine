@@ -33,6 +33,4 @@ private:
 	AssetManager assetManager{};
 	ObjectManager objectManager{ device, assetManager };
 	Renderer renderer{ window, device, assetManager, objectManager };
-	
-	std::unique_ptr<DescriptorPool> globalPool{};
 };
