@@ -1,4 +1,3 @@
-
 #include "Swap_chain.h"
 
 // std
@@ -49,7 +48,6 @@ Swap_chain::~Swap_chain() {
         vkDestroyFramebuffer(device.device(), framebuffer, nullptr);
     }
 
-
     vkDestroyRenderPass(device.device(), renderPass, nullptr);
 
     // cleanup synchronization objects
@@ -88,7 +86,6 @@ VkResult Swap_chain::submitCommandBuffers(
 
     if (imagesInFlight[*imageIndex] != VK_NULL_HANDLE) {
         vkWaitForFences(device.device(), 1, &imagesInFlight[*imageIndex], VK_TRUE, UINT64_MAX);
-
     }
 
     imagesInFlight[*imageIndex] = inFlightFences[currentFrame];
@@ -98,10 +95,7 @@ VkResult Swap_chain::submitCommandBuffers(
     
     std::vector<VkSemaphore> tempWaitSemaphore{}; 
 
-    if (renderingDepthDuringFrame) {
-        tempWaitSemaphore = { depthFinishedSemaphores };
-        renderingDepthDuringFrame = false;
-    }
+    tempWaitSemaphore = { depthFinishedSemaphores };
         
     tempWaitSemaphore.push_back(imageAvailableSemaphores[currentFrame]); 
     std::vector<VkPipelineStageFlags> waitStage(tempWaitSemaphore.size(), VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT); 
@@ -117,21 +111,17 @@ VkResult Swap_chain::submitCommandBuffers(
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
-    vkResetFences(device.device(), 1, &inFlightFences[currentFrame]);
-
-    
-     
     VkPresentInfoKHR presentInfo = {};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
     presentInfo.waitSemaphoreCount = 1;
     presentInfo.pWaitSemaphores = signalSemaphores;
 
     VkSwapchainKHR swapChains[] = { swapChain };
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = swapChains;
-
     presentInfo.pImageIndices = imageIndex;
+
+    vkResetFences(device.device(), 1, &inFlightFences[currentFrame]);
 
 	auto result = device.submitAndPresent(submitInfo, inFlightFences[currentFrame], &presentInfo);
 
@@ -435,7 +425,7 @@ VkExtent2D Swap_chain::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabili
         return capabilities.currentExtent;
     }
     else {
-        VkExtent2D actualExtent = windowExtent;
+        VkExtent2D actualExtent = windowExtent; 
         actualExtent.width = std::max(
             capabilities.minImageExtent.width,
             std::min(capabilities.maxImageExtent.width, actualExtent.width));

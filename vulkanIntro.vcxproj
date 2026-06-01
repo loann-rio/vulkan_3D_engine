@@ -204,6 +204,7 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClCompile Include="src\objects\objectManager.cpp" />
     <ClCompile Include="src\render\Camera.cpp" />
     <ClCompile Include="src\render\FrameRender.cpp" />
+    <ClCompile Include="src\render\FrameRenderer.cpp" />
     <ClCompile Include="src\render\GlobalRenderSystem.cpp" />
     <ClCompile Include="src\render\PassTarget.cpp" />
     <ClCompile Include="src\render\Renderer.cpp" />

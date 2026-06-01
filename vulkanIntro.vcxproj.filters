@@ -195,6 +195,7 @@
     <ClCompile Include="src\render\FrameRender.cpp">
       <Filter>render</Filter>
     </ClCompile>
+    <ClCompile Include="src\render\FrameRenderer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tiny_gltf.h">

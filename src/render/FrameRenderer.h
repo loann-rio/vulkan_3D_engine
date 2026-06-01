@@ -6,7 +6,7 @@
 #include <vulkan/vulkan.h>
 
 class Device;
-class Swapchain;
+class Swap_chain;
 
 /*
     Contains all GPU synchronization and
@@ -43,7 +43,7 @@ public:
 
     FrameRenderer(
         Device& device,
-        Swapchain& swapchain
+        Swap_chain* swapchain
     );
 
     ~FrameRenderer();
@@ -58,10 +58,8 @@ public:
         - fence wait/reset
         - image acquisition
         - command buffer begin
-
-        Returns false if swapchain recreation is needed.
     */
-    bool beginFrame();
+    VkCommandBuffer beginFrame();
 
     /*
         End current frame.
@@ -71,35 +69,35 @@ public:
         - queue submit
         - present
     */
-    void endFrame();
+    VkResult endFrame(uint32_t imageIndex);
 
     /*
-        Called after swapchain recreation.
+        Called after swapchain recreation
     */
-    void recreate();
+    void recreate(Swap_chain* swapchain);
 
     /*
-        Current frame command buffer.
+        Current frame command buffer
     */
     VkCommandBuffer getCurrentCommandBuffer() const;
 
     /*
-        Current swapchain image index.
+        Current swapchain image index
     */
-    uint32_t getCurrentImageIndex() const;
+    uint32_t* getCurrentImageIndex();
 
     /*
-        Current CPU frame index.
+        Current CPU frame index
     */
     uint32_t getCurrentFrameIndex() const;
 
     /*
-        Current frame synchronization data.
+        Current frame synchronization data
     */
     const FrameData& getCurrentFrameData() const;
 
     /*
-        Whether a frame is currently recording.
+       is frame currently recording
     */
     bool isFrameInProgress() const;
 
@@ -114,7 +112,7 @@ private:
 private:
 
     Device& device;
-    Swapchain& swapchain;
+    Swap_chain* swapchain;
 
     std::vector<VkCommandBuffer> commandBuffers;
 

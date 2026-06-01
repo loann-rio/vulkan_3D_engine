@@ -13,19 +13,19 @@
 #include "../objects/objectManager.h"
 #include "../objects/BasicUI.h"
 
+#include "FrameRenderer.h"
+
 #include "GlobalRenderSystem.h"
 #include "PassTarget.h"
 
 #include <memory>
 #include <vector>
-#include <cassert>
 
 class Renderer
 {
 public:
 
 	Renderer(Window& window, Device& device, AssetManager& assets, ObjectManager& objectManager);
-	~Renderer();
 
 	Renderer(const Renderer&) = delete;
 	Renderer& operator=(const Renderer&) = delete;
@@ -38,7 +38,8 @@ public:
 	uint32_t getWidth() const { return swapChain->width(); }
 	uint32_t getHeight() const { return swapChain->height(); }
 
-	int getFrameIndex() const {	return currentFrameIndex; }
+	uint32_t getFrameIndex() const { return frameRenderer.getCurrentFrameIndex(); }
+
 
 	VkDescriptorImageInfo getDepthImageInfo(uint16_t index) { return depthFrameTarget->getDepthImageInfo(index); }
 
@@ -46,12 +47,6 @@ public:
 
 	void renderFrame(FrameInfo& frameInfo, ObjectManager& objectManager);
 	bool aquireNextImage();
-
-
-	VkCommandBuffer getCurrentCommandBuffer() const {
-		assert(isFrameStarted && "cannot get command buffer when frame not in progress");
-		return commandBuffers[currentFrameIndex];
-	}
 
 	bool isUiSelected() { return imgui->isWindowSelected; }
 
@@ -61,44 +56,31 @@ public:
 	std::vector<std::unique_ptr<Buffer>> terrainBuffers;
 	
 private:
-
-	void createCommandBuffer();
-	void freeCommandBuffers();
 	void recreateSwapChain();
 	void createRenderSystems(ObjectManager& objectManager);
 	void createTextureTarget(ObjectManager& objectManager);
 
+	void beginSingleTimeRender(VkCommandBuffer commandBuffer, int buffer_index = 0);
 	void beginShadowRenderPass(VkCommandBuffer commandBuffer, int depthCommandBufferIndex);
-	void endShadowRenderPass(VkCommandBuffer commandBuffer); 
-	void renderDepthImage(FrameInfo& frameInfo, VkCommandBuffer& commandBuffer);
+	void beginSwapChainRenderPass(VkCommandBuffer commandBuffer, VkExtent2D extent);
 
-
-	// render color
-	VkCommandBuffer beginFrame();
-	void endFrame();
-	void beginSwapChainRenderPass(VkCommandBuffer commandBuffer);
 	void endSwapChainRenderPass(VkCommandBuffer commandBuffer);
 
 	void renderColorImage(ObjectManager& objectManager, FrameInfo& frameInfo, VkCommandBuffer& commandBuffer);
-
-
-	void beginSingleTimeRender(VkCommandBuffer commandBuffer, int buffer_index = 0);
-	void endSingleTimeRender(VkCommandBuffer commandBuffer);
+	void renderDepthImage(FrameInfo& frameInfo, VkCommandBuffer& commandBuffer);
 
 	TextureManager::TextureID renderHdriToCubeTexture(std::shared_ptr<GlobalRenderSystem> renderSystem, VkDescriptorSet descriptorSet);
-
 
 	Window& window;
 	Device& device;
 	AssetManager& assets; 
 	GameObjectModel* base_skybox;
+	FrameRenderer frameRenderer{ device, swapChain.get()};;
 
 	std::unique_ptr<Swap_chain> swapChain;
 	std::unique_ptr<DepthSwapChain> depthSwapChain;
 
 	SingleSwapChain skyboxSwapChain{ device, assets, {2000, 2000} };
-
-	std::vector<VkCommandBuffer> commandBuffers;
 
 	std::unique_ptr<BasicUI> imgui;
 
@@ -108,9 +90,6 @@ private:
 
 	// syncro
 	uint32_t currentImageIndex;
-	int currentFrameIndex;
-
-	bool isFrameStarted = false;
 
 	// fps
 	float gpuTime = 0.0f;

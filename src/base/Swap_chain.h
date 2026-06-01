@@ -80,7 +80,6 @@ private:
     VkExtent2D swapChainExtent;
     std::vector<VkFramebuffer> swapChainFramebuffers;
 
-
     Device& device;
     VkExtent2D windowExtent;
 
@@ -95,6 +94,4 @@ private:
     std::vector<VkFence> imagesInFlight;
 
     size_t currentFrame = 0;
-
-    bool renderingDepthDuringFrame = false;
 };

@@ -3,9 +3,14 @@
 #include <stdexcept>
 #include <array>
 #include <cassert>
+#include <memory>
+#include <vulkan/vulkan_core.h>
+
 #include "../model/ModelAsset.h"
 #include "../model/ModelBuilder.h"
 #include "../assetManager/ModelManager.h"
+#include "PassTarget.h"
+
 
 Renderer::Renderer(
 	Window& window, 
@@ -16,9 +21,10 @@ Renderer::Renderer(
 {
 	recreateSwapChain();
 
-	depthSwapChain = std::make_unique<DepthSwapChain>(device, VkExtent2D{ 1024, 1024 });
-
-	createCommandBuffer();
+	depthSwapChain = std::make_unique<DepthSwapChain>(
+		device, 
+		VkExtent2D{ 1024, 1024 }
+	);
 	
 	createTextureTarget(objectManager);
 	createRenderSystems(objectManager);
@@ -30,8 +36,6 @@ Renderer::Renderer(
 		getSwapChainRenderPass() 
 	);
 }
-
-Renderer::~Renderer() { freeCommandBuffers(); }
 
 /*
 	recreate swap chain after redimentionning of the window
@@ -64,6 +68,8 @@ void Renderer::recreateSwapChain()
 			throw std::runtime_error("Swap chain image format as changed");
 		}
 	}
+
+	frameRenderer.recreate(swapChain.get());
 }
 
 void Renderer::createTextureTarget(ObjectManager& objectManager)
@@ -84,54 +90,87 @@ void Renderer::createTextureTarget(ObjectManager& objectManager)
 	depthFrameTarget->createLocalFramebuffers(depthSwapChain->getDepthRenderPass());
 	depthFrameTarget->createDescriptorSets(*objectManager.getPool());
 }
-	
-VkCommandBuffer Renderer::beginFrame()
+
+
+bool Renderer::aquireNextImage()
 {
-	assert(!isFrameStarted && "can't call beginframe while a frame is already in progress"); 
-	 
-	isFrameStarted = true; 
+	auto result = swapChain->acquireNextImage(frameRenderer.getCurrentImageIndex());
 
-	auto commandBuffer = getCurrentCommandBuffer(); 
-
-	vkResetCommandBuffer(commandBuffer, 0);
-
-	VkCommandBufferBeginInfo beginInfo{};
-	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-	if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
-		throw std::runtime_error("failed to begin recording command buffer");
-	}
-
-	return commandBuffer;
-}
-
-void Renderer::endFrame()
-{
-	assert(isFrameStarted && "cant call endFrame while the frame is not in progress");
-	auto commandBuffer = getCurrentCommandBuffer();
-
-	if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
-		throw std::runtime_error("failed to record command buffer");
-	}
-
-	VkResult result = swapChain->submitCommandBuffers(&commandBuffer, &currentImageIndex);
-
-	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || window.wasWindowResized()) {
-		window.resetWindowResizedFlag();
+	if (result == VK_ERROR_OUT_OF_DATE_KHR) {
 		recreateSwapChain();
-	}
-	else if (result != VK_SUCCESS) {
-		throw std::runtime_error("failed to present swap chain image");
+		return false;
 	}
 
-	isFrameStarted = false; 
-	currentFrameIndex = (currentFrameIndex + 1) % Swap_chain::MAX_FRAMES_IN_FLIGHT;
+	if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+		throw std::runtime_error("failed to acquire swap chain image");
+	}
+
+	return true;
 }
 
-void Renderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer)
+void Renderer::renderDepthImage(FrameInfo& frameInfo, VkCommandBuffer& commandBuffer)
 {
-	assert(isFrameStarted && "cant call beginSwapChainRenderPass while frame not in progress");
-	assert(commandBuffer == getCurrentCommandBuffer() && "cant begin render pass on command buffer from a different frame");
+
+	size_t countDepthRender = 0;
+	for (int depthRenderIndex = 0; depthRenderIndex < DepthSwapChain::MAX_DEPTH_RENDER_COUNT && depthRenderIndex < frameInfo.spotLightCount; depthRenderIndex++)
+	{
+
+		beginShadowRenderPass(commandBuffer, depthRenderIndex);
+
+		for (auto renderSystem : {
+				depthRenderSystem,
+				depthRenderSystemGltf,
+				depthTerrainRenderSystem
+			})
+
+			renderSystem->renderGameObjectsDepth(
+				commandBuffer,
+				frameInfo,
+				{
+					globalDescriptorSet[frameRenderer.getCurrentFrameIndex()],
+					shadowDescriptorSet[frameRenderer.getCurrentFrameIndex()]
+				},
+				depthRenderIndex,
+				frameRenderer.getCurrentFrameIndex()
+			);
+
+		endSwapChainRenderPass(commandBuffer);
+	}
+}
+
+void Renderer::renderColorImage(
+	ObjectManager& objectManager,
+	FrameInfo& frameInfo,
+	VkCommandBuffer& commandBuffer)
+{
+	// render
+	beginSwapChainRenderPass(commandBuffer, swapChain->getSwapChainExtent());
+
+	if (base_skybox)
+		gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo,
+			{
+				globalDescriptorSet[frameRenderer.getCurrentFrameIndex()],
+				shadowDescriptorSet[frameRenderer.getCurrentFrameIndex()],
+				assets.models().get(base_skybox->modelAsset)->lods[0].materials[0].descriptorSet[frameRenderer.getCurrentFrameIndex()]
+			},
+			frameInfo.mainCameraFrustrumPlanes);
+	else
+		base_skybox = dynamic_cast<GameObjectModel*>(objectManager.get("cubemap1"));
+
+
+	objRenderSystem->renderGameObjects(commandBuffer, frameInfo, { globalDescriptorSet[frameRenderer.getCurrentFrameIndex()], shadowDescriptorSet[frameRenderer.getCurrentFrameIndex()] });
+	skyboxRenderSystem->renderGameObjects(commandBuffer, frameInfo, { globalDescriptorSet[frameRenderer.getCurrentFrameIndex()] });
+
+	imgui->drawUI(commandBuffer, &objectManager, frameInfo.gpuFrameRate);
+
+	endSwapChainRenderPass(commandBuffer);
+}
+
+
+void Renderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer, VkExtent2D extent)
+{
+	assert(frameRenderer.isFrameInProgress() && "cant call beginSwapChainRenderPass while frame not in progress");
+	assert(commandBuffer == frameRenderer.getCurrentCommandBuffer() && "cant begin render pass on command buffer from a different frame");
 
 	VkRenderPassBeginInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -139,7 +178,7 @@ void Renderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer)
 	renderPassInfo.framebuffer = swapChain->getFrameBuffer(currentImageIndex);
 
 	renderPassInfo.renderArea.offset = { 0, 0 };
-	renderPassInfo.renderArea.extent = swapChain->getSwapChainExtent();
+	renderPassInfo.renderArea.extent = extent;
 
 	std::array<VkClearValue, 2> clearValues{};
 	clearValues[0].color = { 0.23f, 0.5f, 0.92f, 1.f };
@@ -153,11 +192,11 @@ void Renderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer)
 	VkViewport viewport{};
 	viewport.x = 0.0f;
 	viewport.y = 0.0f;
-	viewport.width = static_cast<float>(swapChain->getSwapChainExtent().width);
-	viewport.height = static_cast<float>(swapChain->getSwapChainExtent().height);
+	viewport.width = static_cast<float>(extent.width);
+	viewport.height = static_cast<float>(extent.height);
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
-	VkRect2D scissor{ {0, 0}, swapChain->getSwapChainExtent() };
+	VkRect2D scissor{ {0, 0}, extent };
 	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 }
@@ -167,7 +206,7 @@ void Renderer::beginShadowRenderPass(VkCommandBuffer commandBuffer, int depthRen
 	VkRenderPassBeginInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	renderPassInfo.renderPass = depthSwapChain->getDepthRenderPass();
-	renderPassInfo.framebuffer = depthFrameTarget->getFrameBuffer(depthRenderIndex + currentFrameIndex * DepthSwapChain::MAX_DEPTH_RENDER_COUNT);
+	renderPassInfo.framebuffer = depthFrameTarget->getFrameBuffer(depthRenderIndex + frameRenderer.getCurrentFrameIndex() * DepthSwapChain::MAX_DEPTH_RENDER_COUNT);
 
 	renderPassInfo.renderArea.offset = { 0, 0 };
 	renderPassInfo.renderArea.extent = depthSwapChain->getDepthSwapChainExtent();
@@ -194,8 +233,8 @@ void Renderer::beginShadowRenderPass(VkCommandBuffer commandBuffer, int depthRen
 
 void Renderer::endSwapChainRenderPass(VkCommandBuffer commandBuffer)
 {
-	assert(isFrameStarted && "cant call endSwapChainRenderPass while frame not in progress");
-	assert(commandBuffer == getCurrentCommandBuffer() && "cant end render pass on command buffer from a different frame");
+	assert(frameRenderer.isFrameInProgress() && "cant call endSwapChainRenderPass while frame not in progress");
+	assert(commandBuffer == frameRenderer.getCurrentCommandBuffer() && "cant end render pass on command buffer from a different frame");
 
 	vkCmdEndRenderPass(commandBuffer);
 }
@@ -229,85 +268,6 @@ void Renderer::beginSingleTimeRender(VkCommandBuffer commandBuffer, int buffer_i
 	VkRect2D scissor{ {0, 0}, skyboxSwapChain.getSwapChainExtent() };
 	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-}
-
-void Renderer::endSingleTimeRender(VkCommandBuffer commandBuffer)
-{
-	vkCmdEndRenderPass(commandBuffer);
-}
-
-bool Renderer::aquireNextImage()
-{
-	auto result = swapChain->acquireNextImage(&currentImageIndex);
-
-	if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-		recreateSwapChain();
-		return false;
-	}
-
-	if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-		throw std::runtime_error("failed to acquire swap chain image");
-	}
-
-	return true;
-}
-
-void Renderer::renderDepthImage(FrameInfo& frameInfo, VkCommandBuffer& commandBuffer)
-{
-
-	size_t countDepthRender = 0; 
-	for (int depthRenderIndex = 0; depthRenderIndex < DepthSwapChain::MAX_DEPTH_RENDER_COUNT && depthRenderIndex < frameInfo.spotLightCount; depthRenderIndex++)
-	{
-
-		beginShadowRenderPass(commandBuffer, depthRenderIndex);
-
-		for (auto renderSystem : {
-				depthRenderSystem,
-				depthRenderSystemGltf,
-				depthTerrainRenderSystem
-			})
-
-			renderSystem->renderGameObjectsDepth(
-				commandBuffer, 
-				frameInfo, 
-				{
-					globalDescriptorSet[frameInfo.frameIndex],
-					shadowDescriptorSet[currentFrameIndex]
-				},  
-				depthRenderIndex,
-				frameInfo.frameIndex
-			);
-
-		endSwapChainRenderPass(commandBuffer);
-	}
-}
-
-void Renderer::renderColorImage(
-	ObjectManager& objectManager,
-	FrameInfo& frameInfo, 
-	VkCommandBuffer& commandBuffer)
-{
-	// render
-	beginSwapChainRenderPass(commandBuffer);
-
-	if (base_skybox)
-		gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo,
-			{
-				globalDescriptorSet[frameInfo.frameIndex],
-				shadowDescriptorSet[currentFrameIndex],
-				assets.models().get(base_skybox->modelAsset)->lods[0].materials[0].descriptorSet[frameInfo.frameIndex]
-			},
-			frameInfo.mainCameraFrustrumPlanes);
-	else
-		base_skybox = dynamic_cast<GameObjectModel*>(objectManager.get("cubemap1"));
-
-
-	objRenderSystem->renderGameObjects(commandBuffer, frameInfo, {globalDescriptorSet[frameInfo.frameIndex], shadowDescriptorSet[frameInfo.frameIndex] });
-	skyboxRenderSystem->renderGameObjects(commandBuffer, frameInfo, { globalDescriptorSet[frameInfo.frameIndex] });
-
-	imgui->drawUI(commandBuffer, &objectManager, frameInfo.gpuFrameRate);
-
-	endSwapChainRenderPass(commandBuffer);
 }
 
 void Renderer::generateSkybox(const std::string pathTexture, const std::string goName, ObjectManager& objectManager)
@@ -360,9 +320,9 @@ void Renderer::renderFrame(FrameInfo& frameInfo, ObjectManager& objectManager)
 
 	auto newGpuTime = std::chrono::high_resolution_clock::now();
 
-	vkQueueWaitIdle(device.presentQueue()); // TODO remove
+	//vkQueueWaitIdle(device.presentQueue()); // TODO remove
 
-	if (auto commandBuffer = beginFrame()) {
+	if (auto commandBuffer = frameRenderer.beginFrame()) {
 		// render shadow map
 		renderDepthImage(
 			frameInfo,
@@ -375,7 +335,15 @@ void Renderer::renderFrame(FrameInfo& frameInfo, ObjectManager& objectManager)
 			commandBuffer
 		);
 
-		endFrame();
+		VkResult result = frameRenderer.endFrame(currentImageIndex);
+
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || window.wasWindowResized()) {
+			window.resetWindowResizedFlag();
+			recreateSwapChain();
+		}
+		else if (result != VK_SUCCESS) {
+			throw std::runtime_error("failed to present swap chain image");
+		}
 	}
 
 	auto endGpuTime = std::chrono::high_resolution_clock::now();
@@ -405,7 +373,7 @@ TextureManager::TextureID Renderer::renderHdriToCubeTexture(std::shared_ptr<Glob
 
 			renderSystem->renderFullScreen(commandBuffer, descriptorSet, captureViews[face], captureProj);
 
-			endSingleTimeRender(commandBuffer);
+			vkCmdEndRenderPass(commandBuffer);
 			device.endSingleTimeCommands(commandBuffer);
 		}
 
@@ -421,29 +389,6 @@ TextureManager::TextureID Renderer::renderHdriToCubeTexture(std::shared_ptr<Glob
 	);
 
 	return skyboxSwapChain.getTextureColor();
-}
-
-void Renderer::createCommandBuffer()
-{
-	commandBuffers.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
-
-	VkCommandBufferAllocateInfo allocInfo{};
-	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandPool = device.getThreadCommandPool();
-	allocInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
-
-
-	if (vkAllocateCommandBuffers(device.device(), &allocInfo, commandBuffers.data()) !=
-		VK_SUCCESS) {
-		throw std::runtime_error("failed to allocate command buffer");
-	}
-}
-
-void Renderer::freeCommandBuffers()
-{
-	vkFreeCommandBuffers(device.device(), device.getThreadCommandPool(), static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
-	commandBuffers.clear();
 }
 
 void Renderer::createRenderSystems(ObjectManager& objectManager)

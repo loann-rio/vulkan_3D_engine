@@ -95,12 +95,12 @@ void TextOverlay::renderText(VkCommandBuffer& commandBuffer, FrameInfo& frameInf
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
 		pipelineLayout,
 		0, 1,
-		&descriptorSet[frameInfo.frameIndex], 
+		&descriptorSet[frameInfo.frameIndex],
 		0,
 		nullptr
 	);
 
-	VkBuffer buffers[] = { vertexBuffer[frameInfo.frameIndex]->getBuffer()}; 
+	VkBuffer buffers[] = { vertexBuffer[frameInfo.frameIndex]->getBuffer()};
 	VkDeviceSize offsets[] = { 0 };
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
 
