@@ -37,7 +37,7 @@ VkCommandBuffer FrameRenderer::beginFrame()
 	return commandBuffer;
 }
 
-VkResult FrameRenderer::endFrame(uint32_t imageIndex)
+VkResult FrameRenderer::endFrame()
 {
 	assert(frameStarted && "cant call endFrame while the frame is not in progress");
 	auto commandBuffer = getCurrentCommandBuffer();
@@ -46,7 +46,7 @@ VkResult FrameRenderer::endFrame(uint32_t imageIndex)
 		throw std::runtime_error("failed to record command buffer");
 	}
 
-	VkResult result = swapchain->submitCommandBuffers(&commandBuffer, &imageIndex);
+	VkResult result = swapchain->submitCommandBuffers(&commandBuffer, &currentImageIndex);
 
 	frameStarted = false;
 	currentFrameIndex = (currentFrameIndex + 1) % Swap_chain::MAX_FRAMES_IN_FLIGHT;

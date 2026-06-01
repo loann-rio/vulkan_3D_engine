@@ -69,7 +69,7 @@ public:
         - queue submit
         - present
     */
-    VkResult endFrame(uint32_t imageIndex);
+    VkResult endFrame();
 
     /*
         Called after swapchain recreation

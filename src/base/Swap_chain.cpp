@@ -76,7 +76,7 @@ VkResult Swap_chain::acquireNextImage(uint32_t* imageIndex) {
         std::numeric_limits<uint64_t>::max(),
         imageAvailableSemaphores[currentFrame],  // must be a not signaled semaphore
         VK_NULL_HANDLE,
-        imageIndex);
+        imageIndex);                             // modified by vulkan
 
     return result;
 }

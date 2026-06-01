@@ -175,7 +175,7 @@ void Renderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer, VkExtent2
 	VkRenderPassBeginInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	renderPassInfo.renderPass = swapChain->getRenderPass();
-	renderPassInfo.framebuffer = swapChain->getFrameBuffer(currentImageIndex);
+	renderPassInfo.framebuffer = swapChain->getFrameBuffer(*frameRenderer.getCurrentImageIndex());
 
 	renderPassInfo.renderArea.offset = { 0, 0 };
 	renderPassInfo.renderArea.extent = extent;
@@ -335,7 +335,7 @@ void Renderer::renderFrame(FrameInfo& frameInfo, ObjectManager& objectManager)
 			commandBuffer
 		);
 
-		VkResult result = frameRenderer.endFrame(currentImageIndex);
+		VkResult result = frameRenderer.endFrame();
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || window.wasWindowResized()) {
 			window.resetWindowResizedFlag();

@@ -88,9 +88,6 @@ private:
 	std::unique_ptr<PassTarget> depthFrameTarget;
 	std::unique_ptr<PassTarget> finalFrameTarget;
 
-	// syncro
-	uint32_t currentImageIndex;
-
 	// fps
 	float gpuTime = 0.0f;
 	FrameRateCounter gpuFrameRate;
