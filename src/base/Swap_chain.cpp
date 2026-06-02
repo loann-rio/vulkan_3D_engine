@@ -1,4 +1,3 @@
-
 #include "Swap_chain.h"
 
 // std
@@ -14,22 +13,22 @@
 #endif
 
 Swap_chain::Swap_chain(Device& deviceRef, AssetManager& assets, VkExtent2D windowExtent)
-    : device{ deviceRef }, assets{ assets }, windowExtent{windowExtent} {
-    init();
+    : device{ deviceRef }, windowExtent{windowExtent} {
+    init(assets);
 }
 
 Swap_chain::Swap_chain(Device& deviceRef, AssetManager& assets, VkExtent2D windowExtent, std::shared_ptr<Swap_chain> previous)
-    : device{ deviceRef }, assets{ assets }, windowExtent{ windowExtent }, oldSwapChain{ previous } {
-    init();
+    : device{ deviceRef }, windowExtent{ windowExtent }, oldSwapChain{ previous } {
+    init(assets);
 }
 
-void Swap_chain::init()
+void Swap_chain::init(AssetManager& assets)
 {
     createSwapChain();
     createImageViews();
     createRenderPass();
-    createDepthResources();
-    createFramebuffers();
+    createDepthResources(assets);
+    createFramebuffers(assets);
     createSyncObjects();
 }
 
@@ -49,7 +48,6 @@ Swap_chain::~Swap_chain() {
         vkDestroyFramebuffer(device.device(), framebuffer, nullptr);
     }
 
-
     vkDestroyRenderPass(device.device(), renderPass, nullptr);
 
     // cleanup synchronization objects
@@ -68,7 +66,7 @@ VkResult Swap_chain::acquireNextImage(uint32_t* imageIndex) {
     vkWaitForFences(
         device.device(),
         1,
-        &inFlightFences[currentFrame],
+        &inFlightFences[(currentFrame + 1)%MAX_FRAMES_IN_FLIGHT],
         VK_TRUE,
         std::numeric_limits<uint64_t>::max());
 
@@ -78,7 +76,7 @@ VkResult Swap_chain::acquireNextImage(uint32_t* imageIndex) {
         std::numeric_limits<uint64_t>::max(),
         imageAvailableSemaphores[currentFrame],  // must be a not signaled semaphore
         VK_NULL_HANDLE,
-        imageIndex);
+        imageIndex);                             // modified by vulkan
 
     return result;
 }
@@ -88,7 +86,6 @@ VkResult Swap_chain::submitCommandBuffers(
 
     if (imagesInFlight[*imageIndex] != VK_NULL_HANDLE) {
         vkWaitForFences(device.device(), 1, &imagesInFlight[*imageIndex], VK_TRUE, UINT64_MAX);
-
     }
 
     imagesInFlight[*imageIndex] = inFlightFences[currentFrame];
@@ -98,10 +95,7 @@ VkResult Swap_chain::submitCommandBuffers(
     
     std::vector<VkSemaphore> tempWaitSemaphore{}; 
 
-    if (renderingDepthDuringFrame) {
-        tempWaitSemaphore = { depthFinishedSemaphores };
-        renderingDepthDuringFrame = false;
-    }
+    tempWaitSemaphore = { depthFinishedSemaphores };
         
     tempWaitSemaphore.push_back(imageAvailableSemaphores[currentFrame]); 
     std::vector<VkPipelineStageFlags> waitStage(tempWaitSemaphore.size(), VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT); 
@@ -117,21 +111,17 @@ VkResult Swap_chain::submitCommandBuffers(
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
-    vkResetFences(device.device(), 1, &inFlightFences[currentFrame]);
-
-    
-     
     VkPresentInfoKHR presentInfo = {};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
     presentInfo.waitSemaphoreCount = 1;
     presentInfo.pWaitSemaphores = signalSemaphores;
 
     VkSwapchainKHR swapChains[] = { swapChain };
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = swapChains;
-
     presentInfo.pImageIndices = imageIndex;
+
+    vkResetFences(device.device(), 1, &inFlightFences[currentFrame]);
 
 	auto result = device.submitAndPresent(submitInfo, inFlightFences[currentFrame], &presentInfo);
 
@@ -139,44 +129,6 @@ VkResult Swap_chain::submitCommandBuffers(
 
     return result;
 }
-
-
-void Swap_chain::submitDepthCommandBuffer(const std::vector<VkCommandBuffer> depthCommandBuffer)
-{
-    depthFinishedSemaphores.resize(depthCommandBuffer.size());
-
-    VkSemaphoreCreateInfo semaphoreInfo{};
-    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-    for (size_t i = 0; i < depthCommandBuffer.size(); i++) { 
-        if (depthFinishedSemaphores[i] == VK_NULL_HANDLE) { 
-            if (vkCreateSemaphore(device.device(), &semaphoreInfo, nullptr, &depthFinishedSemaphores[i]) != VK_SUCCESS) { 
-                throw std::runtime_error("failed to create depth semaphore!");
-            }
-        }
-    } 
-
-    for (size_t i = 0; i < depthCommandBuffer.size(); i++) { 
-        if (depthCommandBuffer[i] == VK_NULL_HANDLE) { 
-            throw std::runtime_error("Error: Uninitialized command buffer in depthCommandBuffer!");
-        }
-    }
-
-    // Submit Depth Pass 
-    VkSubmitInfo depthSubmitInfo{};
-    depthSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    depthSubmitInfo.commandBufferCount = static_cast<uint32_t>(depthCommandBuffer.size());
-    depthSubmitInfo.pCommandBuffers = depthCommandBuffer.data();
-
-    // Signal semaphore after depth pass
-    depthSubmitInfo.signalSemaphoreCount = static_cast<uint32_t>(depthFinishedSemaphores.size());
-    depthSubmitInfo.pSignalSemaphores = depthFinishedSemaphores.data();
-
-    device.submitToGraphicQueue(depthSubmitInfo, VK_NULL_HANDLE);
-
-    renderingDepthDuringFrame = true;
-}
-
 
 void Swap_chain::createSwapChain() {
     SwapChainSupportDetails swapChainSupport = device.getSwapChainSupport();
@@ -325,7 +277,7 @@ void Swap_chain::createRenderPass() {
 
 }
 
-void Swap_chain::createFramebuffers() {
+void Swap_chain::createFramebuffers(AssetManager& assets) {
     swapChainFramebuffers.resize(imageCount());
     for (size_t i = 0; i < imageCount(); i++) {
 
@@ -351,7 +303,7 @@ void Swap_chain::createFramebuffers() {
     }
 }
 
-void Swap_chain::createDepthResources() {
+void Swap_chain::createDepthResources(AssetManager& assets) {
     VkFormat depthFormat = findDepthFormat();
     swapChainDepthFormat = depthFormat;
     VkExtent2D swapChainExtent = getSwapChainExtent();
@@ -450,12 +402,12 @@ VkSurfaceFormatKHR Swap_chain::chooseSwapSurfaceFormat(
 VkPresentModeKHR Swap_chain::chooseSwapPresentMode(
     const std::vector<VkPresentModeKHR>& availablePresentModes) {
 
-    /*for (const auto& availablepresentmode : availablePresentModes) {
+    for (const auto& availablepresentmode : availablePresentModes) {
         if (availablepresentmode == VK_PRESENT_MODE_MAILBOX_KHR) {
             std::cout << "present mode: mailbox" << std::endl;
             return availablepresentmode;
         }
-    }*/
+    }
 
     /*for (const auto &availablePresentMode : availablePresentModes) {
        if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
@@ -473,7 +425,7 @@ VkExtent2D Swap_chain::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabili
         return capabilities.currentExtent;
     }
     else {
-        VkExtent2D actualExtent = windowExtent;
+        VkExtent2D actualExtent = windowExtent; 
         actualExtent.width = std::max(
             capabilities.minImageExtent.width,
             std::min(capabilities.maxImageExtent.width, actualExtent.width));

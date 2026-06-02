@@ -59,9 +59,7 @@ void Engine::run()
             dynamic_cast<GameObjectCamera*>(objectManager.get(objectManager.mainCamera))->updateCameraView();
         }
 
-        /////// start frame ///////
-        if (!renderer.aquireNextImage()) continue;
-        
+        /////// start frame ///////        
         int frameIndex = renderer.getFrameIndex();
 
         /////// update objects ///////

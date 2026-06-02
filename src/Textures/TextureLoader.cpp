@@ -12,8 +12,6 @@
 #include <future>
 #include <stdexcept>
 #include <filesystem>
-#include "TextureLoader.h"
-#include "TextureLoader.h"
 
 //// TextureLoader Implementation ////
 

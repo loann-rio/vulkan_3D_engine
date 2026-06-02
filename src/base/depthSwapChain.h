@@ -3,20 +3,6 @@
 ///// https://blogs.igalia.com/itoral/2017/10/02/working-with-lights-and-shadows-part-iii-rendering-the-shadows/
 
 #include "Device.h"
-#include "Swap_chain.h"
-
-#include "../assetManager/AssetManager.h"
-#include "../Textures/TextureBuilder.h"
-#include "../Textures/TextureObject.h"
-
-// vulkan headers
-#include <vulkan/vulkan.h>
-
-// std lib headers
-#include <string>
-#include <vector>
-#include <memory>
-#include <array>
 
 class DepthSwapChain
 {

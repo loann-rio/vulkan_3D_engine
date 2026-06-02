@@ -2,7 +2,6 @@
 
 #include "Device.h"
 
-#include "../Textures/TextureObject.h"
 #include "../assetManager/AssetManager.h"
 
 // vulkan headers
@@ -24,8 +23,9 @@ public:
     Swap_chain& operator=(const Swap_chain&) = delete;
 
     VkFramebuffer getFrameBuffer(int index) { return swapChainFramebuffers[index]; }
-    VkRenderPass getRenderPass() { return renderPass; }
     VkImageView getImageView(int index) { return swapChainImageViews[index]; }
+
+    VkRenderPass getRenderPass() { return renderPass; }  // PASS
 
     size_t imageCount() const { return swapChainImages.size(); }
 
@@ -34,10 +34,6 @@ public:
 
     VkExtent2D getSwapChainExtent() const { return swapChainExtent; }
 
-    std::vector<VkImage> getSwapChainImages() const { return swapChainImages; };
-
-
-
     uint32_t width() { return swapChainExtent.width; }
     uint32_t height() { return swapChainExtent.height; }
 
@@ -45,11 +41,8 @@ public:
         return static_cast<float>(swapChainExtent.width) / static_cast<float>(swapChainExtent.height);
     }
 
-    VkFormat findDepthFormat();
-
     VkResult acquireNextImage(uint32_t* imageIndex);
     VkResult submitCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex);
-    void submitDepthCommandBuffer(const std::vector<VkCommandBuffer> depthCommandBuffer);
 
     bool compareSwapFormat(const Swap_chain& swapChain) const {
         return swapChain.swapChainDepthFormat == swapChainDepthFormat && 
@@ -57,19 +50,19 @@ public:
     }
 
 private:
-    void init();
+    void init(AssetManager& assets);
     void createSwapChain();
     void createImageViews();
-    void createDepthResources();
-    void createRenderPass();
-    void createFramebuffers();
-    void createSyncObjects();
+    void createDepthResources(AssetManager& assets);
+    void createRenderPass();   // PASS
+    void createFramebuffers(AssetManager& assets);
+    void createSyncObjects();  // FRAME MANAGER
+
+    VkFormat findDepthFormat();
 
     // Helper functions
-    VkSurfaceFormatKHR chooseSwapSurfaceFormat(
-        const std::vector<VkSurfaceFormatKHR>& availableFormats);
-    VkPresentModeKHR chooseSwapPresentMode(
-        const std::vector<VkPresentModeKHR>& availablePresentModes);
+    VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+    VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 
     VkFormat swapChainImageFormat;
@@ -84,9 +77,7 @@ private:
     VkExtent2D swapChainExtent;
     std::vector<VkFramebuffer> swapChainFramebuffers;
 
-
     Device& device;
-    AssetManager& assets;
     VkExtent2D windowExtent;
 
     VkSwapchainKHR swapChain;
@@ -100,6 +91,4 @@ private:
     std::vector<VkFence> imagesInFlight;
 
     size_t currentFrame = 0;
-
-    bool renderingDepthDuringFrame = false;
 };
