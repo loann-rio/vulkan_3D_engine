@@ -196,6 +196,10 @@
       <Filter>render</Filter>
     </ClCompile>
     <ClCompile Include="src\render\FrameRenderer.cpp" />
+    <ClCompile Include="src\render\BaseRenderPass.h">
+      <Filter>render</Filter>
+    </ClCompile>
+    <ClCompile Include="src\render\DepthPass.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tiny_gltf.h">
@@ -375,6 +379,9 @@
       <Filter>render</Filter>
     </ClInclude>
     <ClInclude Include="src\render\FrameRenderer.h">
+      <Filter>render</Filter>
+    </ClInclude>
+    <ClInclude Include="src\render\DepthPass.h">
       <Filter>render</Filter>
     </ClInclude>
   </ItemGroup>

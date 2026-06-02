@@ -14,7 +14,7 @@
 #include "../objects/BasicUI.h"
 
 #include "FrameRenderer.h"
-
+#include "DepthPass.h"
 #include "GlobalRenderSystem.h"
 #include "PassTarget.h"
 
@@ -89,6 +89,9 @@ private:
 	// fps
 	float gpuTime = 0.0f;
 	FrameRateCounter gpuFrameRate;
+
+	// passes
+	DepthPass depthPass{device, assets};
 
 	// render systems
 	std::shared_ptr<GlobalRenderSystem> gltfRenderSystem;

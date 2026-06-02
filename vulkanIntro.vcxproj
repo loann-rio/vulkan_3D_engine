@@ -202,7 +202,9 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClCompile Include="src\objects\GameObjectRegistry.cpp" />
     <ClCompile Include="src\objects\KeyboardMovementController.cpp" />
     <ClCompile Include="src\objects\objectManager.cpp" />
+    <ClCompile Include="src\render\BaseRenderPass.h" />
     <ClCompile Include="src\render\Camera.cpp" />
+    <ClCompile Include="src\render\DepthPass.cpp" />
     <ClCompile Include="src\render\FrameRender.cpp" />
     <ClCompile Include="src\render\FrameRenderer.cpp" />
     <ClCompile Include="src\render\GlobalRenderSystem.cpp" />
@@ -265,6 +267,7 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClInclude Include="src\objects\KeyboardMovementController.h" />
     <ClInclude Include="src\objects\objectManager.h" />
     <ClInclude Include="src\render\Camera.h" />
+    <ClInclude Include="src\render\DepthPass.h" />
     <ClInclude Include="src\render\FrameRenderer.h" />
     <ClInclude Include="src\render\GlobalRenderSystem.h" />
     <ClInclude Include="src\render\PassTarget.h" />
