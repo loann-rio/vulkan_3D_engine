@@ -320,10 +320,9 @@ void Renderer::renderFrame(FrameInfo& frameInfo, ObjectManager& objectManager)
 
 	auto newGpuTime = std::chrono::high_resolution_clock::now();
 
-	//vkQueueWaitIdle(device.presentQueue()); // TODO remove
+	aquireNextImage();
 
 	if (auto commandBuffer = frameRenderer.beginFrame()) {
-		// render shadow map
 		renderDepthImage(
 			frameInfo,
 			commandBuffer

@@ -8,13 +8,7 @@
 
 FrameRenderer::FrameRenderer(Device& device, Swap_chain* swapchain) : swapchain{swapchain}, device{device}
 {
-	createSyncObjects();
 	createCommandBuffers();
-}
-
-FrameRenderer::~FrameRenderer()
-{
-	destroySyncObjects();
 }
 
 VkCommandBuffer FrameRenderer::beginFrame()
@@ -100,33 +94,4 @@ void FrameRenderer::freeCommandBuffers()
 {
 	vkFreeCommandBuffers(device.device(), device.getThreadCommandPool(), static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
 	commandBuffers.clear();
-}
-
-void FrameRenderer::createSyncObjects()
-{
-	VkSemaphoreCreateInfo semaphoreInfo = {};
-	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-	VkFenceCreateInfo fenceInfo = {};
-	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-		if (vkCreateSemaphore(device.device(), &semaphoreInfo, nullptr, &frames[i].imageAvailableSemaphore) !=
-			VK_SUCCESS ||
-			vkCreateSemaphore(device.device(), &semaphoreInfo, nullptr, &frames[i].renderFinishedSemaphore) !=
-			VK_SUCCESS ||
-			vkCreateFence(device.device(), &fenceInfo, nullptr, &frames[i].inFlightFence) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create synchronization objects for a frame!");
-		}
-	}
-}
-
-void FrameRenderer::destroySyncObjects()
-{
-	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-		vkDestroySemaphore(device.device(), frames[i].renderFinishedSemaphore, nullptr);
-		vkDestroySemaphore(device.device(), frames[i].imageAvailableSemaphore, nullptr);
-		vkDestroyFence(device.device(), frames[i].inFlightFence, nullptr);
-	}
 }

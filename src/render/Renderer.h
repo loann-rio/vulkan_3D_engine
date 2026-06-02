@@ -86,8 +86,6 @@ private:
 
 	// target
 	std::unique_ptr<PassTarget> depthFrameTarget;
-	std::unique_ptr<PassTarget> finalFrameTarget;
-
 	// fps
 	float gpuTime = 0.0f;
 	FrameRateCounter gpuFrameRate;

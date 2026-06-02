@@ -2,7 +2,6 @@
 
 #include "Device.h"
 
-#include "../Textures/TextureObject.h"
 #include "../assetManager/AssetManager.h"
 
 // vulkan headers
@@ -34,8 +33,6 @@ public:
     VkFormat getSwapChainDepthFormat() const { return swapChainDepthFormat; }
 
     VkExtent2D getSwapChainExtent() const { return swapChainExtent; }
-
-
 
     uint32_t width() { return swapChainExtent.width; }
     uint32_t height() { return swapChainExtent.height; }
