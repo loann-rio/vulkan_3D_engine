@@ -21,12 +21,13 @@ Renderer::Renderer(
 {
 	recreateSwapChain();
 
-	depthSwapChain = std::make_unique<DepthSwapChain>(
-		device, 
-		VkExtent2D{ 1024, 1024 }
-	);
-	
+	depthPass = std::make_unique<DepthPass>( device, assets, swapChain.get() );
+	depthPass->createRenderPass(swapChain->getSwapChainDepthFormat());
+
 	createTextureTarget(objectManager);
+
+	depthPass->setTarget(depthFrameTarget.get());
+
 	createRenderSystems(objectManager);
 
 	imgui = std::make_unique<BasicUI>(
@@ -79,15 +80,15 @@ void Renderer::createTextureTarget(ObjectManager& objectManager)
 		device,
 		*swapChain.get(),
 		assets,
-		depthSwapChain->getDepthSwapChainExtent(),
+		VkExtent2D{1024, 1024},
 		true,  /*depth*/
 		false, /*color*/
-		depthSwapChain->findDepthFormat(),
+		swapChain->getSwapChainDepthFormat(),
 		DepthSwapChain::MAX_DEPTH_RENDER_COUNT * Swap_chain::MAX_FRAMES_IN_FLIGHT,
 		false
 	);
 
-	depthFrameTarget->createLocalFramebuffers(depthSwapChain->getDepthRenderPass());
+	depthFrameTarget->createLocalFramebuffers(depthPass->getRenderPass());
 	depthFrameTarget->createDescriptorSets(*objectManager.getPool());
 }
 
@@ -114,8 +115,7 @@ void Renderer::renderDepthImage(FrameInfo& frameInfo, VkCommandBuffer& commandBu
 	size_t countDepthRender = 0;
 	for (int depthRenderIndex = 0; depthRenderIndex < DepthSwapChain::MAX_DEPTH_RENDER_COUNT && depthRenderIndex < frameInfo.spotLightCount; depthRenderIndex++)
 	{
-
-		beginShadowRenderPass(commandBuffer, depthRenderIndex);
+		depthPass->beginRenderPass(commandBuffer, depthRenderIndex, frameInfo.frameIndex);
 
 		for (auto renderSystem : {
 				depthRenderSystem,
@@ -134,7 +134,7 @@ void Renderer::renderDepthImage(FrameInfo& frameInfo, VkCommandBuffer& commandBu
 				frameRenderer.getCurrentFrameIndex()
 			);
 
-		endSwapChainRenderPass(commandBuffer);
+		depthPass->endRenderPass(commandBuffer);
 	}
 }
 
@@ -205,11 +205,11 @@ void Renderer::beginShadowRenderPass(VkCommandBuffer commandBuffer, int depthRen
 {
 	VkRenderPassBeginInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	renderPassInfo.renderPass = depthSwapChain->getDepthRenderPass();
+	renderPassInfo.renderPass = depthPass->getRenderPass();
 	renderPassInfo.framebuffer = depthFrameTarget->getFrameBuffer(depthRenderIndex + frameRenderer.getCurrentFrameIndex() * DepthSwapChain::MAX_DEPTH_RENDER_COUNT);
 
 	renderPassInfo.renderArea.offset = { 0, 0 };
-	renderPassInfo.renderArea.extent = depthSwapChain->getDepthSwapChainExtent();
+	renderPassInfo.renderArea.extent = depthFrameTarget->getExtent();
 
 	std::array<VkClearValue, 1> clearValues{};
 	clearValues[0].depthStencil = { 1.0f, 0 };
@@ -222,11 +222,11 @@ void Renderer::beginShadowRenderPass(VkCommandBuffer commandBuffer, int depthRen
 	VkViewport viewport{};
 	viewport.x = 0.0f;
 	viewport.y = 0.0f;
-	viewport.width = static_cast<float>(depthSwapChain->getDepthSwapChainExtent().width);
-	viewport.height = static_cast<float>(depthSwapChain->getDepthSwapChainExtent().height);
+	viewport.width = static_cast<float>(depthFrameTarget->getExtent().width);
+	viewport.height = static_cast<float>(depthFrameTarget->getExtent().height);
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
-	VkRect2D scissor{ {0, 0}, depthSwapChain->getDepthSwapChainExtent() };
+	VkRect2D scissor{ {0, 0}, depthFrameTarget->getExtent() };
 	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 }

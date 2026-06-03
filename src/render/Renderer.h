@@ -31,7 +31,7 @@ public:
 	Renderer& operator=(const Renderer&) = delete;
 
 	VkRenderPass getSwapChainRenderPass() const { return swapChain->getRenderPass(); }
-	VkRenderPass getDepthRenderPass() const { return depthSwapChain->getDepthRenderPass(); }
+	VkRenderPass getDepthRenderPass() const { return depthPass->getRenderPass(); }
 	VkRenderPass getSecondarySwapRenderPass() const { return skyboxSwapChain.getRenderPass(); }
 	
 	float getAspectRatio() const { return swapChain->extentAspectRatio(); }
@@ -78,7 +78,6 @@ private:
 	FrameRenderer frameRenderer{ device, swapChain.get()};;
 
 	std::unique_ptr<Swap_chain> swapChain;
-	std::unique_ptr<DepthSwapChain> depthSwapChain;
 
 	SingleSwapChain skyboxSwapChain{ device, assets, {2000, 2000} };
 
@@ -86,12 +85,13 @@ private:
 
 	// target
 	std::unique_ptr<PassTarget> depthFrameTarget;
+
 	// fps
 	float gpuTime = 0.0f;
 	FrameRateCounter gpuFrameRate;
 
 	// passes
-	DepthPass depthPass{device, assets};
+	std::unique_ptr<DepthPass> depthPass;
 
 	// render systems
 	std::shared_ptr<GlobalRenderSystem> gltfRenderSystem;

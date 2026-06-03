@@ -49,6 +49,8 @@ public:
 
     VkFramebuffer getFrameBuffer(uint16_t index) const { return framebuffers[index]; }
 
+    VkExtent2D getExtent() const { return extent; }
+
 
 private:
     void cleanupLocalFramebuffers();
