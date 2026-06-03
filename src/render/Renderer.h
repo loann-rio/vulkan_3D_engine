@@ -3,7 +3,6 @@
 #include "../base/Window.h"
 #include "../base/device.h"
 #include "../base/Swap_chain.h"
-#include "../base/DepthSwapChain.h"
 #include "../base/SingleRenderSwap.h"
 #include "../base/FrameRateCounter.h"
 #include "../base/Frame_info.h"
@@ -61,7 +60,6 @@ private:
 	void createTextureTarget(ObjectManager& objectManager);
 
 	void beginSingleTimeRender(VkCommandBuffer commandBuffer, int buffer_index = 0);
-	void beginShadowRenderPass(VkCommandBuffer commandBuffer, int depthCommandBufferIndex);
 	void beginSwapChainRenderPass(VkCommandBuffer commandBuffer, VkExtent2D extent);
 
 	void endSwapChainRenderPass(VkCommandBuffer commandBuffer);

@@ -106,7 +106,7 @@ void Engine::run()
 
                 lightObj->camera->updateFrustrumPlanes();
                 frustrumPlanesList.push_back(lightObj->getFrustumPlanes());
-                if (i >= DepthSwapChain::MAX_DEPTH_RENDER_COUNT) break;
+                if (i >= DepthPass::MAX_DEPTH_RENDER_COUNT) break;
             }
             spotLightUbo.numLights = i;
 

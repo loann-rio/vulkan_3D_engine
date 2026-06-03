@@ -91,9 +91,6 @@
     <ClCompile Include="src\base\Buffer.cpp">
       <Filter>base</Filter>
     </ClCompile>
-    <ClCompile Include="src\base\depthSwapChain.cpp">
-      <Filter>base</Filter>
-    </ClCompile>
     <ClCompile Include="src\base\descriptors.cpp">
       <Filter>base</Filter>
     </ClCompile>
@@ -227,9 +224,6 @@
       <Filter>model</Filter>
     </ClInclude>
     <ClInclude Include="src\base\Buffer.h">
-      <Filter>base</Filter>
-    </ClInclude>
-    <ClInclude Include="src\base\depthSwapChain.h">
       <Filter>base</Filter>
     </ClInclude>
     <ClInclude Include="src\base\descriptors.h">

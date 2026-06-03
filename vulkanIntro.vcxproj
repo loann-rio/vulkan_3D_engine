@@ -178,7 +178,6 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClCompile Include="src\assetManager\TextureManager.cpp" />
     <ClCompile Include="src\Engine.cpp" />
     <ClCompile Include="src\base\Buffer.cpp" />
-    <ClCompile Include="src\base\depthSwapChain.cpp" />
     <ClCompile Include="src\base\descriptors.cpp" />
     <ClCompile Include="src\base\Device.cpp" />
     <ClCompile Include="src\base\Pipeline.cpp" />
@@ -230,7 +229,6 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClInclude Include="src\assetManager\TextureManager.h" />
     <ClInclude Include="src\Engine.h" />
     <ClInclude Include="src\base\Buffer.h" />
-    <ClInclude Include="src\base\depthSwapChain.h" />
     <ClInclude Include="src\base\descriptors.h" />
     <ClInclude Include="src\base\Device.h" />
     <ClInclude Include="src\base\FrameRateCounter.h" />

@@ -84,7 +84,7 @@ void Renderer::createTextureTarget(ObjectManager& objectManager)
 		true,  /*depth*/
 		false, /*color*/
 		swapChain->getSwapChainDepthFormat(),
-		DepthSwapChain::MAX_DEPTH_RENDER_COUNT * Swap_chain::MAX_FRAMES_IN_FLIGHT,
+		DepthPass::MAX_DEPTH_RENDER_COUNT * Swap_chain::MAX_FRAMES_IN_FLIGHT,
 		false
 	);
 
@@ -113,7 +113,7 @@ void Renderer::renderDepthImage(FrameInfo& frameInfo, VkCommandBuffer& commandBu
 {
 
 	size_t countDepthRender = 0;
-	for (int depthRenderIndex = 0; depthRenderIndex < DepthSwapChain::MAX_DEPTH_RENDER_COUNT && depthRenderIndex < frameInfo.spotLightCount; depthRenderIndex++)
+	for (int depthRenderIndex = 0; depthRenderIndex < DepthPass::MAX_DEPTH_RENDER_COUNT && depthRenderIndex < frameInfo.spotLightCount; depthRenderIndex++)
 	{
 		depthPass->beginRenderPass(commandBuffer, depthRenderIndex, frameInfo.frameIndex);
 
@@ -197,36 +197,6 @@ void Renderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer, VkExtent2
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 	VkRect2D scissor{ {0, 0}, extent };
-	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-}
-
-void Renderer::beginShadowRenderPass(VkCommandBuffer commandBuffer, int depthRenderIndex)
-{
-	VkRenderPassBeginInfo renderPassInfo{};
-	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	renderPassInfo.renderPass = depthPass->getRenderPass();
-	renderPassInfo.framebuffer = depthFrameTarget->getFrameBuffer(depthRenderIndex + frameRenderer.getCurrentFrameIndex() * DepthSwapChain::MAX_DEPTH_RENDER_COUNT);
-
-	renderPassInfo.renderArea.offset = { 0, 0 };
-	renderPassInfo.renderArea.extent = depthFrameTarget->getExtent();
-
-	std::array<VkClearValue, 1> clearValues{};
-	clearValues[0].depthStencil = { 1.0f, 0 };
-
-	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-	renderPassInfo.pClearValues = clearValues.data();
-
-	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-	VkViewport viewport{};
-	viewport.x = 0.0f;
-	viewport.y = 0.0f;
-	viewport.width = static_cast<float>(depthFrameTarget->getExtent().width);
-	viewport.height = static_cast<float>(depthFrameTarget->getExtent().height);
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
-	VkRect2D scissor{ {0, 0}, depthFrameTarget->getExtent() };
 	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 }
@@ -471,7 +441,7 @@ void Renderer::createRenderSystems(ObjectManager& objectManager)
 
 	auto shadowSetLayout = DescriptorSetLayout::Builder(device)
 		.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
-		.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, DepthSwapChain::MAX_DEPTH_RENDER_COUNT)
+		.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, DepthPass::MAX_DEPTH_RENDER_COUNT)
 		.build();
 
 	shadowDescriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
@@ -479,13 +449,13 @@ void Renderer::createRenderSystems(ObjectManager& objectManager)
 	{
 		auto bufferInfo = shadowUboBuffer[i]->descriptorInfo();
 
-		std::array<VkDescriptorImageInfo, DepthSwapChain::MAX_DEPTH_RENDER_COUNT> imagesInfo;
-		for (uint16_t depthImageIndex = 0; depthImageIndex < DepthSwapChain::MAX_DEPTH_RENDER_COUNT; depthImageIndex++)
-			imagesInfo[depthImageIndex] = getDepthImageInfo(i * DepthSwapChain::MAX_DEPTH_RENDER_COUNT + depthImageIndex);
+		std::array<VkDescriptorImageInfo, DepthPass::MAX_DEPTH_RENDER_COUNT> imagesInfo;
+		for (uint16_t depthImageIndex = 0; depthImageIndex < DepthPass::MAX_DEPTH_RENDER_COUNT; depthImageIndex++)
+			imagesInfo[depthImageIndex] = getDepthImageInfo(i * DepthPass::MAX_DEPTH_RENDER_COUNT + depthImageIndex);
 
 		DescriptorWriter(*shadowSetLayout, *objectManager.getPool())
 			.writeBuffer(0, &bufferInfo)
-			.writeImage(1, imagesInfo.data(), DepthSwapChain::MAX_DEPTH_RENDER_COUNT)
+			.writeImage(1, imagesInfo.data(), DepthPass::MAX_DEPTH_RENDER_COUNT)
 			.build(shadowDescriptorSet[i]);
 	}
 

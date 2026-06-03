@@ -9,8 +9,10 @@ class AssetManager;
 
 class DepthPass : public BaseRenderPass
 {
-	static const uint16_t MAX_DEPTH_RENDER_COUNT = 4;
 public:
+
+	static const uint16_t MAX_DEPTH_RENDER_COUNT = 4;
+
 	DepthPass(Device& device_, AssetManager& assets_, Swap_chain* swapchain)
 		: BaseRenderPass(device_, assets_) {}
 

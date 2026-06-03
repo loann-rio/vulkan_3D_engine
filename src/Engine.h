@@ -2,14 +2,11 @@
 
 #include "base/Window.h"
 #include "base/device.h"
-#include "base/descriptors.h"
 
 #include "render/Renderer.h"
 #include "objects/ObjectManager.h"
 
 #include "assetManager/AssetManager.h"
-
-#include <memory>
 
 
 class Engine
