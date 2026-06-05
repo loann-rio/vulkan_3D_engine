@@ -20,7 +20,6 @@ public:
 		};
 	}
 
-
 	virtual void createRenderSystems() = 0;
 	/**
 	add a renderSytem for the pass with global descriptor set layouts
@@ -56,7 +55,7 @@ public:
 
 
 protected:
-	virtual void createRenderPass(VkFormat depthFormat) = 0;
+	virtual void createRenderPass(VkFormat imageFormat, VkFormat depthFormat) = 0;
 
 	//std::vector<std::unique_ptr<GlobalRenderSystem>> renderSystems;
 

@@ -2,7 +2,7 @@
 
 #include "../base/Device.h"
 
-void DepthPass::createRenderPass(VkFormat depthFormat)
+void DepthPass::createRenderPass(VkFormat imageFormat, VkFormat depthFormat)
 {
     VkAttachmentDescription depthAttachment{};
     depthAttachment.format = depthFormat;

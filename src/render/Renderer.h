@@ -14,6 +14,7 @@
 
 #include "FrameRenderer.h"
 #include "DepthPass.h"
+#include "ColorPass.h"
 #include "GlobalRenderSystem.h"
 #include "PassTarget.h"
 
@@ -83,6 +84,7 @@ private:
 
 	// target
 	std::unique_ptr<PassTarget> depthFrameTarget;
+	std::unique_ptr<PassTarget> finalFrameTarget;
 
 	// fps
 	float gpuTime = 0.0f;
@@ -90,6 +92,7 @@ private:
 
 	// passes
 	std::unique_ptr<DepthPass> depthPass;
+	std::unique_ptr<ColorPass> finalPass;
 
 	// render systems
 	std::shared_ptr<GlobalRenderSystem> gltfRenderSystem;

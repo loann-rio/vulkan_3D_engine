@@ -19,7 +19,6 @@ public:
         VkExtent2D extent_,
         bool hasDepth,
         bool hasColor,
-        VkFormat depthFormat = VK_FORMAT_UNDEFINED,
         size_t imageCount = 1,
         bool isFinal = false
     );

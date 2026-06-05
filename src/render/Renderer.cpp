@@ -21,8 +21,17 @@ Renderer::Renderer(
 {
 	recreateSwapChain();
 
-	depthPass = std::make_unique<DepthPass>( device, assets, swapChain.get() );
-	depthPass->createRenderPass(swapChain->getSwapChainDepthFormat());
+	depthPass = std::make_unique<DepthPass>(
+		device, 
+		assets, 
+		swapChain.get() 
+	);
+
+	finalPass = std::make_unique<ColorPass>(
+		device,
+		assets,
+		swapChain.get()
+	);
 
 	createTextureTarget(objectManager);
 
@@ -80,16 +89,29 @@ void Renderer::createTextureTarget(ObjectManager& objectManager)
 		device,
 		*swapChain.get(),
 		assets,
-		VkExtent2D{1024, 1024},
+		VkExtent2D{1024, 1024},	
 		true,  /*depth*/
 		false, /*color*/
-		swapChain->getSwapChainDepthFormat(),
 		DepthPass::MAX_DEPTH_RENDER_COUNT * Swap_chain::MAX_FRAMES_IN_FLIGHT,
 		false
 	);
 
 	depthFrameTarget->createLocalFramebuffers(depthPass->getRenderPass());
 	depthFrameTarget->createDescriptorSets(*objectManager.getPool());
+
+
+	// color
+	finalFrameTarget = std::make_unique<PassTarget>(
+		device,
+		*swapChain.get(),
+		assets,
+		swapChain->getSwapChainExtent(),
+		true,
+		true,
+		Swap_chain::MAX_FRAMES_IN_FLIGHT,
+		true
+	);
+	
 }
 
 

@@ -196,7 +196,15 @@
     <ClCompile Include="src\render\BaseRenderPass.h">
       <Filter>render</Filter>
     </ClCompile>
-    <ClCompile Include="src\render\DepthPass.cpp" />
+    <ClCompile Include="src\render\ColorPass.h">
+      <Filter>render</Filter>
+    </ClCompile>
+    <ClCompile Include="src\render\ColorPass.cpp">
+      <Filter>render</Filter>
+    </ClCompile>
+    <ClCompile Include="src\render\DepthPass.cpp">
+      <Filter>render</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tiny_gltf.h">
