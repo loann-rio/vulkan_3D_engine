@@ -11,6 +11,8 @@
 #include <vector>
 #include <memory>
 
+class PassTarget;
+
 class Swap_chain {
 public:
     static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
@@ -28,6 +30,8 @@ public:
     VkRenderPass getRenderPass() { return renderPass; }  // PASS
 
     size_t imageCount() const { return swapChainImages.size(); }
+    std::vector<VkImage> getSwapChainImages() const { return swapChainImages; }
+
 
     VkFormat getSwapChainImageFormat() const { return swapChainImageFormat; }
     VkFormat getSwapChainDepthFormat() const { return swapChainDepthFormat; }
@@ -36,6 +40,8 @@ public:
 
     uint32_t width() { return swapChainExtent.width; }
     uint32_t height() { return swapChainExtent.height; }
+
+    void createFramebuffers(AssetManager& assets, PassTarget* textureTarget, VkRenderPass renderPass);
 
     float extentAspectRatio() {
         return static_cast<float>(swapChainExtent.width) / static_cast<float>(swapChainExtent.height);
@@ -55,8 +61,7 @@ private:
     void createImageViews();
     void createDepthResources(AssetManager& assets);
     void createRenderPass();   // PASS
-    void createFramebuffers(AssetManager& assets);
-    void createSyncObjects();  // FRAME MANAGER
+    void createSyncObjects();
 
     VkFormat findDepthFormat();
 

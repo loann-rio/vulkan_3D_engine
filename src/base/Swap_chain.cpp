@@ -7,6 +7,7 @@
 #include <stdexcept>
 
 #include "../Textures/TextureBuilder.h"
+#include "../render/PassTarget.h"
 
 #ifndef VK_SUBPASS_EXTERNAL
 #define VK_SUBPASS_EXTERNAL (~0U)
@@ -28,7 +29,6 @@ void Swap_chain::init(AssetManager& assets)
     createImageViews();
     createRenderPass();
     createDepthResources(assets);
-    createFramebuffers(assets);
     createSyncObjects();
 }
 
@@ -59,6 +59,32 @@ Swap_chain::~Swap_chain() {
 
     for (size_t i = 0; i < depthFinishedSemaphores.size(); ++i) {
         vkDestroySemaphore(device.device(), depthFinishedSemaphores[i], nullptr);
+    }
+}
+
+void Swap_chain::createFramebuffers(AssetManager& assets, PassTarget* textureTarget, VkRenderPass renderPass)
+{
+    swapChainFramebuffers.resize(imageCount());
+    for (size_t i = 0; i < imageCount(); i++) {
+        std::array<VkImageView, 2> attachments = { swapChainImageViews[i], assets.textures().get(textureTarget->getDepth(i))->view()};
+
+        VkExtent2D swapChainExtent = getSwapChainExtent();
+        VkFramebufferCreateInfo framebufferInfo = {};
+        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebufferInfo.renderPass = renderPass;
+        framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+        framebufferInfo.pAttachments = attachments.data();
+        framebufferInfo.width = swapChainExtent.width;
+        framebufferInfo.height = swapChainExtent.height;
+        framebufferInfo.layers = 1;
+
+        if (vkCreateFramebuffer(
+            device.device(),
+            &framebufferInfo,
+            nullptr,
+            &swapChainFramebuffers[i]) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create framebuffer!");
+        }
     }
 }
 
@@ -275,32 +301,6 @@ void Swap_chain::createRenderPass() {
         throw std::runtime_error("failed to create render pass!");
     }
 
-}
-
-void Swap_chain::createFramebuffers(AssetManager& assets) {
-    swapChainFramebuffers.resize(imageCount());
-    for (size_t i = 0; i < imageCount(); i++) {
-
-        std::array<VkImageView, 2> attachments = { swapChainImageViews[i], assets.textures().get(depthTextures[i])->view() };
-
-        VkExtent2D swapChainExtent = getSwapChainExtent();
-        VkFramebufferCreateInfo framebufferInfo = {};
-        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        framebufferInfo.renderPass = renderPass;
-        framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-        framebufferInfo.pAttachments = attachments.data();
-        framebufferInfo.width = swapChainExtent.width;
-        framebufferInfo.height = swapChainExtent.height;
-        framebufferInfo.layers = 1;
-
-        if (vkCreateFramebuffer(
-            device.device(),
-            &framebufferInfo,
-            nullptr,
-            &swapChainFramebuffers[i]) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create framebuffer!");
-        }
-    }
 }
 
 void Swap_chain::createDepthResources(AssetManager& assets) {

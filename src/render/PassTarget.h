@@ -46,6 +46,10 @@ public:
     VkDescriptorImageInfo getColorImageInfo(uint16_t index) const { return colorImageInfo[index]; }
     VkDescriptorImageInfo getDepthImageInfo(uint16_t index) const { return depthImageInfo[index]; }
 
+
+    TextureManager::TextureID getColor(uint16_t index) const { return color[index]; }
+    TextureManager::TextureID getDepth(uint16_t index) const { return depth[index]; }
+
     VkFramebuffer getFrameBuffer(uint16_t index) const { return framebuffers[index]; }
 
     VkExtent2D getExtent() const { return extent; }

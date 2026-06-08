@@ -35,7 +35,11 @@ Renderer::Renderer(
 
 	createTextureTarget(objectManager);
 
-	depthPass->setTarget(depthFrameTarget.get());
+	swapChain->createFramebuffers(
+		assets,
+		finalFrameTarget.get(),
+		finalPass->getRenderPass()
+	);
 
 	createRenderSystems(objectManager);
 
@@ -98,6 +102,7 @@ void Renderer::createTextureTarget(ObjectManager& objectManager)
 
 	depthFrameTarget->createLocalFramebuffers(depthPass->getRenderPass());
 	depthFrameTarget->createDescriptorSets(*objectManager.getPool());
+	depthPass->setTarget(depthFrameTarget.get());
 
 
 	// color
@@ -108,10 +113,9 @@ void Renderer::createTextureTarget(ObjectManager& objectManager)
 		swapChain->getSwapChainExtent(),
 		true,
 		true,
-		Swap_chain::MAX_FRAMES_IN_FLIGHT,
+		swapChain->imageCount(),
 		true
-	);
-	
+	);	
 }
 
 
