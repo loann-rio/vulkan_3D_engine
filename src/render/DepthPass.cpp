@@ -1,33 +1,11 @@
-#include "depthSwapChain.h"
+#include "DepthPass.h"
 
-#include <stdexcept>
+#include "../base/Device.h"
 
-DepthSwapChain::DepthSwapChain(Device& deviceRef, VkExtent2D depthImageExtent)
-    : device{ deviceRef }, depthExtent { depthImageExtent }
-{
-    createDepthRenderPass();
-}
-
-DepthSwapChain::~DepthSwapChain()
-{
-	if (depthRenderPass != nullptr) {
-		vkDestroyRenderPass(device.device(), depthRenderPass, nullptr);
-	}
-}
-
-
-VkFormat DepthSwapChain::findDepthFormat()
-{
-    return device.findSupportedFormat(
-        { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
-        VK_IMAGE_TILING_OPTIMAL,
-        VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
-}
-
-void DepthSwapChain::createDepthRenderPass()
+void DepthPass::createRenderPass(VkFormat imageFormat, VkFormat depthFormat)
 {
     VkAttachmentDescription depthAttachment{};
-    depthAttachment.format = findDepthFormat();
+    depthAttachment.format = depthFormat;
     depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
     depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE; // Store depth results
@@ -63,7 +41,42 @@ void DepthSwapChain::createDepthRenderPass()
     renderPassInfo.dependencyCount = 1;
     renderPassInfo.pDependencies = &dependency;
 
-    if (vkCreateRenderPass(device.device(), &renderPassInfo, nullptr, &depthRenderPass) != VK_SUCCESS) {
+    if (vkCreateRenderPass(device.device(), &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pre-render depth pass!");
     }
+}
+
+void DepthPass::beginRenderPass(VkCommandBuffer commandBuffer, int depthRenderIndex, int frameIndex)
+{
+    VkRenderPassBeginInfo renderPassInfo{};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassInfo.renderPass = renderPass;
+    renderPassInfo.framebuffer = target->getFrameBuffer(depthRenderIndex + frameIndex * MAX_DEPTH_RENDER_COUNT);
+
+    renderPassInfo.renderArea.offset = { 0, 0 };
+    renderPassInfo.renderArea.extent = target->getExtent();
+
+    std::array<VkClearValue, 1> clearValues{};
+    clearValues[0].depthStencil = { 1.0f, 0 };
+
+    renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+    renderPassInfo.pClearValues = clearValues.data();
+
+    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+    VkViewport viewport{};
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = static_cast<float>(target->getExtent().width);
+    viewport.height = static_cast<float>(target->getExtent().height);
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+    VkRect2D scissor{ {0, 0}, target->getExtent() };
+    vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+    vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+}
+
+void DepthPass::endRenderPass(VkCommandBuffer commandBuffer)
+{
+    vkCmdEndRenderPass(commandBuffer);
 }

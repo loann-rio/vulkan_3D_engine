@@ -91,9 +91,6 @@
     <ClCompile Include="src\base\Buffer.cpp">
       <Filter>base</Filter>
     </ClCompile>
-    <ClCompile Include="src\base\depthSwapChain.cpp">
-      <Filter>base</Filter>
-    </ClCompile>
     <ClCompile Include="src\base\descriptors.cpp">
       <Filter>base</Filter>
     </ClCompile>
@@ -196,6 +193,18 @@
       <Filter>render</Filter>
     </ClCompile>
     <ClCompile Include="src\render\FrameRenderer.cpp" />
+    <ClCompile Include="src\render\BaseRenderPass.h">
+      <Filter>render</Filter>
+    </ClCompile>
+    <ClCompile Include="src\render\ColorPass.h">
+      <Filter>render</Filter>
+    </ClCompile>
+    <ClCompile Include="src\render\ColorPass.cpp">
+      <Filter>render</Filter>
+    </ClCompile>
+    <ClCompile Include="src\render\DepthPass.cpp">
+      <Filter>render</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tiny_gltf.h">
@@ -223,9 +232,6 @@
       <Filter>model</Filter>
     </ClInclude>
     <ClInclude Include="src\base\Buffer.h">
-      <Filter>base</Filter>
-    </ClInclude>
-    <ClInclude Include="src\base\depthSwapChain.h">
       <Filter>base</Filter>
     </ClInclude>
     <ClInclude Include="src\base\descriptors.h">
@@ -375,6 +381,9 @@
       <Filter>render</Filter>
     </ClInclude>
     <ClInclude Include="src\render\FrameRenderer.h">
+      <Filter>render</Filter>
+    </ClInclude>
+    <ClInclude Include="src\render\DepthPass.h">
       <Filter>render</Filter>
     </ClInclude>
   </ItemGroup>

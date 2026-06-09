@@ -3,7 +3,6 @@
 #include "../base/Window.h"
 #include "../base/device.h"
 #include "../base/Swap_chain.h"
-#include "../base/DepthSwapChain.h"
 #include "../base/SingleRenderSwap.h"
 #include "../base/FrameRateCounter.h"
 #include "../base/Frame_info.h"
@@ -14,7 +13,8 @@
 #include "../objects/BasicUI.h"
 
 #include "FrameRenderer.h"
-
+#include "DepthPass.h"
+#include "ColorPass.h"
 #include "GlobalRenderSystem.h"
 #include "PassTarget.h"
 
@@ -29,10 +29,6 @@ public:
 
 	Renderer(const Renderer&) = delete;
 	Renderer& operator=(const Renderer&) = delete;
-
-	VkRenderPass getSwapChainRenderPass() const { return swapChain->getRenderPass(); }
-	VkRenderPass getDepthRenderPass() const { return depthSwapChain->getDepthRenderPass(); }
-	VkRenderPass getSecondarySwapRenderPass() const { return skyboxSwapChain.getRenderPass(); }
 	
 	float getAspectRatio() const { return swapChain->extentAspectRatio(); }
 	uint32_t getWidth() const { return swapChain->width(); }
@@ -61,10 +57,6 @@ private:
 	void createTextureTarget(ObjectManager& objectManager);
 
 	void beginSingleTimeRender(VkCommandBuffer commandBuffer, int buffer_index = 0);
-	void beginShadowRenderPass(VkCommandBuffer commandBuffer, int depthCommandBufferIndex);
-	void beginSwapChainRenderPass(VkCommandBuffer commandBuffer, VkExtent2D extent);
-
-	void endSwapChainRenderPass(VkCommandBuffer commandBuffer);
 
 	void renderColorImage(ObjectManager& objectManager, FrameInfo& frameInfo, VkCommandBuffer& commandBuffer);
 	void renderDepthImage(FrameInfo& frameInfo, VkCommandBuffer& commandBuffer);
@@ -78,7 +70,6 @@ private:
 	FrameRenderer frameRenderer{ device, swapChain.get()};;
 
 	std::unique_ptr<Swap_chain> swapChain;
-	std::unique_ptr<DepthSwapChain> depthSwapChain;
 
 	SingleSwapChain skyboxSwapChain{ device, assets, {2000, 2000} };
 
@@ -86,9 +77,15 @@ private:
 
 	// target
 	std::unique_ptr<PassTarget> depthFrameTarget;
+	std::unique_ptr<PassTarget> finalFrameTarget;
+
 	// fps
 	float gpuTime = 0.0f;
 	FrameRateCounter gpuFrameRate;
+
+	// passes
+	std::unique_ptr<DepthPass> depthPass;
+	std::unique_ptr<ColorPass> finalPass;
 
 	// render systems
 	std::shared_ptr<GlobalRenderSystem> gltfRenderSystem;

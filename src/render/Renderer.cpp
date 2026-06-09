@@ -21,19 +21,33 @@ Renderer::Renderer(
 {
 	recreateSwapChain();
 
-	depthSwapChain = std::make_unique<DepthSwapChain>(
+	depthPass = std::make_unique<DepthPass>(
 		device, 
-		VkExtent2D{ 1024, 1024 }
+		assets, 
+		swapChain.get() 
 	);
-	
+
+	finalPass = std::make_unique<ColorPass>(
+		device,
+		assets,
+		swapChain.get()
+	);
+
 	createTextureTarget(objectManager);
+
+	swapChain->createFramebuffers(
+		assets,
+		finalFrameTarget.get(),
+		finalPass->getRenderPass()
+	);
+
 	createRenderSystems(objectManager);
 
 	imgui = std::make_unique<BasicUI>(
 		device, 
 		assets, 
 		window.getGLFWwindow(), 
-		getSwapChainRenderPass() 
+		finalPass->getRenderPass()
 	);
 }
 
@@ -79,16 +93,31 @@ void Renderer::createTextureTarget(ObjectManager& objectManager)
 		device,
 		*swapChain.get(),
 		assets,
-		depthSwapChain->getDepthSwapChainExtent(),
+		VkExtent2D{1024, 1024},	
 		true,  /*depth*/
 		false, /*color*/
-		depthSwapChain->findDepthFormat(),
-		DepthSwapChain::MAX_DEPTH_RENDER_COUNT * Swap_chain::MAX_FRAMES_IN_FLIGHT,
+		DepthPass::MAX_DEPTH_RENDER_COUNT * Swap_chain::MAX_FRAMES_IN_FLIGHT,
 		false
 	);
 
-	depthFrameTarget->createLocalFramebuffers(depthSwapChain->getDepthRenderPass());
+	depthFrameTarget->createLocalFramebuffers(depthPass->getRenderPass());
 	depthFrameTarget->createDescriptorSets(*objectManager.getPool());
+	depthPass->setTarget(depthFrameTarget.get());
+
+
+	// color
+	finalFrameTarget = std::make_unique<PassTarget>(
+		device,
+		*swapChain.get(),
+		assets,
+		swapChain->getSwapChainExtent(),
+		true,
+		true,
+		swapChain->imageCount(),
+		true
+	);	
+
+	finalPass->setTarget(finalFrameTarget.get());
 }
 
 
@@ -112,10 +141,9 @@ void Renderer::renderDepthImage(FrameInfo& frameInfo, VkCommandBuffer& commandBu
 {
 
 	size_t countDepthRender = 0;
-	for (int depthRenderIndex = 0; depthRenderIndex < DepthSwapChain::MAX_DEPTH_RENDER_COUNT && depthRenderIndex < frameInfo.spotLightCount; depthRenderIndex++)
+	for (int depthRenderIndex = 0; depthRenderIndex < DepthPass::MAX_DEPTH_RENDER_COUNT && depthRenderIndex < frameInfo.spotLightCount; depthRenderIndex++)
 	{
-
-		beginShadowRenderPass(commandBuffer, depthRenderIndex);
+		depthPass->beginRenderPass(commandBuffer, depthRenderIndex, frameInfo.frameIndex);
 
 		for (auto renderSystem : {
 				depthRenderSystem,
@@ -134,7 +162,7 @@ void Renderer::renderDepthImage(FrameInfo& frameInfo, VkCommandBuffer& commandBu
 				frameRenderer.getCurrentFrameIndex()
 			);
 
-		endSwapChainRenderPass(commandBuffer);
+		depthPass->endRenderPass(commandBuffer);
 	}
 }
 
@@ -144,8 +172,7 @@ void Renderer::renderColorImage(
 	VkCommandBuffer& commandBuffer)
 {
 	// render
-	beginSwapChainRenderPass(commandBuffer, swapChain->getSwapChainExtent());
-
+	finalPass->beginRenderPass(commandBuffer, 0, *frameRenderer.getCurrentImageIndex());
 	if (base_skybox)
 		gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo,
 			{
@@ -163,80 +190,7 @@ void Renderer::renderColorImage(
 
 	imgui->drawUI(commandBuffer, &objectManager, frameInfo.gpuFrameRate);
 
-	endSwapChainRenderPass(commandBuffer);
-}
-
-
-void Renderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer, VkExtent2D extent)
-{
-	assert(frameRenderer.isFrameInProgress() && "cant call beginSwapChainRenderPass while frame not in progress");
-	assert(commandBuffer == frameRenderer.getCurrentCommandBuffer() && "cant begin render pass on command buffer from a different frame");
-
-	VkRenderPassBeginInfo renderPassInfo{};
-	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	renderPassInfo.renderPass = swapChain->getRenderPass();
-	renderPassInfo.framebuffer = swapChain->getFrameBuffer(*frameRenderer.getCurrentImageIndex());
-
-	renderPassInfo.renderArea.offset = { 0, 0 };
-	renderPassInfo.renderArea.extent = extent;
-
-	std::array<VkClearValue, 2> clearValues{};
-	clearValues[0].color = { 0.23f, 0.5f, 0.92f, 1.f };
-	clearValues[1].depthStencil = { 1.0f, 0 };
-
-	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-	renderPassInfo.pClearValues = clearValues.data();
-
-	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-	VkViewport viewport{};
-	viewport.x = 0.0f;
-	viewport.y = 0.0f;
-	viewport.width = static_cast<float>(extent.width);
-	viewport.height = static_cast<float>(extent.height);
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
-	VkRect2D scissor{ {0, 0}, extent };
-	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-}
-
-void Renderer::beginShadowRenderPass(VkCommandBuffer commandBuffer, int depthRenderIndex)
-{
-	VkRenderPassBeginInfo renderPassInfo{};
-	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	renderPassInfo.renderPass = depthSwapChain->getDepthRenderPass();
-	renderPassInfo.framebuffer = depthFrameTarget->getFrameBuffer(depthRenderIndex + frameRenderer.getCurrentFrameIndex() * DepthSwapChain::MAX_DEPTH_RENDER_COUNT);
-
-	renderPassInfo.renderArea.offset = { 0, 0 };
-	renderPassInfo.renderArea.extent = depthSwapChain->getDepthSwapChainExtent();
-
-	std::array<VkClearValue, 1> clearValues{};
-	clearValues[0].depthStencil = { 1.0f, 0 };
-
-	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-	renderPassInfo.pClearValues = clearValues.data();
-
-	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-	VkViewport viewport{};
-	viewport.x = 0.0f;
-	viewport.y = 0.0f;
-	viewport.width = static_cast<float>(depthSwapChain->getDepthSwapChainExtent().width);
-	viewport.height = static_cast<float>(depthSwapChain->getDepthSwapChainExtent().height);
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
-	VkRect2D scissor{ {0, 0}, depthSwapChain->getDepthSwapChainExtent() };
-	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-}
-
-void Renderer::endSwapChainRenderPass(VkCommandBuffer commandBuffer)
-{
-	assert(frameRenderer.isFrameInProgress() && "cant call endSwapChainRenderPass while frame not in progress");
-	assert(commandBuffer == frameRenderer.getCurrentCommandBuffer() && "cant end render pass on command buffer from a different frame");
-
-	vkCmdEndRenderPass(commandBuffer);
+	finalPass->endRenderPass(commandBuffer);
 }
 
 void Renderer::beginSingleTimeRender(VkCommandBuffer commandBuffer, int buffer_index)
@@ -471,7 +425,7 @@ void Renderer::createRenderSystems(ObjectManager& objectManager)
 
 	auto shadowSetLayout = DescriptorSetLayout::Builder(device)
 		.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
-		.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, DepthSwapChain::MAX_DEPTH_RENDER_COUNT)
+		.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, DepthPass::MAX_DEPTH_RENDER_COUNT)
 		.build();
 
 	shadowDescriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
@@ -479,13 +433,13 @@ void Renderer::createRenderSystems(ObjectManager& objectManager)
 	{
 		auto bufferInfo = shadowUboBuffer[i]->descriptorInfo();
 
-		std::array<VkDescriptorImageInfo, DepthSwapChain::MAX_DEPTH_RENDER_COUNT> imagesInfo;
-		for (uint16_t depthImageIndex = 0; depthImageIndex < DepthSwapChain::MAX_DEPTH_RENDER_COUNT; depthImageIndex++)
-			imagesInfo[depthImageIndex] = getDepthImageInfo(i * DepthSwapChain::MAX_DEPTH_RENDER_COUNT + depthImageIndex);
+		std::array<VkDescriptorImageInfo, DepthPass::MAX_DEPTH_RENDER_COUNT> imagesInfo;
+		for (uint16_t depthImageIndex = 0; depthImageIndex < DepthPass::MAX_DEPTH_RENDER_COUNT; depthImageIndex++)
+			imagesInfo[depthImageIndex] = getDepthImageInfo(i * DepthPass::MAX_DEPTH_RENDER_COUNT + depthImageIndex);
 
 		DescriptorWriter(*shadowSetLayout, *objectManager.getPool())
 			.writeBuffer(0, &bufferInfo)
-			.writeImage(1, imagesInfo.data(), DepthSwapChain::MAX_DEPTH_RENDER_COUNT)
+			.writeImage(1, imagesInfo.data(), DepthPass::MAX_DEPTH_RENDER_COUNT)
 			.build(shadowDescriptorSet[i]);
 	}
 
@@ -502,7 +456,7 @@ void Renderer::createRenderSystems(ObjectManager& objectManager)
 			gltfBuilder.fragFilepath = "shaders\\GlTFshader.frag.spv";
 			gltfBuilder.vertFilepath = "shaders\\GlTFshader.vert.spv";
 			gltfBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout(), skyboxSetLayout->getDescriptorSetLayout() };
-			gltfBuilder.renderPass = getSwapChainRenderPass();
+			gltfBuilder.renderPass = finalPass->getRenderPass();
 			gltfBuilder.hasMultipleInstance = true;
 
 			gltfRenderSystem = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, assets, gltfBuilder);
@@ -512,7 +466,7 @@ void Renderer::createRenderSystems(ObjectManager& objectManager)
 			RenderSystemBuilder gltfShadowBuilder{};
 			gltfShadowBuilder.vertFilepath = "shaders\\shadowmapgltf.vert.spv";
 			gltfShadowBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
-			gltfShadowBuilder.renderPass = getDepthRenderPass();
+			gltfShadowBuilder.renderPass = depthPass->getRenderPass();
 			gltfShadowBuilder.hasMultipleInstance = true;
 
 			depthRenderSystemGltf = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, assets, gltfShadowBuilder);
@@ -525,7 +479,7 @@ void Renderer::createRenderSystems(ObjectManager& objectManager)
 			objBuilder.fragFilepath = "shaders\\simple_shader.frag.spv";
 			objBuilder.vertFilepath = "shaders\\simple_shader.vert.spv";
 			objBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
-			objBuilder.renderPass = getSwapChainRenderPass();
+			objBuilder.renderPass = finalPass->getRenderPass();
 			objBuilder.hasMultipleInstance = true;
 
 			objRenderSystem = GlobalRenderSystem::create<Model>(device, assets, objBuilder);
@@ -535,7 +489,7 @@ void Renderer::createRenderSystems(ObjectManager& objectManager)
 			RenderSystemBuilder objShadowBuilder{};
 			objShadowBuilder.vertFilepath = "shaders\\shadowmap.vert.spv";
 			objShadowBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
-			objShadowBuilder.renderPass = getDepthRenderPass();
+			objShadowBuilder.renderPass = depthPass->getRenderPass();
 			objShadowBuilder.hasMultipleInstance = true;
 
 			depthRenderSystem = GlobalRenderSystem::create<Model>(device, assets, objShadowBuilder);
@@ -549,7 +503,7 @@ void Renderer::createRenderSystems(ObjectManager& objectManager)
 			terrainBuilder.vertFilepath = "shaders\\terrainShader.vert.spv";
 			terrainBuilder.fragFilepath = "shaders\\terrainShader.frag.spv";
 			terrainBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() , terrainSetLayout->getDescriptorSetLayout() };
-			terrainBuilder.renderPass = getSwapChainRenderPass();
+			terrainBuilder.renderPass = finalPass->getRenderPass();
 			terrainBuilder.hasMultipleInstance = true;
 			terrainBuilder.subModelType = ModelSubType::TERRAIN;
 
@@ -560,7 +514,7 @@ void Renderer::createRenderSystems(ObjectManager& objectManager)
 			RenderSystemBuilder terrainShadowBuilder{};
 			terrainShadowBuilder.vertFilepath = "shaders\\shadowMapTerrain.vert.spv";
 			terrainShadowBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
-			terrainShadowBuilder.renderPass = getDepthRenderPass();
+			terrainShadowBuilder.renderPass = depthPass->getRenderPass();
 			terrainShadowBuilder.hasMultipleInstance = true;
 			terrainShadowBuilder.subModelType = ModelSubType::TERRAIN;
 
@@ -573,7 +527,7 @@ void Renderer::createRenderSystems(ObjectManager& objectManager)
 		skyboxBuilder.fragFilepath = "shaders\\skybox.frag.spv";
 		skyboxBuilder.vertFilepath = "shaders\\skybox.vert.spv";
 		skyboxBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout() };
-		skyboxBuilder.renderPass = getSwapChainRenderPass();
+		skyboxBuilder.renderPass = finalPass->getRenderPass();
 		skyboxBuilder.subModelType = ModelSubType::SKYBOX;
 		skyboxBuilder.isSkyBox = true;
 		skyboxRenderSystem = GlobalRenderSystem::create<Model>(device, assets, skyboxBuilder);
@@ -583,7 +537,7 @@ void Renderer::createRenderSystems(ObjectManager& objectManager)
 		RenderSystemBuilder skyboxBuilder{};
 		skyboxBuilder.fragFilepath = "shaders\\equirectangular_to_cube.frag.spv";
 		skyboxBuilder.vertFilepath = "shaders\\fullscreen.vert.spv";
-		skyboxBuilder.renderPass = getSecondarySwapRenderPass();
+		skyboxBuilder.renderPass = skyboxSwapChain.getRenderPass();
 		skyboxBuilder.isFullscreenRender = true;
 		skyboxBuilder.pushStage = static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_FRAGMENT_BIT);
 		skyboxCreationRenderSystem = GlobalRenderSystem::create<Model>(device, assets, skyboxBuilder);
