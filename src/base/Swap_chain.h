@@ -56,7 +56,6 @@ private:
     void init(AssetManager& assets);
     void createSwapChain();
     void createImageViews();
-    void createDepthResources(AssetManager& assets);
     void createSyncObjects();
 
     VkFormat findDepthFormat();
@@ -68,8 +67,6 @@ private:
 
     VkFormat swapChainImageFormat;
     VkFormat swapChainDepthFormat;
-
-    VkRenderPass renderPass;
 
     std::vector<TextureManager::TextureID> depthTextures;
 
