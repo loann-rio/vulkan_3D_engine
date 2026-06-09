@@ -29,7 +29,6 @@ public:
     size_t imageCount() const { return swapChainImages.size(); }
     std::vector<VkImage> getSwapChainImages() const { return swapChainImages; }
 
-
     VkFormat getSwapChainImageFormat() const { return swapChainImageFormat; }
     VkFormat getSwapChainDepthFormat() const { return swapChainDepthFormat; }
 
@@ -67,8 +66,6 @@ private:
 
     VkFormat swapChainImageFormat;
     VkFormat swapChainDepthFormat;
-
-    std::vector<TextureManager::TextureID> depthTextures;
 
     std::vector<VkImage> swapChainImages;
     std::vector<VkImageView> swapChainImageViews;
