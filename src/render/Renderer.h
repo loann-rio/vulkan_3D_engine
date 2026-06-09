@@ -30,7 +30,7 @@ public:
 	Renderer(const Renderer&) = delete;
 	Renderer& operator=(const Renderer&) = delete;
 
-	VkRenderPass getSwapChainRenderPass() const { return swapChain->getRenderPass(); }
+	VkRenderPass getSwapChainRenderPass() const { return finalPass->getRenderPass(); }
 	VkRenderPass getDepthRenderPass() const { return depthPass->getRenderPass(); }
 	VkRenderPass getSecondarySwapRenderPass() const { return skyboxSwapChain.getRenderPass(); }
 	

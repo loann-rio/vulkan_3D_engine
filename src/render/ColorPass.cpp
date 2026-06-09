@@ -44,8 +44,6 @@ void ColorPass::createRenderPass(VkFormat imageFormat, VkFormat depthFormat)
     dependency.srcAccessMask = 0;
     dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 
-
-
     std::array<VkAttachmentDescription, 2> attachments = { colorAttachment, depthAttachment };
     VkRenderPassCreateInfo renderPassInfo = {};
 

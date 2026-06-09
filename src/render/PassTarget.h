@@ -87,4 +87,6 @@ private:
 
     AssetManager& assets;
     Device& device;
+
+    friend Swap_chain;
 };

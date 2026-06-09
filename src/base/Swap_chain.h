@@ -24,10 +24,7 @@ public:
     Swap_chain(const Swap_chain&) = delete;
     Swap_chain& operator=(const Swap_chain&) = delete;
 
-    VkFramebuffer getFrameBuffer(int index) { return swapChainFramebuffers[index]; }
     VkImageView getImageView(int index) { return swapChainImageViews[index]; }
-
-    VkRenderPass getRenderPass() { return renderPass; }  // PASS
 
     size_t imageCount() const { return swapChainImages.size(); }
     std::vector<VkImage> getSwapChainImages() const { return swapChainImages; }
@@ -60,7 +57,6 @@ private:
     void createSwapChain();
     void createImageViews();
     void createDepthResources(AssetManager& assets);
-    void createRenderPass();   // PASS
     void createSyncObjects();
 
     VkFormat findDepthFormat();
@@ -80,7 +76,6 @@ private:
     std::vector<VkImage> swapChainImages;
     std::vector<VkImageView> swapChainImageViews;
     VkExtent2D swapChainExtent;
-    std::vector<VkFramebuffer> swapChainFramebuffers;
 
     Device& device;
     VkExtent2D windowExtent;
