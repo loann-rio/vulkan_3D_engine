@@ -47,7 +47,7 @@ Renderer::Renderer(
 		device, 
 		assets, 
 		window.getGLFWwindow(), 
-		getSwapChainRenderPass() 
+		finalPass->getRenderPass()
 	);
 }
 
@@ -456,7 +456,7 @@ void Renderer::createRenderSystems(ObjectManager& objectManager)
 			gltfBuilder.fragFilepath = "shaders\\GlTFshader.frag.spv";
 			gltfBuilder.vertFilepath = "shaders\\GlTFshader.vert.spv";
 			gltfBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout(), skyboxSetLayout->getDescriptorSetLayout() };
-			gltfBuilder.renderPass = getSwapChainRenderPass();
+			gltfBuilder.renderPass = finalPass->getRenderPass();
 			gltfBuilder.hasMultipleInstance = true;
 
 			gltfRenderSystem = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, assets, gltfBuilder);
@@ -466,7 +466,7 @@ void Renderer::createRenderSystems(ObjectManager& objectManager)
 			RenderSystemBuilder gltfShadowBuilder{};
 			gltfShadowBuilder.vertFilepath = "shaders\\shadowmapgltf.vert.spv";
 			gltfShadowBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
-			gltfShadowBuilder.renderPass = getDepthRenderPass();
+			gltfShadowBuilder.renderPass = depthPass->getRenderPass();
 			gltfShadowBuilder.hasMultipleInstance = true;
 
 			depthRenderSystemGltf = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, assets, gltfShadowBuilder);
@@ -479,7 +479,7 @@ void Renderer::createRenderSystems(ObjectManager& objectManager)
 			objBuilder.fragFilepath = "shaders\\simple_shader.frag.spv";
 			objBuilder.vertFilepath = "shaders\\simple_shader.vert.spv";
 			objBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
-			objBuilder.renderPass = getSwapChainRenderPass();
+			objBuilder.renderPass = finalPass->getRenderPass();
 			objBuilder.hasMultipleInstance = true;
 
 			objRenderSystem = GlobalRenderSystem::create<Model>(device, assets, objBuilder);
@@ -489,7 +489,7 @@ void Renderer::createRenderSystems(ObjectManager& objectManager)
 			RenderSystemBuilder objShadowBuilder{};
 			objShadowBuilder.vertFilepath = "shaders\\shadowmap.vert.spv";
 			objShadowBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
-			objShadowBuilder.renderPass = getDepthRenderPass();
+			objShadowBuilder.renderPass = depthPass->getRenderPass();
 			objShadowBuilder.hasMultipleInstance = true;
 
 			depthRenderSystem = GlobalRenderSystem::create<Model>(device, assets, objShadowBuilder);
@@ -503,7 +503,7 @@ void Renderer::createRenderSystems(ObjectManager& objectManager)
 			terrainBuilder.vertFilepath = "shaders\\terrainShader.vert.spv";
 			terrainBuilder.fragFilepath = "shaders\\terrainShader.frag.spv";
 			terrainBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() , terrainSetLayout->getDescriptorSetLayout() };
-			terrainBuilder.renderPass = getSwapChainRenderPass();
+			terrainBuilder.renderPass = finalPass->getRenderPass();
 			terrainBuilder.hasMultipleInstance = true;
 			terrainBuilder.subModelType = ModelSubType::TERRAIN;
 
@@ -514,7 +514,7 @@ void Renderer::createRenderSystems(ObjectManager& objectManager)
 			RenderSystemBuilder terrainShadowBuilder{};
 			terrainShadowBuilder.vertFilepath = "shaders\\shadowMapTerrain.vert.spv";
 			terrainShadowBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
-			terrainShadowBuilder.renderPass = getDepthRenderPass();
+			terrainShadowBuilder.renderPass = depthPass->getRenderPass();
 			terrainShadowBuilder.hasMultipleInstance = true;
 			terrainShadowBuilder.subModelType = ModelSubType::TERRAIN;
 
@@ -527,7 +527,7 @@ void Renderer::createRenderSystems(ObjectManager& objectManager)
 		skyboxBuilder.fragFilepath = "shaders\\skybox.frag.spv";
 		skyboxBuilder.vertFilepath = "shaders\\skybox.vert.spv";
 		skyboxBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout() };
-		skyboxBuilder.renderPass = getSwapChainRenderPass();
+		skyboxBuilder.renderPass = finalPass->getRenderPass();
 		skyboxBuilder.subModelType = ModelSubType::SKYBOX;
 		skyboxBuilder.isSkyBox = true;
 		skyboxRenderSystem = GlobalRenderSystem::create<Model>(device, assets, skyboxBuilder);
@@ -537,7 +537,7 @@ void Renderer::createRenderSystems(ObjectManager& objectManager)
 		RenderSystemBuilder skyboxBuilder{};
 		skyboxBuilder.fragFilepath = "shaders\\equirectangular_to_cube.frag.spv";
 		skyboxBuilder.vertFilepath = "shaders\\fullscreen.vert.spv";
-		skyboxBuilder.renderPass = getSecondarySwapRenderPass();
+		skyboxBuilder.renderPass = skyboxSwapChain.getRenderPass();
 		skyboxBuilder.isFullscreenRender = true;
 		skyboxBuilder.pushStage = static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_FRAGMENT_BIT);
 		skyboxCreationRenderSystem = GlobalRenderSystem::create<Model>(device, assets, skyboxBuilder);

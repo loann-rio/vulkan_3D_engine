@@ -29,10 +29,6 @@ public:
 
 	Renderer(const Renderer&) = delete;
 	Renderer& operator=(const Renderer&) = delete;
-
-	VkRenderPass getSwapChainRenderPass() const { return finalPass->getRenderPass(); }
-	VkRenderPass getDepthRenderPass() const { return depthPass->getRenderPass(); }
-	VkRenderPass getSecondarySwapRenderPass() const { return skyboxSwapChain.getRenderPass(); }
 	
 	float getAspectRatio() const { return swapChain->extentAspectRatio(); }
 	uint32_t getWidth() const { return swapChain->width(); }
@@ -61,9 +57,6 @@ private:
 	void createTextureTarget(ObjectManager& objectManager);
 
 	void beginSingleTimeRender(VkCommandBuffer commandBuffer, int buffer_index = 0);
-	void beginSwapChainRenderPass(VkCommandBuffer commandBuffer, VkExtent2D extent);
-
-	void endSwapChainRenderPass(VkCommandBuffer commandBuffer);
 
 	void renderColorImage(ObjectManager& objectManager, FrameInfo& frameInfo, VkCommandBuffer& commandBuffer);
 	void renderDepthImage(FrameInfo& frameInfo, VkCommandBuffer& commandBuffer);
