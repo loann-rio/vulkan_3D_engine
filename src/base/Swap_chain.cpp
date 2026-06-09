@@ -6,7 +6,6 @@
 #include <limits>
 #include <stdexcept>
 
-#include "../Textures/TextureBuilder.h"
 #include "../render/PassTarget.h"
 
 #ifndef VK_SUBPASS_EXTERNAL
@@ -44,21 +43,24 @@ Swap_chain::~Swap_chain() {
     }   
 
     // cleanup synchronization objects
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        vkDestroySemaphore(device.device(), renderFinishedSemaphores[i], nullptr);
-        vkDestroySemaphore(device.device(), imageAvailableSemaphores[i], nullptr);
-        vkDestroyFence(device.device(), inFlightFences[i], nullptr);
+    for (size_t i = 0; i < imageAvailableSemaphores.size(); i++) {
+        if (imageAvailableSemaphores[i] != VK_NULL_HANDLE)
+            vkDestroySemaphore(device.device(), imageAvailableSemaphores[i], nullptr);
+    }
+    for (size_t i = 0; i < inFlightFences.size(); i++) {
+        if (inFlightFences[i] != VK_NULL_HANDLE)
+            vkDestroyFence(device.device(), inFlightFences[i], nullptr);
     }
 
-    for (size_t i = 0; i < depthFinishedSemaphores.size(); ++i) {
-        vkDestroySemaphore(device.device(), depthFinishedSemaphores[i], nullptr);
+    for (size_t i = 0; i < renderFinishedSemaphores.size(); ++i) {
+        if (renderFinishedSemaphores[i] != VK_NULL_HANDLE)
+            vkDestroySemaphore(device.device(), renderFinishedSemaphores[i], nullptr);
     }
 }
 
 void Swap_chain::createFramebuffers(AssetManager& assets, PassTarget* textureTarget, VkRenderPass renderPass)
 {
     textureTarget->framebuffers.resize(imageCount());
-    //swapChainFramebuffers.resize(imageCount());
     for (size_t i = 0; i < imageCount(); i++) {
         std::array<VkImageView, 2> attachments = { swapChainImageViews[i], assets.textures().get(textureTarget->getDepth(i))->view()};
 
@@ -127,7 +129,7 @@ VkResult Swap_chain::submitCommandBuffers(
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = buffers;
 
-    VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[currentFrame] };
+    VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[*imageIndex] };
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
@@ -172,7 +174,7 @@ void Swap_chain::createSwapChain() {
     createInfo.imageColorSpace = surfaceFormat.colorSpace;
     createInfo.imageExtent = extent;
     createInfo.imageArrayLayers = 1;
-    createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
     QueueFamilyIndices indices = device.findPhysicalQueueFamilies();
     uint32_t queueFamilyIndices[] = { indices.graphicsFamily, indices.presentFamily };
@@ -235,8 +237,9 @@ void Swap_chain::createImageViews() {
 
 void Swap_chain::createSyncObjects() {
     imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT); 
-    renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT); 
     inFlightFences.resize(MAX_FRAMES_IN_FLIGHT); 
+
+    renderFinishedSemaphores.resize(imageCount());
     imagesInFlight.resize(imageCount(), VK_NULL_HANDLE); 
 
     VkSemaphoreCreateInfo semaphoreInfo = {};
@@ -246,13 +249,18 @@ void Swap_chain::createSyncObjects() {
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
+    // create frame-based semaphores/fences
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        if (vkCreateSemaphore(device.device(), &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) !=
-            VK_SUCCESS ||
-            vkCreateSemaphore(device.device(), &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) !=
-            VK_SUCCESS ||
+        if (vkCreateSemaphore(device.device(), &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
             vkCreateFence(device.device(), &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
             throw std::runtime_error("failed to create synchronization objects for a frame!");
+        }
+    }
+
+    // create one render-finished semaphore per swapchain image
+    for (size_t i = 0; i < renderFinishedSemaphores.size(); ++i) {
+        if (vkCreateSemaphore(device.device(), &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create renderFinished semaphore for image!");
         }
     }
 }
