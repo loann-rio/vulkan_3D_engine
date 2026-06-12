@@ -186,7 +186,6 @@ void GlobalRenderSystem::renderModelDepth(VkCommandBuffer& commandBuffer, GameOb
 
 void GlobalRenderSystem::bind(VkCommandBuffer& commandBuffer, std::vector<VkDescriptorSet> globalDescriptorSets)
 {
-
 	pipeline->bind(commandBuffer);
 
 	for (uint16_t setIndex = 0; setIndex < globalDescriptorSets.size(); setIndex++)

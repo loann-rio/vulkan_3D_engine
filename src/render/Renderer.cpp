@@ -2,7 +2,6 @@
 
 #include <stdexcept>
 #include <array>
-#include <cassert>
 #include <memory>
 #include <vulkan/vulkan_core.h>
 
@@ -10,6 +9,7 @@
 #include "../model/ModelBuilder.h"
 #include "../assetManager/ModelManager.h"
 #include "PassTarget.h"
+#include "../objects/BasicUI.h"
 
 
 Renderer::Renderer(
@@ -33,22 +33,17 @@ Renderer::Renderer(
 		swapChain.get()
 	);
 
-	createTextureTarget(objectManager);
-
-	swapChain->createFramebuffers(
-		assets,
-		finalFrameTarget.get(),
-		finalPass->getRenderPass()
-	);
-
-	createRenderSystems(objectManager);
-
 	imgui = std::make_unique<BasicUI>(
-		device, 
-		assets, 
-		window.getGLFWwindow(), 
+		device,
+		assets,
+		window.getGLFWwindow(),
 		finalPass->getRenderPass()
 	);
+
+	finalPass->setUi(imgui.get());
+
+	createTextureTarget(objectManager);
+	createBuffers(objectManager);
 }
 
 /*
@@ -118,6 +113,12 @@ void Renderer::createTextureTarget(ObjectManager& objectManager)
 	);	
 
 	finalPass->setTarget(finalFrameTarget.get());
+
+	swapChain->createFramebuffers(
+		assets,
+		finalFrameTarget.get(),
+		finalPass->getRenderPass()
+	);
 }
 
 
@@ -135,62 +136,6 @@ bool Renderer::aquireNextImage()
 	}
 
 	return true;
-}
-
-void Renderer::renderDepthImage(FrameInfo& frameInfo, VkCommandBuffer& commandBuffer)
-{
-
-	size_t countDepthRender = 0;
-	for (int depthRenderIndex = 0; depthRenderIndex < DepthPass::MAX_DEPTH_RENDER_COUNT && depthRenderIndex < frameInfo.spotLightCount; depthRenderIndex++)
-	{
-		depthPass->beginRenderPass(commandBuffer, depthRenderIndex, frameInfo.frameIndex);
-
-		for (auto renderSystem : {
-				depthRenderSystem,
-				depthRenderSystemGltf,
-				depthTerrainRenderSystem
-			})
-
-			renderSystem->renderGameObjectsDepth(
-				commandBuffer,
-				frameInfo,
-				{
-					globalDescriptorSet[frameRenderer.getCurrentFrameIndex()],
-					shadowDescriptorSet[frameRenderer.getCurrentFrameIndex()]
-				},
-				depthRenderIndex,
-				frameRenderer.getCurrentFrameIndex()
-			);
-
-		depthPass->endRenderPass(commandBuffer);
-	}
-}
-
-void Renderer::renderColorImage(
-	ObjectManager& objectManager,
-	FrameInfo& frameInfo,
-	VkCommandBuffer& commandBuffer)
-{
-	// render
-	finalPass->beginRenderPass(commandBuffer, 0, *frameRenderer.getCurrentImageIndex());
-	if (base_skybox)
-		gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo,
-			{
-				globalDescriptorSet[frameRenderer.getCurrentFrameIndex()],
-				shadowDescriptorSet[frameRenderer.getCurrentFrameIndex()],
-				assets.models().get(base_skybox->modelAsset)->lods[0].materials[0].descriptorSet[frameRenderer.getCurrentFrameIndex()]
-			},
-			frameInfo.mainCameraFrustrumPlanes);
-	else
-		base_skybox = dynamic_cast<GameObjectModel*>(objectManager.get("cubemap1"));
-
-
-	objRenderSystem->renderGameObjects(commandBuffer, frameInfo, { globalDescriptorSet[frameRenderer.getCurrentFrameIndex()], shadowDescriptorSet[frameRenderer.getCurrentFrameIndex()] });
-	skyboxRenderSystem->renderGameObjects(commandBuffer, frameInfo, { globalDescriptorSet[frameRenderer.getCurrentFrameIndex()] });
-
-	imgui->drawUI(commandBuffer, &objectManager, frameInfo.gpuFrameRate);
-
-	finalPass->endRenderPass(commandBuffer);
 }
 
 void Renderer::beginSingleTimeRender(VkCommandBuffer commandBuffer, int buffer_index)
@@ -272,19 +217,27 @@ void Renderer::renderFrame(FrameInfo& frameInfo, ObjectManager& objectManager)
 {
 	frameInfo.gpuFrameRate = gpuFrameRate.get();
 
+	frameInfo.globalDescriptorSet = globalDescriptorSet;
+	frameInfo.shadowDescriptorSet = shadowDescriptorSet;
+	frameInfo.terrainDescriptorSet = terrainDescriptorSet;
+
 	auto newGpuTime = std::chrono::high_resolution_clock::now();
 
 	aquireNextImage();
 
+	frameInfo.frameIndex = frameRenderer.getCurrentFrameIndex();
+	frameInfo.imageIndex = *frameRenderer.getCurrentImageIndex();
+
 	if (auto commandBuffer = frameRenderer.beginFrame()) {
-		renderDepthImage(
+		depthPass->recordPass(
+			objectManager,
 			frameInfo,
 			commandBuffer
 		);
 
-		renderColorImage(
-			objectManager,
-			frameInfo,
+		finalPass->recordPass(
+			objectManager, 
+			frameInfo, 
 			commandBuffer
 		);
 
@@ -344,7 +297,7 @@ TextureManager::TextureID Renderer::renderHdriToCubeTexture(std::shared_ptr<Glob
 	return skyboxSwapChain.getTextureColor();
 }
 
-void Renderer::createRenderSystems(ObjectManager& objectManager)
+void Renderer::createBuffers(ObjectManager& objectManager)
 {
 	/// global buffer
 	uboBuffers.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
@@ -377,7 +330,6 @@ void Renderer::createRenderSystems(ObjectManager& objectManager)
 	}
 
 	//// terrain buffer 
-
 	terrainBuffers.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
 	for (int i = 0; i < terrainBuffers.size(); i++)
 	{
@@ -434,8 +386,11 @@ void Renderer::createRenderSystems(ObjectManager& objectManager)
 		auto bufferInfo = shadowUboBuffer[i]->descriptorInfo();
 
 		std::array<VkDescriptorImageInfo, DepthPass::MAX_DEPTH_RENDER_COUNT> imagesInfo;
-		for (uint16_t depthImageIndex = 0; depthImageIndex < DepthPass::MAX_DEPTH_RENDER_COUNT; depthImageIndex++)
-			imagesInfo[depthImageIndex] = getDepthImageInfo(i * DepthPass::MAX_DEPTH_RENDER_COUNT + depthImageIndex);
+		for (uint16_t depthImageIndex = 0; depthImageIndex < DepthPass::MAX_DEPTH_RENDER_COUNT; depthImageIndex++) 
+		{
+			uint16_t depthIndex = i * DepthPass::MAX_DEPTH_RENDER_COUNT + depthImageIndex;
+			imagesInfo[depthImageIndex] = depthFrameTarget->getDepthImageInfo(depthIndex);
+		}
 
 		DescriptorWriter(*shadowSetLayout, *objectManager.getPool())
 			.writeBuffer(0, &bufferInfo)
@@ -447,91 +402,6 @@ void Renderer::createRenderSystems(ObjectManager& objectManager)
 	auto skyboxSetLayout = DescriptorSetLayout::Builder(device)
 		.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.build();
-
-	/// render systems
-
-	{
-		{
-			RenderSystemBuilder gltfBuilder{};
-			gltfBuilder.fragFilepath = "shaders\\GlTFshader.frag.spv";
-			gltfBuilder.vertFilepath = "shaders\\GlTFshader.vert.spv";
-			gltfBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout(), skyboxSetLayout->getDescriptorSetLayout() };
-			gltfBuilder.renderPass = finalPass->getRenderPass();
-			gltfBuilder.hasMultipleInstance = true;
-
-			gltfRenderSystem = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, assets, gltfBuilder);
-		}
-
-		{
-			RenderSystemBuilder gltfShadowBuilder{};
-			gltfShadowBuilder.vertFilepath = "shaders\\shadowmapgltf.vert.spv";
-			gltfShadowBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
-			gltfShadowBuilder.renderPass = depthPass->getRenderPass();
-			gltfShadowBuilder.hasMultipleInstance = true;
-
-			depthRenderSystemGltf = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, assets, gltfShadowBuilder);
-		}
-	}
-
-	{
-		{
-			RenderSystemBuilder objBuilder{};
-			objBuilder.fragFilepath = "shaders\\simple_shader.frag.spv";
-			objBuilder.vertFilepath = "shaders\\simple_shader.vert.spv";
-			objBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
-			objBuilder.renderPass = finalPass->getRenderPass();
-			objBuilder.hasMultipleInstance = true;
-
-			objRenderSystem = GlobalRenderSystem::create<Model>(device, assets, objBuilder);
-		}
-
-		{
-			RenderSystemBuilder objShadowBuilder{};
-			objShadowBuilder.vertFilepath = "shaders\\shadowmap.vert.spv";
-			objShadowBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
-			objShadowBuilder.renderPass = depthPass->getRenderPass();
-			objShadowBuilder.hasMultipleInstance = true;
-
-			depthRenderSystem = GlobalRenderSystem::create<Model>(device, assets, objShadowBuilder);
-		}
-	}
-
-	{
-		{
-			RenderSystemBuilder terrainBuilder{};
-
-			terrainBuilder.vertFilepath = "shaders\\terrainShader.vert.spv";
-			terrainBuilder.fragFilepath = "shaders\\terrainShader.frag.spv";
-			terrainBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() , terrainSetLayout->getDescriptorSetLayout() };
-			terrainBuilder.renderPass = finalPass->getRenderPass();
-			terrainBuilder.hasMultipleInstance = true;
-			terrainBuilder.subModelType = ModelSubType::TERRAIN;
-
-			terrainRenderSystem = GlobalRenderSystem::create<Model>(device, assets, terrainBuilder);
-		}
-
-		{
-			RenderSystemBuilder terrainShadowBuilder{};
-			terrainShadowBuilder.vertFilepath = "shaders\\shadowMapTerrain.vert.spv";
-			terrainShadowBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
-			terrainShadowBuilder.renderPass = depthPass->getRenderPass();
-			terrainShadowBuilder.hasMultipleInstance = true;
-			terrainShadowBuilder.subModelType = ModelSubType::TERRAIN;
-
-			depthTerrainRenderSystem = GlobalRenderSystem::create<Model>(device, assets, terrainShadowBuilder);
-		}
-	}
-
-	{
-		RenderSystemBuilder skyboxBuilder{};
-		skyboxBuilder.fragFilepath = "shaders\\skybox.frag.spv";
-		skyboxBuilder.vertFilepath = "shaders\\skybox.vert.spv";
-		skyboxBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout() };
-		skyboxBuilder.renderPass = finalPass->getRenderPass();
-		skyboxBuilder.subModelType = ModelSubType::SKYBOX;
-		skyboxBuilder.isSkyBox = true;
-		skyboxRenderSystem = GlobalRenderSystem::create<Model>(device, assets, skyboxBuilder);
-	}
 
 	{
 		RenderSystemBuilder skyboxBuilder{};

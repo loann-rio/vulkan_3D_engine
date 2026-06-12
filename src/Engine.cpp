@@ -116,6 +116,7 @@ void Engine::run()
 
         FrameInfo frameInfo{
             frameIndex,
+            0,
             frameTime,
             spotLightUbo.numLights,
             objectManager.get(objectManager.mainCamera)->transform.translation,

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <iostream>
-
 #include <vector>
 #include <future>
 #include <typeindex>
@@ -11,7 +9,6 @@
 #include "../assetManager/AssetManager.h"
 
 #include "../model/ModelAsset.h"
-
 
 #include <../json.hpp>
 using json = nlohmann::json;
@@ -86,6 +83,8 @@ public:
     void createDescriptorSet(ModelAsset* model);
     void updateGameObject(float frameTime);
 
+
+    GameObjectModel* baseSkyBox = nullptr;
 private:
     Device& device;
     

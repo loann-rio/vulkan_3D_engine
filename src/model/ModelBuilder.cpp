@@ -160,7 +160,7 @@ std::unique_ptr<ModelAsset> ModelBuilder::buildObj()
         if (model.materials.empty()) {
             Material mat;
             TextureBuilder builder(device);
-            mat.albedoTexture = assets.textures().create(builder.fromFile("textures/whiteTexture.jpg"));
+            mat.albedoTexture = assets.textures().create(builder.fromFile("assets/textures/whiteTexture.jpg"));
             model.materials.push_back(mat);
         }
 
@@ -211,7 +211,7 @@ std::unique_ptr<ModelAsset> ModelBuilder::buildGlTF()
         if (model.materials.empty()) {
             Material mat;
             TextureBuilder builder(device);
-            mat.albedoTexture = assets.textures().create(builder.fromFile("textures/whiteTexture.jpg"));
+            mat.albedoTexture = assets.textures().create(builder.fromFile("assets/textures/whiteTexture.jpg"));
             model.materials.push_back(mat);
         }
 

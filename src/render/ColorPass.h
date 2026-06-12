@@ -1,13 +1,17 @@
 #pragma once
 
 #include "BaseRenderPass.h"
-#include <vulkan/vulkan_core.h>
-#include <cstdint>
 #include "../base/Swap_chain.h"
+#include "../objects/BasicUI.h"
+#include "GlobalRenderSystem.h"
+
+#include <vulkan/vulkan_core.h>
+
+
 class Device;
 class AssetManager;
 
-class ColorPass: public BaseRenderPass
+class ColorPass : public BaseRenderPass
 {
 public:
 	ColorPass(Device& device_, AssetManager& assets_, Swap_chain* swapchain)
@@ -16,14 +20,46 @@ public:
 			swapchain->getSwapChainImageFormat(),
 			swapchain->getSwapChainDepthFormat()
 		);
+
+		createRenderSystems();
+
 	}
 
-	void createRenderSystems() {};
-	void recordPass()  {};
-	void createRenderPass(VkFormat imageFormat, VkFormat depthFormat);
+	void recordPass(
+		ObjectManager& objectManager,
+		FrameInfo& frameInfo,
+		VkCommandBuffer& commandBuffer
+	) override;
 
-	void beginRenderPass(VkCommandBuffer commandBuffer, int depthRenderIndex, int frameIndex);
-	void endRenderPass(VkCommandBuffer commandBuffer);
+
+	void createRenderPass(
+		VkFormat imageFormat,
+		VkFormat depthFormat
+	) override;
+
+	void beginRenderPass(
+		VkCommandBuffer commandBuffer,
+		int depthRenderIndex,
+		int frameIndex
+	) override;
+
+	void endRenderPass(
+		VkCommandBuffer commandBuffer
+	) override;
+
+	void setUi(
+		BasicUI* ui
+	) {
+		imgui = ui;
+	}
 
 private:
+	void createRenderSystems();
+
+	std::shared_ptr<GlobalRenderSystem> gltfRenderSystem;
+	std::shared_ptr<GlobalRenderSystem> objRenderSystem;
+	std::shared_ptr<GlobalRenderSystem> terrainRenderSystem;
+	std::shared_ptr<GlobalRenderSystem> skyboxRenderSystem;
+
+	BasicUI* imgui;
 };

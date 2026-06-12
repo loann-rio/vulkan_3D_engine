@@ -2,6 +2,82 @@
 
 #include "../base/Device.h"
 
+void DepthPass::createRenderSystems()
+{
+    auto globalSetLayout = DescriptorSetLayout::Builder(device)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+        .build();
+
+    auto shadowSetLayout = DescriptorSetLayout::Builder(device)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+        .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, DepthPass::MAX_DEPTH_RENDER_COUNT)
+        .build();
+
+    {
+        RenderSystemBuilder gltfShadowBuilder{};
+        gltfShadowBuilder.vertFilepath = "shaders\\shadowmapgltf.vert.spv";
+        gltfShadowBuilder.globalSetLayout = { 
+            globalSetLayout->getDescriptorSetLayout(), 
+            shadowSetLayout->getDescriptorSetLayout() };
+        gltfShadowBuilder.renderPass = renderPass;
+        gltfShadowBuilder.hasMultipleInstance = true;
+
+        depthRenderSystemGltf = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, assets, gltfShadowBuilder);
+    }
+
+    {
+        RenderSystemBuilder objShadowBuilder{};
+        objShadowBuilder.vertFilepath = "shaders\\shadowmap.vert.spv";
+        objShadowBuilder.globalSetLayout = { 
+            globalSetLayout->getDescriptorSetLayout(), 
+            shadowSetLayout->getDescriptorSetLayout() };
+        objShadowBuilder.renderPass = renderPass;
+        objShadowBuilder.hasMultipleInstance = true;
+
+        depthRenderSystem = GlobalRenderSystem::create<Model>(device, assets, objShadowBuilder);
+    }
+
+    {
+        RenderSystemBuilder terrainShadowBuilder{};
+        terrainShadowBuilder.vertFilepath = "shaders\\shadowMapTerrain.vert.spv";
+        terrainShadowBuilder.globalSetLayout = { 
+            globalSetLayout->getDescriptorSetLayout(), 
+            shadowSetLayout->getDescriptorSetLayout() };
+        terrainShadowBuilder.renderPass = renderPass;
+        terrainShadowBuilder.hasMultipleInstance = true;
+        terrainShadowBuilder.subModelType = ModelSubType::TERRAIN;
+
+        depthTerrainRenderSystem = GlobalRenderSystem::create<Model>(device, assets, terrainShadowBuilder);
+    }
+}
+
+void DepthPass::recordPass(ObjectManager & objectManager, FrameInfo & frameInfo, VkCommandBuffer & commandBuffer)
+{
+    for (int depthRenderIndex = 0; depthRenderIndex < DepthPass::MAX_DEPTH_RENDER_COUNT && depthRenderIndex < frameInfo.spotLightCount; depthRenderIndex++)
+    {
+        beginRenderPass(commandBuffer, depthRenderIndex, frameInfo.frameIndex);
+
+        for (auto renderSystem : {
+                depthRenderSystem,
+                depthRenderSystemGltf,
+                depthTerrainRenderSystem
+            })
+
+            renderSystem->renderGameObjectsDepth(
+                commandBuffer,
+                frameInfo,
+                {
+                    frameInfo.globalDescriptorSet[frameInfo.frameIndex],
+                    frameInfo.shadowDescriptorSet[frameInfo.frameIndex]
+                },
+                depthRenderIndex,
+                frameInfo.frameIndex
+            );
+
+        endRenderPass(commandBuffer);
+    }
+}
+
 void DepthPass::createRenderPass(VkFormat imageFormat, VkFormat depthFormat)
 {
     VkAttachmentDescription depthAttachment{};

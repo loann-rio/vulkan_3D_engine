@@ -1,5 +1,102 @@
 #include "ColorPass.h"
 
+//#include "DepthPass.h"
+
+void ColorPass::createRenderSystems()
+{
+    auto globalSetLayout = DescriptorSetLayout::Builder(device)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+        .build();
+
+    auto terrainSetLayout = DescriptorSetLayout::Builder(device)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .build();
+
+    auto shadowSetLayout = DescriptorSetLayout::Builder(device)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+        .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 4)// DepthPass::MAX_DEPTH_RENDER_COUNT)
+        .build();
+
+    auto skyboxSetLayout = DescriptorSetLayout::Builder(device)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .build();
+
+    {
+        RenderSystemBuilder gltfBuilder{};
+        gltfBuilder.fragFilepath = "shaders\\GlTFshader.frag.spv";
+        gltfBuilder.vertFilepath = "shaders\\GlTFshader.vert.spv";
+        gltfBuilder.globalSetLayout = {
+            globalSetLayout->getDescriptorSetLayout(),
+            shadowSetLayout->getDescriptorSetLayout(),
+            skyboxSetLayout->getDescriptorSetLayout()
+        };
+        gltfBuilder.renderPass = renderPass;
+        gltfBuilder.hasMultipleInstance = true;
+
+        gltfRenderSystem = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, assets, gltfBuilder);
+    }
+
+    {
+        RenderSystemBuilder objBuilder{};
+        objBuilder.fragFilepath = "shaders\\simple_shader.frag.spv";
+        objBuilder.vertFilepath = "shaders\\simple_shader.vert.spv";
+        objBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
+        objBuilder.renderPass = renderPass;
+        objBuilder.hasMultipleInstance = true;
+
+        objRenderSystem = GlobalRenderSystem::create<Model>(device, assets, objBuilder);
+    }
+
+    {
+        RenderSystemBuilder skyboxBuilder{};
+        skyboxBuilder.fragFilepath = "shaders\\skybox.frag.spv";
+        skyboxBuilder.vertFilepath = "shaders\\skybox.vert.spv";
+        skyboxBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout() };
+        skyboxBuilder.renderPass = renderPass;
+        skyboxBuilder.subModelType = ModelSubType::SKYBOX;
+        skyboxBuilder.isSkyBox = true;
+        skyboxRenderSystem = GlobalRenderSystem::create<Model>(device, assets, skyboxBuilder);
+    }
+}
+
+void ColorPass::recordPass(ObjectManager& objectManager, FrameInfo& frameInfo, VkCommandBuffer& commandBuffer)
+{
+    beginRenderPass(commandBuffer, 0, frameInfo.imageIndex);
+
+    if (objectManager.baseSkyBox)
+        gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo,
+            {
+                frameInfo.globalDescriptorSet[frameInfo.frameIndex],
+                frameInfo.shadowDescriptorSet[frameInfo.frameIndex],
+                assets.models().get(objectManager.baseSkyBox->modelAsset)->lods[0].materials[0].descriptorSet[frameInfo.frameIndex]
+            },
+            frameInfo.mainCameraFrustrumPlanes);
+    else
+        objectManager.baseSkyBox = dynamic_cast<GameObjectModel*>(objectManager.get("cubemap1"));
+
+
+    objRenderSystem->renderGameObjects(
+        commandBuffer,
+        frameInfo,
+        {
+            frameInfo.globalDescriptorSet[frameInfo.frameIndex],
+            frameInfo.shadowDescriptorSet[frameInfo.frameIndex]
+        }
+    );
+
+    skyboxRenderSystem->renderGameObjects(
+        commandBuffer,
+        frameInfo,
+        {
+            frameInfo.globalDescriptorSet[frameInfo.frameIndex]
+        }
+    );
+
+    imgui->drawUI(commandBuffer, &objectManager, frameInfo.gpuFrameRate);
+
+    endRenderPass(commandBuffer);
+}
+
 void ColorPass::createRenderPass(VkFormat imageFormat, VkFormat depthFormat)
 {
     VkAttachmentDescription depthAttachment{};
@@ -63,36 +160,36 @@ void ColorPass::createRenderPass(VkFormat imageFormat, VkFormat depthFormat)
 
 void ColorPass::beginRenderPass(VkCommandBuffer commandBuffer, int depthRenderIndex, int frameIndex)
 {
-	VkRenderPassBeginInfo renderPassInfo{};
-	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	renderPassInfo.renderPass = renderPass;
-	renderPassInfo.framebuffer = target->getFrameBuffer(frameIndex);
+    VkRenderPassBeginInfo renderPassInfo{};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassInfo.renderPass = renderPass;
+    renderPassInfo.framebuffer = target->getFrameBuffer(frameIndex);
 
-	renderPassInfo.renderArea.offset = { 0, 0 };
-	renderPassInfo.renderArea.extent = target->getExtent();
+    renderPassInfo.renderArea.offset = { 0, 0 };
+    renderPassInfo.renderArea.extent = target->getExtent();
 
-	std::array<VkClearValue, 2> clearValues{};
-	clearValues[0].color = { 0.23f, 0.5f, 0.92f, 1.f };
-	clearValues[1].depthStencil = { 1.0f, 0 };
+    std::array<VkClearValue, 2> clearValues{};
+    clearValues[0].color = { 0.23f, 0.5f, 0.92f, 1.f };
+    clearValues[1].depthStencil = { 1.0f, 0 };
 
-	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-	renderPassInfo.pClearValues = clearValues.data();
+    renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+    renderPassInfo.pClearValues = clearValues.data();
 
-	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-	VkViewport viewport{};
-	viewport.x = 0.0f;
-	viewport.y = 0.0f;
-	viewport.width = static_cast<float>(target->getExtent().width);
-	viewport.height = static_cast<float>(target->getExtent().height);
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
-	VkRect2D scissor{ {0, 0}, target->getExtent() };
-	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+    VkViewport viewport{};
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = static_cast<float>(target->getExtent().width);
+    viewport.height = static_cast<float>(target->getExtent().height);
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+    VkRect2D scissor{ {0, 0}, target->getExtent() };
+    vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+    vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 }
 
 void ColorPass::endRenderPass(VkCommandBuffer commandBuffer)
 {
-	vkCmdEndRenderPass(commandBuffer);
+    vkCmdEndRenderPass(commandBuffer);
 }

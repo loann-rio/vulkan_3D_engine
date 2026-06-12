@@ -78,14 +78,8 @@ void ObjectManager::startLoadModel()
 			}
 		}
 
-        std::shared_ptr<Model> cube = Model::createModelFromFile(device, assetManager, std::vector<std::array<std::string, 2>>{ {"model/grassLOD/grassLod4.obj", "textures/GrassBillboard.png"} , {"model/grassLOD/grassLod1.obj", "textures/whiteTexture.jpg"}, {"model/grassLOD/grassLod2.obj", ""} , {"model/grassLOD/grassLod3.obj", ""} });
-        cube->computeShadow = false;
-
-        /*TextureBuilder textureBuilder(device);
-        auto texture = assetManager.textures().create(textureBuilder.fromFile("textures/whiteTexture.jpg"));
-
-        ModelBuilder builder(device, assetManager);
-        ModelManager::ModelID modelId = assetManager.models().create(builder.fromFile("model/grassLOD/grassLod1.obj").withTexture(texture));*/
+        std::shared_ptr<Model> cube = Model::createModelFromFile(device, assetManager, std::vector<std::array<std::string, 2>>{ {"assets/model/grassLOD/grassLod4.obj", "assets/textures/GrassBillboard.png"} , {"assets/model/grassLOD/grassLod1.obj", "assets/textures/whiteTexture.jpg"}, {"assets/model/grassLOD/grassLod2.obj", ""} , {"assets/model/grassLOD/grassLod3.obj", ""} });
+        //cube->computeShadow = false;
 
         auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
         gameObject->setName("testlod");
@@ -119,7 +113,7 @@ void ObjectManager::createPrimitive(PrimitivesModelType type, int detail, Transf
 
         switch (type) {
         case PrimitivesModelType::PLANE:
-            primitive = PrebuiltModel::createPlane(this->device, this->assetManager, detail, 1, { 0, 0, 0 }, filePathTexture.empty() ? "textures/whiteTexture.jpg" : filePathTexture, 20);
+            primitive = PrebuiltModel::createPlane(this->device, this->assetManager, detail, 1, { 0, 0, 0 }, filePathTexture.empty() ? "assets/textures/whiteTexture.jpg" : filePathTexture, 20);
             break;
         case PrimitivesModelType::CUBE:
             primitive = PrebuiltModel::createCube(this->device, this->assetManager);
@@ -268,7 +262,7 @@ void ObjectManager::loadScene(std::string name)
                     loadObjectAsync(device, assetManager, modelPath, transform, objName);
                 else 
                 {
-                    std::string texturePath = element.value().contains("texturePath") ? element.value()["texturePath"] : "textures/whiteTexture.jpg";
+                    std::string texturePath = element.value().contains("texturePath") ? element.value()["texturePath"] : "assets/textures/whiteTexture.jpg";
                     loadObjectAsync(device, assetManager, modelPath, texturePath, transform, objName);
                 }
             }

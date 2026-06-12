@@ -40,6 +40,7 @@ struct TerrainUbo {
 
 struct FrameInfo {
 	int frameIndex;
+	int imageIndex;
 	float frameTime;
 	int spotLightCount;
 	glm::vec3 cameraPos;
@@ -47,4 +48,8 @@ struct FrameInfo {
 	std::vector<std::array<FrustumPlane, 6>> listFrustrumPlanes;
 	std::array<FrustumPlane, 6> mainCameraFrustrumPlanes;
 	float gpuFrameRate;
+
+	std::vector<VkDescriptorSet> globalDescriptorSet;
+	std::vector<VkDescriptorSet> shadowDescriptorSet;
+	std::vector<VkDescriptorSet> terrainDescriptorSet;
 };

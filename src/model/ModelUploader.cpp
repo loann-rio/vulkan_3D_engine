@@ -117,7 +117,7 @@ std::vector<Material> ModelUploader::uploadMaterialsTextures(Device& device, Ass
 		}
 		else {
 			TextureBuilder builder(device);
-			targetMat.albedoTexture = assets.textures().create(builder.fromFile("textures/whiteTexture.jpg"));
+			targetMat.albedoTexture = assets.textures().create(builder.fromFile("assets/textures/whiteTexture.jpg"));
 		}
 
 		if (!mat.normalTexture.empty())
