@@ -209,6 +209,7 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClCompile Include="src\render\FrameRenderer.cpp" />
     <ClCompile Include="src\render\GlobalRenderSystem.cpp" />
     <ClCompile Include="src\render\PassTarget.cpp" />
+    <ClCompile Include="src\render\PostProPass.cpp" />
     <ClCompile Include="src\render\Renderer.cpp" />
     <ClCompile Include="src\render\TextOverlay.cpp" />
     <ClCompile Include="src\Textures\Decoder\HDRDecoder.cpp" />
@@ -271,6 +272,7 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClInclude Include="src\render\FrameRenderer.h" />
     <ClInclude Include="src\render\GlobalRenderSystem.h" />
     <ClInclude Include="src\render\PassTarget.h" />
+    <ClInclude Include="src\render\PostProPass.h" />
     <ClInclude Include="src\render\Renderer.h" />
     <ClInclude Include="src\render\TextOverlay.h" />
     <ClInclude Include="src\Textures\Decoder\HDRDecoder.h" />
@@ -295,6 +297,7 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <None Include="shaders\GlTFshader.vert" />
     <None Include="shaders\point_light.frag" />
     <None Include="shaders\point_light.vert" />
+    <None Include="shaders\PostProShader.frag" />
     <None Include="shaders\shadowmap.vert" />
     <None Include="shaders\shadowmapgltf.vert" />
     <None Include="shaders\shadowMapTerrain.vert" />
@@ -309,6 +312,7 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <None Include="shaders\testRed.frag" />
     <None Include="shaders\text.frag" />
     <None Include="shaders\text.vert" />
+    <None Include="src\render\PostProShader.frag" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
