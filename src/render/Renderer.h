@@ -31,18 +31,11 @@ public:
 	Renderer& operator=(const Renderer&) = delete;
 	
 	float getAspectRatio() const { return swapChain->extentAspectRatio(); }
-	uint32_t getWidth() const { return swapChain->width(); }
-	uint32_t getHeight() const { return swapChain->height(); }
-
 	uint32_t getFrameIndex() const { return frameRenderer.getCurrentFrameIndex(); }
-
-
-	VkDescriptorImageInfo getDepthImageInfo(uint16_t index) { return depthFrameTarget->getDepthImageInfo(index); }
 
 	void generateSkybox(const std::string pathTexture, const std::string goName, ObjectManager& objectManager);
 
 	void renderFrame(FrameInfo& frameInfo, ObjectManager& objectManager);
-	bool aquireNextImage();
 
 	bool isUiSelected() { return imgui->isWindowSelected; }
 
@@ -53,23 +46,20 @@ public:
 	
 private:
 	void recreateSwapChain();
-	void createRenderSystems(ObjectManager& objectManager);
+	void createBuffers(ObjectManager& objectManager);
 	void createTextureTarget(ObjectManager& objectManager);
 
+	bool aquireNextImage();
+
 	void beginSingleTimeRender(VkCommandBuffer commandBuffer, int buffer_index = 0);
-
-	void renderColorImage(ObjectManager& objectManager, FrameInfo& frameInfo, VkCommandBuffer& commandBuffer);
-	void renderDepthImage(FrameInfo& frameInfo, VkCommandBuffer& commandBuffer);
-
 	TextureManager::TextureID renderHdriToCubeTexture(std::shared_ptr<GlobalRenderSystem> renderSystem, VkDescriptorSet descriptorSet);
 
 	Window& window;
 	Device& device;
 	AssetManager& assets; 
 	GameObjectModel* base_skybox;
-	FrameRenderer frameRenderer{ device, swapChain.get()};;
-
 	std::unique_ptr<Swap_chain> swapChain;
+	FrameRenderer frameRenderer{ device, swapChain.get()};;
 
 	SingleSwapChain skyboxSwapChain{ device, assets, {2000, 2000} };
 
@@ -88,13 +78,6 @@ private:
 	std::unique_ptr<ColorPass> finalPass;
 
 	// render systems
-	std::shared_ptr<GlobalRenderSystem> gltfRenderSystem;
-	std::shared_ptr<GlobalRenderSystem> objRenderSystem;
-	std::shared_ptr<GlobalRenderSystem> depthRenderSystem;
-	std::shared_ptr<GlobalRenderSystem> depthRenderSystemGltf;
-	std::shared_ptr<GlobalRenderSystem> terrainRenderSystem;
-	std::shared_ptr<GlobalRenderSystem> depthTerrainRenderSystem;
-	std::shared_ptr<GlobalRenderSystem> skyboxRenderSystem;
 	std::shared_ptr<GlobalRenderSystem> skyboxCreationRenderSystem;
 
 	// global descriptor sets

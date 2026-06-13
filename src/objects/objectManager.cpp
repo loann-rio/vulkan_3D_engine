@@ -70,7 +70,6 @@ void ObjectManager::startLoadModel()
 		gameObject->saveable = false;
 		pushGameObject(std::move(gameObject));
     }*/
-  
 
 }
 
@@ -93,7 +92,7 @@ void ObjectManager::createPrimitive(PrimitivesModelType type, int detail, Transf
 
         switch (type) {
         case PrimitivesModelType::PLANE:
-            primitive = PrebuiltModel::createPlane(this->device, this->assetManager, detail, 1, { 0, 0, 0 }, filePathTexture.empty() ? "textures/whiteTexture.jpg" : filePathTexture, 20);
+            primitive = PrebuiltModel::createPlane(this->device, this->assetManager, detail, 1, { 0, 0, 0 }, filePathTexture.empty() ? "assets/textures/whiteTexture.jpg" : filePathTexture, 20);
             break;
         case PrimitivesModelType::CUBE:
             primitive = PrebuiltModel::createCube(this->device, this->assetManager);
@@ -242,7 +241,7 @@ void ObjectManager::loadScene(std::string name)
                     loadObjectAsync(device, assetManager, modelPath, transform, objName);
                 else 
                 {
-                    std::string texturePath = element.value().contains("texturePath") ? element.value()["texturePath"] : "textures/whiteTexture.jpg";
+                    std::string texturePath = element.value().contains("texturePath") ? element.value()["texturePath"] : "assets/textures/whiteTexture.jpg";
                     loadObjectAsync(device, assetManager, modelPath, texturePath, transform, objName);
                 }
             }

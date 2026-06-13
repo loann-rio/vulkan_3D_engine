@@ -3,6 +3,7 @@
 #include "BaseRenderPass.h"
 #include <vulkan/vulkan_core.h>
 #include <cstdint>
+#include "GlobalRenderSystem.h"
 
 class Device;
 class AssetManager;
@@ -20,14 +21,27 @@ public:
 			swapchain->getSwapChainImageFormat(),
 			swapchain->getSwapChainDepthFormat()
 		);
+
+		createRenderSystems();
 	}
 
-	void createRenderSystems() {};
-	void recordPass() {};
+	
+
+	void recordPass(
+		ObjectManager& objectManager,
+		FrameInfo& frameInfo,
+		VkCommandBuffer& commandBuffer
+	);
+
 	void createRenderPass(VkFormat imageFormat, VkFormat depthFormat);
 
 	void beginRenderPass(VkCommandBuffer commandBuffer, int depthRenderIndex, int frameIndex);
 	void endRenderPass(VkCommandBuffer commandBuffer);
 
 private:
+	void createRenderSystems();
+
+	std::shared_ptr<GlobalRenderSystem> depthRenderSystem;
+	std::shared_ptr<GlobalRenderSystem> depthRenderSystemGltf;
+	std::shared_ptr<GlobalRenderSystem> depthTerrainRenderSystem;
 };

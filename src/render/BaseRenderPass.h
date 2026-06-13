@@ -2,7 +2,9 @@
 
 #include "../base/Swap_chain.h"
 #include "PassTarget.h"
-//#include "GlobalRenderSystem.h"
+#include "../objects/objectManager.h"
+#include "../base/Frame_info.h"
+#include "../objects/BasicUI.h"
 
 class BaseRenderPass
 {
@@ -21,15 +23,15 @@ public:
 	}
 
 	virtual void createRenderSystems() = 0;
-	/**
-	add a renderSytem for the pass with global descriptor set layouts
-	*/
-	//void addRenderSystem(std::unique_ptr<GlobalRenderSystem> newRenderSystem);
-
+	
 	/**
 	record pass in global command buffer
 	*/
-	virtual void recordPass() = 0;
+	virtual void recordPass(
+		ObjectManager& objectManager,
+		FrameInfo& frameInfo,
+		VkCommandBuffer& commandBuffer
+	) = 0;
 
 	/**
 	get the render pass handle
@@ -52,6 +54,14 @@ public:
 	set target of the pass
 	*/
 	void setTarget(PassTarget* target_) { target = target_; }
+
+	/*
+	set ui
+	*/
+	/*void setUi(
+		BasicUI* ui
+	) {};*/
+	
 
 
 protected:
