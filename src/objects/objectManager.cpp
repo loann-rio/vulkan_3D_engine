@@ -14,6 +14,32 @@
 
 void ObjectManager::startLoadModel()
 {
+    {
+
+        std::vector<Model::Instance> instances;
+        for (int x = 0; x < 150; x++) {
+            for (int z = 0; z < 150; z++) {
+                Model::Instance instance;
+                instance.position = { x / 5.f - 15.f, 0.0f, z / 5.f - 15.f };
+                instance.rotation = { 0.0f, static_cast<float>(rand() % 360), 0.0f };
+                instance.scale = { 1, 1, 1 };
+                instances.push_back(instance);
+            }
+        }
+
+        std::shared_ptr<Model> cube = Model::createModelFromFile(device, assetManager, std::vector<std::array<std::string, 2>>{ { "assets/model/grassLOD/grassLod1.obj", "assets/textures/whiteTexture.jpg" }, { "assets/model/grassLOD/grassLod2.obj", "" }, { "assets/model/grassLOD/grassLod3.obj", "" }, { "assets/model/grassLOD/grassLod4.obj", "assets/textures/GrassBillboard.png" } });
+        cube->computeShadow = false;
+
+        auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
+        gameObject->setName("testlod");
+        gameObject->setModelType(ModelType::OBJ_MODEL);
+        gameObject->setModel(cube);
+        gameObject->saveable = false;
+        gameObject->setMultipleInstances(instances);
+        gameObject->createDescriptorSet(*globalPool);
+        pushGameObject(std::move(gameObject));
+    }
+
     for (int i = 0; i < 1; i++)
     {
         ModelBuilder builder(device, assetManager);
@@ -35,26 +61,6 @@ void ObjectManager::startLoadModel()
         pushGameObject(std::move(gameObject));
     }
 
-    if (true)
-    {
-        TextureBuilder textureBuilder(device);
-        auto texture = assetManager.textures().create(textureBuilder.fromFile("skybox/cubemap_space.ktx").asCubemap());
-
-        ModelBuilder builder(device, assetManager);
-        ModelManager::ModelID modelId = assetManager.models().create(builder.fromFile("assets/model/cube.obj").withTexture(texture));
-
-        createDescriptorSet(assetManager.models().get(modelId));
-        
-
-        auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
-        gameObject->setName("cubemap1");
-        gameObject->setModelType(ModelType::OBJ_MODEL);
-        gameObject->setModelSubType(ModelSubType::SKYBOX);
-        gameObject->setModel(modelId);
-        gameObject->saveable = false;
-        gameObject->show = false;
-        pushGameObject(std::move(gameObject));
-    }
 
     /* {
         auto behavior = GameObjectBehavior::createBehaviorFromType("ChunkManager", device);
@@ -64,33 +70,6 @@ void ObjectManager::startLoadModel()
 		gameObject->saveable = false;
 		pushGameObject(std::move(gameObject));
     }*/
- 
-    {
-
-		std::vector<Model::Instance> instances;
-		for (int x = 0; x < 300; x++) {
-			for (int z = 0; z < 300; z++) {
-				Model::Instance instance;
-                instance.position = { x / 10.f - 15.f, 0.0f, z / 10.f - 15.f };
-				instance.rotation = { 0.0f, static_cast<float>(rand() % 360), 0.0f };
-                instance.scale = { 1, 1, 1 };
-				instances.push_back(instance);
-			}
-		}
-
-        std::shared_ptr<Model> cube = Model::createModelFromFile(device, assetManager, std::vector<std::array<std::string, 2>>{ {"assets/model/grassLOD/grassLod4.obj", "assets/textures/GrassBillboard.png"} , {"assets/model/grassLOD/grassLod1.obj", "assets/textures/whiteTexture.jpg"}, {"assets/model/grassLOD/grassLod2.obj", ""} , {"assets/model/grassLOD/grassLod3.obj", ""} });
-        //cube->computeShadow = false;
-
-        auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
-        gameObject->setName("testlod");
-        gameObject->setModelType(ModelType::OBJ_MODEL);
-        gameObject->setModel(cube);
-        gameObject->saveable = false;
-		gameObject->setMultipleInstances(instances);
-        gameObject->createDescriptorSet(*globalPool);
-        pushGameObject(std::move(gameObject));
-    }
-    
 
 }
 
