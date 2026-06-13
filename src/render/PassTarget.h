@@ -88,5 +88,7 @@ private:
     AssetManager& assets;
     Device& device;
 
+    bool ownImage = false;
+
     friend Swap_chain;
 };

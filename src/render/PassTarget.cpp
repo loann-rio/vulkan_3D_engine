@@ -8,11 +8,14 @@ PassTarget::PassTarget(Device& device_, Swap_chain& swapchain_, AssetManager& as
     if (hasDepth)
         createDepthTargetTexture(imageCount, swapchain_.getSwapChainDepthFormat());
 
+    ownImage = !isFinal;
+
     createImageInfo();
 }
 
 PassTarget::~PassTarget()
 {
+
     for (auto framebuffer : framebuffers) {
         vkDestroyFramebuffer(device.device(), framebuffer, nullptr);
     }

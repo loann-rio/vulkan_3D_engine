@@ -48,11 +48,13 @@ void Pipeline::createGraphicsPipeline(const std::string& vertFilepath,
 
 	assert(
 		configInfo.pipelineLayout != VK_NULL_HANDLE &&
-		"Cannot create graphics pipeline: no pipelineLayout provided in configInfo");
+		"Cannot create graphics pipeline: no pipelineLayout provided in configInfo"
+	);
 	
 	assert(
 		configInfo.renderPass != VK_NULL_HANDLE &&
-		"Cannot create graphics pipeline: no renderPass provided in configInfo");
+		"Cannot create graphics pipeline: no renderPass provided in configInfo"
+	);
 
 	
 	uint8_t stageCount = 1;
@@ -85,7 +87,6 @@ void Pipeline::createGraphicsPipeline(const std::string& vertFilepath,
 		shaderStages[1].pSpecializationInfo = nullptr;
 	}
 	
-
 	auto& bindingDescriptions = configInfo.bindingDescription;
 	auto& attributeDescriptions = configInfo.attributeDescription;
 
@@ -94,9 +95,7 @@ void Pipeline::createGraphicsPipeline(const std::string& vertFilepath,
 	vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
 	vertexInputInfo.vertexBindingDescriptionCount = static_cast<uint32_t>(bindingDescriptions.size());
 	vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
-	vertexInputInfo.pVertexBindingDescriptions = bindingDescriptions.data();
-
-	
+	vertexInputInfo.pVertexBindingDescriptions = bindingDescriptions.data();	
 
 	VkGraphicsPipelineCreateInfo pipelineInfo{};
 	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;

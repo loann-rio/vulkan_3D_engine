@@ -13,8 +13,11 @@
 #include "../objects/BasicUI.h"
 
 #include "FrameRenderer.h"
+
 #include "DepthPass.h"
 #include "ColorPass.h"
+#include "PostProPass.h"
+
 #include "GlobalRenderSystem.h"
 #include "PassTarget.h"
 
@@ -67,6 +70,7 @@ private:
 
 	// target
 	std::unique_ptr<PassTarget> depthFrameTarget;
+	std::unique_ptr<PassTarget> colorFrameTarget;
 	std::unique_ptr<PassTarget> finalFrameTarget;
 
 	// fps
@@ -75,7 +79,8 @@ private:
 
 	// passes
 	std::unique_ptr<DepthPass> depthPass;
-	std::unique_ptr<ColorPass> finalPass;
+	std::unique_ptr<ColorPass> colorPass;
+	std::unique_ptr<PostProPass> postProcessingPass;
 
 	// render systems
 	std::shared_ptr<GlobalRenderSystem> skyboxCreationRenderSystem;

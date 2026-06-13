@@ -27,7 +27,13 @@ Renderer::Renderer(
 		swapChain.get() 
 	);
 
-	finalPass = std::make_unique<ColorPass>(
+	colorPass = std::make_unique<ColorPass>(
+		device,
+		assets,
+		swapChain.get()
+	);
+
+	postProcessingPass = std::make_unique<PostProPass>(
 		device,
 		assets,
 		swapChain.get()
@@ -37,10 +43,10 @@ Renderer::Renderer(
 		device,
 		assets,
 		window.getGLFWwindow(),
-		finalPass->getRenderPass()
+		colorPass->getRenderPass()
 	);
 
-	finalPass->setUi(imgui.get());
+	colorPass->setUi(imgui.get());
 
 	createTextureTarget(objectManager);
 	createBuffers(objectManager);
@@ -101,7 +107,7 @@ void Renderer::createTextureTarget(ObjectManager& objectManager)
 
 
 	// color
-	finalFrameTarget = std::make_unique<PassTarget>(
+	colorFrameTarget = std::make_unique<PassTarget>(
 		device,
 		*swapChain.get(),
 		assets,
@@ -109,15 +115,30 @@ void Renderer::createTextureTarget(ObjectManager& objectManager)
 		true,
 		true,
 		swapChain->imageCount(),
-		true
+		false
 	);	
 
-	finalPass->setTarget(finalFrameTarget.get());
+	colorFrameTarget->createLocalFramebuffers(depthPass->getRenderPass());
+	colorFrameTarget->createDescriptorSets(*objectManager.getPool());
+	colorPass->setTarget(colorFrameTarget.get());
+
+	finalFrameTarget = std::make_unique<PassTarget>(
+		device,
+		*swapChain.get(),
+		assets,
+		swapChain->getSwapChainExtent(),
+		false,
+		true,
+		swapChain->imageCount(),
+		true
+	);
+
+	postProcessingPass->setTarget(finalFrameTarget.get());
 
 	swapChain->createFramebuffers(
 		assets,
 		finalFrameTarget.get(),
-		finalPass->getRenderPass()
+		postProcessingPass->getRenderPass()
 	);
 }
 
@@ -228,16 +249,23 @@ void Renderer::renderFrame(FrameInfo& frameInfo, ObjectManager& objectManager)
 	frameInfo.frameIndex = frameRenderer.getCurrentFrameIndex();
 	frameInfo.imageIndex = *frameRenderer.getCurrentImageIndex();
 
-	if (auto commandBuffer = frameRenderer.beginFrame()) {
+	if (auto commandBuffer = frameRenderer.beginFrame()) 
+	{
 		depthPass->recordPass(
 			objectManager,
 			frameInfo,
 			commandBuffer
 		);
 
-		finalPass->recordPass(
+		colorPass->recordPass(
 			objectManager, 
 			frameInfo, 
+			commandBuffer
+		);
+
+		postProcessingPass->recordPass(
+			objectManager,
+			frameInfo,
 			commandBuffer
 		);
 

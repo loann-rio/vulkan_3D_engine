@@ -14,6 +14,28 @@
 
 void ObjectManager::startLoadModel()
 {
+    if (true)
+    {
+        TextureBuilder textureBuilder(device);
+        auto texture = assetManager.textures().create(textureBuilder.fromFile("skybox/cubemap_space.ktx").asCubemap());
+
+        ModelBuilder builder(device, assetManager);
+        ModelManager::ModelID modelId = assetManager.models().create(builder.fromFile("assets/model/cube.obj").withTexture(texture));
+
+        createDescriptorSet(assetManager.models().get(modelId));
+
+
+        auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
+        gameObject->setName("cubemap1");
+        gameObject->setModelType(ModelType::OBJ_MODEL);
+        gameObject->setModelSubType(ModelSubType::SKYBOX);
+        gameObject->setModel(modelId);
+        gameObject->saveable = false;
+        gameObject->show = false;
+        pushGameObject(std::move(gameObject));
+    }
+
+
     {
 
         std::vector<Model::Instance> instances;
@@ -39,28 +61,6 @@ void ObjectManager::startLoadModel()
         gameObject->createDescriptorSet(*globalPool);
         pushGameObject(std::move(gameObject));
     }
-
-    for (int i = 0; i < 1; i++)
-    {
-        ModelBuilder builder(device, assetManager);
-        ModelManager::ModelID id = assetManager.models().create(builder.fromFile("model/buster_drone/scene.gltf"));
-
-        if (!id) continue;
-
-        createDescriptorSet(assetManager.models().get(id));
-
-        auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
-        gameObject->setName("testModelBuilder");
-        gameObject->setModelType(ModelType::OBJ_MODEL);
-        gameObject->setModel(id);
-        gameObject->transform.rotation.x = 3.141592f;
-        gameObject->transform.rotation.y = i * 15;
-        gameObject->transform.translation = { i, 0.2f, 8 };
-        gameObject->saveable = false;
-        gameObject->createDescriptorSet(*globalPool);
-        pushGameObject(std::move(gameObject));
-    }
-
 
     /* {
         auto behavior = GameObjectBehavior::createBehaviorFromType("ChunkManager", device);

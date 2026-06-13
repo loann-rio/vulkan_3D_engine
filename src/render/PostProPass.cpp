@@ -4,6 +4,13 @@ void PostProPass::recordPass(ObjectManager& objectManager, FrameInfo& frameInfo,
 {
     beginRenderPass(commandBuffer, 0, frameInfo.imageIndex);
 
+    postProcessingRenderSystem->renderFullScreen(
+        commandBuffer, 
+        frameInfo.globalDescriptorSet[frameInfo.frameIndex], 
+        glm::mat4{},
+        glm::mat4{}
+    );
+
     endRenderPass(commandBuffer);
 }
 
@@ -89,10 +96,17 @@ void PostProPass::createRenderSystems()
         .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
         .build();
 
+    auto imageSetLayout = DescriptorSetLayout::Builder(device)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .build();
+
     RenderSystemBuilder postProBuilder{};
-    postProBuilder.fragFilepath = "shaders\\fullscreen.frag.spv";
-    postProBuilder.vertFilepath = "shaders\\PostProShader.vert.spv";
-    postProBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout() };
+    postProBuilder.fragFilepath = "shaders\\PostProShader.frag.spv";
+    postProBuilder.vertFilepath = "shaders\\fullscreen.vert.spv";
+    postProBuilder.globalSetLayout = { 
+        globalSetLayout->getDescriptorSetLayout(), 
+        imageSetLayout->getDescriptorSetLayout() 
+    };
     postProBuilder.renderPass = renderPass;
     postProBuilder.isFullscreenRender = true;
     postProcessingRenderSystem = GlobalRenderSystem::create<Model>(device, assets, postProBuilder);
