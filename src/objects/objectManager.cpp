@@ -14,8 +14,30 @@
 
 void ObjectManager::startLoadModel()
 {
-    {
 
+    if (true)
+    {
+        TextureBuilder textureBuilder(device);
+        auto texture = assetManager.textures().create(textureBuilder.fromFile("skybox/cubemap_space.ktx").asCubemap());
+        
+        ModelBuilder builder(device, assetManager);
+        ModelManager::ModelID modelId = assetManager.models().create(builder.fromFile("assets/model/cube.obj").withTexture(texture));
+        
+        createDescriptorSet(assetManager.models().get(modelId));
+        
+        
+        auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
+        gameObject->setName("cubemap1");
+        gameObject->setModelType(ModelType::OBJ_MODEL);
+        gameObject->setModelSubType(ModelSubType::SKYBOX);
+        gameObject->setModel(modelId);
+        gameObject->saveable = false;
+        gameObject->show = false;
+        pushGameObject(std::move(gameObject));
+       
+    }
+
+    {
         std::vector<Model::Instance> instances;
         for (int x = 0; x < 150; x++) {
             for (int z = 0; z < 150; z++) {

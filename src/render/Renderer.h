@@ -17,6 +17,7 @@
 #include "ColorPass.h"
 #include "GlobalRenderSystem.h"
 #include "PassTarget.h"
+#include "PostProPass.h"
 
 #include <memory>
 #include <vector>
@@ -67,7 +68,8 @@ private:
 
 	// target
 	std::unique_ptr<PassTarget> depthFrameTarget;
-	std::unique_ptr<PassTarget> finalFrameTarget;
+	std::unique_ptr<PassTarget> colorFrameTarget;
+	std::unique_ptr<PassTarget> postPFrameTarget;
 
 	// fps
 	float gpuTime = 0.0f;
@@ -75,7 +77,8 @@ private:
 
 	// passes
 	std::unique_ptr<DepthPass> depthPass;
-	std::unique_ptr<ColorPass> finalPass;
+	std::unique_ptr<ColorPass> colorPass;
+	std::unique_ptr<PostProPass> postPass;
 
 	// render systems
 	std::shared_ptr<GlobalRenderSystem> skyboxCreationRenderSystem;
@@ -83,6 +86,7 @@ private:
 	// global descriptor sets
 	std::vector<VkDescriptorSet> globalDescriptorSet;
 	std::vector<VkDescriptorSet> shadowDescriptorSet;
+	std::vector<VkDescriptorSet> postProDescriptorSet;
 	std::vector<VkDescriptorSet> terrainDescriptorSet;
 };
 

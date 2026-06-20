@@ -27,7 +27,7 @@ Renderer::Renderer(
 		swapChain.get() 
 	);
 
-	finalPass = std::make_unique<ColorPass>(
+	colorPass = std::make_unique<ColorPass>(
 		device,
 		assets,
 		swapChain.get()
@@ -37,10 +37,16 @@ Renderer::Renderer(
 		device,
 		assets,
 		window.getGLFWwindow(),
-		finalPass->getRenderPass()
+		colorPass->getRenderPass()
 	);
 
-	finalPass->setUi(imgui.get());
+	colorPass->setUi(imgui.get());
+
+	postPass = std::make_unique<PostProPass>(
+		device,
+		assets,
+		swapChain.get()
+	);
 
 	createTextureTarget(objectManager);
 	createBuffers(objectManager);
@@ -101,7 +107,7 @@ void Renderer::createTextureTarget(ObjectManager& objectManager)
 
 
 	// color
-	finalFrameTarget = std::make_unique<PassTarget>(
+	colorFrameTarget = std::make_unique<PassTarget>(
 		device,
 		*swapChain.get(),
 		assets,
@@ -112,12 +118,29 @@ void Renderer::createTextureTarget(ObjectManager& objectManager)
 		true
 	);	
 
-	finalPass->setTarget(finalFrameTarget.get());
+	colorFrameTarget->createLocalFramebuffers(colorPass->getRenderPass());
+	colorFrameTarget->createDescriptorSets(*objectManager.getPool());
+	colorPass->setTarget(colorFrameTarget.get());
+
+	postPFrameTarget = std::make_unique<PassTarget>(
+		device,
+		*swapChain.get(),
+		assets,
+		swapChain->getSwapChainExtent(),
+		false,
+		true,
+		swapChain->imageCount(),
+		false
+	);
+
+	postPFrameTarget->createLocalFramebuffers(postPass->getRenderPass());
+	postPFrameTarget->createDescriptorSets(*objectManager.getPool());
+	postPass->setTarget(postPFrameTarget.get());
 
 	swapChain->createFramebuffers(
 		assets,
-		finalFrameTarget.get(),
-		finalPass->getRenderPass()
+		colorFrameTarget.get(),
+		colorPass->getRenderPass()
 	);
 }
 
@@ -220,6 +243,7 @@ void Renderer::renderFrame(FrameInfo& frameInfo, ObjectManager& objectManager)
 	frameInfo.globalDescriptorSet = globalDescriptorSet;
 	frameInfo.shadowDescriptorSet = shadowDescriptorSet;
 	frameInfo.terrainDescriptorSet = terrainDescriptorSet;
+	frameInfo.postProDescriptorSet = postProDescriptorSet;
 
 	auto newGpuTime = std::chrono::high_resolution_clock::now();
 
@@ -235,11 +259,17 @@ void Renderer::renderFrame(FrameInfo& frameInfo, ObjectManager& objectManager)
 			commandBuffer
 		);
 
-		finalPass->recordPass(
+		colorPass->recordPass(
 			objectManager, 
 			frameInfo, 
 			commandBuffer
 		);
+
+		/*postPass->recordPass(
+			objectManager,
+			frameInfo,
+			commandBuffer
+		);*/
 
 		VkResult result = frameRenderer.endFrame();
 
@@ -277,7 +307,7 @@ TextureManager::TextureID Renderer::renderHdriToCubeTexture(std::shared_ptr<Glob
 		if (auto commandBuffer = device.beginSingleTimeCommands()) {
 			beginSingleTimeRender(commandBuffer, face);
 
-			renderSystem->renderFullScreen(commandBuffer, descriptorSet, captureViews[face], captureProj);
+			renderSystem->renderFullScreen(commandBuffer, { descriptorSet }, captureViews[face], captureProj);
 
 			vkCmdEndRenderPass(commandBuffer);
 			device.endSingleTimeCommands(commandBuffer);
@@ -396,6 +426,19 @@ void Renderer::createBuffers(ObjectManager& objectManager)
 			.writeBuffer(0, &bufferInfo)
 			.writeImage(1, imagesInfo.data(), DepthPass::MAX_DEPTH_RENDER_COUNT)
 			.build(shadowDescriptorSet[i]);
+	}
+
+	auto postSetLayout = DescriptorSetLayout::Builder(device)
+		.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+		.build();
+
+	postProDescriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
+	for (int i = 0; i < postProDescriptorSet.size(); i++) {
+		auto imageInfo = postPFrameTarget->getColorImageInfo(i);
+
+		DescriptorWriter(*postSetLayout, *objectManager.getPool())
+			.writeImage(0, &imageInfo)
+			.build(postProDescriptorSet[i]);
 	}
 
 	/// skybox 

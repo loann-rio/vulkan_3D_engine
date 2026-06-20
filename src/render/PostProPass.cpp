@@ -4,6 +4,16 @@ void PostProPass::recordPass(ObjectManager& objectManager, FrameInfo& frameInfo,
 {
     beginRenderPass(commandBuffer, 0, frameInfo.imageIndex);
 
+    postProcessingRenderSystem->renderFullScreen(
+        commandBuffer,
+        {
+            frameInfo.globalDescriptorSet[frameInfo.frameIndex],
+            frameInfo.postProDescriptorSet[frameInfo.frameIndex]
+        },
+        glm::mat4(),
+        glm::mat4()
+    );
+
     endRenderPass(commandBuffer);
 }
 
@@ -90,8 +100,8 @@ void PostProPass::createRenderSystems()
         .build();
 
     RenderSystemBuilder postProBuilder{};
-    postProBuilder.fragFilepath = "shaders\\fullscreen.frag.spv";
-    postProBuilder.vertFilepath = "shaders\\PostProShader.vert.spv";
+    postProBuilder.fragFilepath = "shaders\\PostProShader.frag.spv";
+    postProBuilder.vertFilepath = "shaders\\fullscreen.vert.spv";
     postProBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout() };
     postProBuilder.renderPass = renderPass;
     postProBuilder.isFullscreenRender = true;
