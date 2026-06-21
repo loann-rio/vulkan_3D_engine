@@ -115,7 +115,7 @@ void Renderer::createTextureTarget(ObjectManager& objectManager)
 		true,
 		true,
 		swapChain->imageCount(),
-		true
+		false
 	);	
 
 	colorFrameTarget->createLocalFramebuffers(colorPass->getRenderPass());
@@ -130,7 +130,7 @@ void Renderer::createTextureTarget(ObjectManager& objectManager)
 		false,
 		true,
 		swapChain->imageCount(),
-		false
+		true
 	);
 
 	postPFrameTarget->createLocalFramebuffers(postPass->getRenderPass());
@@ -139,8 +139,8 @@ void Renderer::createTextureTarget(ObjectManager& objectManager)
 
 	swapChain->createFramebuffers(
 		assets,
-		colorFrameTarget.get(),
-		colorPass->getRenderPass()
+		postPFrameTarget.get(),
+		postPass->getRenderPass()
 	);
 }
 
@@ -265,11 +265,11 @@ void Renderer::renderFrame(FrameInfo& frameInfo, ObjectManager& objectManager)
 			commandBuffer
 		);
 
-		/*postPass->recordPass(
+		postPass->recordPass(
 			objectManager,
 			frameInfo,
 			commandBuffer
-		);*/
+		);
 
 		VkResult result = frameRenderer.endFrame();
 
@@ -432,10 +432,11 @@ void Renderer::createBuffers(ObjectManager& objectManager)
 		.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.build();
 
+
 	postProDescriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
 	for (int i = 0; i < postProDescriptorSet.size(); i++) {
-		auto imageInfo = postPFrameTarget->getColorImageInfo(i);
-
+		//auto imageInfo = postPFrameTarget->getColorImageInfo(i);
+		auto imageInfo = depthFrameTarget->getDepthImageInfo(1 + i * DepthPass::MAX_DEPTH_RENDER_COUNT);
 		DescriptorWriter(*postSetLayout, *objectManager.getPool())
 			.writeImage(0, &imageInfo)
 			.build(postProDescriptorSet[i]);

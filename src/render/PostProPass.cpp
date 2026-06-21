@@ -28,7 +28,7 @@ void PostProPass::createRenderPass(VkFormat imageFormat, VkFormat /**/)
     color.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
     VkAttachmentReference colorRef{};
-    colorRef.attachment = 0;
+    colorRef.attachment = 0;    
     colorRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
     VkSubpassDescription subpass{};
@@ -69,7 +69,7 @@ void PostProPass::beginRenderPass(VkCommandBuffer commandBuffer, int depthRender
     rpBegin.renderArea.extent = target->getExtent();
 
     std::array<VkClearValue, 1> clearValues{};
-    clearValues[0].color = { { 0.f, 1.f, 0.1f, 1.0f } };
+    clearValues[0].color = { { 1.f, 0.f, 0.1f, 1.0f } };
 
     rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
     rpBegin.pClearValues = clearValues.data();
@@ -99,10 +99,14 @@ void PostProPass::createRenderSystems()
         .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
         .build();
 
+    auto colorSetLayout = DescriptorSetLayout::Builder(device)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .build();
+
     RenderSystemBuilder postProBuilder{};
     postProBuilder.fragFilepath = "shaders\\PostProShader.frag.spv";
     postProBuilder.vertFilepath = "shaders\\fullscreen.vert.spv";
-    postProBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout() };
+    postProBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), colorSetLayout->getDescriptorSetLayout()};
     postProBuilder.renderPass = renderPass;
     postProBuilder.isFullscreenRender = true;
     postProcessingRenderSystem = GlobalRenderSystem::create<Model>(device, assets, postProBuilder);

@@ -62,7 +62,9 @@ void Swap_chain::createFramebuffers(AssetManager& assets, PassTarget* textureTar
 {
     textureTarget->framebuffers.resize(imageCount());
     for (size_t i = 0; i < imageCount(); i++) {
-        std::array<VkImageView, 2> attachments = { swapChainImageViews[i], assets.textures().get(textureTarget->getDepth(i))->view()};
+        //std::array<VkImageView, 2> attachments = { swapChainImageViews[i], assets.textures().get(textureTarget->getDepth(i))->view()};
+
+        std::array<VkImageView, 1> attachments = { swapChainImageViews[i] };// , assets.textures().get(textureTarget->getDepth(i))->view() };
 
         VkExtent2D swapChainExtent = getSwapChainExtent();
         VkFramebufferCreateInfo framebufferInfo = {};

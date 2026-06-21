@@ -464,9 +464,6 @@
     <None Include="shaders\shadowMapTerrain.vert">
       <Filter>shaders</Filter>
     </None>
-    <None Include="src\render\PostProShader.frag">
-      <Filter>shaders</Filter>
-    </None>
     <None Include="shaders\PostProShader.frag">
       <Filter>shaders</Filter>
     </None>

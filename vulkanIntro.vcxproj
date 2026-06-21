@@ -312,7 +312,6 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <None Include="shaders\testRed.frag" />
     <None Include="shaders\text.frag" />
     <None Include="shaders\text.vert" />
-    <None Include="src\render\PostProShader.frag" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

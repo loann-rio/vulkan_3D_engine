@@ -9,13 +9,27 @@
 #include <cassert>
 
 
-GlobalRenderSystem::GlobalRenderSystem(Device& device, AssetManager& assets,
+GlobalRenderSystem::GlobalRenderSystem(
+	Device& device, 
+	AssetManager& assets,
 	VkRenderPass renderPass,
-	std::vector<VkDescriptorSetLayout> globalSetLayout, std::vector<DescriptorSetObject> bindings,
-	const std::string& vertFilepath, const std::string& fragFilepath,
-	ModelType modelType, ModelSubType subModelType,
-	std::vector<VkVertexInputBindingDescription> bindingDescription, std::vector<VkVertexInputAttributeDescription> attributeDescription, VkShaderStageFlagBits pushStage_in, bool isShadow, bool isSkyBox, bool isFullsceenrender)
-	: device{ device }, modelType{ modelType }, isShadow{ isShadow }, modelSubType{ subModelType }, isSkyBox{ isSkyBox }, isFullscreenRender{ isFullsceenrender }, assets{ assets }
+	std::vector<VkDescriptorSetLayout> globalSetLayout, 
+	std::vector<DescriptorSetObject> bindings,
+	const std::string& vertFilepath, 
+	const std::string& fragFilepath,
+	ModelType modelType, 
+	ModelSubType subModelType,
+	std::vector<VkVertexInputBindingDescription> bindingDescription, 
+	std::vector<VkVertexInputAttributeDescription> attributeDescription, 
+	VkShaderStageFlagBits pushStage_in, 
+	bool isShadow, bool isSkyBox, bool isFullsceenrender)
+	: device{ device }, 
+	modelType{ modelType }, 
+	isShadow{ isShadow }, 
+	modelSubType{ subModelType }, 
+	isSkyBox{ isSkyBox }, 
+	isFullscreenRender{ isFullsceenrender }, 
+	assets{ assets }
 {
 	if (pushStage_in) {
 		pushStage = pushStage_in;
@@ -85,7 +99,7 @@ void GlobalRenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout>
 			pushConstantRange.size = sizeof(GltfPushConstant); 
 		}
 		else {
-			pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+			pushConstantRange.stageFlags = isFullscreenRender ? VK_SHADER_STAGE_FRAGMENT_BIT : VK_SHADER_STAGE_VERTEX_BIT;
 			pushConstantRange.size = sizeof(SimplePushConstantData);
 		}
 	}
