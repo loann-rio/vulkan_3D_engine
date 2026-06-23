@@ -120,7 +120,7 @@ std::unique_ptr<ModelAsset> ModelBuilder::build()
     }
     catch (const std::exception& e)
     {
-        std::cerr << std::string("TextureBuilder: build failed: ") + e.what() << "\n";
+        std::cerr << std::string("ModelBuilder: build failed: ") + e.what() << "\n";
         return nullptr;
     }
 }
@@ -189,7 +189,7 @@ std::unique_ptr<ModelAsset> ModelBuilder::buildGlTF()
             throw std::runtime_error("path cannot be empty for obj");
         }
 
-        throw std::runtime_error("build type not implemented yet");
+        //throw std::runtime_error("build type not implemented yet");
 
         ObjModelDecoder decoder;
         if (!decoder.canDecode(modelFilePath)) {

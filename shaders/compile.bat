@@ -27,7 +27,6 @@ C:\VulkanSDK\1.4.313.2\Bin\glslc.exe PostProShader.frag -o PostProShader.frag.sp
 C:\VulkanSDK\1.4.313.2\Bin\glslc.exe fullscreen.vert -o fullscreen.vert.spv --target-env=vulkan1.2
 
 C:\VulkanSDK\1.4.313.2\Bin\glslc.exe testRed.frag -o testRed.frag.spv --target-env=vulkan1.2
-C:\VulkanSDK\1.4.313.2\Bin\glslc.exe test.vert -o test.vert.spv --target-env=vulkan1.2
 
 C:\VulkanSDK\1.4.313.2\Bin\glslc.exe shadowMapTerrain.vert -o shadowMapTerrain.vert.spv --target-env=vulkan1.2
 

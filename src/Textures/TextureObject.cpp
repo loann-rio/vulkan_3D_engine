@@ -50,7 +50,7 @@ void TextureObject::destroyResources() {
         textureImageView = VK_NULL_HANDLE;
     }
 
-    if (textureImage) {
+    if (textureImage && ownsImage) {
         vkDestroyImage(logicalDevice, textureImage, nullptr);
         textureImage = VK_NULL_HANDLE;
     }

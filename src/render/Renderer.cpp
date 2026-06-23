@@ -102,7 +102,7 @@ void Renderer::createTextureTarget(ObjectManager& objectManager)
 	);
 
 	depthFrameTarget->createLocalFramebuffers(depthPass->getRenderPass());
-	depthFrameTarget->createDescriptorSets(*objectManager.getPool());
+	//depthFrameTarget->createDescriptorSets(*objectManager.getPool());
 	depthPass->setTarget(depthFrameTarget.get());
 
 
@@ -114,12 +114,12 @@ void Renderer::createTextureTarget(ObjectManager& objectManager)
 		swapChain->getSwapChainExtent(),
 		true,
 		true,
-		swapChain->imageCount(),
+		Swap_chain::MAX_FRAMES_IN_FLIGHT,
 		false
 	);	
 
 	colorFrameTarget->createLocalFramebuffers(colorPass->getRenderPass());
-	colorFrameTarget->createDescriptorSets(*objectManager.getPool());
+	//colorFrameTarget->createDescriptorSets(*objectManager.getPool());
 	colorPass->setTarget(colorFrameTarget.get());
 
 	postPFrameTarget = std::make_unique<PassTarget>(
@@ -134,7 +134,7 @@ void Renderer::createTextureTarget(ObjectManager& objectManager)
 	);
 
 	postPFrameTarget->createLocalFramebuffers(postPass->getRenderPass());
-	postPFrameTarget->createDescriptorSets(*objectManager.getPool());
+	//postPFrameTarget->createDescriptorSets(*objectManager.getPool());
 	postPass->setTarget(postPFrameTarget.get());
 
 	swapChain->createFramebuffers(
@@ -435,8 +435,7 @@ void Renderer::createBuffers(ObjectManager& objectManager)
 
 	postProDescriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
 	for (int i = 0; i < postProDescriptorSet.size(); i++) {
-		//auto imageInfo = postPFrameTarget->getColorImageInfo(i);
-		auto imageInfo = depthFrameTarget->getDepthImageInfo(1 + i * DepthPass::MAX_DEPTH_RENDER_COUNT);
+		auto imageInfo = colorFrameTarget->getColorImageInfo(i);
 		DescriptorWriter(*postSetLayout, *objectManager.getPool())
 			.writeImage(0, &imageInfo)
 			.build(postProDescriptorSet[i]);
