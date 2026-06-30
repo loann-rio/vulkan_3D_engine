@@ -9,13 +9,27 @@
 #include <cassert>
 
 
-GlobalRenderSystem::GlobalRenderSystem(Device& device, AssetManager& assets,
+GlobalRenderSystem::GlobalRenderSystem(
+	Device& device, 
+	AssetManager& assets,
 	VkRenderPass renderPass,
-	std::vector<VkDescriptorSetLayout> globalSetLayout, std::vector<DescriptorSetObject> bindings,
-	const std::string& vertFilepath, const std::string& fragFilepath,
-	ModelType modelType, ModelSubType subModelType,
-	std::vector<VkVertexInputBindingDescription> bindingDescription, std::vector<VkVertexInputAttributeDescription> attributeDescription, VkShaderStageFlagBits pushStage_in, bool isShadow, bool isSkyBox, bool isFullsceenrender)
-	: device{ device }, modelType{ modelType }, isShadow{ isShadow }, modelSubType{ subModelType }, isSkyBox{ isSkyBox }, isFullscreenRender{ isFullsceenrender }, assets{ assets }
+	std::vector<VkDescriptorSetLayout> globalSetLayout, 
+	std::vector<DescriptorSetObject> bindings,
+	const std::string& vertFilepath, 
+	const std::string& fragFilepath,
+	ModelType modelType, 
+	ModelSubType subModelType,
+	std::vector<VkVertexInputBindingDescription> bindingDescription, 
+	std::vector<VkVertexInputAttributeDescription> attributeDescription, 
+	VkShaderStageFlagBits pushStage_in, 
+	bool isShadow, bool isSkyBox, bool isFullsceenrender)
+	: device{ device }, 
+	modelType{ modelType }, 
+	isShadow{ isShadow }, 
+	modelSubType{ subModelType }, 
+	isSkyBox{ isSkyBox }, 
+	isFullscreenRender{ isFullsceenrender }, 
+	assets{ assets }
 {
 	if (pushStage_in) {
 		pushStage = pushStage_in;
@@ -85,7 +99,7 @@ void GlobalRenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout>
 			pushConstantRange.size = sizeof(GltfPushConstant); 
 		}
 		else {
-			pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+			pushConstantRange.stageFlags = isFullscreenRender ? VK_SHADER_STAGE_FRAGMENT_BIT : VK_SHADER_STAGE_VERTEX_BIT;
 			pushConstantRange.size = sizeof(SimplePushConstantData);
 		}
 	}
@@ -282,10 +296,10 @@ void GlobalRenderSystem::renderGameObjectsDepth(VkCommandBuffer& commandBuffer, 
 	}
 }
 
-void GlobalRenderSystem::renderFullScreen(VkCommandBuffer& commandBuffer, VkDescriptorSet& globalDescriptorSets, glm::mat4 view, glm::mat4 proj)
+void GlobalRenderSystem::renderFullScreen(VkCommandBuffer& commandBuffer, std::vector<VkDescriptorSet> globalDescriptorSets, glm::mat4 view, glm::mat4 proj)
 {
 
-	bind(commandBuffer, {});
+	bind(commandBuffer, globalDescriptorSets);
 
 	struct Push { glm::mat4 view; glm::mat4 proj; } push;
 
@@ -293,9 +307,6 @@ void GlobalRenderSystem::renderFullScreen(VkCommandBuffer& commandBuffer, VkDesc
 	push.proj = proj;
 
 	vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(push), &push);
-	
-	// bind descriptor for equirectangular map (staged earlier)
-	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &globalDescriptorSets, 0, nullptr);
 	
 	// draw fullscreen triangle
 	vkCmdDraw(commandBuffer, 3, 1, 0, 0);

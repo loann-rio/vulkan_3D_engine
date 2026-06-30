@@ -52,4 +52,5 @@ struct FrameInfo {
 	std::vector<VkDescriptorSet> globalDescriptorSet;
 	std::vector<VkDescriptorSet> shadowDescriptorSet;
 	std::vector<VkDescriptorSet> terrainDescriptorSet;
+	std::vector<VkDescriptorSet> postProDescriptorSet;
 };

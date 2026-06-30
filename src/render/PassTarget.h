@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../base/Device.h"
-#include "../base/descriptors.h"
 #include "../base/Swap_chain.h"
 #include "../assetManager/AssetManager.h"
 
@@ -36,16 +35,8 @@ public:
         VkRenderPass renderPass
     );
 
-    void createDescriptorSets(
-        DescriptorPool& pool
-    );
-
-    VkDescriptorSet getColorDescriptorSet(uint32_t index) { return colorDescriptorSets[index]; }
-    VkDescriptorSet getDepthDescriptorSet(uint32_t index) { return depthDescriptorSets[index]; }
-
     VkDescriptorImageInfo getColorImageInfo(uint16_t index) const { return colorImageInfo[index]; }
     VkDescriptorImageInfo getDepthImageInfo(uint16_t index) const { return depthImageInfo[index]; }
-
 
     TextureManager::TextureID getColor(uint16_t index) const { return color[index]; }
     TextureManager::TextureID getDepth(uint16_t index) const { return depth[index]; }

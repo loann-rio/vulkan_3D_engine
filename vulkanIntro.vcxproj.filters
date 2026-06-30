@@ -202,6 +202,7 @@
     <ClCompile Include="src\render\ColorPass.cpp">
       <Filter>render</Filter>
     </ClCompile>
+    <ClCompile Include="src\render\PostProPass.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tiny_gltf.h">
@@ -386,6 +387,9 @@
     <ClInclude Include="src\render\ColorPass.h">
       <Filter>render</Filter>
     </ClInclude>
+    <ClInclude Include="src\render\PostProPass.h">
+      <Filter>render</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\compile.bat">
@@ -458,6 +462,9 @@
       <Filter>shaders</Filter>
     </None>
     <None Include="shaders\shadowMapTerrain.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\PostProShader.frag">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>

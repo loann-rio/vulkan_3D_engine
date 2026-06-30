@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../base/Window.h"
-#include "../base/device.h"
 #include "../base/Swap_chain.h"
 #include "../base/SingleRenderSwap.h"
 #include "../base/FrameRateCounter.h"
@@ -12,14 +11,19 @@
 #include "../objects/objectManager.h"
 #include "../objects/BasicUI.h"
 
-#include "FrameRenderer.h"
+
 #include "DepthPass.h"
 #include "ColorPass.h"
+#include "PostProPass.h"
+
 #include "GlobalRenderSystem.h"
+#include "FrameRenderer.h"
 #include "PassTarget.h"
 
 #include <memory>
 #include <vector>
+
+class Device;
 
 class Renderer
 {
@@ -45,11 +49,13 @@ public:
 	std::vector<std::unique_ptr<Buffer>> terrainBuffers;
 	
 private:
-	void recreateSwapChain();
+	void recreateSwapChain(ObjectManager& objectManager);
 	void createBuffers(ObjectManager& objectManager);
-	void createTextureTarget(ObjectManager& objectManager);
+	void createTextureTarget();
+	void createPasses();
+	void initUi();
 
-	bool aquireNextImage();
+	bool aquireNextImage(ObjectManager& objectManager);
 
 	void beginSingleTimeRender(VkCommandBuffer commandBuffer, int buffer_index = 0);
 	TextureManager::TextureID renderHdriToCubeTexture(std::shared_ptr<GlobalRenderSystem> renderSystem, VkDescriptorSet descriptorSet);
@@ -67,7 +73,8 @@ private:
 
 	// target
 	std::unique_ptr<PassTarget> depthFrameTarget;
-	std::unique_ptr<PassTarget> finalFrameTarget;
+	std::unique_ptr<PassTarget> colorFrameTarget;
+	std::unique_ptr<PassTarget> postPFrameTarget;
 
 	// fps
 	float gpuTime = 0.0f;
@@ -75,7 +82,8 @@ private:
 
 	// passes
 	std::unique_ptr<DepthPass> depthPass;
-	std::unique_ptr<ColorPass> finalPass;
+	std::unique_ptr<ColorPass> colorPass;
+	std::unique_ptr<PostProPass> postPass;
 
 	// render systems
 	std::shared_ptr<GlobalRenderSystem> skyboxCreationRenderSystem;
@@ -83,6 +91,7 @@ private:
 	// global descriptor sets
 	std::vector<VkDescriptorSet> globalDescriptorSet;
 	std::vector<VkDescriptorSet> shadowDescriptorSet;
+	std::vector<VkDescriptorSet> postProDescriptorSet;
 	std::vector<VkDescriptorSet> terrainDescriptorSet;
 };
 

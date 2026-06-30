@@ -1,8 +1,10 @@
 #include "TextureObject.h"
+
 #include "../base/Device.h"
 
 #include <stdexcept>
 #include <cassert>
+#include <cstdint>
 
 //// Public API ////
 
@@ -50,7 +52,7 @@ void TextureObject::destroyResources() {
         textureImageView = VK_NULL_HANDLE;
     }
 
-    if (textureImage) {
+    if (textureImage && ownsImage) {
         vkDestroyImage(logicalDevice, textureImage, nullptr);
         textureImage = VK_NULL_HANDLE;
     }

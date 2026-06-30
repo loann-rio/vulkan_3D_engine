@@ -61,10 +61,12 @@ void ColorPass::createRenderSystems()
 
 void ColorPass::recordPass(ObjectManager& objectManager, FrameInfo& frameInfo, VkCommandBuffer& commandBuffer)
 {
-    beginRenderPass(commandBuffer, 0, frameInfo.imageIndex);
+    beginRenderPass(commandBuffer, 0, frameInfo.frameIndex);
 
     if (objectManager.baseSkyBox)
-        gltfRenderSystem->renderGameObjects(commandBuffer, frameInfo,
+        gltfRenderSystem->renderGameObjects(
+            commandBuffer, 
+            frameInfo,
             {
                 frameInfo.globalDescriptorSet[frameInfo.frameIndex],
                 frameInfo.shadowDescriptorSet[frameInfo.frameIndex],
@@ -121,7 +123,7 @@ void ColorPass::createRenderPass(VkFormat imageFormat, VkFormat depthFormat)
     colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     VkAttachmentReference colorAttachmentRef = {};
     colorAttachmentRef.attachment = 0;
