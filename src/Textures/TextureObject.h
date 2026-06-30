@@ -47,13 +47,17 @@ private:
 	TextureObject(Device&, const TextureInitInfo& info);
 
     // Helpers called by recreateImageView()
-    VkImageView createImageView(VkImage image,
+    VkImageView createImageView(
+        VkImage image,
         VkFormat format,
         uint32_t mipmapLevel,
         VkImageAspectFlagBits aspect,
-        bool isCube) const;
+        bool isCube
+    ) const;
 
-    VkImageView createCubeMapView(VkFormat format) const;
+    VkImageView createCubeMapView(
+        VkFormat format
+    ) const;
 
     // Internal Vulkan resource creators (used by uploader only)
     void destroyResources();

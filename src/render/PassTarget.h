@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../base/Device.h"
-#include "../base/descriptors.h"
 #include "../base/Swap_chain.h"
 #include "../assetManager/AssetManager.h"
 

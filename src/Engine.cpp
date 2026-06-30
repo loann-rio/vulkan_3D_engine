@@ -71,6 +71,7 @@ void Engine::run()
         {
             auto* camObj = dynamic_cast<GameObjectCamera*>(objectManager.get(objectManager.mainCamera));
             if (camObj->camera->aspectRatio != renderer.getAspectRatio()) {
+                std::cout << "wrong aspect ratio \n";
                 camObj->camera->setPerspectiveProjection(renderer.getAspectRatio());
             }
 

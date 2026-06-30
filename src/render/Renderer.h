@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../base/Window.h"
-#include "../base/device.h"
 #include "../base/Swap_chain.h"
 #include "../base/SingleRenderSwap.h"
 #include "../base/FrameRateCounter.h"
@@ -12,15 +11,19 @@
 #include "../objects/objectManager.h"
 #include "../objects/BasicUI.h"
 
-#include "FrameRenderer.h"
+
 #include "DepthPass.h"
 #include "ColorPass.h"
-#include "GlobalRenderSystem.h"
-#include "PassTarget.h"
 #include "PostProPass.h"
+
+#include "GlobalRenderSystem.h"
+#include "FrameRenderer.h"
+#include "PassTarget.h"
 
 #include <memory>
 #include <vector>
+
+class Device;
 
 class Renderer
 {
@@ -46,11 +49,13 @@ public:
 	std::vector<std::unique_ptr<Buffer>> terrainBuffers;
 	
 private:
-	void recreateSwapChain();
+	void recreateSwapChain(ObjectManager& objectManager);
 	void createBuffers(ObjectManager& objectManager);
-	void createTextureTarget(ObjectManager& objectManager);
+	void createTextureTarget();
+	void createPasses();
+	void initUi();
 
-	bool aquireNextImage();
+	bool aquireNextImage(ObjectManager& objectManager);
 
 	void beginSingleTimeRender(VkCommandBuffer commandBuffer, int buffer_index = 0);
 	TextureManager::TextureID renderHdriToCubeTexture(std::shared_ptr<GlobalRenderSystem> renderSystem, VkDescriptorSet descriptorSet);

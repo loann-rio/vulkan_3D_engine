@@ -156,16 +156,19 @@ void PassTarget::createColorTargetTexture(uint32_t imageCount, VkFormat format, 
                     viewInfo,
                     samplerInfo,
                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                    1, format)
+                    1, 
+                    format
+                )
             );
         }
         else
         {
             color[i] = assets.textures().create(
                 builder.fromTextureInfo(
-                    imageInfo, viewInfo, samplerInfo,
+                    imageInfo, 
+                    viewInfo, 
+                    samplerInfo,
                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-
                 )
             );
         }

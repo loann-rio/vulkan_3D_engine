@@ -1,8 +1,10 @@
 #include "TextureObject.h"
+
 #include "../base/Device.h"
 
 #include <stdexcept>
 #include <cassert>
+#include <cstdint>
 
 //// Public API ////
 

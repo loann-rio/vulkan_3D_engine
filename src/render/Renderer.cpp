@@ -8,8 +8,8 @@
 #include "../model/ModelAsset.h"
 #include "../model/ModelBuilder.h"
 #include "../assetManager/ModelManager.h"
-#include "PassTarget.h"
-#include "../objects/BasicUI.h"
+#include "../base/device.h"
+
 
 
 Renderer::Renderer(
@@ -19,75 +19,16 @@ Renderer::Renderer(
 	ObjectManager& objectManager) 
 	: window{window}, device{device}, assets{assets}
 {
-	recreateSwapChain();
+	recreateSwapChain(objectManager);
 
-	depthPass = std::make_unique<DepthPass>(
-		device, 
-		assets, 
-		swapChain.get() 
-	);
+	createPasses();
+	initUi();
 
-	colorPass = std::make_unique<ColorPass>(
-		device,
-		assets,
-		swapChain.get()
-	);
-
-	imgui = std::make_unique<BasicUI>(
-		device,
-		assets,
-		window.getGLFWwindow(),
-		colorPass->getRenderPass()
-	);
-
-	colorPass->setUi(imgui.get());
-
-	postPass = std::make_unique<PostProPass>(
-		device,
-		assets,
-		swapChain.get()
-	);
-
-	createTextureTarget(objectManager);
+	createTextureTarget();
 	createBuffers(objectManager);
 }
 
-/*
-	recreate swap chain after redimentionning of the window
-*/
-void Renderer::recreateSwapChain()
-{
-	// get size window
-	auto extent = window.getExtent();
-
-	// if the size of the window is null, wait for the user to modify it to an allowed value
-	while (extent.width == 0 || extent.height == 0) {
-		extent = window.getExtent();
-		glfwWaitEvents();
-	}
-
-	// wait for the device to render previous frame
-	vkDeviceWaitIdle(device.device());
-
-	// if the swapchain does not already exist create a new one
-	if (swapChain == nullptr) 
-	{
-		swapChain = std::make_unique<Swap_chain>(device, assets, extent);
-	}
-	else
-	{
-		std::shared_ptr<Swap_chain> oldSwapChain = std::move(swapChain);
-		swapChain = std::make_unique<Swap_chain>(device, assets, extent, oldSwapChain);
-
-		if (!oldSwapChain->compareSwapFormat(*swapChain.get())) {
-			throw std::runtime_error("Swap chain image format as changed");
-		}
-	}
-
-	frameRenderer.recreate(swapChain.get());
-}
-
-void Renderer::createTextureTarget(ObjectManager& objectManager)
+void Renderer::createTextureTarget()
 {
 	// shadow
 	depthFrameTarget = std::make_unique<PassTarget>(
@@ -101,11 +42,6 @@ void Renderer::createTextureTarget(ObjectManager& objectManager)
 		false
 	);
 
-	depthFrameTarget->createLocalFramebuffers(depthPass->getRenderPass());
-	//depthFrameTarget->createDescriptorSets(*objectManager.getPool());
-	depthPass->setTarget(depthFrameTarget.get());
-
-
 	// color
 	colorFrameTarget = std::make_unique<PassTarget>(
 		device,
@@ -118,10 +54,7 @@ void Renderer::createTextureTarget(ObjectManager& objectManager)
 		false
 	);	
 
-	colorFrameTarget->createLocalFramebuffers(colorPass->getRenderPass());
-	//colorFrameTarget->createDescriptorSets(*objectManager.getPool());
-	colorPass->setTarget(colorFrameTarget.get());
-
+	// post process
 	postPFrameTarget = std::make_unique<PassTarget>(
 		device,
 		*swapChain.get(),
@@ -133,8 +66,12 @@ void Renderer::createTextureTarget(ObjectManager& objectManager)
 		true
 	);
 
+	depthFrameTarget->createLocalFramebuffers(depthPass->getRenderPass());
+	colorFrameTarget->createLocalFramebuffers(colorPass->getRenderPass());
 	postPFrameTarget->createLocalFramebuffers(postPass->getRenderPass());
-	//postPFrameTarget->createDescriptorSets(*objectManager.getPool());
+
+	depthPass->setTarget(depthFrameTarget.get());
+	colorPass->setTarget(colorFrameTarget.get());
 	postPass->setTarget(postPFrameTarget.get());
 
 	swapChain->createFramebuffers(
@@ -144,13 +81,46 @@ void Renderer::createTextureTarget(ObjectManager& objectManager)
 	);
 }
 
+void Renderer::createPasses()
+{
+	depthPass = std::make_unique<DepthPass>(
+		device,
+		assets,
+		swapChain.get()
+	);
 
-bool Renderer::aquireNextImage()
+	colorPass = std::make_unique<ColorPass>(
+		device,
+		assets,
+		swapChain.get()
+	);
+
+	postPass = std::make_unique<PostProPass>(
+		device,
+		assets,
+		swapChain.get()
+	);
+}
+
+void Renderer::initUi()
+{
+	imgui = std::make_unique<BasicUI>(
+		device,
+		assets,
+		window.getGLFWwindow(),
+		colorPass->getRenderPass()
+	);
+
+	colorPass->setUi(imgui.get()); // imgui need to have depth test enable -> not usable in post pro
+}
+
+
+bool Renderer::aquireNextImage(ObjectManager& objectManager)
 {
 	auto result = swapChain->acquireNextImage(frameRenderer.getCurrentImageIndex());
 
 	if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-		recreateSwapChain();
+		recreateSwapChain(objectManager);
 		return false;
 	}
 
@@ -228,7 +198,12 @@ void Renderer::generateSkybox(const std::string pathTexture, const std::string g
 	GameObject::id_t id = gameObject->getId();
 
 	ModelBuilder modelBuilder(device, assets);
-	ModelManager::ModelID modelId = assets.models().create(modelBuilder.fromFile("assets/model/cube.obj").withTexture(resultTexture));
+	ModelManager::ModelID modelId = assets
+		.models()
+		.create(modelBuilder
+			.fromFile("assets/model/cube.obj")
+			.withTexture(resultTexture)
+		);
 
 	objectManager.createDescriptorSet(assets.models().get(modelId));
 	gameObject->setModel(modelId);
@@ -247,38 +222,39 @@ void Renderer::renderFrame(FrameInfo& frameInfo, ObjectManager& objectManager)
 
 	auto newGpuTime = std::chrono::high_resolution_clock::now();
 
-	aquireNextImage();
+	if (aquireNextImage(objectManager))
+	{
+		frameInfo.frameIndex = frameRenderer.getCurrentFrameIndex();
+		frameInfo.imageIndex = *frameRenderer.getCurrentImageIndex();
 
-	frameInfo.frameIndex = frameRenderer.getCurrentFrameIndex();
-	frameInfo.imageIndex = *frameRenderer.getCurrentImageIndex();
+		if (auto commandBuffer = frameRenderer.beginFrame()) {
+			depthPass->recordPass(
+				objectManager,
+				frameInfo,
+				commandBuffer
+			);
 
-	if (auto commandBuffer = frameRenderer.beginFrame()) {
-		depthPass->recordPass(
-			objectManager,
-			frameInfo,
-			commandBuffer
-		);
+			colorPass->recordPass(
+				objectManager,
+				frameInfo,
+				commandBuffer
+			);
 
-		colorPass->recordPass(
-			objectManager, 
-			frameInfo, 
-			commandBuffer
-		);
+			postPass->recordPass(
+				objectManager,
+				frameInfo,
+				commandBuffer
+			);
 
-		postPass->recordPass(
-			objectManager,
-			frameInfo,
-			commandBuffer
-		);
+			VkResult result = frameRenderer.endFrame();
 
-		VkResult result = frameRenderer.endFrame();
-
-		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || window.wasWindowResized()) {
-			window.resetWindowResizedFlag();
-			recreateSwapChain();
-		}
-		else if (result != VK_SUCCESS) {
-			throw std::runtime_error("failed to present swap chain image");
+			if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || window.wasWindowResized()) {
+				window.resetWindowResizedFlag();
+				recreateSwapChain(objectManager);
+			}
+			else if (result != VK_SUCCESS) {
+				throw std::runtime_error("failed to present swap chain image");
+			}
 		}
 	}
 
@@ -380,7 +356,7 @@ void Renderer::createBuffers(ObjectManager& objectManager)
 		.build();
 
 	terrainDescriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
-	for (int i = 0; i < terrainDescriptorSet.size() && i < 2; i++)
+	for (int i = 0; i < terrainDescriptorSet.size(); i++)
 	{
 		auto bufferInfo = terrainBuffers[i]->descriptorInfo();
 
@@ -456,4 +432,74 @@ void Renderer::createBuffers(ObjectManager& objectManager)
 		skyboxCreationRenderSystem = GlobalRenderSystem::create<Model>(device, assets, skyboxBuilder);
 	}
 
+}
+
+/*
+	recreate swap chain after redimentionning of the window
+*/
+void Renderer::recreateSwapChain(ObjectManager& objectManager)
+{
+	// get size window
+	auto extent = window.getExtent();
+
+	// if the size of the window is null, wait for the user to modify it to an allowed value
+	while (extent.width == 0 || extent.height == 0) {
+		extent = window.getExtent();
+		glfwWaitEvents();
+	}
+
+	// wait for the device to render previous frame
+	vkDeviceWaitIdle(device.device());
+
+	// if the swapchain does not already exist create a new one
+	if (swapChain == nullptr)
+	{
+		swapChain = std::make_unique<Swap_chain>(device, assets, extent);
+	}
+	else
+	{
+		std::shared_ptr<Swap_chain> oldSwapChain = std::move(swapChain);
+		swapChain = std::make_unique<Swap_chain>(device, assets, extent, oldSwapChain);
+
+		if (!oldSwapChain->compareSwapFormat(*swapChain.get())) {
+			throw std::runtime_error("Swap chain image format as changed");
+		}
+	}
+
+	if (depthFrameTarget) {
+		depthFrameTarget->resizeTargets(
+			extent, 
+			DepthPass::MAX_DEPTH_RENDER_COUNT * Swap_chain::MAX_FRAMES_IN_FLIGHT, 
+			swapChain->getSwapChainImageFormat(), 
+			swapChain->getSwapChainDepthFormat()
+		);
+
+		colorFrameTarget->resizeTargets(
+			extent,
+			Swap_chain::MAX_FRAMES_IN_FLIGHT,
+			swapChain->getSwapChainImageFormat(),
+			swapChain->getSwapChainDepthFormat()
+		);
+
+		postPFrameTarget->resizeTargets(
+			extent,
+			swapChain->imageCount(),
+			swapChain->getSwapChainImageFormat(),
+			swapChain->getSwapChainDepthFormat()
+		);
+
+		depthFrameTarget->createLocalFramebuffers(depthPass->getRenderPass());
+		colorFrameTarget->createLocalFramebuffers(colorPass->getRenderPass());
+		postPFrameTarget->createLocalFramebuffers(postPass->getRenderPass());
+
+		swapChain->createFramebuffers(
+			assets,
+			postPFrameTarget.get(),
+			postPass->getRenderPass()
+		);
+
+		createBuffers(objectManager);
+	}
+	
+	frameRenderer.recreate(swapChain.get());
 }
