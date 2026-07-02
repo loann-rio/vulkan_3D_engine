@@ -12,9 +12,9 @@
 #include "../objects/BasicUI.h"
 
 
-#include "DepthPass.h"
-#include "ColorPass.h"
-#include "PostProPass.h"
+#include "RenderPasses/DepthPass.h"
+#include "RenderPasses/ColorPass.h"
+#include "RenderPasses/PostProPass.h"
 
 #include "GlobalRenderSystem.h"
 #include "FrameRenderer.h"

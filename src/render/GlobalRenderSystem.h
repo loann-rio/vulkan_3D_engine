@@ -28,6 +28,29 @@ struct RenderSystemBuilder {
 	VkShaderStageFlagBits pushStage;
 };
 
+struct RenderSystemConfig
+{
+	VkRenderPass renderPass{};
+
+	std::string vertexShader;
+	std::string fragmentShader;
+
+	ModelType modelType{};
+	ModelSubType modelSubType{};
+
+	std::vector<VkDescriptorSetLayout> globalLayouts;
+	std::vector<DescriptorSetObject> descriptorBindings;
+
+	std::vector<VkVertexInputBindingDescription> bindingDescriptions;
+	std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
+
+	VkShaderStageFlags pushStage = 0;
+
+	bool shadow = false;
+	bool skybox = false;
+	bool fullscreen = false;
+};
+
 class GlobalRenderSystem
 {
 

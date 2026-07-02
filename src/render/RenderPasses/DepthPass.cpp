@@ -1,6 +1,6 @@
 #include "DepthPass.h"
 
-#include "../base/Device.h"
+#include "../../base/Device.h"
 
 void DepthPass::createRenderSystems()
 {
