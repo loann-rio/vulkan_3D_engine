@@ -30,21 +30,23 @@ struct RenderSystemBuilder {
 
 struct RenderSystemConfig
 {
-	VkRenderPass renderPass{};
+	VkRenderPass renderPass{}; // need check at build
 
-	std::string vertexShader;
-	std::string fragmentShader;
+	std::string vertexShader; // need check at build
+	std::string fragmentShader; // need check at build
 
-	ModelType modelType{};
-	ModelSubType modelSubType{};
+	ModelType modelType{}; // need check at build
+	ModelSubType modelSubType{}; // need check at build
 
-	std::vector<VkDescriptorSetLayout> globalLayouts;
-	std::vector<DescriptorSetObject> descriptorBindings;
+	std::vector<VkDescriptorSetLayout> globalLayouts{}; // need check at build
+	std::vector<DescriptorSetObject> descriptorBindings; // define + need check at build
 
-	std::vector<VkVertexInputBindingDescription> bindingDescriptions;
-	std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
+	std::vector<VkVertexInputBindingDescription> bindingDescriptions; // define + need check at build
+	std::vector<VkVertexInputAttributeDescription> attributeDescriptions; // define + need check at build
 
-	VkShaderStageFlags pushStage = 0;
+	uint16_t modelDescriptorSetIndex; 
+
+	VkShaderStageFlags pushStage = 0;  // define + need check at build
 
 	bool shadow = false;
 	bool skybox = false;
@@ -59,13 +61,28 @@ public:
 	// external builder to allow the use of template, take a RenderSystemBuilder as arg
 	template <class T> static std::shared_ptr<GlobalRenderSystem> create(Device& device, AssetManager& assets, RenderSystemBuilder builder);
 
-	GlobalRenderSystem(Device& device, AssetManager& assets,
+	/*GlobalRenderSystem(
+		Device& device, 
+		AssetManager& assets,
 		VkRenderPass renderPass,  
-		std::vector<VkDescriptorSetLayout> globalSetLayout, std::vector<DescriptorSetObject> bindings, 
-		const std::string& vertFilepath, const std::string& fragFilepath,
-		ModelType modelType, ModelSubType subModelType, 
-		std::vector<VkVertexInputBindingDescription> bindingDescription, std::vector<VkVertexInputAttributeDescription> attributeDescription,
-		VkShaderStageFlagBits pushStage, bool isShadow = false, bool isSkyBox = false, bool isFullscreenrender = false
+		std::vector<VkDescriptorSetLayout> globalSetLayout, 
+		std::vector<DescriptorSetObject> bindings, 
+		const std::string& vertFilepath, 
+		const std::string& fragFilepath,
+		ModelType modelType, 
+		ModelSubType subModelType, 
+		std::vector<VkVertexInputBindingDescription> bindingDescription, 
+		std::vector<VkVertexInputAttributeDescription> attributeDescription,
+		VkShaderStageFlagBits pushStage, 
+		bool isShadow = false, 
+		bool isSkyBox = false, 
+		bool isFullscreenrender = false
+	);*/
+
+	GlobalRenderSystem(
+		Device& device,
+		AssetManager& assets, 
+		RenderSystemConfig config
 	);
 
 	~GlobalRenderSystem();
@@ -152,7 +169,29 @@ inline std::shared_ptr<GlobalRenderSystem> GlobalRenderSystem::create(Device& de
 		// leave bindingDescription and attributeDescription empty
 	}
 
+	RenderSystemConfig config{};
+	config.attributeDescriptions = attributeDescription;
+	config.bindingDescriptions = bindingDescription;
+	config.descriptorBindings = bindings;
+	config.fullscreen = isFullscreen;
+	config.shadow = isShadow;
+	config.skybox = builder.isSkyBox;
+	config.modelType = modelType;
+	config.renderPass = builder.renderPass;
+	config.globalLayouts = builder.globalSetLayout;
+	config.vertexShader = builder.vertFilepath;
+	config.fragmentShader = builder.fragFilepath;
+	config.modelSubType = builder.subModelType;
+	config.pushStage = builder.pushStage;
+	config.modelDescriptorSetIndex = static_cast<uint32_t>(builder.globalSetLayout.size());
+
 	return std::make_shared<GlobalRenderSystem>(
+		device, 
+		assets, 
+		config
+	);
+
+	/*return std::make_shared<GlobalRenderSystem>(
 		device, assets,
 		builder.renderPass,
 		builder.globalSetLayout,
@@ -160,6 +199,6 @@ inline std::shared_ptr<GlobalRenderSystem> GlobalRenderSystem::create(Device& de
 		builder.vertFilepath, builder.fragFilepath,
 		modelType, builder.subModelType,
 		bindingDescription, attributeDescription, builder.pushStage,
-		isShadow, builder.isSkyBox, builder.isFullscreenRender);
+		isShadow, builder.isSkyBox, builder.isFullscreenRender);*/
 }
 

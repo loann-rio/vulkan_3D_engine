@@ -1,5 +1,6 @@
 #include "ColorPass.h"
 
+#include "../GlobalRenderSystemBuilder.h"
 //#include "DepthPass.h"
 
 void ColorPass::createRenderSystems()
@@ -22,6 +23,20 @@ void ColorPass::createRenderSystems()
         .build();
 
     {
+        /*GlobalRenderSystemBuilder builder(device, assets);
+        gltfRenderSystem = builder
+            .fragmentShader("shaders\\GlTFshader.frag.spv")
+            .vertexShader("shaders\\GlTFshader.vert.spv")
+            .renderPass(renderPass)
+            .addSetLayout(globalSetLayout->getDescriptorSetLayout())
+            .addSetLayout(shadowSetLayout->getDescriptorSetLayout())
+            .addSetLayout(skyboxSetLayout->getDescriptorSetLayout())
+            .attributeDescriptions(GlTFModel::ModelGltf::Vertex::getAttributeDescriptions(false))
+            .bindingDescriptions(GlTFModel::ModelGltf::Vertex::getBindingDescriptions(false))
+            .descriptorBindings(GlTFModel::ModelGltf::getDescriptorType())
+            .build();*/
+
+
         RenderSystemBuilder gltfBuilder{};
         gltfBuilder.fragFilepath = "shaders\\GlTFshader.frag.spv";
         gltfBuilder.vertFilepath = "shaders\\GlTFshader.vert.spv";
@@ -34,6 +49,8 @@ void ColorPass::createRenderSystems()
         gltfBuilder.hasMultipleInstance = true;
 
         gltfRenderSystem = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, assets, gltfBuilder);
+
+
     }
 
     {
