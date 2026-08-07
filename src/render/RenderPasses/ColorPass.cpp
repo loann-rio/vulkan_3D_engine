@@ -23,18 +23,19 @@ void ColorPass::createRenderSystems()
         .build();
 
     {
-        /*GlobalRenderSystemBuilder builder(device, assets);
+        GlobalRenderSystemBuilder builder(device, assets);
         gltfRenderSystem = builder
+            .modelFilterType(ModelType::GLTF_MODEL)
             .fragmentShader("shaders\\GlTFshader.frag.spv")
             .vertexShader("shaders\\GlTFshader.vert.spv")
             .renderPass(renderPass)
             .addSetLayout(globalSetLayout->getDescriptorSetLayout())
             .addSetLayout(shadowSetLayout->getDescriptorSetLayout())
             .addSetLayout(skyboxSetLayout->getDescriptorSetLayout())
-            .attributeDescriptions(GlTFModel::ModelGltf::Vertex::getAttributeDescriptions(false))
-            .bindingDescriptions(GlTFModel::ModelGltf::Vertex::getBindingDescriptions(false))
+            .attributeDescriptions(GlTFModel::ModelGltf::Vertex::getAttributeDescriptions(true))
+            .bindingDescriptions(GlTFModel::ModelGltf::Vertex::getBindingDescriptions(true))
             .descriptorBindings(GlTFModel::ModelGltf::getDescriptorType())
-            .build();*/
+            .build();
 
 
         RenderSystemBuilder gltfBuilder{};
@@ -48,7 +49,7 @@ void ColorPass::createRenderSystems()
         gltfBuilder.renderPass = renderPass;
         gltfBuilder.hasMultipleInstance = true;
 
-        gltfRenderSystem = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, assets, gltfBuilder);
+        //gltfRenderSystem = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, assets, gltfBuilder);
 
 
     }

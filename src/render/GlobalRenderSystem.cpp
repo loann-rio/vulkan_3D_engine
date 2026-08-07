@@ -16,7 +16,9 @@ GlobalRenderSystem::GlobalRenderSystem(Device& device, AssetManager& assets, Ren
 	isShadow{ config.shadow },
 	isSkyBox{ config.skybox },
 	isFullscreenRender{ config.fullscreen }, 
-	modelDescriptorSetIndex{ config.modelDescriptorSetIndex }
+	modelDescriptorSetIndex{ config.modelDescriptorSetIndex },
+	customPushStage{ config.pushStage != 0 },
+	pushStage{ static_cast<VkShaderStageFlagBits>(config.pushStage) }
 {
 	// Build descriptor set layouts for model descriptorBindings and append to the global layouts
 	std::vector<std::unique_ptr<DescriptorSetLayout>> layouts;

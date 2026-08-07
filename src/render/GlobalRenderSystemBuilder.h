@@ -45,7 +45,8 @@ public:
         return std::make_unique<GlobalRenderSystem>(
             device,
             assets,
-            config);
+            config
+        );
     }
 
 private:

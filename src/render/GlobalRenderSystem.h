@@ -61,24 +61,6 @@ public:
 	// external builder to allow the use of template, take a RenderSystemBuilder as arg
 	template <class T> static std::shared_ptr<GlobalRenderSystem> create(Device& device, AssetManager& assets, RenderSystemBuilder builder);
 
-	/*GlobalRenderSystem(
-		Device& device, 
-		AssetManager& assets,
-		VkRenderPass renderPass,  
-		std::vector<VkDescriptorSetLayout> globalSetLayout, 
-		std::vector<DescriptorSetObject> bindings, 
-		const std::string& vertFilepath, 
-		const std::string& fragFilepath,
-		ModelType modelType, 
-		ModelSubType subModelType, 
-		std::vector<VkVertexInputBindingDescription> bindingDescription, 
-		std::vector<VkVertexInputAttributeDescription> attributeDescription,
-		VkShaderStageFlagBits pushStage, 
-		bool isShadow = false, 
-		bool isSkyBox = false, 
-		bool isFullscreenrender = false
-	);*/
-
 	GlobalRenderSystem(
 		Device& device,
 		AssetManager& assets, 
@@ -190,15 +172,5 @@ inline std::shared_ptr<GlobalRenderSystem> GlobalRenderSystem::create(Device& de
 		assets, 
 		config
 	);
-
-	/*return std::make_shared<GlobalRenderSystem>(
-		device, assets,
-		builder.renderPass,
-		builder.globalSetLayout,
-		bindings,
-		builder.vertFilepath, builder.fragFilepath,
-		modelType, builder.subModelType,
-		bindingDescription, attributeDescription, builder.pushStage,
-		isShadow, builder.isSkyBox, builder.isFullscreenRender);*/
 }
 
