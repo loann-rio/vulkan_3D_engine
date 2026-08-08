@@ -25,29 +25,6 @@ public:
     GlobalRenderSystemBuilder& descriptorBindings(std::vector<DescriptorSetObject> descriptorBindings) { config.descriptorBindings = descriptorBindings; return *this; }
     GlobalRenderSystemBuilder& pushStage(VkShaderStageFlags pushStage) { config.pushStage = pushStage; return *this; }
 
-    std::unique_ptr<GlobalRenderSystem> build()
-    {
-        // assert:
-        // render Pass
-        // set layout (or enable empty)
-        // shader
-        // model type
-        // sub type
-        // binding
-        // attribute
-        // descriptor
-        // push stage
-        // is compatible with type of render
-
-        config.modelDescriptorSetIndex = static_cast<uint16_t>(config.globalLayouts.size());
-
-        return std::make_unique<GlobalRenderSystem>(
-            device,
-            assets,
-            config
-        );
-    }
-
     template<class T>
     std::unique_ptr<GlobalRenderSystem> build()
     {
@@ -83,6 +60,8 @@ public:
 
         config.modelDescriptorSetIndex = static_cast<uint16_t>(config.globalLayouts.size());
 
+        assert(testRendererValidity() && "unknow error durring render system build");
+        
         return std::make_unique<GlobalRenderSystem>(
             device,
             assets,
@@ -91,6 +70,23 @@ public:
     }
 
 private:
+
+    bool testRendererValidity() {
+        assert(config.renderPass != VK_NULL_HANDLE && "render pass should always be defined to create a render system");
+        assert(!config.vertexShader.empty() && "vertex shader should not be empty");
+
+        if (config.shadow)
+            assert(config.fragmentShader.empty() && "fragment shader has be empty for shadow rendering");
+        else
+            assert(!config.fragmentShader.empty() && "fragment shader should not be empty");
+
+        assert(config.modelType != ModelType::UNDEFINED_MODEL);
+
+        assert(config.shadow != config.fullscreen && "render system cannot be shadow and fullscreen at the same time");
+        assert(config.skybox != config.fullscreen && "render system cannot be skybox and fullscreen at the same time");
+
+        return true;
+    }
 
     Device& device;
     AssetManager& assets;
