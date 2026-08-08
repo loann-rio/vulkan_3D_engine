@@ -79,5 +79,8 @@ private:
     AssetManager& assets;
     Device& device;
 
+    bool hasDepth;
+    bool hasColor;
+
     friend Swap_chain;
 };

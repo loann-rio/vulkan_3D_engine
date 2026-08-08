@@ -37,6 +37,7 @@ void ObjectManager::startLoadModel()
        
     }
 
+    if (true)
     {
         std::vector<Model::Instance> instances;
         for (int x = 0; x < 150; x++) {

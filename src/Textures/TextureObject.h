@@ -42,6 +42,9 @@ public:
     VkExtent2D extent() const { return textureExtent; }
     bool loaded() const { return isLoaded; }
 
+    bool ownsImage = false;
+
+
 private:
     // Private constructor used only by TextureUploader
 	TextureObject(Device&, const TextureInitInfo& info);
@@ -61,6 +64,8 @@ private:
 
     // Internal Vulkan resource creators (used by uploader only)
     void destroyResources();
+
+
 private:
 
     Device& device;
@@ -76,7 +81,6 @@ private:
     VkImageCreateFlags createdImageFlags = 0;
 
     bool isLoaded = false;
-    const bool ownsImage = false;
 
     friend class TextureUploader;
     friend class TextureBuilder;

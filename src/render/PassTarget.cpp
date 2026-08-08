@@ -1,6 +1,6 @@
 #include "PassTarget.h"
 
-PassTarget::PassTarget(Device& device_, Swap_chain& swapchain_, AssetManager& assets_, VkExtent2D extent_, bool hasDepth, bool hasColor, size_t imageCount, bool isFinal) : device(device_), extent(extent_), assets(assets_) {
+PassTarget::PassTarget(Device& device_, Swap_chain& swapchain_, AssetManager& assets_, VkExtent2D extent_, bool hasDepth, bool hasColor, size_t imageCount, bool isFinal) : device(device_), extent(extent_), assets(assets_), hasColor(hasColor), hasDepth(hasDepth) {
 
     if (hasColor)
         createColorTargetTexture(imageCount, swapchain_.getSwapChainImageFormat(), (isFinal) ? swapchain_.getSwapChainImages() : std::vector<VkImage>{});
@@ -24,8 +24,10 @@ void PassTarget::resizeTargets(VkExtent2D newExtent, uint32_t imageCount, VkForm
     cleanupTargetTextures();
     cleanupLocalFramebuffers();
 
-    createColorTargetTexture(imageCount, format);
-    createDepthTargetTexture(imageCount, depthFormat);
+    if (hasColor)
+        createColorTargetTexture(imageCount, format);
+    if (hasDepth)
+        createDepthTargetTexture(imageCount, depthFormat);
 
     createImageInfo();
 }
