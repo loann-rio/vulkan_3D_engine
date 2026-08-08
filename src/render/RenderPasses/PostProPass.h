@@ -1,9 +1,9 @@
 #pragma once
 
 #include "BaseRenderPass.h"
-#include "../base/Swap_chain.h"
-#include "../objects/BasicUI.h"
-#include "GlobalRenderSystem.h"
+#include "../../base/Swap_chain.h"
+#include "../../objects/BasicUI.h"
+#include "../GlobalRenderSystem.h"
 
 #include <vulkan/vulkan_core.h>
 

@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../base/Swap_chain.h"
-#include "PassTarget.h"
-#include "../objects/objectManager.h"
-#include "../base/Frame_info.h"
-#include "../objects/BasicUI.h"
+#include "../../base/Swap_chain.h"
+#include "../PassTarget.h"
+#include "../../objects/objectManager.h"
+#include "../../base/Frame_info.h"
+#include "../../objects/BasicUI.h"
 
 class BaseRenderPass
 {

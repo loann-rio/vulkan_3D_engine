@@ -38,6 +38,9 @@
     <Filter Include="model\Vertex">
       <UniqueIdentifier>{76204f5b-a765-4e44-a8c3-a2f0257e41f5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="render\RenderPasses">
+      <UniqueIdentifier>{ef8799bc-e935-4c91-be9b-5ef8501fbb95}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="external\basisu\transcoder\basisu_transcoder.cpp">
@@ -192,17 +195,18 @@
     <ClCompile Include="src\render\FrameRender.cpp">
       <Filter>render</Filter>
     </ClCompile>
-    <ClCompile Include="src\render\FrameRenderer.cpp" />
-    <ClCompile Include="src\render\BaseRenderPass.h">
+    <ClCompile Include="src\render\FrameRenderer.cpp">
       <Filter>render</Filter>
     </ClCompile>
-    <ClCompile Include="src\render\DepthPass.cpp">
-      <Filter>render</Filter>
+    <ClCompile Include="src\render\RenderPasses\ColorPass.cpp">
+      <Filter>render\RenderPasses</Filter>
     </ClCompile>
-    <ClCompile Include="src\render\ColorPass.cpp">
-      <Filter>render</Filter>
+    <ClCompile Include="src\render\RenderPasses\DepthPass.cpp">
+      <Filter>render\RenderPasses</Filter>
     </ClCompile>
-    <ClCompile Include="src\render\PostProPass.cpp" />
+    <ClCompile Include="src\render\RenderPasses\PostProPass.cpp">
+      <Filter>render\RenderPasses</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tiny_gltf.h">
@@ -381,14 +385,20 @@
     <ClInclude Include="src\render\FrameRenderer.h">
       <Filter>render</Filter>
     </ClInclude>
-    <ClInclude Include="src\render\DepthPass.h">
+    <ClInclude Include="src\render\GlobalRenderSystemBuilder.h">
       <Filter>render</Filter>
     </ClInclude>
-    <ClInclude Include="src\render\ColorPass.h">
-      <Filter>render</Filter>
+    <ClInclude Include="src\render\RenderPasses\BaseRenderPass.h">
+      <Filter>render\RenderPasses</Filter>
     </ClInclude>
-    <ClInclude Include="src\render\PostProPass.h">
-      <Filter>render</Filter>
+    <ClInclude Include="src\render\RenderPasses\ColorPass.h">
+      <Filter>render\RenderPasses</Filter>
+    </ClInclude>
+    <ClInclude Include="src\render\RenderPasses\DepthPass.h">
+      <Filter>render\RenderPasses</Filter>
+    </ClInclude>
+    <ClInclude Include="src\render\RenderPasses\PostProPass.h">
+      <Filter>render\RenderPasses</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

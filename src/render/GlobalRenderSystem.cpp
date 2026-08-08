@@ -8,66 +8,51 @@
 #include <array>
 #include <cassert>
 
-
-GlobalRenderSystem::GlobalRenderSystem(
-	Device& device, 
-	AssetManager& assets,
-	VkRenderPass renderPass,
-	std::vector<VkDescriptorSetLayout> globalSetLayout, 
-	std::vector<DescriptorSetObject> bindings,
-	const std::string& vertFilepath, 
-	const std::string& fragFilepath,
-	ModelType modelType, 
-	ModelSubType subModelType,
-	std::vector<VkVertexInputBindingDescription> bindingDescription, 
-	std::vector<VkVertexInputAttributeDescription> attributeDescription, 
-	VkShaderStageFlagBits pushStage_in, 
-	bool isShadow, bool isSkyBox, bool isFullsceenrender)
-	: device{ device }, 
-	modelType{ modelType }, 
-	isShadow{ isShadow }, 
-	modelSubType{ subModelType }, 
-	isSkyBox{ isSkyBox }, 
-	isFullscreenRender{ isFullsceenrender }, 
-	assets{ assets }
+GlobalRenderSystem::GlobalRenderSystem(Device& device, AssetManager& assets, RenderSystemConfig config):
+	device{ device },
+	assets{ assets },
+	modelType{ config.modelType },
+	modelSubType{ config.modelSubType },
+	isShadow{ config.shadow },
+	isSkyBox{ config.skybox },
+	isFullscreenRender{ config.fullscreen }, 
+	modelDescriptorSetIndex{ config.modelDescriptorSetIndex },
+	customPushStage{ config.pushStage != 0 },
+	pushStage{ static_cast<VkShaderStageFlagBits>(config.pushStage) }
 {
-	if (pushStage_in) {
-		pushStage = pushStage_in;
-		customPushStage = true;
-	}
+	// Build descriptor set layouts for model descriptorBindings and append to the global layouts
+	std::vector<std::unique_ptr<DescriptorSetLayout>> layouts;
+	// copy global layouts so we can append model layouts before creating pipeline layout
+	std::vector<VkDescriptorSetLayout> layoutsToCreate = config.globalLayouts;
 
-
-	std::vector<std::unique_ptr<DescriptorSetLayout>> layouts;  // to hold the unique ptr of the descriptor set layouts
-
-	modelDescriptorSetIndex = static_cast<uint32_t>(globalSetLayout.size()); // index of the model descriptor set in the pipeline layout
-
-	// create descriptor set layout for each binding set of the model
-	for (size_t j = 0; j < bindings.size(); j++) {
+	for (size_t j = 0; j < config.descriptorBindings.size(); ++j) {
 		auto builder = DescriptorSetLayout::Builder(device);
-
-		// add binding for each descriptor in the set
-		for (int i = 0; i < bindings[j].descriptorSet.size(); i++) {
-			builder.addBinding(i, bindings[j].descriptorSet[i].descriptorType, bindings[j].descriptorSet[i].stage, bindings[j].descriptorSet[i].count);
+		for (int i = 0; i < config.descriptorBindings[j].descriptorSet.size(); ++i) {
+			const auto& desc = config.descriptorBindings[j].descriptorSet[i];
+			builder.addBinding(i, desc.descriptorType, desc.stage, desc.count);
 		}
-
-		auto newLayout = builder.build(); 
-
-		// check if layout creation success
-		if (!newLayout) { 
-			std::cerr << "Failed to build descriptor set layout at index " << j << "\n"; 
+		auto newLayout = builder.build();
+		if (!newLayout) {
+			std::cerr << "Failed to build descriptor set layout at index " << j << "\n";
 			continue;
 		}
-
-		// add to the list of descriptor set layout
-		globalSetLayout.push_back(newLayout->getDescriptorSetLayout());
+		layoutsToCreate.push_back(newLayout->getDescriptorSetLayout());
 		layouts.push_back(std::move(newLayout));
 	}
-	
+
 	// create pipelinelayout with the global and model descriptor set layout
-	createPipelineLayout(globalSetLayout);
+	createPipelineLayout(
+		layoutsToCreate//config.globalLayouts
+	);
 
 	// create pipeline
-	createPipeline(renderPass, vertFilepath, fragFilepath, bindingDescription, attributeDescription);
+	createPipeline(
+		config.renderPass, 
+		config.vertexShader, 
+		config.fragmentShader, 
+		config.bindingDescriptions,
+		config.attributeDescriptions
+	);
 }
 
 /// <summary>

@@ -1,9 +1,10 @@
 #pragma once
 
 #include "BaseRenderPass.h"
+#include "../GlobalRenderSystem.h"
+
 #include <vulkan/vulkan_core.h>
 #include <cstdint>
-#include "GlobalRenderSystem.h"
 
 class Device;
 class AssetManager;
