@@ -303,6 +303,7 @@ TextureBuilder& TextureBuilder::fromTextureInfo(VkImageCreateInfo imageInfo, VkI
             VK_IMAGE_LAYOUT_UNDEFINED, initImageLayout, layerCount);
 
     existingTexture->isLoaded = true;
+    existingTexture->ownsImage = true;
     return *this;
 }
 

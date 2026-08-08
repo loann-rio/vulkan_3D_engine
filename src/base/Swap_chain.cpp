@@ -60,6 +60,7 @@ Swap_chain::~Swap_chain() {
 
 void Swap_chain::createFramebuffers(AssetManager& assets, PassTarget* textureTarget, VkRenderPass renderPass)
 {
+    textureTarget->cleanupLocalFramebuffers();
     textureTarget->framebuffers.resize(imageCount());
     for (size_t i = 0; i < imageCount(); i++) {
         std::array<VkImageView, 1> attachments = { swapChainImageViews[i] };

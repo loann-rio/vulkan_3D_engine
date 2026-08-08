@@ -192,9 +192,6 @@
     <ClCompile Include="src\render\PassTarget.cpp">
       <Filter>render</Filter>
     </ClCompile>
-    <ClCompile Include="src\render\FrameRender.cpp">
-      <Filter>render</Filter>
-    </ClCompile>
     <ClCompile Include="src\render\FrameRenderer.cpp">
       <Filter>render</Filter>
     </ClCompile>
