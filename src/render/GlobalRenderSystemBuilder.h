@@ -82,8 +82,8 @@ private:
 
         assert(config.modelType != ModelType::UNDEFINED_MODEL);
 
-        assert(config.shadow != config.fullscreen && "render system cannot be shadow and fullscreen at the same time");
-        assert(config.skybox != config.fullscreen && "render system cannot be skybox and fullscreen at the same time");
+        assert(!(config.shadow && config.fullscreen) && "render system cannot be shadow and fullscreen at the same time");
+        assert(!(config.skybox && config.fullscreen) && "render system cannot be skybox and fullscreen at the same time");
 
         return true;
     }
