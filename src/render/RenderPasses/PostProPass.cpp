@@ -1,5 +1,7 @@
 #include "PostProPass.h"
 
+#include "../GlobalRenderSystemBuilder.h"
+
 void PostProPass::recordPass(ObjectManager& objectManager, FrameInfo& frameInfo, VkCommandBuffer& commandBuffer)
 {
     beginRenderPass(commandBuffer, 0, frameInfo.imageIndex);
@@ -103,11 +105,12 @@ void PostProPass::createRenderSystems()
         .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .build();
 
-    RenderSystemBuilder postProBuilder{};
-    postProBuilder.fragFilepath = "shaders\\PostProShader.frag.spv";
-    postProBuilder.vertFilepath = "shaders\\fullscreen.vert.spv";
-    postProBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), colorSetLayout->getDescriptorSetLayout()};
-    postProBuilder.renderPass = renderPass;
-    postProBuilder.isFullscreenRender = true;
-    postProcessingRenderSystem = GlobalRenderSystem::create<Model>(device, assets, postProBuilder);
+    postProcessingRenderSystem = GlobalRenderSystemBuilder(device, assets)
+        .vertexShader("shaders\\fullscreen.vert.spv")
+        .fragmentShader("shaders\\PostProShader.frag.spv")
+        .renderPass(renderPass)
+        .addSetLayout(globalSetLayout->getDescriptorSetLayout())
+        .addSetLayout(colorSetLayout->getDescriptorSetLayout())
+        .fullscreen()
+        .build<Model>();
 }

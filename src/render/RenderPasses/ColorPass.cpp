@@ -22,59 +22,31 @@ void ColorPass::createRenderSystems()
         .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .build();
 
-    {
-        GlobalRenderSystemBuilder builder(device, assets);
-        gltfRenderSystem = builder
-            .modelFilterType(ModelType::GLTF_MODEL)
-            .fragmentShader("shaders\\GlTFshader.frag.spv")
-            .vertexShader("shaders\\GlTFshader.vert.spv")
-            .renderPass(renderPass)
-            .addSetLayout(globalSetLayout->getDescriptorSetLayout())
-            .addSetLayout(shadowSetLayout->getDescriptorSetLayout())
-            .addSetLayout(skyboxSetLayout->getDescriptorSetLayout())
-            .attributeDescriptions(GlTFModel::ModelGltf::Vertex::getAttributeDescriptions(true))
-            .bindingDescriptions(GlTFModel::ModelGltf::Vertex::getBindingDescriptions(true))
-            .descriptorBindings(GlTFModel::ModelGltf::getDescriptorType())
-            .build();
+    
+    gltfRenderSystem = GlobalRenderSystemBuilder(device, assets)
+        .fragmentShader("shaders\\GlTFshader.frag.spv")
+        .vertexShader("shaders\\GlTFshader.vert.spv")
+        .renderPass(renderPass)
+        .addSetLayout(globalSetLayout->getDescriptorSetLayout())
+        .addSetLayout(shadowSetLayout->getDescriptorSetLayout())
+        .addSetLayout(skyboxSetLayout->getDescriptorSetLayout())
+        .build<GlTFModel::ModelGltf>();
+    
+    objRenderSystem = GlobalRenderSystemBuilder(device, assets)
+        .fragmentShader("shaders\\simple_shader.frag.spv")
+        .vertexShader("shaders\\simple_shader.vert.spv")
+        .renderPass(renderPass)
+        .addSetLayout(globalSetLayout->getDescriptorSetLayout())
+        .addSetLayout(shadowSetLayout->getDescriptorSetLayout())
+        .build<Model>();
 
-
-        RenderSystemBuilder gltfBuilder{};
-        gltfBuilder.fragFilepath = "shaders\\GlTFshader.frag.spv";
-        gltfBuilder.vertFilepath = "shaders\\GlTFshader.vert.spv";
-        gltfBuilder.globalSetLayout = {
-            globalSetLayout->getDescriptorSetLayout(),
-            shadowSetLayout->getDescriptorSetLayout(),
-            skyboxSetLayout->getDescriptorSetLayout()
-        };
-        gltfBuilder.renderPass = renderPass;
-        gltfBuilder.hasMultipleInstance = true;
-
-        //gltfRenderSystem = GlobalRenderSystem::create<GlTFModel::ModelGltf>(device, assets, gltfBuilder);
-
-
-    }
-
-    {
-        RenderSystemBuilder objBuilder{};
-        objBuilder.fragFilepath = "shaders\\simple_shader.frag.spv";
-        objBuilder.vertFilepath = "shaders\\simple_shader.vert.spv";
-        objBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout(), shadowSetLayout->getDescriptorSetLayout() };
-        objBuilder.renderPass = renderPass;
-        objBuilder.hasMultipleInstance = true;
-
-        objRenderSystem = GlobalRenderSystem::create<Model>(device, assets, objBuilder);
-    }
-
-    {
-        RenderSystemBuilder skyboxBuilder{};
-        skyboxBuilder.fragFilepath = "shaders\\skybox.frag.spv";
-        skyboxBuilder.vertFilepath = "shaders\\skybox.vert.spv";
-        skyboxBuilder.globalSetLayout = { globalSetLayout->getDescriptorSetLayout() };
-        skyboxBuilder.renderPass = renderPass;
-        skyboxBuilder.subModelType = ModelSubType::SKYBOX;
-        skyboxBuilder.isSkyBox = true;
-        skyboxRenderSystem = GlobalRenderSystem::create<Model>(device, assets, skyboxBuilder);
-    }
+    skyboxRenderSystem = GlobalRenderSystemBuilder(device, assets)
+        .fragmentShader("shaders\\skybox.frag.spv")
+        .vertexShader("shaders\\skybox.vert.spv")
+        .renderPass(renderPass)
+        .addSetLayout(globalSetLayout->getDescriptorSetLayout())
+        .skybox()
+        .build<Model>();
 }
 
 void ColorPass::recordPass(ObjectManager& objectManager, FrameInfo& frameInfo, VkCommandBuffer& commandBuffer)

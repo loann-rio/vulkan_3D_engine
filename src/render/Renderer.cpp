@@ -9,6 +9,7 @@
 #include "../model/ModelBuilder.h"
 #include "../assetManager/ModelManager.h"
 #include "../base/device.h"
+#include "GlobalRenderSystemBuilder.h"
 
 
 
@@ -422,16 +423,13 @@ void Renderer::createBuffers(ObjectManager& objectManager)
 		.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.build();
 
-	{
-		RenderSystemBuilder skyboxBuilder{};
-		skyboxBuilder.fragFilepath = "shaders\\equirectangular_to_cube.frag.spv";
-		skyboxBuilder.vertFilepath = "shaders\\fullscreen.vert.spv";
-		skyboxBuilder.renderPass = skyboxSwapChain.getRenderPass();
-		skyboxBuilder.isFullscreenRender = true;
-		skyboxBuilder.pushStage = static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_FRAGMENT_BIT);
-		skyboxCreationRenderSystem = GlobalRenderSystem::create<Model>(device, assets, skyboxBuilder);
-	}
-
+	skyboxCreationRenderSystem = GlobalRenderSystemBuilder(device, assets)
+		.vertexShader("shaders\\fullscreen.vert.spv")
+		.fragmentShader("shaders\\equirectangular_to_cube.frag.spv")
+		.renderPass(skyboxSwapChain.getRenderPass())
+		.fullscreen()
+		.pushStage(static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_FRAGMENT_BIT))
+		.build<Model>();
 }
 
 /*

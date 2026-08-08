@@ -18,7 +18,7 @@ public:
     GlobalRenderSystemBuilder& modelSubType(ModelSubType type) { config.modelSubType = type; return *this; }
     GlobalRenderSystemBuilder& fullscreen() { config.fullscreen = true; return *this; }
     GlobalRenderSystemBuilder& shadow() { config.shadow = true; return *this; }
-    GlobalRenderSystemBuilder& skybox() { config.skybox = true; return *this; }
+    GlobalRenderSystemBuilder& skybox() { config.skybox = true; config.modelSubType = ModelSubType::SKYBOX; return *this; }
     GlobalRenderSystemBuilder& addSetLayout(VkDescriptorSetLayout set) { config.globalLayouts.push_back(set); return *this; }
     GlobalRenderSystemBuilder& bindingDescriptions(std::vector<VkVertexInputBindingDescription> bindings) { config.bindingDescriptions = bindings; return *this; }
     GlobalRenderSystemBuilder& attributeDescriptions(std::vector<VkVertexInputAttributeDescription> attributeDescriptions) { config.attributeDescriptions = attributeDescriptions; return *this; }
@@ -41,6 +41,47 @@ public:
 
         config.modelDescriptorSetIndex = static_cast<uint16_t>(config.globalLayouts.size());
 
+        return std::make_unique<GlobalRenderSystem>(
+            device,
+            assets,
+            config
+        );
+    }
+
+    template<class T>
+    std::unique_ptr<GlobalRenderSystem> build()
+    {
+        std::vector<DescriptorSetObject> descriptorBindings;
+        std::vector<VkVertexInputAttributeDescription> attributeDescription;
+        std::vector<VkVertexInputBindingDescription> bindingDescription;
+
+        ModelType modelType = static_cast<ModelType>(T::getModelType());
+
+        // Only populate vertex binding/attribute descriptions if the pipeline needs vertex input
+        if (!config.fullscreen) {
+            bindingDescription = T::Vertex::getBindingDescriptions(true);
+
+            if (config.shadow) {
+                descriptorBindings = T::getDescriptorType();
+                attributeDescription = T::Vertex::getAttributeDescriptionsShadow(true);
+            }
+            else {
+                descriptorBindings = T::getDescriptorType();
+                attributeDescription = T::Vertex::getAttributeDescriptions(true);
+            }
+        }
+        else {
+            // fullscreen: still may need descriptor bindings
+            descriptorBindings = T::getDescriptorType();
+            // leave bindingDescription and attributeDescription empty
+        }
+
+        if (config.attributeDescriptions.empty()) config.attributeDescriptions = attributeDescription;
+        if (config.bindingDescriptions.empty())   config.bindingDescriptions = bindingDescription;
+        if (config.descriptorBindings.empty())   config.descriptorBindings = descriptorBindings;
+        if (config.modelType == ModelType::UNDEFINED_MODEL) config.modelType = modelType;
+
+        config.modelDescriptorSetIndex = static_cast<uint16_t>(config.globalLayouts.size());
 
         return std::make_unique<GlobalRenderSystem>(
             device,

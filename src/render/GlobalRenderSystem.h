@@ -35,8 +35,8 @@ struct RenderSystemConfig
 	std::string vertexShader; // need check at build
 	std::string fragmentShader; // need check at build
 
-	ModelType modelType{}; // need check at build
-	ModelSubType modelSubType{}; // need check at build
+	ModelType modelType = ModelType::UNDEFINED_MODEL; // need check at build
+	ModelSubType modelSubType = ModelSubType::NONE; // need check at build
 
 	std::vector<VkDescriptorSetLayout> globalLayouts{}; // need check at build
 	std::vector<DescriptorSetObject> descriptorBindings; // define + need check at build
@@ -57,9 +57,6 @@ class GlobalRenderSystem
 {
 
 public:
-
-	// external builder to allow the use of template, take a RenderSystemBuilder as arg
-	template <class T> static std::shared_ptr<GlobalRenderSystem> create(Device& device, AssetManager& assets, RenderSystemBuilder builder);
 
 	GlobalRenderSystem(
 		Device& device,
@@ -111,66 +108,3 @@ private:
 	uint16_t modelDescriptorSetIndex; // start after global, shadow add additional descriptor set
 		
 };
-
-/// <summary>
-/// external builder to allow the use of template, get the attribute description;, model type and descriptor type from template model type
-/// if frag shader not included, the render system will only render depth
-/// </summary>
-/// <typeparam name="T"> model type class ( to be changed to have a single model class ) </typeparam>
-/// <param name="device"> device </param>
-/// <param name="builder"> RenderSystemBuilder </param>
-/// <returns> return an instance of render system </returns>
-template<class T>
-inline std::shared_ptr<GlobalRenderSystem> GlobalRenderSystem::create(Device& device, AssetManager& assets, RenderSystemBuilder builder)
-{
-	std::vector<DescriptorSetObject> bindings;
-	std::vector<VkVertexInputAttributeDescription> attributeDescription;
-	std::vector<VkVertexInputBindingDescription> bindingDescription; 
-
-	ModelType modelType = static_cast<ModelType>(T::getModelType());
-
-	bool isFullscreen = builder.isFullscreenRender;
-	bool isShadow = (builder.fragFilepath == "");
-
-	// Only populate vertex binding/attribute descriptions if the pipeline needs vertex input
-	if (!isFullscreen) {
-		bindingDescription = T::Vertex::getBindingDescriptions(builder.hasMultipleInstance);
-
-		if (isShadow) {
-			bindings = T::getDescriptorType();
-			attributeDescription = T::Vertex::getAttributeDescriptionsShadow(builder.hasMultipleInstance);
-		}
-		else {
-			bindings = T::getDescriptorType();
-			attributeDescription = T::Vertex::getAttributeDescriptions(builder.hasMultipleInstance);
-		}
-	}
-	else {
-		// fullscreen: still may need descriptor bindings
-		bindings = T::getDescriptorType();
-		// leave bindingDescription and attributeDescription empty
-	}
-
-	RenderSystemConfig config{};
-	config.attributeDescriptions = attributeDescription;
-	config.bindingDescriptions = bindingDescription;
-	config.descriptorBindings = bindings;
-	config.fullscreen = isFullscreen;
-	config.shadow = isShadow;
-	config.skybox = builder.isSkyBox;
-	config.modelType = modelType;
-	config.renderPass = builder.renderPass;
-	config.globalLayouts = builder.globalSetLayout;
-	config.vertexShader = builder.vertFilepath;
-	config.fragmentShader = builder.fragFilepath;
-	config.modelSubType = builder.subModelType;
-	config.pushStage = builder.pushStage;
-	config.modelDescriptorSetIndex = static_cast<uint32_t>(builder.globalSetLayout.size());
-
-	return std::make_shared<GlobalRenderSystem>(
-		device, 
-		assets, 
-		config
-	);
-}
-
