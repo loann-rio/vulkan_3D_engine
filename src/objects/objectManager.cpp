@@ -65,6 +65,16 @@ void ObjectManager::startLoadModel()
 
     for (int i = 0; i < 1; i++)
     {
+        std::vector<Model::Instance> instances;
+
+        for (int z = 0; z < 12; z++) {
+            Model::Instance instance;
+            instance.position = { z, 0.0f, z * 2 };
+            instance.rotation = { 0.0f, static_cast<float>(rand() % 360), 0.0f };
+            instance.scale = { 1, 1, 1 };
+            instances.push_back(instance);
+        }
+
         ModelBuilder builder(device, assetManager);
         ModelManager::ModelID id = assetManager.models().create(builder.fromFile("model/buster_drone/scene.gltf"));
 
@@ -80,6 +90,8 @@ void ObjectManager::startLoadModel()
         gameObject->transform.rotation.y = i * 15;
         gameObject->transform.translation = { i, 0.2f, 8 };
         gameObject->saveable = false;
+        gameObject->setMultipleInstances(instances);
+
         gameObject->createDescriptorSet(*globalPool);
         pushGameObject(std::move(gameObject));
     }

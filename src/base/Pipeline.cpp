@@ -130,7 +130,8 @@ void Pipeline::createGraphicsPipeline(const std::string& vertFilepath,
 }
 
 
-void Pipeline::createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule) {
+void Pipeline::createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule) 
+{
 	VkShaderModuleCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 	createInfo.codeSize = code.size();

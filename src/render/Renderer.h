@@ -16,7 +16,7 @@
 #include "RenderPasses/ColorPass.h"
 #include "RenderPasses/PostProPass.h"
 
-#include "GlobalRenderSystem.h"
+#include "RenderSystem.h"
 #include "FrameRenderer.h"
 #include "PassTarget.h"
 
@@ -58,7 +58,7 @@ private:
 	bool aquireNextImage(ObjectManager& objectManager);
 
 	void beginSingleTimeRender(VkCommandBuffer commandBuffer, int buffer_index = 0);
-	TextureManager::TextureID renderHdriToCubeTexture(std::shared_ptr<GlobalRenderSystem> renderSystem, VkDescriptorSet descriptorSet);
+	TextureManager::TextureID renderHdriToCubeTexture(std::shared_ptr<RenderSystem> renderSystem, VkDescriptorSet descriptorSet);
 
 	Window& window;
 	Device& device;
@@ -86,7 +86,7 @@ private:
 	std::unique_ptr<PostProPass> postPass;
 
 	// render systems
-	std::shared_ptr<GlobalRenderSystem> skyboxCreationRenderSystem;
+	std::shared_ptr<RenderSystem> skyboxCreationRenderSystem;
 
 	// global descriptor sets
 	std::vector<VkDescriptorSet> globalDescriptorSet;

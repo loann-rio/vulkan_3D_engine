@@ -264,7 +264,7 @@ void Renderer::renderFrame(FrameInfo& frameInfo, ObjectManager& objectManager)
 	gpuFrameRate.update(gpuTime);
 }
 
-TextureManager::TextureID Renderer::renderHdriToCubeTexture(std::shared_ptr<GlobalRenderSystem> renderSystem, VkDescriptorSet descriptorSet)
+TextureManager::TextureID Renderer::renderHdriToCubeTexture(std::shared_ptr<RenderSystem> renderSystem, VkDescriptorSet descriptorSet)
 {
 
 	glm::mat4 captureViews[] = {

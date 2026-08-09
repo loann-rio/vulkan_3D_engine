@@ -3,7 +3,7 @@
 #include "BaseRenderPass.h"
 #include "../../base/Swap_chain.h"
 #include "../../objects/BasicUI.h"
-#include "../GlobalRenderSystem.h"
+#include "../RenderSystem.h"
 
 #include <vulkan/vulkan_core.h>
 
@@ -56,10 +56,10 @@ public:
 private:
 	void createRenderSystems();
 
-	std::shared_ptr<GlobalRenderSystem> gltfRenderSystem;
-	std::shared_ptr<GlobalRenderSystem> objRenderSystem;
-	std::shared_ptr<GlobalRenderSystem> terrainRenderSystem;
-	std::shared_ptr<GlobalRenderSystem> skyboxRenderSystem;
+	std::shared_ptr<RenderSystem> gltfRenderSystem;
+	std::shared_ptr<RenderSystem> objRenderSystem;
+	std::shared_ptr<RenderSystem> terrainRenderSystem;
+	std::shared_ptr<RenderSystem> skyboxRenderSystem;
 
 	BasicUI* imgui;
 };

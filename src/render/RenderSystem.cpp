@@ -1,4 +1,4 @@
-#include "GlobalRenderSystem.h"
+#include "RenderSystem.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -8,7 +8,7 @@
 #include <array>
 #include <cassert>
 
-GlobalRenderSystem::GlobalRenderSystem(Device& device, AssetManager& assets, RenderSystemConfig config):
+RenderSystem::RenderSystem(Device& device, AssetManager& assets, RenderSystemConfig config):
 	device{ device },
 	assets{ assets },
 	modelType{ config.modelType },
@@ -58,12 +58,12 @@ GlobalRenderSystem::GlobalRenderSystem(Device& device, AssetManager& assets, Ren
 /// <summary>
 /// destroy pipelinelayout at removal of object
 /// </summary>
-GlobalRenderSystem::~GlobalRenderSystem()
+RenderSystem::~RenderSystem()
 {
 	vkDestroyPipelineLayout(device.device(), pipelineLayout, nullptr);
 }
 
-void GlobalRenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout> descriptorSetLayout)
+void RenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout> descriptorSetLayout)
 {
 
 	VkPushConstantRange pushConstantRange{};
@@ -111,7 +111,7 @@ void GlobalRenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout>
 	}
 }
 
-void GlobalRenderSystem::createPipeline(VkRenderPass renderPass, const std::string& vertFilepath, const std::string& fragFilepath, 
+void RenderSystem::createPipeline(VkRenderPass renderPass, const std::string& vertFilepath, const std::string& fragFilepath, 
 	std::vector<VkVertexInputBindingDescription> bindingDescription, std::vector<VkVertexInputAttributeDescription> attributeDescription)
 {
 	// check if pipeline layout is created
@@ -168,7 +168,7 @@ void GlobalRenderSystem::createPipeline(VkRenderPass renderPass, const std::stri
 	);
 }
 
-void GlobalRenderSystem::renderModel(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, GameObjectModel* obj, const std::array<FrustumPlane, 6>& frustrumPlanes)
+void RenderSystem::renderModel(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, GameObjectModel* obj, const std::array<FrustumPlane, 6>& frustrumPlanes)
 {
 	if (!Camera::isAABBinFrustrum(obj->getAABB().getAABB(obj->getTransformMat()), frustrumPlanes)) return;
 	
@@ -177,13 +177,13 @@ void GlobalRenderSystem::renderModel(VkCommandBuffer& commandBuffer, FrameInfo& 
 	obj->drawModel(commandBuffer, pipelineLayout, frameInfo.frameIndex, frustrumPlanes);
 }
 
-void GlobalRenderSystem::renderModelDepth(VkCommandBuffer& commandBuffer, GameObjectModel* obj, int lightIndex, uint16_t frameIndex, const std::array<FrustumPlane, 6>& planes) 
+void RenderSystem::renderModelDepth(VkCommandBuffer& commandBuffer, GameObjectModel* obj, int lightIndex, uint16_t frameIndex, const std::array<FrustumPlane, 6>& planes) 
 {
 	obj->bindModel(commandBuffer, false, pipelineLayout, 1, 1);
 	obj->drawModelDepth(commandBuffer, pipelineLayout, lightIndex, frameIndex, planes);
 }
 
-void GlobalRenderSystem::bind(VkCommandBuffer& commandBuffer, std::vector<VkDescriptorSet> globalDescriptorSets)
+void RenderSystem::bind(VkCommandBuffer& commandBuffer, std::vector<VkDescriptorSet> globalDescriptorSets)
 {
 	pipeline->bind(commandBuffer);
 
@@ -200,7 +200,7 @@ void GlobalRenderSystem::bind(VkCommandBuffer& commandBuffer, std::vector<VkDesc
 	}
 }
 
-void GlobalRenderSystem::bindModel(VkCommandBuffer& commandBuffer, ModelAsset* model)
+void RenderSystem::bindModel(VkCommandBuffer& commandBuffer, ModelAsset* model)
 {
 	VkBuffer buffers[] = { model->lods[0].vertexBuffer->getBuffer() };
 	VkDeviceSize offsets[] = { 0 };
@@ -208,7 +208,7 @@ void GlobalRenderSystem::bindModel(VkCommandBuffer& commandBuffer, ModelAsset* m
 	vkCmdBindIndexBuffer(commandBuffer, model->lods[0].indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 }
 
-void GlobalRenderSystem::bindTextures(VkCommandBuffer& commandBuffer, ModelAsset* model, Primitive& primitive, uint16_t frameIndex)
+void RenderSystem::bindTextures(VkCommandBuffer& commandBuffer, ModelAsset* model, Primitive& primitive, uint16_t frameIndex)
 {
 	vkCmdBindDescriptorSets(commandBuffer,
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -219,7 +219,7 @@ void GlobalRenderSystem::bindTextures(VkCommandBuffer& commandBuffer, ModelAsset
 		nullptr);
 }
 
-void GlobalRenderSystem::drawModel(VkCommandBuffer& commandBuffer, ModelAsset* model, Primitive& primitive, glm::mat4 modelMat, glm::mat4 normalM)
+void RenderSystem::drawModel(VkCommandBuffer& commandBuffer, ModelAsset* model, Primitive& primitive, glm::mat4 modelMat, glm::mat4 normalM)
 {
 	SimplePushConstantData push{};
 	push.modelMatrix = modelMat;
@@ -238,7 +238,7 @@ void GlobalRenderSystem::drawModel(VkCommandBuffer& commandBuffer, ModelAsset* m
 	
 }
 
-void GlobalRenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, std::vector<VkDescriptorSet> globalDescriptorSets, const std::array<FrustumPlane, 6>& frustrumPlanes)
+void RenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, std::vector<VkDescriptorSet> globalDescriptorSets, const std::array<FrustumPlane, 6>& frustrumPlanes)
 {
 	bind(commandBuffer, globalDescriptorSets);
 	
@@ -268,7 +268,7 @@ void GlobalRenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, Frame
 	}
 }
 
-void GlobalRenderSystem::renderGameObjectsDepth(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, std::vector<VkDescriptorSet> globalDescriptorSets, int lightIndex, uint16_t frameIndex)
+void RenderSystem::renderGameObjectsDepth(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, std::vector<VkDescriptorSet> globalDescriptorSets, int lightIndex, uint16_t frameIndex)
 { 
 	// bind pipeline and global descriptor sets
 	bind(commandBuffer, globalDescriptorSets);
@@ -281,7 +281,7 @@ void GlobalRenderSystem::renderGameObjectsDepth(VkCommandBuffer& commandBuffer, 
 	}
 }
 
-void GlobalRenderSystem::renderFullScreen(VkCommandBuffer& commandBuffer, std::vector<VkDescriptorSet> globalDescriptorSets, glm::mat4 view, glm::mat4 proj)
+void RenderSystem::renderFullScreen(VkCommandBuffer& commandBuffer, std::vector<VkDescriptorSet> globalDescriptorSets, glm::mat4 view, glm::mat4 proj)
 {
 
 	bind(commandBuffer, globalDescriptorSets);

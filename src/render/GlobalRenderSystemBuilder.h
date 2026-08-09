@@ -1,4 +1,4 @@
-#include "GlobalRenderSystem.h"
+#include "RenderSystem.h"
 #include "../base/Device.h"
 #include "../assetManager/AssetManager.h"
 #include <vulkan/vulkan_core.h>
@@ -26,7 +26,7 @@ public:
     GlobalRenderSystemBuilder& pushStage(VkShaderStageFlags pushStage) { config.pushStage = pushStage; return *this; }
 
     template<class T>
-    std::unique_ptr<GlobalRenderSystem> build()
+    std::unique_ptr<RenderSystem> build()
     {
         std::vector<DescriptorSetObject> descriptorBindings;
         std::vector<VkVertexInputAttributeDescription> attributeDescription;
@@ -62,7 +62,7 @@ public:
 
         assert(testRendererValidity() && "unknow error durring render system build");
         
-        return std::make_unique<GlobalRenderSystem>(
+        return std::make_unique<RenderSystem>(
             device,
             assets,
             config

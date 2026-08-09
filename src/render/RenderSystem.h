@@ -40,19 +40,19 @@ struct RenderSystemConfig
 	bool fullscreen = false;
 };
 
-class GlobalRenderSystem
+class RenderSystem
 {
 public:
-	GlobalRenderSystem(
+	RenderSystem(
 		Device& device,
 		AssetManager& assets, 
 		RenderSystemConfig config
 	);
 
-	~GlobalRenderSystem();
+	~RenderSystem();
 
-	GlobalRenderSystem(const GlobalRenderSystem&) = delete; 
-	GlobalRenderSystem& operator=(const GlobalRenderSystem&) = delete; 
+	RenderSystem(const RenderSystem&) = delete; 
+	RenderSystem& operator=(const RenderSystem&) = delete; 
 
 	void renderGameObjects(
 		VkCommandBuffer& commandBuffer, 
