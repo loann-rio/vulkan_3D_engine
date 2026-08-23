@@ -31,6 +31,8 @@ public:
 		VkCommandBuffer& commandBuffer
 	) override;
 
+private:
+	void createRenderSystems();
 
 	void createRenderPass(
 		VkFormat imageFormat,
@@ -47,16 +49,5 @@ public:
 		VkCommandBuffer commandBuffer
 	) override;
 
-	void setUi(
-		BasicUI* ui
-	) {
-		imgui = ui;
-	}
-
-private:
-	void createRenderSystems();
-
 	std::shared_ptr<RenderSystem> postProcessingRenderSystem;
-
-	BasicUI* imgui;
 };

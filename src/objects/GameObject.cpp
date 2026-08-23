@@ -131,12 +131,10 @@ void GameObjectModel::setMultipleInstances(std::vector<Model::Instance> instance
 {
     
     VkDeviceSize bufferSize = sizeof(Model::Instance) * instances.size();
+    instanceCount = static_cast<uint32_t>(instances.size());
+    if (instanceCount == 0) return;
 
     uint32_t instanceSize = sizeof(Model::Instance);
-
-    instanceCount = static_cast<uint32_t>(instances.size());
-
-    if (instanceCount == 0) return;
 
     Buffer stagingBuffer{ 
         device, 
@@ -158,6 +156,21 @@ void GameObjectModel::setMultipleInstances(std::vector<Model::Instance> instance
     );
 
     device.copyBuffer(stagingBuffer.getBuffer(), instancesBuffer->getBuffer(), bufferSize); 
+
+    frameInstancesBuffer.clear();
+    frameInstancesBuffer.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
+
+    for (size_t i = 0; i < frameInstancesBuffer.size(); ++i) {
+        frameInstancesBuffer[i] = std::make_unique<Buffer>(
+            device,
+            sizeof(Model::Instance),
+            instanceCount,
+            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+        );
+
+        device.copyBuffer(instancesBuffer->getBuffer(), frameInstancesBuffer[i]->getBuffer(), bufferSize);
+    }
 
 }
 
@@ -203,7 +216,7 @@ void GameObjectModel::bindModel(VkCommandBuffer& commandBuffer, bool bindTexture
 {
     std::visit([&](const auto& modelInstance) {  
         if (modelInstance) {
-            modelInstance->bind(commandBuffer, bindTexture, pipelineLayout, frameIndex, modelDescriptorSetIndex, instancesBuffer.get());
+            modelInstance->bind(commandBuffer, bindTexture, pipelineLayout, frameIndex, modelDescriptorSetIndex, frameInstancesBuffer[frameIndex].get());
         }
         }, model);
 }

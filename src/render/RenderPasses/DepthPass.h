@@ -26,21 +26,19 @@ public:
 		createRenderSystems();
 	}
 
-	
-
 	void recordPass(
 		ObjectManager& objectManager,
 		FrameInfo& frameInfo,
 		VkCommandBuffer& commandBuffer
 	);
 
+private:
+	void createRenderSystems();
+
 	void createRenderPass(VkFormat imageFormat, VkFormat depthFormat);
 
 	void beginRenderPass(VkCommandBuffer commandBuffer, int depthRenderIndex, int frameIndex);
 	void endRenderPass(VkCommandBuffer commandBuffer);
-
-private:
-	void createRenderSystems();
 
 	std::shared_ptr<RenderSystem> depthRenderSystem;
 	std::shared_ptr<RenderSystem> depthRenderSystemGltf;

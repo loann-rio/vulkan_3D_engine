@@ -348,6 +348,7 @@ private:
 	ModelVariant model;
 
 	std::unique_ptr<Buffer> instancesBuffer = nullptr;
+	std::vector<std::unique_ptr<Buffer>> frameInstancesBuffer;
 	uint32_t instanceCount = 1;
 
 	int32_t animationIndex{ 0 }; 

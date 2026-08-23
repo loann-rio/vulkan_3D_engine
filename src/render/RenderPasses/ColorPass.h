@@ -22,7 +22,6 @@ public:
 		);
 
 		createRenderSystems();
-
 	}
 
 	void recordPass(
@@ -31,11 +30,12 @@ public:
 		VkCommandBuffer& commandBuffer
 	) override;
 
+	void setUi(BasicUI* ui) {
+		imgui = ui;
+	}
 
-	void createRenderPass(
-		VkFormat imageFormat,
-		VkFormat depthFormat
-	) override;
+private:
+	void createRenderSystems();
 
 	void beginRenderPass(
 		VkCommandBuffer commandBuffer,
@@ -47,14 +47,10 @@ public:
 		VkCommandBuffer commandBuffer
 	) override;
 
-	void setUi(
-		BasicUI* ui
-	) {
-		imgui = ui;
-	}
-
-private:
-	void createRenderSystems();
+	void createRenderPass(
+		VkFormat imageFormat,
+		VkFormat depthFormat
+	) override;
 
 	std::shared_ptr<RenderSystem> gltfRenderSystem;
 	std::shared_ptr<RenderSystem> objRenderSystem;

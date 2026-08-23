@@ -90,7 +90,7 @@ void ObjectManager::startLoadModel()
         gameObject->transform.rotation.y = i * 15;
         gameObject->transform.translation = { i, 0.2f, 8 };
         gameObject->saveable = false;
-        gameObject->setMultipleInstances(instances);
+        //gameObject->setMultipleInstances(instances);
 
         gameObject->createDescriptorSet(*globalPool);
         pushGameObject(std::move(gameObject));

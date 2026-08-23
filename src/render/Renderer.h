@@ -15,6 +15,7 @@
 #include "RenderPasses/DepthPass.h"
 #include "RenderPasses/ColorPass.h"
 #include "RenderPasses/PostProPass.h"
+#include "RenderPasses/ComputePass.h"
 
 #include "RenderSystem.h"
 #include "FrameRenderer.h"

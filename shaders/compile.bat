@@ -30,4 +30,6 @@ C:\VulkanSDK\1.4.313.2\Bin\glslc.exe testRed.frag -o testRed.frag.spv --target-e
 
 C:\VulkanSDK\1.4.313.2\Bin\glslc.exe shadowMapTerrain.vert -o shadowMapTerrain.vert.spv --target-env=vulkan1.2
 
+C:\VulkanSDK\1.4.313.2\Bin\glslc.exe particule_update.comp -o particule_update.comp.spv --target-env=vulkan1.2
+
 pause

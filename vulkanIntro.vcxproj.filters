@@ -207,6 +207,12 @@
     <ClCompile Include="src\base\ComputePipeline.cpp">
       <Filter>base</Filter>
     </ClCompile>
+    <ClCompile Include="src\render\ComputeSystem.cpp">
+      <Filter>render</Filter>
+    </ClCompile>
+    <ClCompile Include="src\render\ComputePass.cpp">
+      <Filter>render\RenderPasses</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tiny_gltf.h">
@@ -403,6 +409,12 @@
     <ClInclude Include="src\base\ComputePipeline.h">
       <Filter>base</Filter>
     </ClInclude>
+    <ClInclude Include="src\render\ComputeSystem.h">
+      <Filter>render</Filter>
+    </ClInclude>
+    <ClInclude Include="src\render\ComputePass.h">
+      <Filter>render\RenderPasses</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\compile.bat">
@@ -478,6 +490,9 @@
       <Filter>shaders</Filter>
     </None>
     <None Include="shaders\PostProShader.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shader\particule_update.comp">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>

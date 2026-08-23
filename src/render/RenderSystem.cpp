@@ -27,11 +27,14 @@ RenderSystem::RenderSystem(Device& device, AssetManager& assets, RenderSystemCon
 
 	for (size_t j = 0; j < config.descriptorBindings.size(); ++j) {
 		auto builder = DescriptorSetLayout::Builder(device);
-		for (int i = 0; i < config.descriptorBindings[j].descriptorSet.size(); ++i) {
+		for (int i = 0; i < config.descriptorBindings[j].descriptorSet.size(); ++i) 
+		{
 			const auto& desc = config.descriptorBindings[j].descriptorSet[i];
 			builder.addBinding(i, desc.descriptorType, desc.stage, desc.count);
 		}
+
 		auto newLayout = builder.build();
+
 		if (!newLayout) {
 			std::cerr << "Failed to build descriptor set layout at index " << j << "\n";
 			continue;
