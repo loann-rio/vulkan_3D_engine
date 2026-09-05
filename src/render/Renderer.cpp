@@ -101,6 +101,11 @@ void Renderer::createPasses()
 		assets,
 		swapChain.get()
 	);
+
+	computePass = std::make_unique<ComputePass>(
+		device,
+		assets
+	);
 }
 
 void Renderer::initUi()
@@ -234,6 +239,21 @@ void Renderer::renderFrame(FrameInfo& frameInfo, ObjectManager& objectManager)
 				frameInfo,
 				commandBuffer
 			);
+
+			{
+				auto grass = objectManager.get("grass");
+				if (grass) {
+					dynamic_cast<GameObjectModel*>(grass)->getDescriptorSets();
+
+					computePass->recordPass(
+						frameInfo,
+						commandBuffer,
+
+						);
+				}
+			}
+
+			
 
 			colorPass->recordPass(
 				objectManager,

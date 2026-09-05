@@ -54,7 +54,7 @@ void ObjectManager::startLoadModel()
         cube->computeShadow = false;
 
         auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
-        gameObject->setName("testlod");
+        gameObject->setName("grass");
         gameObject->setModelType(ModelType::OBJ_MODEL);
         gameObject->setModel(cube);
         gameObject->saveable = false;

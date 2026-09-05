@@ -85,6 +85,7 @@ private:
 	std::unique_ptr<DepthPass> depthPass;
 	std::unique_ptr<ColorPass> colorPass;
 	std::unique_ptr<PostProPass> postPass;
+	std::unique_ptr<ComputePass> computePass;
 
 	// render systems
 	std::shared_ptr<RenderSystem> skyboxCreationRenderSystem;

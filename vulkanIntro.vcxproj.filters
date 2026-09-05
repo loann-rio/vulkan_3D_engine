@@ -210,7 +210,7 @@
     <ClCompile Include="src\render\ComputeSystem.cpp">
       <Filter>render</Filter>
     </ClCompile>
-    <ClCompile Include="src\render\ComputePass.cpp">
+    <ClCompile Include="src\render\RenderPasses\ComputePass.cpp">
       <Filter>render\RenderPasses</Filter>
     </ClCompile>
   </ItemGroup>
@@ -412,7 +412,7 @@
     <ClInclude Include="src\render\ComputeSystem.h">
       <Filter>render</Filter>
     </ClInclude>
-    <ClInclude Include="src\render\ComputePass.h">
+    <ClInclude Include="src\render\RenderPasses\ComputePass.h">
       <Filter>render\RenderPasses</Filter>
     </ClInclude>
   </ItemGroup>

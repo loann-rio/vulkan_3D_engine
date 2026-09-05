@@ -1,9 +1,9 @@
 #include "ComputePass.h"
-#include "../base/descriptors.h"
+#include "../../base/descriptors.h"
 #include <stdexcept>
 
-ComputePass::ComputePass(Device& device, AssetManager& assets, std::vector<VkDescriptorSetLayout> globalLayouts)
-    : device{ device }, assets{ assets }, globalLayouts(globalLayouts)
+ComputePass::ComputePass(Device& device, AssetManager& assets)
+    : device{ device }, assets{ assets }
 {
 
     auto setLayout = DescriptorSetLayout::Builder(device)
@@ -12,7 +12,7 @@ ComputePass::ComputePass(Device& device, AssetManager& assets, std::vector<VkDes
         .build();
 
     ComputeSystemConfig config{
-        "a_wonderfull_shader.jsp",
+        "shaders/particule_update.comp.spv",
         {setLayout->getDescriptorSetLayout()}, 
         sizeof(float) + sizeof(int)
     };
