@@ -313,18 +313,30 @@ public:
 	void setMultipleInstances(std::vector<Model::Instance> instances);
 
 	void createDescriptorSet(DescriptorPool& pool) const; 
+	void createInstanceComputeDescriptorSets(DescriptorPool& pool);
+	VkDescriptorSet getInstanceComputeDescriptorSet(uint16_t frameIndex) const;
+
 
 	BoundingBox getAABB() const;
 
 	void update(float dtime);
 
 	void bindModel(VkCommandBuffer& commandBuffer, bool bindTexture, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, uint16_t modelDescriptorSetIndex) const;
+	void bind_original_instance_buffer(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex) const;
 	void drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, const std::array<FrustumPlane, 6>& frustrumPlanes);
 	void drawModelDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, int cameraIndex, uint16_t frameIndex, const std::array<FrustumPlane, 6>& planes);
 
+	Buffer* getOriginalInstancesBuffer() const { return instancesBuffer ? instancesBuffer.get() : nullptr; }
+	Buffer* getFrameInstancesBuffer(uint16_t index) const {
+		if (index >= frameInstancesBuffer.size()) return nullptr;
+		return frameInstancesBuffer[index].get();
+	}
+
+	uint32_t getInstanceCount() const { return instanceCount; }
+
+
 	void debugUI(); 
 
-	//std::unique_ptr<ModelAsset> modelAsset;
 	ModelManager::ModelID modelAsset;
 
 	bool show = true;
@@ -349,6 +361,7 @@ private:
 
 	std::unique_ptr<Buffer> instancesBuffer = nullptr;
 	std::vector<std::unique_ptr<Buffer>> frameInstancesBuffer;
+	std::vector<VkDescriptorSet> instanceComputeDescriptorSets;
 	uint32_t instanceCount = 1;
 
 	int32_t animationIndex{ 0 }; 

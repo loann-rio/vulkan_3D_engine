@@ -27,7 +27,7 @@ private:
     AssetManager& assets;
 
     std::shared_ptr<ComputeSystem> idk;
-
-    VkDescriptorSetLayout localSetLayout = VK_NULL_HANDLE;
     std::vector<VkDescriptorSet> computeDescriptorSets;
+    float elapsedTime = 0.0f;
+
 };

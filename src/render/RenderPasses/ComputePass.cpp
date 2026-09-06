@@ -1,19 +1,20 @@
 #include "ComputePass.h"
 #include "../../base/descriptors.h"
 #include <stdexcept>
+#include <iostream>
+#include <ctime>
 
 ComputePass::ComputePass(Device& device, AssetManager& assets)
     : device{ device }, assets{ assets }
 {
-
     auto setLayout = DescriptorSetLayout::Builder(device)
         .addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
-        .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT)// DepthPass::MAX_DEPTH_RENDER_COUNT)
+        .addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
         .build();
 
     ComputeSystemConfig config{
         "shaders/particule_update.comp.spv",
-        {setLayout->getDescriptorSetLayout()}, 
+        { setLayout->getDescriptorSetLayout() },
         sizeof(float) + sizeof(int)
     };
 
@@ -22,14 +23,13 @@ ComputePass::ComputePass(Device& device, AssetManager& assets)
 
 ComputePass::~ComputePass()
 {
-    if (localSetLayout != VK_NULL_HANDLE)
-        vkDestroyDescriptorSetLayout(device.device(), localSetLayout, nullptr);
 }
 
 void ComputePass::recordPass(FrameInfo& frameInfo, VkCommandBuffer& commandBuffer, VkDescriptorSet instancesSet)
 {
     struct pushConstant { float time; int count; };
-    pushConstant push{ frameInfo.frameTime, 22500 };
+    elapsedTime += frameInfo.frameTime;
+    pushConstant push{ elapsedTime, 22500 };
 
-    idk->dispatch(commandBuffer, frameInfo.frameIndex, {instancesSet}, 64, 1, 1, &push);
+    idk->dispatch(commandBuffer, frameInfo.frameIndex, { instancesSet }, 256, 1, 1, &push);
 }

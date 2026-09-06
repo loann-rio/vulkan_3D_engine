@@ -126,13 +126,13 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)\external\KTX\include;$(SolutionDir)\external\glm-1.0.0;$(SolutionDir)\external\stb-master;$(SolutionDir)\external\basis_universal-master\transcoder;$(SolutionDir)\external\glfw-3.3.9.bin.WIN64\include;$(SolutionDir)\external\tinyobjloader-release;C:\VulkanSDK\1.4.313.2\Include;$(SolutionDir)\external\nativefiledialog-master\src\include;$(SolutionDir)\external\imgui-master;$(SolutionDir)\external\imgui-master\backends</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\external\KTX\include;$(SolutionDir)\external\glm-1.0.0;$(SolutionDir)\external\stb-master;$(SolutionDir)\external\basis_universal-master\transcoder;$(SolutionDir)\external\glfw-3.3.9.bin.WIN64\include;$(SolutionDir)\external\tinyobjloader-release;C:\VulkanSDK\1.4.313.0\Include;$(SolutionDir)\external\nativefiledialog-master\src\include;$(SolutionDir)\external\imgui-master;$(SolutionDir)\external\imgui-master\backends</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)\external\KTX\lib;$(SolutionDir)\external\KTX-Software-main\build\Debug;$(SolutionDir)\external\KTX-Software-main\lib;$(SolutionDir)\external\glfw-3.3.9.bin.WIN64\lib-vc2022;C:\VulkanSDK\1.4.313.2\Lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)\external\KTX\lib;$(SolutionDir)\external\KTX-Software-main\build\Debug;$(SolutionDir)\external\KTX-Software-main\lib;$(SolutionDir)\external\glfw-3.3.9.bin.WIN64\lib-vc2022;C:\VulkanSDK\1.4.313.0\Lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;ole32.lib;
 shell32.lib;
 uuid.lib;
@@ -301,6 +301,7 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <None Include="shaders\global_ubo.minc" />
     <None Include="shaders\GlTFshader.frag" />
     <None Include="shaders\GlTFshader.vert" />
+    <None Include="shaders\particule_update.comp" />
     <None Include="shaders\point_light.frag" />
     <None Include="shaders\point_light.vert" />
     <None Include="shaders\PostProShader.frag" />
@@ -318,7 +319,6 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <None Include="shaders\testRed.frag" />
     <None Include="shaders\text.frag" />
     <None Include="shaders\text.vert" />
-    <None Include="shader\particule_update.comp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

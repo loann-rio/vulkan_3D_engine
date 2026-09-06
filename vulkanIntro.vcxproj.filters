@@ -492,7 +492,7 @@
     <None Include="shaders\PostProShader.frag">
       <Filter>shaders</Filter>
     </None>
-    <None Include="shader\particule_update.comp">
+    <None Include="shaders\particule_update.comp">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>

@@ -1,32 +1,130 @@
-// shaders/particle_update.comp
 #version 450
-layout(local_size_x = 256) in;
 
-struct Instance {
-    vec3 position;
-    vec3 rotation;
-    vec3 scale;
-};
+// ajuster local_size_x selon dispatch (groupCountX * local_size_x doit couvrir 'count')
+layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 
-layout(std430, binding = 0) readonly buffer OrigInstances {
-    Instance orig[];
-};
-
-layout(std430, binding = 1) buffer CurrInstances {
-    Instance curr[];
-};
-
-layout(push_constant) uniform Params {
-    float dt;
+// push constants : float time, int count
+layout(push_constant) uniform Push {
+    float time;
     int count;
-} params;
+} pc;
+
+// on utilise std430 et des structures alignées sur vec4 pour éviter les problèmes d'alignement CPU/GPU
+struct Instance {
+    vec4 position;   // xyz = position, w = padding
+    vec4 rotation;   // xyz = rotation, w = padding
+    vec4 scale;      // xyz = scale, w = padding
+};
+
+layout(std430, set = 0, binding = 0) readonly buffer InputInstances {
+    Instance dataIn[];
+};
+
+layout(std430, set = 0, binding = 1) writeonly buffer OutputInstances {
+    Instance dataOut[];
+};
+
+// --- Simplex / Perlin-like 2D noise (Stefan Gustavson, public domain) ---
+vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+vec3 permute(vec3 x) { return mod289(((x * 34.0) + 1.0) * x); }
+
+float snoise(vec2 v)
+{
+    const vec4 C = vec4(0.211324865405187,  // (3.0-sqrt(3.0))/6.0
+                        0.366025403784439,  // 0.5*(sqrt(3.0)-1.0)
+                        -0.577350269189626, // -1.0 + 2.0 * C.x
+                        0.024390243902439); // 1.0/41.0
+    // First corner
+    vec2 i  = floor(v + dot(v, C.yy) );
+    vec2 x0 = v -   i + dot(i, C.xx);
+
+    // Other corners
+    vec2 i1;
+    i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+    vec4 x12 = x0.xyxy + C.xxzz;
+    x12.xy -= i1;
+
+    // Permutations
+    i = mod289(i); // Avoid truncation effects in permutation
+    vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 ))
+                    + i.x + vec3(0.0, i1.x, 1.0 ));
+
+    vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
+    m = m*m;
+    m = m*m;
+
+    // Gradients: 41 points uniformly over a unit circle.
+    vec3 x = 2.0 * fract(p * C.www) - 1.0;
+    vec3 h = abs(x) - 0.5;
+    vec3 ox = floor(x + 0.5);
+    vec3 a0 = x - ox;
+
+    // Normalise gradients implicitly by scaling m
+    vec3 g0 = vec3(a0.x, h.x, 0.0);
+    vec3 g1 = vec3(a0.y, h.y, 0.0);
+    vec3 g2 = vec3(a0.z, h.z, 0.0);
+
+    vec3 norm = inversesqrt(vec3(dot(g0,g0), dot(g1,g1), dot(g2,g2)));
+    g0 *= norm.x;
+    g1 *= norm.y;
+    g2 *= norm.z;
+
+    float n0 = dot(g0, vec3(x0, 0.0));
+    float n1 = dot(g1, vec3(x12.xy, 0.0));
+    float n2 = dot(g2, vec3(x12.zw, 0.0));
+
+    // Sum up and scale the result to cover approximately [-1,1]
+    return 70.0 * (m.x * n0 + m.y * n1 + m.z * n2);
+}
+// --------------------------------------------------------------------
 
 void main() {
-    uint i = gl_GlobalInvocationID.x;
-    
-    if (i <= params.count) {
-        curr[i].position = orig[i].position + vec3(0.0, 1.0, 0.0) * params.dt;
-        curr[i].rotation = orig[i].rotation;
-        curr[i].scale = orig[i].scale;
+    uint idx = gl_GlobalInvocationID.x;
+    if (idx >= uint(pc.count)) {
+        return;
     }
+
+    // lire l'instance d'entrée
+    Instance inInst = dataIn[idx];
+    vec3 pos = inInst.position.xyz;
+
+    // paramètres du vent
+    float time = pc.time / 10;
+    float baseFreq = 0.08;    // fréquence spatiale du bruit
+    float timeSpeed = 0.7;    // vitesse du vent
+    float amplitude = 0.25;   // force du vent (déplacement max)
+    float verticalBobbing = 0.03; // petite oscillation verticale
+
+    // calculer un champ de vent local via noise 2D
+    vec2 samplePos = pos.xz * baseFreq;
+    // variabilité temporelle: on décale les canaux pour plus de richesse
+    float windPhase = snoise(samplePos + vec2(time * timeSpeed, time * timeSpeed * 0.37));
+
+    // angle de la direction locale du vent
+    float angle = windPhase * 3.14159265; // [-pi, pi]
+    vec2 dir = vec2(cos(angle), sin(angle));
+
+    // intensité locale (peut être modulée par une autre couche de bruit fractale)
+    float intensity = snoise(samplePos * 0.6 + vec2(time * timeSpeed * 0.6)) * 0.6 + 0.4; // [~-1..1] remappé
+
+    // final sway amount
+    float sway = amplitude * intensity * (0.5 + 0.5 * snoise(samplePos * 1.5 + time * timeSpeed));
+
+    // appliquer le déplacement latéral suivant la direction du vent
+    pos.x += dir.x * sway;
+    pos.z += dir.y * sway * 0.6; // atténuer sur z pour variation
+
+    // petite oscillation verticale pour plus de réalisme
+    pos.y += snoise(samplePos * 0.9 + time * (timeSpeed * 2.0)) * verticalBobbing;
+
+    // appliquer une inclinaison sur la rotation.x (bending)
+    Instance outInst;
+    outInst.position = vec4(pos, 1.0);
+    outInst.rotation = inInst.rotation;
+    // ajuster lean (rotation.x) en fonction du sway
+    outInst.rotation.x = inInst.rotation.x + sway * 1.8;
+    outInst.scale = inInst.scale;
+
+    dataOut[idx] = outInst;
 }

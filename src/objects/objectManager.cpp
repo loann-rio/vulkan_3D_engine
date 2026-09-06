@@ -43,9 +43,9 @@ void ObjectManager::startLoadModel()
         for (int x = 0; x < 150; x++) {
             for (int z = 0; z < 150; z++) {
                 Model::Instance instance;
-                instance.position = { x / 5.f - 15.f, 0.0f, z / 5.f - 15.f };
-                instance.rotation = { 0.0f, static_cast<float>(rand() % 360), 0.0f };
-                instance.scale = { 1, 1, 1 };
+                instance.position = { x / 5.f - 15.f, 0.0f, z / 5.f - 15.f, 1.f };
+                instance.rotation = { 0.0f, static_cast<float>(rand() % 360), 0.0f, 0.0f };
+                instance.scale = { 1.f, 1.f, 1.f, 1.f };
                 instances.push_back(instance);
             }
         }
@@ -60,6 +60,7 @@ void ObjectManager::startLoadModel()
         gameObject->saveable = false;
         gameObject->setMultipleInstances(instances);
         gameObject->createDescriptorSet(*globalPool);
+		gameObject->createInstanceComputeDescriptorSets(*globalPool);
         pushGameObject(std::move(gameObject));
     }
 
@@ -69,9 +70,9 @@ void ObjectManager::startLoadModel()
 
         for (int z = 0; z < 12; z++) {
             Model::Instance instance;
-            instance.position = { z, 0.0f, z * 2 };
-            instance.rotation = { 0.0f, static_cast<float>(rand() % 360), 0.0f };
-            instance.scale = { 1, 1, 1 };
+            instance.position = { z, 0.0f, z * 2, 1.f };
+            instance.rotation = { 0.0f, static_cast<float>(rand() % 360), 0.0f, 0.0f };
+            instance.scale = { 1.f, 1.f, 1.f, 1.f };
             instances.push_back(instance);
         }
 
