@@ -122,6 +122,7 @@ void Engine::run()
             spotLightUbo.numLights,
             objectManager.get(objectManager.mainCamera)->transform.translation,
             objectManager.getByType<GameObjectModel>(),
+            std::vector<ComputeObject*>{},
             frustrumPlanesList,
             dynamic_cast<GameObjectCamera*>(objectManager.get(objectManager.mainCamera))->getFrustumPlanes(),
         };

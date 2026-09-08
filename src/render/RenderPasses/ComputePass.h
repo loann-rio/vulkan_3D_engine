@@ -14,8 +14,6 @@ public:
         AssetManager& assets
     );
 
-    ~ComputePass();
-
     ComputePass(const ComputePass&) = delete;
     ComputePass& operator=(const ComputePass&) = delete;
 

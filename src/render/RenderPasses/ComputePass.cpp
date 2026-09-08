@@ -21,15 +21,11 @@ ComputePass::ComputePass(Device& device, AssetManager& assets)
     idk = std::make_shared<ComputeSystem>(device, assets, config);
 }
 
-ComputePass::~ComputePass()
-{
-}
-
 void ComputePass::recordPass(FrameInfo& frameInfo, VkCommandBuffer& commandBuffer, VkDescriptorSet instancesSet)
 {
     struct pushConstant { float time; int count; };
     elapsedTime += frameInfo.frameTime;
-    pushConstant push{ elapsedTime, 22500 };
+    pushConstant push{ elapsedTime, 64*64 };
 
-    idk->dispatch(commandBuffer, frameInfo.frameIndex, { instancesSet }, 256, 1, 1, &push);
+    idk->dispatch(commandBuffer, frameInfo.frameIndex, { instancesSet }, (64*64+255)/255, 1, 1, & push);
 }

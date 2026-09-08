@@ -13,6 +13,7 @@
 #include <../json.hpp>
 using json = nlohmann::json;
 
+class GameObject;
 
 /// <summary>
 /// Represents a future game object with associated model information and instances.
@@ -24,6 +25,15 @@ struct futureObject {
     std::vector<Model::Instance> instances{};
     bool saveable = true;
 }; 
+
+struct ComputeObject {
+    bool enable{ false };
+    uint32_t groupX{ 1 };
+    uint32_t groupY{ 1 };
+    uint32_t groupZ{ 1 };
+    size_t instanceCount{ 0 };
+    GameObject* gameObject;
+};
 
 class ObjectManager
 {

@@ -40,8 +40,8 @@ void ObjectManager::startLoadModel()
     if (true)
     {
         std::vector<Model::Instance> instances;
-        for (int x = 0; x < 150; x++) {
-            for (int z = 0; z < 150; z++) {
+        for (int x = 0; x < 64; x++) {
+            for (int z = 0; z < 64; z++) {
                 Model::Instance instance;
                 instance.position = { x / 5.f - 15.f, 0.0f, z / 5.f - 15.f, 1.f };
                 instance.rotation = { 0.0f, static_cast<float>(rand() % 360), 0.0f, 0.0f };
@@ -62,6 +62,13 @@ void ObjectManager::startLoadModel()
         gameObject->createDescriptorSet(*globalPool);
 		gameObject->createInstanceComputeDescriptorSets(*globalPool);
         pushGameObject(std::move(gameObject));
+
+        ComputeObject computeGrass{
+            true,
+            255, 1, 1,
+            instances.size(),
+            dynamic_cast<GameObjectModel*>(get("grass"))
+        };
     }
 
     for (int i = 0; i < 1; i++)
