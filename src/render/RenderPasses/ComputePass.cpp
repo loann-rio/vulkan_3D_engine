@@ -21,11 +21,27 @@ ComputePass::ComputePass(Device& device, AssetManager& assets)
     idk = std::make_shared<ComputeSystem>(device, assets, config);
 }
 
-void ComputePass::recordPass(FrameInfo& frameInfo, VkCommandBuffer& commandBuffer, VkDescriptorSet instancesSet)
+void ComputePass::recordPass(FrameInfo& frameInfo, VkCommandBuffer& commandBuffer, ComputeObject& computeObject)
 {
-    struct pushConstant { float time; int count; };
-    elapsedTime += frameInfo.frameTime;
-    pushConstant push{ elapsedTime, 64*64 };
+    struct pushConstant { 
+        float time;
+        int count; 
+    };
 
-    idk->dispatch(commandBuffer, frameInfo.frameIndex, { instancesSet }, (64*64+255)/255, 1, 1, & push);
+    elapsedTime += frameInfo.frameTime;
+
+    pushConstant push{ 
+        elapsedTime, 
+        computeObject.instanceCount 
+    };
+
+    idk->dispatch(
+        commandBuffer, 
+        frameInfo.frameIndex, 
+        { 
+            dynamic_cast<GameObjectModel*>(computeObject.gameObject)->getInstanceComputeDescriptorSet(frameInfo.frameIndex) 
+        },
+        (computeObject.instanceCount +255)/255, 1, 1, 
+        &push
+    );
 }

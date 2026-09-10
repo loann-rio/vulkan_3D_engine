@@ -93,7 +93,7 @@ public:
     void createDescriptorSet(ModelAsset* model);
     void updateGameObject(float frameTime);
 
-
+    std::vector<ComputeObject> computeList{};
     GameObjectModel* baseSkyBox = nullptr;
 private:
     Device& device;

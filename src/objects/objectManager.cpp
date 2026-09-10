@@ -69,6 +69,8 @@ void ObjectManager::startLoadModel()
             instances.size(),
             dynamic_cast<GameObjectModel*>(get("grass"))
         };
+
+        computeList.push_back(computeGrass);
     }
 
     for (int i = 0; i < 1; i++)

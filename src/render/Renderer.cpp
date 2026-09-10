@@ -239,31 +239,15 @@ void Renderer::renderFrame(FrameInfo& frameInfo, ObjectManager& objectManager)
 				frameInfo,
 				commandBuffer
 			);
-
-			{
-				auto grass = objectManager.get("grass");
-				if (grass) {
-					auto gm = dynamic_cast<GameObjectModel*>(grass);
-					if (gm) {
-						Buffer* srcBuffer = gm->getOriginalInstancesBuffer();
-						Buffer* dstBuffer = gm->getFrameInstancesBuffer(frameInfo.frameIndex);
-
-						if (srcBuffer && dstBuffer) {
-							VkDescriptorSet computeSet = gm->getInstanceComputeDescriptorSet(frameInfo.frameIndex);
-							if (computeSet != VK_NULL_HANDLE) {
-								computePass->recordPass(
-									frameInfo,
-									commandBuffer,
-									computeSet
-								);
-							}
-						}
-					}
-				}
-			}
-
 			
-
+			for (ComputeObject computeObject : objectManager.computeList) {
+				computePass->recordPass(
+					frameInfo,
+					commandBuffer,
+					computeObject
+				);
+			}
+			
 			colorPass->recordPass(
 				objectManager,
 				frameInfo,

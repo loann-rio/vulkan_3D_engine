@@ -17,7 +17,7 @@ public:
     ComputePass(const ComputePass&) = delete;
     ComputePass& operator=(const ComputePass&) = delete;
 
-    void recordPass(FrameInfo& frameInfo, VkCommandBuffer& commandBuffer, VkDescriptorSet instancesSet);
+    void recordPass(FrameInfo& frameInfo, VkCommandBuffer& commandBuffer, ComputeObject& computeObject);
 
 private:
    
