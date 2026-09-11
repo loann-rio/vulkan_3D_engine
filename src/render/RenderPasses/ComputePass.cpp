@@ -18,7 +18,7 @@ ComputePass::ComputePass(Device& device, AssetManager& assets)
         sizeof(float) + sizeof(int)
     };
 
-    idk = std::make_shared<ComputeSystem>(device, assets, config);
+    grassComputeSystem = std::make_shared<ComputeSystem>(device, assets, config);
 }
 
 void ComputePass::recordPass(FrameInfo& frameInfo, VkCommandBuffer& commandBuffer, ComputeObject& computeObject)
@@ -35,13 +35,13 @@ void ComputePass::recordPass(FrameInfo& frameInfo, VkCommandBuffer& commandBuffe
         computeObject.instanceCount 
     };
 
-    idk->dispatch(
+    grassComputeSystem->dispatch(
         commandBuffer, 
         frameInfo.frameIndex, 
         { 
             dynamic_cast<GameObjectModel*>(computeObject.gameObject)->getInstanceComputeDescriptorSet(frameInfo.frameIndex) 
         },
-        (computeObject.instanceCount +255)/255, 1, 1, 
+        computeObject.groupX, computeObject.groupY, computeObject.groupZ,
         &push
     );
 }

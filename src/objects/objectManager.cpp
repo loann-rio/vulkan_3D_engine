@@ -22,19 +22,21 @@ void ObjectManager::startLoadModel()
         
         ModelBuilder builder(device, assetManager);
         ModelManager::ModelID modelId = assetManager.models().create(builder.fromFile("assets/model/cube.obj").withTexture(texture));
-        
-        createDescriptorSet(assetManager.models().get(modelId));
-        
-        
-        auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
-        gameObject->setName("cubemap1");
-        gameObject->setModelType(ModelType::OBJ_MODEL);
-        gameObject->setModelSubType(ModelSubType::SKYBOX);
-        gameObject->setModel(modelId);
-        gameObject->saveable = false;
-        gameObject->show = false;
-        pushGameObject(std::move(gameObject));
-       
+        if (modelId)
+        {
+            createDescriptorSet(assetManager.models().get(modelId));
+
+
+            auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
+            gameObject->setName("cubemap1");
+            gameObject->setModelType(ModelType::OBJ_MODEL);
+            gameObject->setModelSubType(ModelSubType::SKYBOX);
+            gameObject->setModel(modelId);
+            gameObject->saveable = false;
+            gameObject->show = false;
+            pushGameObject(std::move(gameObject));
+
+        }
     }
 
     if (true)
@@ -65,7 +67,9 @@ void ObjectManager::startLoadModel()
 
         ComputeObject computeGrass{
             true,
-            255, 1, 1,
+            (instances.size() + 255) / 255, 
+            1, 
+            1,
             instances.size(),
             dynamic_cast<GameObjectModel*>(get("grass"))
         };
@@ -73,37 +77,26 @@ void ObjectManager::startLoadModel()
         computeList.push_back(computeGrass);
     }
 
-    for (int i = 0; i < 1; i++)
     {
-        std::vector<Model::Instance> instances;
-
-        for (int z = 0; z < 12; z++) {
-            Model::Instance instance;
-            instance.position = { z, 0.0f, z * 2, 1.f };
-            instance.rotation = { 0.0f, static_cast<float>(rand() % 360), 0.0f, 0.0f };
-            instance.scale = { 1.f, 1.f, 1.f, 1.f };
-            instances.push_back(instance);
-        }
-
         ModelBuilder builder(device, assetManager);
         ModelManager::ModelID id = assetManager.models().create(builder.fromFile("model/buster_drone/scene.gltf"));
 
-        if (!id) continue;
+        if (id)
+        {
+            createDescriptorSet(assetManager.models().get(id));
 
-        createDescriptorSet(assetManager.models().get(id));
+            auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
+            gameObject->setName("testModelBuilder");
+            gameObject->setModelType(ModelType::OBJ_MODEL);
+            gameObject->setModel(id);
+            gameObject->transform.rotation.x = 3.141592f;
+            gameObject->transform.rotation.y = 15;
+            gameObject->transform.translation = { 0, 0.2f, 8 };
+            gameObject->saveable = false;
 
-        auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
-        gameObject->setName("testModelBuilder");
-        gameObject->setModelType(ModelType::OBJ_MODEL);
-        gameObject->setModel(id);
-        gameObject->transform.rotation.x = 3.141592f;
-        gameObject->transform.rotation.y = i * 15;
-        gameObject->transform.translation = { i, 0.2f, 8 };
-        gameObject->saveable = false;
-        //gameObject->setMultipleInstances(instances);
-
-        gameObject->createDescriptorSet(*globalPool);
-        pushGameObject(std::move(gameObject));
+            gameObject->createDescriptorSet(*globalPool);
+            pushGameObject(std::move(gameObject));
+        }
     }
 
 
