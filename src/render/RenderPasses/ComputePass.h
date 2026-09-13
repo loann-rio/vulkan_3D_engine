@@ -24,7 +24,7 @@ private:
     Device& device;
     AssetManager& assets;
 
-    std::shared_ptr<ComputeSystem> idk;
+    std::shared_ptr<ComputeSystem> grassComputeSystem;
     std::vector<VkDescriptorSet> computeDescriptorSets;
     float elapsedTime = 0.0f;
 

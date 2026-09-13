@@ -3,6 +3,7 @@
 #include "../assetManager/AssetManager.h"
 #include <vulkan/vulkan_core.h>
 
+
 class GlobalRenderSystemBuilder
 {
 public:
@@ -30,7 +31,7 @@ public:
     {
         std::vector<DescriptorSetObject> descriptorBindings;
         std::vector<VkVertexInputAttributeDescription> attributeDescription;
-        std::vector<VkVertexInputBindingDescription> bindingDescription;
+        std::vector<VkVertexInputBindingDescription> bindingDescription; 
 
         ModelType modelType = static_cast<ModelType>(T::getModelType());
 
