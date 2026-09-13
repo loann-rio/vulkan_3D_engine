@@ -1,7 +1,7 @@
 #pragma once
 
 #include "BaseRenderPass.h"
-#include "../GlobalRenderSystem.h"
+#include "../RenderSystem.h"
 
 #include <vulkan/vulkan_core.h>
 #include <cstdint>
@@ -26,23 +26,21 @@ public:
 		createRenderSystems();
 	}
 
-	
-
 	void recordPass(
 		ObjectManager& objectManager,
 		FrameInfo& frameInfo,
 		VkCommandBuffer& commandBuffer
 	);
 
+private:
+	void createRenderSystems();
+
 	void createRenderPass(VkFormat imageFormat, VkFormat depthFormat);
 
 	void beginRenderPass(VkCommandBuffer commandBuffer, int depthRenderIndex, int frameIndex);
 	void endRenderPass(VkCommandBuffer commandBuffer);
 
-private:
-	void createRenderSystems();
-
-	std::shared_ptr<GlobalRenderSystem> depthRenderSystem;
-	std::shared_ptr<GlobalRenderSystem> depthRenderSystemGltf;
-	std::shared_ptr<GlobalRenderSystem> depthTerrainRenderSystem;
+	std::shared_ptr<RenderSystem> depthRenderSystem;
+	std::shared_ptr<RenderSystem> depthRenderSystemGltf;
+	std::shared_ptr<RenderSystem> depthTerrainRenderSystem;
 };

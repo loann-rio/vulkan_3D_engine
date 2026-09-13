@@ -193,9 +193,9 @@ std::vector<Model::Instance> TerrainGenerator::placeTrees(std::vector<std::vecto
 			if (abs(heightMap[x][y].y) < 0.02 && heightMap[x][y].x < 2.f)
 			{
 				Model::Instance instance = {
-					{ Xoffset + xPos, -heightMap[x][y].x, Yoffset + yPos},
-					{0, 0, 0},
-					{0.1,  -0.1 * sizeFactor, 0.1} 
+					{ Xoffset + xPos, -heightMap[x][y].x, Yoffset + yPos, 1.f },
+					{0.f, 0.f, 0.f, 0.f },
+					{0.1f,  -0.1 * sizeFactor, 0.1f, 1.f } 
 				};
 
 				treeList.push_back(instance);

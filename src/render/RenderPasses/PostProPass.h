@@ -3,7 +3,7 @@
 #include "BaseRenderPass.h"
 #include "../../base/Swap_chain.h"
 #include "../../objects/BasicUI.h"
-#include "../GlobalRenderSystem.h"
+#include "../RenderSystem.h"
 
 #include <vulkan/vulkan_core.h>
 
@@ -31,6 +31,8 @@ public:
 		VkCommandBuffer& commandBuffer
 	) override;
 
+private:
+	void createRenderSystems();
 
 	void createRenderPass(
 		VkFormat imageFormat,
@@ -47,16 +49,5 @@ public:
 		VkCommandBuffer commandBuffer
 	) override;
 
-	void setUi(
-		BasicUI* ui
-	) {
-		imgui = ui;
-	}
-
-private:
-	void createRenderSystems();
-
-	std::shared_ptr<GlobalRenderSystem> postProcessingRenderSystem;
-
-	BasicUI* imgui;
+	std::shared_ptr<RenderSystem> postProcessingRenderSystem;
 };

@@ -131,12 +131,10 @@ void GameObjectModel::setMultipleInstances(std::vector<Model::Instance> instance
 {
     
     VkDeviceSize bufferSize = sizeof(Model::Instance) * instances.size();
+    instanceCount = static_cast<uint32_t>(instances.size());
+    if (instanceCount == 0) return;
 
     uint32_t instanceSize = sizeof(Model::Instance);
-
-    instanceCount = static_cast<uint32_t>(instances.size());
-
-    if (instanceCount == 0) return;
 
     Buffer stagingBuffer{ 
         device, 
@@ -147,18 +145,77 @@ void GameObjectModel::setMultipleInstances(std::vector<Model::Instance> instance
     };
 
     stagingBuffer.map(); 
-    stagingBuffer.writeToBuffer((void*)instances.data()); 
+    stagingBuffer.writeToBuffer(instances.data()); 
 
     instancesBuffer = std::make_unique<Buffer>(  
         device, 
         instanceSize, 
         instanceCount,
-        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT 
     );
 
     device.copyBuffer(stagingBuffer.getBuffer(), instancesBuffer->getBuffer(), bufferSize); 
 
+    frameInstancesBuffer.clear();
+    frameInstancesBuffer.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
+
+    for (size_t i = 0; i < frameInstancesBuffer.size(); ++i) {
+        frameInstancesBuffer[i] = std::make_unique<Buffer>(
+            device,
+            instanceSize,
+            instanceCount,
+            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+        );
+
+        device.copyBuffer(instancesBuffer->getBuffer(), frameInstancesBuffer[i]->getBuffer(), bufferSize);
+    }
+}
+
+void GameObjectModel::createInstanceComputeDescriptorSets(DescriptorPool& pool)
+{
+    instanceComputeDescriptorSets.clear();
+
+    // nothing to do if no instances or no buffers
+    if (!instancesBuffer || frameInstancesBuffer.empty()) return;
+
+    instanceComputeDescriptorSets.resize(frameInstancesBuffer.size(), VK_NULL_HANDLE);
+
+    for (size_t i = 0; i < frameInstancesBuffer.size(); ++i) {
+        VkDescriptorSet set = VK_NULL_HANDLE;
+        Buffer* dstBuffer = frameInstancesBuffer[i].get();
+        if (!dstBuffer) continue;
+
+        auto setLayout = DescriptorSetLayout::Builder(device)
+            .addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+            .addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+            .build();
+
+        VkDescriptorSet computeSet = VK_NULL_HANDLE;
+        if (!pool.allocateDescriptor(setLayout->getDescriptorSetLayout(), computeSet)) {
+            std::cout << "ComputePass::createDescriptorSet: Failed to allocate descriptor set\n";
+			throw std::runtime_error("failed to allocate descriptor set!");
+        }
+
+        auto srcInfo = instancesBuffer.get()->descriptorInfo();
+        auto dstInfo = dstBuffer->descriptorInfo();
+
+        DescriptorWriter(*setLayout, pool)
+            .writeBuffer(0, &srcInfo)
+            .writeBuffer(1, &dstInfo)
+            .build(computeSet);
+
+
+        instanceComputeDescriptorSets[i] = computeSet;
+     
+    }
+}
+
+VkDescriptorSet GameObjectModel::getInstanceComputeDescriptorSet(uint16_t frameIndex) const
+{
+    if (frameIndex >= instanceComputeDescriptorSets.size()) return VK_NULL_HANDLE;
+    return instanceComputeDescriptorSets[frameIndex];
 }
 
 
@@ -203,7 +260,7 @@ void GameObjectModel::bindModel(VkCommandBuffer& commandBuffer, bool bindTexture
 {
     std::visit([&](const auto& modelInstance) {  
         if (modelInstance) {
-            modelInstance->bind(commandBuffer, bindTexture, pipelineLayout, frameIndex, modelDescriptorSetIndex, instancesBuffer.get());
+            modelInstance->bind(commandBuffer, bindTexture, pipelineLayout, frameIndex, modelDescriptorSetIndex, frameInstancesBuffer[frameIndex].get());
         }
         }, model);
 }

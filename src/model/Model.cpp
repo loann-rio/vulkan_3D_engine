@@ -141,11 +141,6 @@ Model::Model(Device& device, AssetManager& assets, const Model::Builder& builder
 		lods = builder.lods;
 		hasLODs = true;
 	}
-
-	//debugValidateLODs();
-	
-	
-
 }
 
 Model::~Model() {

@@ -43,9 +43,9 @@ public:
 
 
 	struct Instance {
-		glm::vec3 position;
-		glm::vec3 rotation;
-		glm::vec3 scale;
+		glm::vec4 position;
+		glm::vec4 rotation;
+		glm::vec4 scale;
 	};
 
 	struct Vertex {

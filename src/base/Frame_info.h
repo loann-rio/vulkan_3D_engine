@@ -2,6 +2,7 @@
 
 #include "../render/Camera.h"
 #include "../objects/GameObject.h"
+#include "../objects/objectManager.h"
 
 #include <vulkan/vulkan.h>
 
@@ -45,6 +46,7 @@ struct FrameInfo {
 	int spotLightCount;
 	glm::vec3 cameraPos;
 	std::vector<GameObjectModel*> listGameObjects; 
+	std::vector<ComputeObject*> computesObjects;
 	std::vector<std::array<FrustumPlane, 6>> listFrustrumPlanes;
 	std::array<FrustumPlane, 6> mainCameraFrustrumPlanes;
 	float gpuFrameRate;

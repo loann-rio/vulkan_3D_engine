@@ -1,0 +1,31 @@
+#pragma once
+
+#include "../../base/Device.h"
+#include "../../assetManager/AssetManager.h"
+#include "../../base/Frame_info.h"
+#include "../ComputeSystem.h"
+
+#include <vector>
+
+class ComputePass {
+public:
+    ComputePass(
+        Device& device, 
+        AssetManager& assets
+    );
+
+    ComputePass(const ComputePass&) = delete;
+    ComputePass& operator=(const ComputePass&) = delete;
+
+    void recordPass(FrameInfo& frameInfo, VkCommandBuffer& commandBuffer, ComputeObject& computeObject);
+
+private:
+   
+    Device& device;
+    AssetManager& assets;
+
+    std::shared_ptr<ComputeSystem> grassComputeSystem;
+    std::vector<VkDescriptorSet> computeDescriptorSets;
+    float elapsedTime = 0.0f;
+
+};

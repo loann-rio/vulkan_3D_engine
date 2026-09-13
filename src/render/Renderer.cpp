@@ -101,6 +101,11 @@ void Renderer::createPasses()
 		assets,
 		swapChain.get()
 	);
+
+	computePass = std::make_unique<ComputePass>(
+		device,
+		assets
+	);
 }
 
 void Renderer::initUi()
@@ -234,7 +239,15 @@ void Renderer::renderFrame(FrameInfo& frameInfo, ObjectManager& objectManager)
 				frameInfo,
 				commandBuffer
 			);
-
+			
+			for (ComputeObject computeObject : objectManager.computeList) {
+				computePass->recordPass(
+					frameInfo,
+					commandBuffer,
+					computeObject
+				);
+			}
+			
 			colorPass->recordPass(
 				objectManager,
 				frameInfo,
@@ -264,7 +277,7 @@ void Renderer::renderFrame(FrameInfo& frameInfo, ObjectManager& objectManager)
 	gpuFrameRate.update(gpuTime);
 }
 
-TextureManager::TextureID Renderer::renderHdriToCubeTexture(std::shared_ptr<GlobalRenderSystem> renderSystem, VkDescriptorSet descriptorSet)
+TextureManager::TextureID Renderer::renderHdriToCubeTexture(std::shared_ptr<RenderSystem> renderSystem, VkDescriptorSet descriptorSet)
 {
 
 	glm::mat4 captureViews[] = {
