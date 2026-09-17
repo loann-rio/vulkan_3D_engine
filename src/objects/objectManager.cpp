@@ -15,7 +15,7 @@
 void ObjectManager::startLoadModel()
 {
 
-    if (true)
+    if (false)
     {
         TextureBuilder textureBuilder(device);
         auto texture = assetManager.textures().create(textureBuilder.fromFile("skybox/cubemap_space.ktx").asCubemap());
