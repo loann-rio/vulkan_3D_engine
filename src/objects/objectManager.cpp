@@ -22,10 +22,10 @@ void ObjectManager::startLoadModel()
         
         ModelBuilder builder(device, assetManager);
         ModelManager::ModelID modelId = assetManager.models().create(builder.fromFile("assets/model/cube.obj").withTexture(texture));
+
         if (modelId)
         {
             createDescriptorSet(assetManager.models().get(modelId));
-
 
             auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
             gameObject->setName("cubemap1");
@@ -52,16 +52,28 @@ void ObjectManager::startLoadModel()
             }
         }
 
-        std::shared_ptr<Model> cube = Model::createModelFromFile(device, assetManager, std::vector<std::array<std::string, 2>>{ { "assets/model/grassLOD/grassLod1.obj", "assets/textures/whiteTexture.jpg" }, { "assets/model/grassLOD/grassLod2.obj", "" }, { "assets/model/grassLOD/grassLod3.obj", "" }, { "assets/model/grassLOD/grassLod4.obj", "assets/textures/GrassBillboard.png" } });
-        cube->computeShadow = false;
+        auto texture = assetManager.textures().create(TextureBuilder(device).fromFile("assets/textures/whiteTexture.jpg"));
+        auto textureGrass = assetManager.textures().create(TextureBuilder(device).fromFile("assets/textures/GrassBillboard.png"));
+
+        ModelManager::ModelID grassLod1 = assetManager.models().create(ModelBuilder(device, assetManager).fromFile("assets/model/grassLOD/grassLod1.obj").withTexture(texture));
+        ModelManager::ModelID grassLod2 = assetManager.models().create(ModelBuilder(device, assetManager).fromFile("assets/model/grassLOD/grassLod2.obj").withTexture(texture));
+        ModelManager::ModelID grassLod3 = assetManager.models().create(ModelBuilder(device, assetManager).fromFile("assets/model/grassLOD/grassLod3.obj").withTexture(texture));
+        ModelManager::ModelID grassLod4 = assetManager.models().create(ModelBuilder(device, assetManager).fromFile("assets/model/grassLOD/grassLod4.obj").withTexture(textureGrass));
+
+        createDescriptorSet(assetManager.models().get(grassLod1));
+        createDescriptorSet(assetManager.models().get(grassLod2));
+        createDescriptorSet(assetManager.models().get(grassLod3));
+        createDescriptorSet(assetManager.models().get(grassLod4));
+
 
         auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
         gameObject->setName("grass");
         gameObject->setModelType(ModelType::OBJ_MODEL);
-        gameObject->setModel(cube);
+        gameObject->setModel({ grassLod1, grassLod2, grassLod3, grassLod4 });
         gameObject->saveable = false;
         gameObject->setMultipleInstances(instances);
         gameObject->createDescriptorSet(*globalPool);
+        gameObject->transform.translation = { 12.f, 0.f, 12.f };
 		gameObject->createInstanceComputeDescriptorSets(*globalPool);
         pushGameObject(std::move(gameObject));
 
@@ -77,7 +89,7 @@ void ObjectManager::startLoadModel()
         computeList.push_back(computeGrass);
     }
 
-    {
+    /*{
         ModelBuilder builder(device, assetManager);
         ModelManager::ModelID id = assetManager.models().create(builder.fromFile("model/buster_drone/scene.gltf"));
 
@@ -97,7 +109,7 @@ void ObjectManager::startLoadModel()
             gameObject->createDescriptorSet(*globalPool);
             pushGameObject(std::move(gameObject));
         }
-    }
+    }*/
 
 
     /* {
@@ -505,26 +517,32 @@ void ObjectManager::pushModel()
             
             // iter over models in future
             for (futureObject object : it->get()) { 
-
-                // confirm that its a model
                 if (object.type != ModelType::UNDEFINED_MODEL) {
 
-                    // get gameobject
-                    auto* gameObject = dynamic_cast<GameObjectModel*>(get(object.id));
+                     // get gameobject
+                     auto* gameObject = dynamic_cast<GameObjectModel*>(get(object.id));
 
-                    if (!gameObject) {
-                        it = futureGameObjectslist.erase(it);
-                        continue;
-                    }
+                     if (!gameObject) {
+                         it = futureGameObjectslist.erase(it);
+                         continue;
+                     }
 
-                    if (object.instances.size() > 0) {
-                        gameObject->setMultipleInstances(object.instances);
-                    }
+                     if (object.instances.size() > 0) {
+                         gameObject->setMultipleInstances(object.instances);
+                     }
 
-                    gameObject->setModel(object.model);
-                    gameObject->setModelType(object.type);
-                    gameObject->createDescriptorSet(*globalPool);
-                    gameObject->show = true;
+                     if (object.modelID)
+                     {
+                         createDescriptorSet(assetManager.models().get(object.modelID));
+                         gameObject->setModel(object.modelID);
+                     }
+                     else
+                        gameObject->setModel(object.model);
+
+
+                     gameObject->setModelType(object.type);
+                     gameObject->createDescriptorSet(*globalPool);
+                     gameObject->show = true;
                 }
             }
 
@@ -582,10 +600,17 @@ void ObjectManager::loadObjectAsync(Device& device, AssetManager& assets, const 
     GameObject::id_t id = gameObject->getId();
 
     pushGameObject(std::move(gameObject)); 
-     
-    pushFuture( std::async(std::launch::async, [filePath, filePathTexture, &device, &assets, id]() {
-        std::shared_ptr<Model> model = Model::createModelFromFile(device, assets, filePath, filePathTexture.c_str());
-        return std::vector<futureObject> {futureObject{ model, model ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id }};
+
+    pushFuture( std::async(std::launch::async, [filePath, filePathTexture, &device, &assets, id]()
+        {
+            TextureBuilder textureBuilder(device);
+            auto texture = assets.textures().create(textureBuilder.fromFile(filePathTexture));
+
+            ModelBuilder builder(device, assets);
+            ModelManager::ModelID modelId = assets.models().create(builder.fromFile(filePath).withTexture(texture));
+
+            std::shared_ptr<Model> model;// = Model::createModelFromFile(device, assets, filePath, filePathTexture.c_str());
+            return std::vector<futureObject> {futureObject{ model, modelId ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id, {}, true, modelId }};
         }) 
      );
 }

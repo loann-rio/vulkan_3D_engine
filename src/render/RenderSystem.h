@@ -112,7 +112,9 @@ private:
 
 	void bindModel(
 		VkCommandBuffer& commandBuffer, 
-		ModelAsset* model
+		ModelAsset* model,
+		GameObjectModel& obj,
+		uint16_t frameIndex
 	);
 
 	void bindTextures(
@@ -127,7 +129,8 @@ private:
 		ModelAsset* model, 
 		Primitive& primitive, 
 		glm::mat4 modelMat, 
-		glm::mat4 normalM
+		glm::mat4 normalM,
+		uint32_t instanceCount
 	);
 
 	Device& device;

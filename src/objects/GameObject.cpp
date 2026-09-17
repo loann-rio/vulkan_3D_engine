@@ -77,13 +77,6 @@ glm::mat3 GameObject::getNormalMat()
     return transform.normalMatrix();
 }
 
-void GameObjectModel::setModel(std::shared_ptr<Model> newModel)
-{
-    model = std::move(newModel);
-    modelType = ModelType::OBJ_MODEL;
-    hasModel = true;
-}
-
 void GameObjectModel::setModel(std::shared_ptr<GlTFModel::ModelGltf> newModel) {
     model = std::move(newModel);
     modelType = ModelType::GLTF_MODEL;
@@ -93,6 +86,20 @@ void GameObjectModel::setModel(std::shared_ptr<GlTFModel::ModelGltf> newModel) {
 void GameObjectModel::setModel(ModelVariant newModel)
 {
     model = std::move(newModel);
+    hasModel = true;
+}
+
+void GameObjectModel::setModel(ModelManager::ModelID _model)
+{
+    lodModelAssets.push_back(_model);
+    modelType = ModelType::OBJ_MODEL;
+    hasModel = true;
+}
+
+void GameObjectModel::setModel(std::vector<ModelManager::ModelID> lod_models)
+{
+    lodModelAssets = lod_models;
+    modelType = ModelType::OBJ_MODEL;
     hasModel = true;
 }
 

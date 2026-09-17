@@ -203,11 +203,11 @@ void RenderSystem::bind(VkCommandBuffer& commandBuffer, std::vector<VkDescriptor
 	}
 }
 
-void RenderSystem::bindModel(VkCommandBuffer& commandBuffer, ModelAsset* model)
+void RenderSystem::bindModel(VkCommandBuffer& commandBuffer, ModelAsset* model, GameObjectModel& obj, uint16_t frameIndex)
 {
-	VkBuffer buffers[] = { model->lods[0].vertexBuffer->getBuffer() };
-	VkDeviceSize offsets[] = { 0 };
-	vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
+	VkBuffer buffers[] = { model->lods[0].vertexBuffer->getBuffer(), obj.getFrameInstancesBuffer(frameIndex)->getBuffer() };
+	VkDeviceSize offsets[] = { 0, 0 };
+	vkCmdBindVertexBuffers(commandBuffer, 0, 2, buffers, offsets);
 	vkCmdBindIndexBuffer(commandBuffer, model->lods[0].indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 }
 
@@ -222,7 +222,7 @@ void RenderSystem::bindTextures(VkCommandBuffer& commandBuffer, ModelAsset* mode
 		nullptr);
 }
 
-void RenderSystem::drawModel(VkCommandBuffer& commandBuffer, ModelAsset* model, Primitive& primitive, glm::mat4 modelMat, glm::mat4 normalM)
+void RenderSystem::drawModel(VkCommandBuffer& commandBuffer, ModelAsset* model, Primitive& primitive, glm::mat4 modelMat, glm::mat4 normalM, uint32_t instanceCount = 1)
 {
 	SimplePushConstantData push{};
 	push.modelMatrix = modelMat;
@@ -237,8 +237,9 @@ void RenderSystem::drawModel(VkCommandBuffer& commandBuffer, ModelAsset* model, 
 		&push
 	);
 
-	vkCmdDrawIndexed(commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
-	
+	uint32_t firstInstance = (instanceCount == 1) ? 0 : 1;
+
+	vkCmdDrawIndexed(commandBuffer, primitive.indexCount, instanceCount, primitive.firstIndex, 0, firstInstance);
 }
 
 void RenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, std::vector<VkDescriptorSet> globalDescriptorSets, const std::array<FrustumPlane, 6>& frustrumPlanes)
@@ -251,16 +252,28 @@ void RenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& 
 		{
 			
 
-			if (obj->modelAsset) {
-
+			if (obj->modelAsset) 
+			{
 				auto modelAsset = assets.models().get(obj->modelAsset);
 
-				bindModel(commandBuffer, modelAsset);
+				bindModel(commandBuffer, modelAsset, *obj, frameInfo.frameIndex);
 
 				for (auto primitive : modelAsset->lods[0].primitives)
 				{
 					bindTextures(commandBuffer, modelAsset, primitive, frameInfo.frameIndex);
-					drawModel(commandBuffer, modelAsset, primitive, obj->getTransformMat(), obj->getNormalMat());
+					drawModel(commandBuffer, modelAsset, primitive, obj->getTransformMat(), obj->getNormalMat(), obj->getInstanceCount());
+				}
+			}
+			else if (obj->lodModelAssets.size()) 
+			{
+				auto modelAsset = assets.models().get(obj->lodModelAssets[0]);
+
+				bindModel(commandBuffer, modelAsset, *obj, frameInfo.frameIndex);
+
+				for (auto primitive : modelAsset->lods[0].primitives)
+				{
+					bindTextures(commandBuffer, modelAsset, primitive, frameInfo.frameIndex);
+					drawModel(commandBuffer, modelAsset, primitive, obj->getTransformMat(), obj->getNormalMat(), obj->getInstanceCount());
 				}
 			}
 			else

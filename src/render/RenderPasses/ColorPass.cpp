@@ -60,7 +60,7 @@ void ColorPass::recordPass(ObjectManager& objectManager, FrameInfo& frameInfo, V
             {
                 frameInfo.globalDescriptorSet[frameInfo.frameIndex],
                 frameInfo.shadowDescriptorSet[frameInfo.frameIndex],
-                assets.models().get(objectManager.baseSkyBox->modelAsset)->lods[0].materials[0].descriptorSet[frameInfo.frameIndex]
+                assets.models().get(objectManager.baseSkyBox->lodModelAssets[0])->lods[0].materials[0].descriptorSet[frameInfo.frameIndex]
             },
             frameInfo.mainCameraFrustrumPlanes);
     else

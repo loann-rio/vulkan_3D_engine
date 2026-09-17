@@ -167,14 +167,10 @@ void Model::bind(VkCommandBuffer& commandBuffer, bool bindTexture, VkPipelineLay
 				0,
 				nullptr);
 		}
-		else
-			{
-			throw std::runtime_error("Model::bind() failed to bind descriptor set: no descriptor set available");
-		}
 	}
 
 	VkBuffer buffers[] = { vertexBuffer->getBuffer(), instancesBuffer->getBuffer() };
-	VkDeviceSize offsets[] = { 0, 0};
+	VkDeviceSize offsets[] = { 0, 0 };
 	vkCmdBindVertexBuffers(commandBuffer, 0, 2, buffers, offsets);
 	
 	if (hasIndexBuffer) {
@@ -199,8 +195,7 @@ void Model::draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& PipelineLayou
 		&push 
 	);
 
-	// if multiple instance skip reference instance
-	//instanceCount = instanceList.size() + 1;
+	// if multiple instance skip reference instance 
 	uint32_t firstInstance = (instanceCount == 1) ? 0 : 1;
 
 	uint32_t drawIndexCount = indexCount;

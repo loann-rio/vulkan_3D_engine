@@ -285,17 +285,10 @@ public:
 		hasModel = true; 
 	}
 
-	void setModel(std::shared_ptr<Model> model);
 	void setModel(std::shared_ptr<GlTFModel::ModelGltf> model);
 	void setModel(ModelVariant newModel);
-
-
-	void setModel(ModelManager::ModelID _model) {
-		modelAsset = _model;
-		modelType = ModelType::OBJ_MODEL;
-		hasModel = true;
-	}
-
+	void setModel(ModelManager::ModelID _model);
+	void setModel(std::vector<ModelManager::ModelID> lod_models);
 
 	// setters getters
 	void setModelType(ModelType type) { modelType = type; } 
@@ -322,7 +315,6 @@ public:
 	void update(float dtime);
 
 	void bindModel(VkCommandBuffer& commandBuffer, bool bindTexture, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, uint16_t modelDescriptorSetIndex) const;
-	void bind_original_instance_buffer(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex) const;
 	void drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, const std::array<FrustumPlane, 6>& frustrumPlanes);
 	void drawModelDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, int cameraIndex, uint16_t frameIndex, const std::array<FrustumPlane, 6>& planes);
 
@@ -338,6 +330,7 @@ public:
 	void debugUI(); 
 
 	ModelManager::ModelID modelAsset;
+	std::vector<ModelManager::ModelID> lodModelAssets;
 
 	bool show = true;
 
