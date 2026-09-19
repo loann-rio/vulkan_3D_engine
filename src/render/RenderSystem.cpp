@@ -186,7 +186,7 @@ void RenderSystem::renderModelDepth(VkCommandBuffer& commandBuffer, GameObjectMo
 	obj->drawModelDepth(commandBuffer, pipelineLayout, lightIndex, frameIndex, planes);
 }
 
-void RenderSystem::bind(VkCommandBuffer& commandBuffer, std::vector<VkDescriptorSet> globalDescriptorSets)
+void RenderSystem::bindGlobalSets(VkCommandBuffer& commandBuffer, std::vector<VkDescriptorSet> globalDescriptorSets)
 {
 	pipeline->bind(commandBuffer);
 
@@ -242,29 +242,35 @@ void RenderSystem::drawModel(VkCommandBuffer& commandBuffer, ModelAsset* model, 
 	vkCmdDrawIndexed(commandBuffer, primitive.indexCount, instanceCount, primitive.firstIndex, 0, firstInstance);
 }
 
+void RenderSystem::drawDepth(VkCommandBuffer& commandBuffer, ModelAsset* model, Primitive& primitive, glm::mat4 modelMat, uint32_t cameraIndex, uint32_t instanceCount = 1)
+{
+	DepthPushConstantData push{};
+	push.modelMatrix = modelMat;
+	push.indexDepthCamera = cameraIndex;
+
+	vkCmdPushConstants(
+		commandBuffer,
+		pipelineLayout,
+		VK_SHADER_STAGE_VERTEX_BIT,
+		0,
+		sizeof(push),
+		&push
+	);
+
+	uint32_t firstInstance = (instanceCount == 1) ? 0 : 1;
+
+	vkCmdDrawIndexed(commandBuffer, primitive.indexCount, instanceCount, primitive.firstIndex, 0, firstInstance);
+}
+
 void RenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, std::vector<VkDescriptorSet> globalDescriptorSets, const std::array<FrustumPlane, 6>& frustrumPlanes)
 {
-	bind(commandBuffer, globalDescriptorSets);
+	bindGlobalSets(commandBuffer, globalDescriptorSets);
 	
 	for (auto& obj : frameInfo.listGameObjects)
 	{
 		if (obj->show && !obj->toBeRemoved && obj->getModelType() == modelType && obj->getModelSubType() == modelSubType)
 		{
-			
-
-			if (obj->modelAsset) 
-			{
-				auto modelAsset = assets.models().get(obj->modelAsset);
-
-				bindModel(commandBuffer, modelAsset, *obj, frameInfo.frameIndex);
-
-				for (auto primitive : modelAsset->lods[0].primitives)
-				{
-					bindTextures(commandBuffer, modelAsset, primitive, frameInfo.frameIndex);
-					drawModel(commandBuffer, modelAsset, primitive, obj->getTransformMat(), obj->getNormalMat(), obj->getInstanceCount());
-				}
-			}
-			else if (obj->lodModelAssets.size()) 
+			if (obj->lodModelAssets.size()) 
 			{
 				auto modelAsset = assets.models().get(obj->lodModelAssets[0]);
 
@@ -276,31 +282,39 @@ void RenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& 
 					drawModel(commandBuffer, modelAsset, primitive, obj->getTransformMat(), obj->getNormalMat(), obj->getInstanceCount());
 				}
 			}
-			else
-			{
-				renderModel(commandBuffer, frameInfo, obj, frustrumPlanes);
-			}
 		}
 	}
 }
 
 void RenderSystem::renderGameObjectsDepth(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, std::vector<VkDescriptorSet> globalDescriptorSets, int lightIndex, uint16_t frameIndex)
 { 
-	// bind pipeline and global descriptor sets
-	bind(commandBuffer, globalDescriptorSets);
+	bindGlobalSets(commandBuffer, globalDescriptorSets);
 
-	// render each model with the corresponding type
 	for (auto obj : frameInfo.listGameObjects)
 	{
-		if (obj->show && obj->getModelType() == modelType && obj->getModelSubType() == modelSubType)
-			renderModelDepth(commandBuffer, obj, lightIndex, frameIndex, frameInfo.listFrustrumPlanes[lightIndex]);
+		if (obj->show && !obj->toBeRemoved && obj->getModelType() == modelType && obj->getModelSubType() == modelSubType)
+			if (obj->lodModelAssets.size())
+			{
+				auto modelAsset = assets.models().get(obj->lodModelAssets[0]);
+
+				if (!modelAsset->hasShadow) continue;
+				if (!Camera::isAABBinFrustrum(obj->getAABB().getAABB(obj->getTransformMat()), frameInfo.listFrustrumPlanes[lightIndex])) continue;
+
+
+				bindModel(commandBuffer, modelAsset, *obj, frameInfo.frameIndex);
+
+				for (auto primitive : modelAsset->lods[0].primitives)
+				{
+					drawDepth(commandBuffer, modelAsset, primitive, obj->getTransformMat(), lightIndex, obj->getInstanceCount());
+				}
+			}
 	}
 }
 
 void RenderSystem::renderFullScreen(VkCommandBuffer& commandBuffer, std::vector<VkDescriptorSet> globalDescriptorSets, glm::mat4 view, glm::mat4 proj)
 {
 
-	bind(commandBuffer, globalDescriptorSets);
+	bindGlobalSets(commandBuffer, globalDescriptorSets);
 
 	struct Push { glm::mat4 view; glm::mat4 proj; } push;
 

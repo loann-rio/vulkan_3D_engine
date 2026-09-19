@@ -55,10 +55,10 @@ void ObjectManager::startLoadModel()
         auto texture = assetManager.textures().create(TextureBuilder(device).fromFile("assets/textures/whiteTexture.jpg"));
         auto textureGrass = assetManager.textures().create(TextureBuilder(device).fromFile("assets/textures/GrassBillboard.png"));
 
-        ModelManager::ModelID grassLod1 = assetManager.models().create(ModelBuilder(device, assetManager).fromFile("assets/model/grassLOD/grassLod1.obj").withTexture(texture));
-        ModelManager::ModelID grassLod2 = assetManager.models().create(ModelBuilder(device, assetManager).fromFile("assets/model/grassLOD/grassLod2.obj").withTexture(texture));
-        ModelManager::ModelID grassLod3 = assetManager.models().create(ModelBuilder(device, assetManager).fromFile("assets/model/grassLOD/grassLod3.obj").withTexture(texture));
-        ModelManager::ModelID grassLod4 = assetManager.models().create(ModelBuilder(device, assetManager).fromFile("assets/model/grassLOD/grassLod4.obj").withTexture(textureGrass));
+        ModelManager::ModelID grassLod1 = assetManager.models().create(ModelBuilder(device, assetManager).fromFile("assets/model/grassLOD/grassLod1.obj").withShadow(false).withTexture(texture));
+        ModelManager::ModelID grassLod2 = assetManager.models().create(ModelBuilder(device, assetManager).fromFile("assets/model/grassLOD/grassLod2.obj").withShadow(false).withTexture(texture));
+        ModelManager::ModelID grassLod3 = assetManager.models().create(ModelBuilder(device, assetManager).fromFile("assets/model/grassLOD/grassLod3.obj").withShadow(false).withTexture(texture));
+        ModelManager::ModelID grassLod4 = assetManager.models().create(ModelBuilder(device, assetManager).fromFile("assets/model/grassLOD/grassLod4.obj").withShadow(false).withTexture(textureGrass));
 
         createDescriptorSet(assetManager.models().get(grassLod1));
         createDescriptorSet(assetManager.models().get(grassLod2));
@@ -590,7 +590,7 @@ void ObjectManager::loadObjectAsync(Device& device, AssetManager& assets, const 
 
 void ObjectManager::loadObjectAsync(Device& device, AssetManager& assets, const std::string& filePath, const std::string filePathTexture, TransformComponent transform, const std::string& name)
 {
-    auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
+    auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assets);
     gameObject->transform = transform;  
     gameObject->setName(name.empty() ? filePath : name); 
 

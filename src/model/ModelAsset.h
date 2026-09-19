@@ -40,7 +40,7 @@ public:
 	~ModelAsset() = default;
 
 //private:
-	bool hasShadow = false;
+	bool hasShadow = true;
 
 	// LODs
 	std::vector<ModelLOD> lods;

@@ -105,7 +105,7 @@ private:
 		const std::array<FrustumPlane, 6>& planes
 	);
 
-	void bind(
+	void bindGlobalSets(
 		VkCommandBuffer& commandBuffer, 
 		std::vector<VkDescriptorSet> globalDescriptorSets
 	); 
@@ -130,6 +130,15 @@ private:
 		Primitive& primitive, 
 		glm::mat4 modelMat, 
 		glm::mat4 normalM,
+		uint32_t instanceCount
+	);
+
+	void drawDepth(
+		VkCommandBuffer& commandBuffer, 
+		ModelAsset* model, 
+		Primitive& primitive, 
+		glm::mat4 modelMat, 
+		uint32_t cameraIndex,
 		uint32_t instanceCount
 	);
 

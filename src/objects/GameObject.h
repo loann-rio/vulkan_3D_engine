@@ -329,7 +329,6 @@ public:
 
 	void debugUI(); 
 
-	ModelManager::ModelID modelAsset;
 	std::vector<ModelManager::ModelID> lodModelAssets;
 
 	bool show = true;

@@ -12,7 +12,7 @@ class ModelManager;
 class AssetManager;
 
 class ModelBuilder {
-    enum class SourceType { None, GlTF, Obj };
+    enum class SourceType { None, GlTF, Obj, Decoded };
 
 public:
     explicit ModelBuilder(Device& device, AssetManager& assets);
@@ -21,9 +21,12 @@ public:
     ModelBuilder& fromFile(const std::string& path);
     ModelBuilder& fromObj(const std::string& path);
     ModelBuilder& fromGlTF(const std::string& path);
+	ModelBuilder& fromDecodedModel(const DecodedModel& decodedModel);
    
     //// Model options ////
 	ModelBuilder& withTexture(TextureManager::TextureID texture);
+
+    ModelBuilder& withShadow(bool enable);
 
 private:
 
@@ -44,6 +47,8 @@ private:
 
     // Selected decoder type
     SourceType source = SourceType::None;
+
+	bool computeShadow = true;
 
     friend ModelManager;
 };

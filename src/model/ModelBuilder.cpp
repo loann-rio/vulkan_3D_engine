@@ -81,6 +81,12 @@ ModelBuilder& ModelBuilder::withTexture(TextureManager::TextureID texture)
     return *this;
 }
 
+ModelBuilder& ModelBuilder::withShadow(bool enable)
+{
+	computeShadow = enable;
+	return *this;
+}
+
 uint64_t ModelBuilder::hash() const
 {
     auto combine = [](uint64_t& seed, uint64_t v) {
@@ -167,6 +173,7 @@ std::unique_ptr<ModelAsset> ModelBuilder::buildObj()
         
 
         fullModel->lods.push_back(std::move(model));
+		fullModel->hasShadow = computeShadow;
     }
 
     return fullModel;
@@ -189,7 +196,7 @@ std::unique_ptr<ModelAsset> ModelBuilder::buildGlTF()
             throw std::runtime_error("path cannot be empty for obj");
         }
 
-        //throw std::runtime_error("build type not implemented yet");
+        throw std::runtime_error("build type not implemented yet");
 
         ObjModelDecoder decoder;
         if (!decoder.canDecode(modelFilePath)) {
