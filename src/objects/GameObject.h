@@ -41,8 +41,7 @@ class ObjectManager;
 class GameObject;
 class GameObjectBehavior;
 
-using ModelVariant = std::variant<std::shared_ptr<Model>,
-	std::shared_ptr<GlTFModel::ModelGltf>>;
+using ModelVariant = std::variant<std::shared_ptr<Model>, std::shared_ptr<GlTFModel::ModelGltf>>;
 
 enum class ModelType {
 	UNDEFINED_MODEL = 0,

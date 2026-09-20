@@ -21,7 +21,7 @@ public:
     ModelBuilder& fromFile(const std::string& path);
     ModelBuilder& fromObj(const std::string& path);
     ModelBuilder& fromGlTF(const std::string& path);
-	ModelBuilder& fromDecodedModel(const DecodedModel& decodedModel);
+	ModelBuilder& fromDecodedModel(DecodedModel decodedModel);
    
     //// Model options ////
 	ModelBuilder& withTexture(TextureManager::TextureID texture);
@@ -38,6 +38,7 @@ private:
     
     std::unique_ptr<ModelAsset> buildObj();
     std::unique_ptr<ModelAsset> buildGlTF();
+    std::unique_ptr<ModelAsset> buildDecodedModel();
 
     std::vector<std::string> modelPath{};
     std::vector<TextureManager::TextureID> textures{};
@@ -47,6 +48,8 @@ private:
 
     // Selected decoder type
     SourceType source = SourceType::None;
+
+    DecodedModel decodedModel;
 
 	bool computeShadow = true;
 

@@ -3,6 +3,7 @@
 #include <algorithm> 
 #include <stdexcept>
 #include <iostream>
+#include <random>
 
 #include "Decoder/ObjModelDecoder.h"
 #include "ModelUploader.h"
@@ -75,6 +76,16 @@ ModelBuilder& ModelBuilder::fromGlTF(const std::string& path)
     return *this;
 }
 
+ModelBuilder& ModelBuilder::fromDecodedModel(DecodedModel decodedModelParam)
+{
+    if (source != SourceType::Decoded && source != SourceType::None)
+        throw std::runtime_error("all model should have the same type");
+
+    source = SourceType::Decoded;
+    decodedModel = std::move(decodedModelParam);
+    return *this;
+}
+
 ModelBuilder& ModelBuilder::withTexture(TextureManager::TextureID texture)
 {
     textures.push_back(texture);
@@ -98,6 +109,14 @@ uint64_t ModelBuilder::hash() const
 
     uint64_t h = 0;
 
+    if (source == SourceType::Decoded) {
+        std::random_device rd;
+        std::mt19937_64 gen(rd());
+        uint64_t rnd = gen();
+        combine(h, rnd);
+        return h;
+    }
+
     for (auto path: modelPath)
         combine(h, strHash(path));
 
@@ -117,7 +136,10 @@ std::unique_ptr<ModelAsset> ModelBuilder::build()
 
             case ModelBuilder::SourceType::Obj:
                 return buildObj();
-        
+
+			case ModelBuilder::SourceType::Decoded:
+				return buildDecodedModel();        
+
             case ModelBuilder::SourceType::None:
             default:
                 throw std::runtime_error("no suported file provided");
@@ -178,6 +200,34 @@ std::unique_ptr<ModelAsset> ModelBuilder::buildObj()
 
     return fullModel;
 
+}
+
+std::unique_ptr<ModelAsset> ModelBuilder::buildDecodedModel()
+{
+    std::unique_ptr<ModelAsset> fullModel = std::make_unique<ModelAsset>();
+
+    ModelLOD model = ModelUploader::uploadDecodedModel(device, assets, decodedModel);
+
+    size_t i = 0;
+    if (i < textures.size())
+    {
+        model.materials.clear();
+        Material mat;
+        mat.albedoTexture = textures[i++];
+        model.materials.push_back(mat);
+    }
+
+    if (model.materials.empty()) {
+        Material mat;
+        TextureBuilder builder(device);
+        mat.albedoTexture = assets.textures().create(builder.fromFile("assets/textures/whiteTexture.jpg"));
+        model.materials.push_back(mat);
+    }
+
+    fullModel->lods.push_back(std::move(model));
+    fullModel->hasShadow = computeShadow;
+
+    return fullModel;
 }
 
 std::unique_ptr<ModelAsset> ModelBuilder::buildGlTF()

@@ -142,8 +142,10 @@ void ObjectManager::createPrimitive(PrimitivesModelType type, int detail, Transf
 
         switch (type) {
         case PrimitivesModelType::PLANE:
-            primitive = PrebuiltModel::createPlane(this->device, this->assetManager, detail, 1, { 0, 0, 0 }, filePathTexture.empty() ? "assets/textures/whiteTexture.jpg" : filePathTexture, 20);
-            break;
+        {
+            ModelManager::ModelID modelID = PrebuiltModel::createPlane(this->device, this->assetManager, detail, 1, { 0, 0, 0 }, filePathTexture.empty() ? "assets/textures/whiteTexture.jpg" : filePathTexture, 20);
+            return std::vector<futureObject>{ futureObject{ ModelVariant{}, modelID ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id, {}, false, modelID } };
+        }
         case PrimitivesModelType::CUBE:
             primitive = PrebuiltModel::createCube(this->device, this->assetManager);
             break;
