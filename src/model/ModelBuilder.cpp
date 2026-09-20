@@ -192,8 +192,6 @@ std::unique_ptr<ModelAsset> ModelBuilder::buildObj()
             model.materials.push_back(mat);
         }
 
-        
-
         fullModel->lods.push_back(std::move(model));
 		fullModel->hasShadow = computeShadow;
     }
@@ -208,17 +206,16 @@ std::unique_ptr<ModelAsset> ModelBuilder::buildDecodedModel()
 
     ModelLOD model = ModelUploader::uploadDecodedModel(device, assets, decodedModel);
 
-    size_t i = 0;
-    if (i < textures.size())
+    if (textures.size())
     {
         model.materials.clear();
         Material mat;
-        mat.albedoTexture = textures[i++];
+        mat.albedoTexture = textures[0];
         model.materials.push_back(mat);
     }
 
     if (model.materials.empty()) {
-        Material mat;
+        Material mat;   
         TextureBuilder builder(device);
         mat.albedoTexture = assets.textures().create(builder.fromFile("assets/textures/whiteTexture.jpg"));
         model.materials.push_back(mat);

@@ -23,7 +23,7 @@ struct futureObject {
     ModelVariant model;
     ModelType type;
     GameObject::id_t id; 
-    std::vector<Model::Instance> instances{};
+    std::vector<ModelInstance> instances{};
     bool saveable = true;
     ModelManager::ModelID modelID;
 }; 

@@ -14,6 +14,7 @@
 #include <unordered_map>
 #include "../Textures/TextureBuilder.h"
 #include "../base/Swap_chain.h"
+#include "../assetManager/ModelManager.h"
 
 namespace std {
 	template<>
@@ -373,7 +374,7 @@ std::vector<VkVertexInputBindingDescription> Model::Vertex::getBindingDescriptio
 	bindingDescription[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
 	//if (hasMutipleInstances)
-		bindingDescription.push_back({ 1, sizeof(Instance), VK_VERTEX_INPUT_RATE_INSTANCE });
+		bindingDescription.push_back({ 1, sizeof(ModelInstance), VK_VERTEX_INPUT_RATE_INSTANCE });
 		
 	return bindingDescription;
 }
@@ -388,9 +389,9 @@ std::vector<VkVertexInputAttributeDescription> Model::Vertex::getAttributeDescri
 	attributeDescriptions.push_back({ 3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv) });
 
 	if (hasMutipleInstances) {
-		attributeDescriptions.push_back({ 4, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Instance, position) });
-		attributeDescriptions.push_back({ 5, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Instance, rotation) });
-		attributeDescriptions.push_back({ 6, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Instance, scale) });
+		attributeDescriptions.push_back({ 4, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ModelInstance, position) });
+		attributeDescriptions.push_back({ 5, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ModelInstance, rotation) });
+		attributeDescriptions.push_back({ 6, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ModelInstance, scale) });
 	}
 
 	return attributeDescriptions;
@@ -403,9 +404,9 @@ std::vector<VkVertexInputAttributeDescription> Model::Vertex::getAttributeDescri
 	attributeDescriptions.push_back({ 0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position) });
 
 	if (hasMutipleInstances) {
-		attributeDescriptions.push_back({ 1, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Instance, position) }); 
-		attributeDescriptions.push_back({ 2, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Instance, rotation) }); 
-		attributeDescriptions.push_back({ 3, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Instance, scale) }); 
+		attributeDescriptions.push_back({ 1, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ModelInstance, position) });
+		attributeDescriptions.push_back({ 2, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ModelInstance, rotation) });
+		attributeDescriptions.push_back({ 3, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ModelInstance, scale) });
 	}
 	
 	return attributeDescriptions;

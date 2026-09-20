@@ -2,10 +2,20 @@
 
 #include <unordered_map>
 #include <mutex>
+#include <glm/fwd.hpp>
+#include <cstdint>
+#include <memory>
 
 #include "../model/ModelAsset.h"
 
+
 class ModelBuilder;
+
+struct ModelInstance {
+    glm::vec4 position;
+    glm::vec4 rotation;
+    glm::vec4 scale;
+};
 
 class ModelManager {
 

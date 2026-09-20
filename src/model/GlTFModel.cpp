@@ -1193,7 +1193,7 @@ std::vector<VkVertexInputBindingDescription> GlTFModel::ModelGltf::Vertex::getBi
 	bindingDescription[0].stride = sizeof(Vertex);
 	bindingDescription[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-	bindingDescription.push_back({ 1, sizeof(Model::Instance), VK_VERTEX_INPUT_RATE_INSTANCE });
+	bindingDescription.push_back({ 1, sizeof(ModelInstance), VK_VERTEX_INPUT_RATE_INSTANCE });
 
 	return bindingDescription;
 }
@@ -1212,9 +1212,9 @@ std::vector<VkVertexInputAttributeDescription> GlTFModel::ModelGltf::Vertex::get
 
 	if (hasMutipleInstances)
 	{
-		attributeDescriptions.push_back({ 7, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Model::Instance, position) });
-		attributeDescriptions.push_back({ 8, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Model::Instance, rotation) });
-		attributeDescriptions.push_back({ 9, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Model::Instance, scale) });
+		attributeDescriptions.push_back({ 7, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ModelInstance, position) });
+		attributeDescriptions.push_back({ 8, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ModelInstance, rotation) });
+		attributeDescriptions.push_back({ 9, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ModelInstance, scale) });
 	}
 
 	return attributeDescriptions;
@@ -1229,9 +1229,9 @@ std::vector<VkVertexInputAttributeDescription> GlTFModel::ModelGltf::Vertex::get
 	attributeDescriptions.push_back({ 2, 0, VK_FORMAT_R32G32B32A32_SFLOAT , offsetof(Vertex, weight0) });
 
 	if (hasMutipleInstances) {
-		attributeDescriptions.push_back({ 3, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Model::Instance, position) });
-		attributeDescriptions.push_back({ 4, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Model::Instance, rotation) });
-		attributeDescriptions.push_back({ 5, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Model::Instance, scale) });
+		attributeDescriptions.push_back({ 3, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ModelInstance, position) });
+		attributeDescriptions.push_back({ 4, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ModelInstance, rotation) });
+		attributeDescriptions.push_back({ 5, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ModelInstance, scale) });
 	}
 
 	return attributeDescriptions;

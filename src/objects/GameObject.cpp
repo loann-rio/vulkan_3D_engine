@@ -134,14 +134,14 @@ VkDescriptorImageInfo GameObjectModel::getTextureImageInfo() const
     }, model);
 }
 
-void GameObjectModel::setMultipleInstances(std::vector<Model::Instance> instances)
+void GameObjectModel::setMultipleInstances(std::vector<ModelInstance> instances)
 {
     
-    VkDeviceSize bufferSize = sizeof(Model::Instance) * instances.size();
+    VkDeviceSize bufferSize = sizeof(ModelInstance) * instances.size();
     instanceCount = static_cast<uint32_t>(instances.size());
     if (instanceCount == 0) return;
 
-    uint32_t instanceSize = sizeof(Model::Instance);
+    uint32_t instanceSize = sizeof(ModelInstance);
 
     Buffer stagingBuffer{ 
         device, 

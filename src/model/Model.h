@@ -42,12 +42,6 @@ public:
 	static std::unique_ptr<Model> createModelFromFile(Device& device, AssetManager& assets, std::vector<std::array<std::string, 2>> filesPath);
 
 
-	struct Instance {
-		glm::vec4 position;
-		glm::vec4 rotation;
-		glm::vec4 scale;
-	};
-
 	struct Vertex {
 		glm::vec3 position{};
 		glm::vec3 color{};

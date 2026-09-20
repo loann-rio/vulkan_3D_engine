@@ -313,8 +313,8 @@ class GlTFModel
 
 		std::vector<std::string> extensions; 
 
-		std::vector<Model::Instance> instanceList = {};
-		std::vector<Model::Instance> getInstanceList() { return instanceList; }
+		std::vector<ModelInstance> instanceList = {};
+		std::vector<ModelInstance> getInstanceList() { return instanceList; }
 
 		std::vector<VkDescriptorSet> descriptorSet{ Swap_chain::MAX_FRAMES_IN_FLIGHT };
 

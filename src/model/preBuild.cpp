@@ -213,12 +213,6 @@ ModelManager::ModelID PrebuiltModel::createPlane(Device& device, AssetManager& a
     prim.materialIndex = 0;
     decodedModel.primitives.push_back(prim);
 
-    // Material (use provided texturePath -> ModelUploader will load it; if empty, fallback will be used)
-    DecodedMaterial mat{};
-    mat.name = "generated_plane";
-    mat.albedoTexture = texturePath;
-    decodedModel.materials.push_back(mat);
-
     // AABB
     const auto& cpuVerts = static_cast<ObjVertexData*>(decodedModel.vertices.get())->cpuData();
     glm::vec3 minV(std::numeric_limits<float>::infinity());
@@ -231,9 +225,13 @@ ModelManager::ModelID PrebuiltModel::createPlane(Device& device, AssetManager& a
     decodedModel.aabb.valid = true;
     decodedModel.name = "generated_plane_detail";
 
+    TextureBuilder textBuilder(device);
+    auto texture = assets.textures().create(textBuilder.fromFile(texturePath));
+
+
     // Build via ModelBuilder and cache in ModelManager
     ModelBuilder builder(device, assets);
-    builder.fromDecodedModel(std::move(decodedModel));
+    builder.fromDecodedModel(std::move(decodedModel)).withTexture(texture);
 
     return assets.models().create(builder);
 }

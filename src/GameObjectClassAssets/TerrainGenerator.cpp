@@ -4,6 +4,7 @@
 #include "../Textures/TextureObject.h"
 
 #include <array>
+#include "../assetManager/ModelManager.h"
 
 void TerrainGenerator::loop(Device& device, ObjectManager* objManager, GameObject* object)
 {
@@ -173,9 +174,9 @@ std::vector<std::vector<glm::vec2>> TerrainGenerator::generateChunck(float Xoffs
 	return noiseMap;
 }
 
-std::vector<Model::Instance> TerrainGenerator::placeTrees(std::vector<std::vector<glm::vec2>> heightMap, float Xoffset, float Yoffset) const
+std::vector<ModelInstance> TerrainGenerator::placeTrees(std::vector<std::vector<glm::vec2>> heightMap, float Xoffset, float Yoffset) const
 {
-	std::vector<Model::Instance> treeList = {};
+	std::vector<ModelInstance> treeList = {};
 
 	srand(Xoffset + Yoffset);
 
@@ -192,7 +193,7 @@ std::vector<Model::Instance> TerrainGenerator::placeTrees(std::vector<std::vecto
 
 			if (abs(heightMap[x][y].y) < 0.02 && heightMap[x][y].x < 2.f)
 			{
-				Model::Instance instance = {
+				ModelInstance instance = {
 					{ Xoffset + xPos, -heightMap[x][y].x, Yoffset + yPos, 1.f },
 					{0.f, 0.f, 0.f, 0.f },
 					{0.1f,  -0.1 * sizeFactor, 0.1f, 1.f } 
