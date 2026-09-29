@@ -64,7 +64,7 @@ void ColorPass::recordPass(ObjectManager& objectManager, FrameInfo& frameInfo, V
             },
             frameInfo.mainCameraFrustrumPlanes);
     else
-        objectManager.baseSkyBox = dynamic_cast<GameObjectModel*>(objectManager.get("cubemap1"));
+        objectManager.baseSkyBox = dynamic_cast<GameObjectModel*>(objectManager.get("cubemap"));
 
 
     objRenderSystem->renderGameObjects(

@@ -8,6 +8,8 @@
 #include <array>
 #include <cassert>
 
+//if (!Camera::isAABBinFrustrum(obj->getAABB().getAABB(obj->getTransformMat()), frustrumPlanes)) return;
+
 RenderSystem::RenderSystem(Device& device, AssetManager& assets, RenderSystemConfig config):
 	device{ device },
 	assets{ assets },
@@ -171,21 +173,6 @@ void RenderSystem::createPipeline(VkRenderPass renderPass, const std::string& ve
 	);
 }
 
-void RenderSystem::renderModel(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, GameObjectModel* obj, const std::array<FrustumPlane, 6>& frustrumPlanes)
-{
-	if (!Camera::isAABBinFrustrum(obj->getAABB().getAABB(obj->getTransformMat()), frustrumPlanes)) return;
-	
-	obj->bindModel(commandBuffer, true, pipelineLayout, frameInfo.frameIndex, modelDescriptorSetIndex);
-
-	obj->drawModel(commandBuffer, pipelineLayout, frameInfo.frameIndex, frustrumPlanes);
-}
-
-void RenderSystem::renderModelDepth(VkCommandBuffer& commandBuffer, GameObjectModel* obj, int lightIndex, uint16_t frameIndex, const std::array<FrustumPlane, 6>& planes) 
-{
-	obj->bindModel(commandBuffer, false, pipelineLayout, 1, 1);
-	obj->drawModelDepth(commandBuffer, pipelineLayout, lightIndex, frameIndex, planes);
-}
-
 void RenderSystem::bindGlobalSets(VkCommandBuffer& commandBuffer, std::vector<VkDescriptorSet> globalDescriptorSets)
 {
 	pipeline->bind(commandBuffer);
@@ -205,9 +192,11 @@ void RenderSystem::bindGlobalSets(VkCommandBuffer& commandBuffer, std::vector<Vk
 
 void RenderSystem::bindModel(VkCommandBuffer& commandBuffer, ModelAsset* model, GameObjectModel& obj, uint16_t frameIndex)
 {
-	VkBuffer buffers[] = { model->lods[0].vertexBuffer->getBuffer(), obj.getFrameInstancesBuffer(frameIndex)->getBuffer() };
+
+	Buffer* instanceBuffer = obj.getFrameInstancesBuffer(frameIndex);
+	VkBuffer buffers[] = { model->lods[0].vertexBuffer->getBuffer() , instanceBuffer ? instanceBuffer->getBuffer() : nullptr };
 	VkDeviceSize offsets[] = { 0, 0 };
-	vkCmdBindVertexBuffers(commandBuffer, 0, 2, buffers, offsets);
+	vkCmdBindVertexBuffers(commandBuffer, 0, instanceBuffer ? 2 : 1, buffers, offsets);
 	vkCmdBindIndexBuffer(commandBuffer, model->lods[0].indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 }
 
@@ -239,7 +228,7 @@ void RenderSystem::drawModel(VkCommandBuffer& commandBuffer, ModelAsset* model, 
 
 	uint32_t firstInstance = (instanceCount == 1) ? 0 : 1;
 
-	vkCmdDrawIndexed(commandBuffer, primitive.indexCount, instanceCount, primitive.firstIndex, 0, firstInstance);
+	vkCmdDrawIndexed(commandBuffer, primitive.indexCount, std::max((uint32_t) 1, instanceCount), primitive.firstIndex, 0, firstInstance);
 }
 
 void RenderSystem::drawDepth(VkCommandBuffer& commandBuffer, ModelAsset* model, Primitive& primitive, glm::mat4 modelMat, uint32_t cameraIndex, uint32_t instanceCount = 1)
@@ -298,7 +287,7 @@ void RenderSystem::renderGameObjectsDepth(VkCommandBuffer& commandBuffer, FrameI
 				auto modelAsset = assets.models().get(obj->lodModelAssets[0]);
 
 				if (!modelAsset->hasShadow) continue;
-				if (!Camera::isAABBinFrustrum(obj->getAABB().getAABB(obj->getTransformMat()), frameInfo.listFrustrumPlanes[lightIndex])) continue;
+				//if (!Camera::isAABBinFrustrum(obj->getAABB().getAABB(obj->getTransformMat()), frameInfo.listFrustrumPlanes[lightIndex])) continue;
 
 
 				bindModel(commandBuffer, modelAsset, *obj, frameInfo.frameIndex);

@@ -190,12 +190,14 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClCompile Include="src\GameObjectClassAssets\finiteSizedTerrainGeneration.cpp" />
     <ClCompile Include="src\GameObjectClassAssets\TerrainGenerator.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\model\Decoder\GlTFModelDecoder.cpp" />
     <ClCompile Include="src\model\Decoder\ObjModelDecoder.cpp" />
     <ClCompile Include="src\model\GlTFModel.cpp" />
     <ClCompile Include="src\model\Model.cpp" />
     <ClCompile Include="src\model\ModelBuilder.cpp" />
     <ClCompile Include="src\model\ModelUploader.cpp" />
     <ClCompile Include="src\model\preBuild.cpp" />
+    <ClCompile Include="src\model\Vertex\GltfVertexData.cpp" />
     <ClCompile Include="src\model\Vertex\ObjVertexData.cpp" />
     <ClCompile Include="src\objects\BasicUI.cpp" />
     <ClCompile Include="src\objects\GameObject.cpp" />
@@ -227,6 +229,7 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClInclude Include="external\nativefiledialog-master\src\include\nfd.h" />
     <ClInclude Include="external\nativefiledialog-master\src\nfd_common.h" />
     <ClInclude Include="external\nativefiledialog-master\src\simple_exec.h" />
+    <ClInclude Include="external\stb_image_write.h" />
     <ClInclude Include="src\assetManager\AssetManager.h" />
     <ClInclude Include="src\assetManager\ModelManager.h" />
     <ClInclude Include="src\assetManager\TextureManager.h" />
@@ -251,6 +254,7 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClInclude Include="src\GameObjectClassAssets\TerrainGenerator.h" />
     <ClInclude Include="src\GameObjectClassAssets\test.h" />
     <ClInclude Include="src\model\BoundingBox.h" />
+    <ClInclude Include="src\model\Decoder\GlTFModelDecoder.h" />
     <ClInclude Include="src\model\Decoder\IModelDecoder.h" />
     <ClInclude Include="src\model\Decoder\ObjModelDecoder.h" />
     <ClInclude Include="src\model\GlTFModel.h" />

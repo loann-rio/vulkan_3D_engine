@@ -213,6 +213,12 @@
     <ClCompile Include="src\render\RenderPasses\ComputePass.cpp">
       <Filter>render\RenderPasses</Filter>
     </ClCompile>
+    <ClCompile Include="src\model\Vertex\GltfVertexData.cpp">
+      <Filter>model\Vertex</Filter>
+    </ClCompile>
+    <ClCompile Include="src\model\Decoder\GlTFModelDecoder.cpp">
+      <Filter>model\Decoder</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tiny_gltf.h">
@@ -414,6 +420,12 @@
     </ClInclude>
     <ClInclude Include="src\render\RenderPasses\ComputePass.h">
       <Filter>render\RenderPasses</Filter>
+    </ClInclude>
+    <ClInclude Include="src\model\Decoder\GlTFModelDecoder.h">
+      <Filter>model\Decoder</Filter>
+    </ClInclude>
+    <ClInclude Include="external\stb_image_write.h">
+      <Filter>Fichiers de ressources</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

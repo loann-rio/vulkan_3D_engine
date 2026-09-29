@@ -6,6 +6,7 @@
 #include <random>
 
 #include "Decoder/ObjModelDecoder.h"
+#include "Decoder/GlTFModelDecoder.h"
 #include "ModelUploader.h"
 
 namespace {
@@ -243,18 +244,18 @@ std::unique_ptr<ModelAsset> ModelBuilder::buildGlTF()
             throw std::runtime_error("path cannot be empty for obj");
         }
 
-        throw std::runtime_error("build type not implemented yet");
+        //throw std::runtime_error("build type not implemented yet: GLTF");
 
-        ObjModelDecoder decoder;
+        GlTFModelDecoder decoder;
         if (!decoder.canDecode(modelFilePath)) {
             throw std::runtime_error("obj not suported by decoder");
         }
 
         DecodedModel decodedModel = decoder.decode(modelFilePath);
 
-
         ModelLOD model = ModelUploader::uploadDecodedModel(device, assets, decodedModel);
 
+        // if there is more than one model, each with texture
         if (i < textures.size())
         {
             Material mat;

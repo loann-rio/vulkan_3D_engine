@@ -34,14 +34,6 @@ struct alignas(16) DepthPushConstantData {
 class Model
 {
 public:
-
-	static std::unique_ptr<Model> createModelFromFile(Device& device, AssetManager& assets, const std::string& filePath, const char* filePathTexture);
-	static std::unique_ptr<Model> createModelFromFile(Device& device, AssetManager& assets, const std::string& filePath);
-	
-	///  model with LOD
-	static std::unique_ptr<Model> createModelFromFile(Device& device, AssetManager& assets, std::vector<std::array<std::string, 2>> filesPath);
-
-
 	struct Vertex {
 		glm::vec3 position{};
 		glm::vec3 color{};
@@ -76,18 +68,23 @@ public:
 		bool loadOBJModel(const std::string& filepath);
 	};
 
-	Model(Device& device, AssetManager& assets, const Model::Builder& builder);
-	~Model(); 
+	//Model(Device& device, AssetManager& assets, const Model::Builder& builder);
+	//~Model(); 
 
 	Model(const Model&) = delete;
 	Model& operator=(const Model&) = delete;
 
-	void bind(VkCommandBuffer& commandBuffer, bool bindTexture, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, uint16_t modelDescriptorSetIndex, Buffer* instancesBuffer);
-	void draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, glm::mat4 modelMatrix, glm::mat4 normalMatrix, const std::array<FrustumPlane, 6>& planes, uint32_t instanceCount);
-	void drawDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, glm::mat4 modelMatrix, uint32_t cameraIndex, const std::array<FrustumPlane, 6>& planes, uint32_t instanceCount);
+
+	static std::vector<DescriptorSetObject> getDescriptorType();
+	static const int getModelType() { return 1; }
+
+
+	//void bind(VkCommandBuffer& commandBuffer, bool bindTexture, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, uint16_t modelDescriptorSetIndex, Buffer* instancesBuffer);
+	//void draw(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, glm::mat4 modelMatrix, glm::mat4 normalMatrix, const std::array<FrustumPlane, 6>& planes, uint32_t instanceCount);
+	//void drawDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, glm::mat4 modelMatrix, uint32_t cameraIndex, const std::array<FrustumPlane, 6>& planes, uint32_t instanceCount);
 
 	// textures should be ordered by lod levels if there are multiple, each lod have the use index 
-	void setTexture(TextureManager::TextureID newTexture) { textures.resize(1); textures[0] = newTexture; }
+	/*void setTexture(TextureManager::TextureID newTexture) { textures.resize(1); textures[0] = newTexture; }
 	void setTexture(std::vector<TextureManager::TextureID> newTextures) { textures = newTextures; }
 
 	VkDescriptorImageInfo getTextureImageInfo(size_t index = 0) const { return assets.textures().get(textures[index])->getImageInfo(); }
@@ -97,9 +94,6 @@ public:
 
 	bool updateAnimation(uint32_t index, float time) { return false; };
 	void update() {};
-
-	static std::vector<DescriptorSetObject> getDescriptorType();
-	static const int getModelType() { return 1; }
 
 	BoundingBox getAABB() const { return aabb; }
 
@@ -115,7 +109,6 @@ private:
 	std::vector<LodInfo> lods{};
 	bool hasLODs = false;
 	size_t lodIndex = 0;
-	void debugValidateLODs() const;
 
 	// Vertex Buffer
 	std::unique_ptr<Buffer> vertexBuffer;
@@ -133,7 +126,7 @@ private:
 	std::vector<VkDescriptorSet> descriptorSet;
 
 	Device& device;
-	AssetManager& assets;
+	AssetManager& assets;*/
 
 };
 

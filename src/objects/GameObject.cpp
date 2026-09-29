@@ -83,12 +83,6 @@ void GameObjectModel::setModel(std::shared_ptr<GlTFModel::ModelGltf> newModel) {
     hasModel = true;
 }
 
-void GameObjectModel::setModel(ModelVariant newModel)
-{
-    model = std::move(newModel);
-    hasModel = true;
-}
-
 void GameObjectModel::setModel(ModelManager::ModelID _model)
 {
     lodModelAssets.push_back(_model);
@@ -126,12 +120,7 @@ VkDescriptorImageInfo GameObjectModel::getTextureImageInfo() const
 {
     if (!hasModel) return VkDescriptorImageInfo{};
 
-    return std::visit([](const auto& modelInstance) -> VkDescriptorImageInfo {
-        if (modelInstance) {
-            return modelInstance->getTextureImageInfo();
-        }
-        return VkDescriptorImageInfo{};
-    }, model);
+    return model->getTextureImageInfo();
 }
 
 void GameObjectModel::setMultipleInstances(std::vector<ModelInstance> instances)
@@ -230,40 +219,27 @@ void GameObjectModel::createDescriptorSet(DescriptorPool& pool) const
 {
     if (!hasModel) return;
 
-    std::visit([&pool, &device = this->device](const auto& modelInstance) {
-        if (modelInstance) {
-            modelInstance->createDescriptorSet(pool, device);
-        }
-        }, model);
+    model->createDescriptorSet(pool, device);
 }
 
 std::vector<VkDescriptorSet> GameObjectModel::getDescriptorSets() const
 {
-    return std::visit([](const auto& modelInstance) -> std::vector<VkDescriptorSet> {
-        if (modelInstance) {
-            return modelInstance->getDescriptorSets(); 
-        }
-        return {};
-        }, model);
+    return model->getDescriptorSets(); 
 }
 
 void GameObjectModel::update(float dtime)
 {
     if (animate) {
         animationTimer += dtime;
-
-        std::visit([&](const auto& modelInstance) {
-            if (modelInstance) {
-                if (!modelInstance->updateAnimation(animationIndex, animationTimer)) {
-                    animationTimer = 0.f;
-                    animate = false;
-                }
-            }
-            }, model);
+       
+        if (!model->updateAnimation(animationIndex, animationTimer)) {
+            animationTimer = 0.f;
+            animate = false;
+        }
     }
 }
 
-void GameObjectModel::bindModel(VkCommandBuffer& commandBuffer, bool bindTexture, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, uint16_t modelDescriptorSetIndex) const
+/*void GameObjectModel::bindModel(VkCommandBuffer& commandBuffer, bool bindTexture, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, uint16_t modelDescriptorSetIndex) const
 {
     std::visit([&](const auto& modelInstance) {  
         if (modelInstance) {
@@ -288,16 +264,14 @@ void GameObjectModel::drawModelDepth(VkCommandBuffer& commandBuffer, VkPipelineL
             modelInstance->drawDepth(commandBuffer, pipelineLayout, frame_index, getTransformMat(), cameraIndex, planes, instanceCount);
         }
         }, model); 
-}
+}*/
 
 BoundingBox GameObjectModel::getAABB() const
 {
     BoundingBox aabb;
-    std::visit([&](const auto& modelInstance) {
-        if (modelInstance) {
-            aabb = modelInstance->getAABB();
-        }
-        }, model);
+    
+    aabb = model->getAABB();
+    
     return aabb;
 }
 

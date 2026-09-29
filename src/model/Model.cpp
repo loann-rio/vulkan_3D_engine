@@ -28,108 +28,17 @@ namespace std {
 	};
 }
 
-std::unique_ptr<Model> Model::createModelFromFile(Device& device, AssetManager& assets, const std::string& filePath, const char* filePathTexture)
+std::vector<DescriptorSetObject> Model::getDescriptorType()
 {
-	Builder builder{};
-	if (builder.loadOBJModel(filePath)) {
-		std::unique_ptr<Model> m = std::make_unique<Model>(device, assets, builder); 
+	std::vector<DescriptorObject> set1 = {
+		 {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1}
+	};
 
-		TextureBuilder builder(device);
-
-		if (m) m->setTexture(assets.textures().create(builder.fromFile(filePathTexture)));
-		if (m) return m;
-	}
-
-	return nullptr;
-}
-
-std::unique_ptr<Model> Model::createModelFromFile(Device& device, AssetManager& assets, const std::string& filePath)
-{
-	Builder builder{};
-	if (builder.loadOBJModel(filePath)) {
-		std::unique_ptr<Model> m = std::make_unique<Model>(device, assets, builder);
-		if (m) return m;
-	}
-	return nullptr;
-}
-
-std::unique_ptr<Model> Model::createModelFromFile(
-	Device& device, AssetManager& assets,
-	std::vector<std::array<std::string, 2>> filesPath)
-{
-	if (filesPath.empty()) {
-		return nullptr;
-	}
-
-	if (filesPath[0][1].empty()) {
-		std::cerr << "Model::createModelFromFile() Warning: First LOD texture path should always be defined!" << std::endl;
-		return nullptr;
-	}
-
-	Builder builder{};
-
-	size_t textureCount = -1;
-	std::vector<TextureManager::TextureID> textures;
-
-	for (auto& filePath : filesPath)
-	{
-		// record global offsets BEFORE loading
-		uint32_t vertexOffsetBefore = static_cast<uint32_t>(builder.vertices.size());
-		uint32_t indexOffsetBefore = static_cast<uint32_t>(builder.indices.size());
-
-		// Load OBJ (fills builder.vertices + builder.indices)
-		if (!builder.loadOBJModel(filePath[0]))
-			continue;
-
-		// record AFTER sizes
-		uint32_t vertexOffsetAfter = static_cast<uint32_t>(builder.vertices.size());
-		uint32_t indexOffsetAfter = static_cast<uint32_t>(builder.indices.size());
-
-		uint32_t newVertexCount = vertexOffsetAfter - vertexOffsetBefore;
-		uint32_t newIndexCount = indexOffsetAfter - indexOffsetBefore;
-
-		if (newVertexCount == 0 || newIndexCount == 0) {
-			// no geometry loaded for this file — skip it
-			continue;
-		}
-
-		// LOD description
-		LodInfo lod{};
-		lod.vertexOffset = vertexOffsetBefore;    // start of this LOD vertices
-		lod.indexOffset = indexOffsetBefore;      // start of this LOD indices
-		lod.indexCount = newIndexCount;           // number of indices in this LOD
-
-		lod.textureIndex = textureCount;
-
-		if (!filePath[1].empty()) {
-			// Load texture for this LOD
-
-			TextureBuilder builder(device);
-			auto texture = assets.textures().create(builder.fromFile(filePath[1].c_str()));
-
-			if (texture != 0) {
-				textures.push_back(texture);
-				textureCount++;
-				lod.textureIndex = textureCount;
-			}
-		}
-
-		builder.lods.push_back(lod);
-	}
-
-	if (builder.vertices.empty() || builder.indices.empty()) {
-		return nullptr;
-	}
-
-	auto model = std::make_unique<Model>(device, assets, builder);
-	model->setTexture(textures);
-	model->hasLODs = true;
-
-	return model;
+	return std::vector<DescriptorSetObject>{{set1, 2}};
 }
 
 
-Model::Model(Device& device, AssetManager& assets, const Model::Builder& builder) : device{ device }, aabb{ builder.aabb }, assets{ assets }
+/*Model::Model(Device& device, AssetManager& assets, const Model::Builder& builder) : device{device}, aabb{builder.aabb}, assets{assets}
 {
 	if (builder.aabb.valid == false) {
 		createAABB(builder.vertices);
@@ -148,10 +57,10 @@ Model::~Model() {
 	for (auto textureID : textures) {
 		assets.textures().remove(textureID);
 	}
-}
+}*/
 
 
-void Model::bind(VkCommandBuffer& commandBuffer, bool bindTexture, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, uint16_t modelDescriptorSetIndex, Buffer* instancesBuffer)
+/*void Model::bind(VkCommandBuffer& commandBuffer, bool bindTexture, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, uint16_t modelDescriptorSetIndex, Buffer* instancesBuffer)
 {
 	if (bindTexture)
 	{
@@ -251,9 +160,9 @@ void Model::drawDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipeline
 	else {
 		vkCmdDraw(commandBuffer, vertexCount, instanceCount, 0, firstInstance);
 	}
-}
+}*/
 
-void Model::createDescriptorSet(DescriptorPool& pool, Device& device)
+/*void Model::createDescriptorSet(DescriptorPool& pool, Device& device)
 {
 
 	auto textureSetLayout = DescriptorSetLayout::Builder(device)
@@ -271,14 +180,7 @@ void Model::createDescriptorSet(DescriptorPool& pool, Device& device)
 
 }
 
-std::vector<DescriptorSetObject> Model::getDescriptorType()
-{
-	std::vector<DescriptorObject> set1 = {
-		 {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1} 
-	};
 
-	return std::vector<DescriptorSetObject>{{set1, 2}};
-}
 
 void Model::createVertexBuffers(const std::vector<Vertex>& vertices)
 {
@@ -364,7 +266,7 @@ void Model::createAABB(const std::vector<Vertex>& vertices)
 		aabb.max.z = std::max(aabb.max.z, vertex.position.z);
 	}
 	aabb.valid = true;
-}
+}*/
 
 std::vector<VkVertexInputBindingDescription> Model::Vertex::getBindingDescriptions(bool hasMutipleInstances = false)
 {
@@ -515,21 +417,4 @@ bool Model::Builder::loadOBJModel(const std::string& filepath)
 	return true;
 }
 
-void Model::debugValidateLODs() const {
-#ifndef NDEBUG
-	if (!indexBuffer) return;
-	VkDeviceSize indexBufferSizeBytes = indexBuffer->getBufferSize();
-	for (size_t i = 0; i < lods.size(); ++i) {
-		const LodInfo& l = lods[i];
-		VkDeviceSize startByte = VkDeviceSize(l.indexOffset) * sizeof(uint32_t);
-		VkDeviceSize endByte = startByte + VkDeviceSize(l.indexCount) * sizeof(uint32_t);
 
-		std::cerr << "LOD " << i << " : indexOffset=" << l.indexOffset
-			<< " indexCount=" << l.indexCount
-			<< " byteRange=[" << startByte << "," << endByte << ")"
-			<< " indexBufferSize=" << indexBufferSizeBytes << "\n";
-
-		assert(endByte <= indexBufferSizeBytes && "LOD index range exceeds index buffer size!");
-	}
-#endif
-}

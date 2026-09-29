@@ -8,7 +8,7 @@
 
 void TerrainGenerator::loop(Device& device, ObjectManager* objManager, GameObject* object)
 {
-	int posX = object->transform.translation.x / chunkWorldSide;
+	/*int posX = object->transform.translation.x / chunkWorldSide;
 	int posY = object->transform.translation.z / chunkWorldSide;
 
 	//int posX = 0;
@@ -90,7 +90,7 @@ void TerrainGenerator::loop(Device& device, ObjectManager* objManager, GameObjec
 		else {
 			++it;
 		}
-	}
+	}*/
 
 }
 
@@ -104,7 +104,7 @@ TerrainGenerator::TerrainGenerator(Device& device) : device(device)
 
 
 std::vector<std::vector<glm::vec2>> TerrainGenerator::generateChunck(float Xoffset, float Yoffset) {
-	std::mt19937 prng(seed);
+	/*std::mt19937 prng(seed);
 
 	std::vector<glm::vec2> octavesOffsets(maxOctaves);
 	for (int i = 0; i < maxOctaves; i++) {
@@ -171,7 +171,8 @@ std::vector<std::vector<glm::vec2>> TerrainGenerator::generateChunck(float Xoffs
 		}
 	}
 
-	return noiseMap;
+	return noiseMap;*/
+	return std::vector<std::vector<glm::vec2>>{};
 }
 
 std::vector<ModelInstance> TerrainGenerator::placeTrees(std::vector<std::vector<glm::vec2>> heightMap, float Xoffset, float Yoffset) const

@@ -19,8 +19,6 @@ ModelLOD ModelUploader::uploadDecodedModel(Device& device, AssetManager& assets,
 	std::unique_ptr<Buffer> vertexBuffer = createVertexBuffers(device, obj.vertices.get());
 	std::unique_ptr<Buffer> indexBuffer = createIndexBuffers(device, obj.indices);
 
-	//std::vector<Material> materials
-
 	ModelLOD asset{};
 	asset.vertexBuffer = std::move(vertexBuffer);
 	asset.vertexCount = obj.vertices->vertexCount();

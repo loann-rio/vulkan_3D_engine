@@ -285,7 +285,6 @@ public:
 	}
 
 	void setModel(std::shared_ptr<GlTFModel::ModelGltf> model);
-	void setModel(ModelVariant newModel);
 	void setModel(ModelManager::ModelID _model);
 	void setModel(std::vector<ModelManager::ModelID> lod_models);
 
@@ -313,9 +312,9 @@ public:
 
 	void update(float dtime);
 
-	void bindModel(VkCommandBuffer& commandBuffer, bool bindTexture, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, uint16_t modelDescriptorSetIndex) const;
-	void drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, const std::array<FrustumPlane, 6>& frustrumPlanes);
-	void drawModelDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, int cameraIndex, uint16_t frameIndex, const std::array<FrustumPlane, 6>& planes);
+	//void bindModel(VkCommandBuffer& commandBuffer, bool bindTexture, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, uint16_t modelDescriptorSetIndex) const;
+	//void drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, const std::array<FrustumPlane, 6>& frustrumPlanes);
+	//void drawModelDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, int cameraIndex, uint16_t frameIndex, const std::array<FrustumPlane, 6>& planes);
 
 	Buffer* getOriginalInstancesBuffer() const { return instancesBuffer ? instancesBuffer.get() : nullptr; }
 	Buffer* getFrameInstancesBuffer(uint16_t index) const {
@@ -339,7 +338,7 @@ public:
 	// primitive info
 	int primitiveLOD = 0;
 
-	GameObjectModel(id_t id, Device& device, AssetManager& assets) : GameObject(id, device, assets) { setMultipleInstances({ {} }); }
+	GameObjectModel(id_t id, Device& device, AssetManager& assets) : GameObject(id, device, assets) { setMultipleInstances({}); }
 private:
 
 	bool hasModel = false;
@@ -348,7 +347,7 @@ private:
 	ModelSubType modelSubType = ModelSubType::NONE;
 	PrimitivesModelType primitivesModelType = PrimitivesModelType::NONE;
 	
-	ModelVariant model;
+	std::shared_ptr<GlTFModel::ModelGltf> model;
 
 	std::unique_ptr<Buffer> instancesBuffer = nullptr;
 	std::vector<std::unique_ptr<Buffer>> frameInstancesBuffer;

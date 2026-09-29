@@ -15,7 +15,7 @@
 void ObjectManager::startLoadModel()
 {
 
-    if (false)
+    if (true)
     {
         TextureBuilder textureBuilder(device);
         auto texture = assetManager.textures().create(textureBuilder.fromFile("skybox/cubemap_space.ktx").asCubemap());
@@ -28,7 +28,7 @@ void ObjectManager::startLoadModel()
             createDescriptorSet(assetManager.models().get(modelId));
 
             auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
-            gameObject->setName("cubemap1");
+            gameObject->setName("cubemap");
             gameObject->setModelType(ModelType::OBJ_MODEL);
             gameObject->setModelSubType(ModelSubType::SKYBOX);
             gameObject->setModel(modelId);
@@ -72,7 +72,6 @@ void ObjectManager::startLoadModel()
         gameObject->setModel({ grassLod1, grassLod2, grassLod3, grassLod4 });
         gameObject->saveable = false;
         gameObject->setMultipleInstances(instances);
-        gameObject->createDescriptorSet(*globalPool);
         gameObject->transform.translation = { 12.f, 0.f, 12.f };
 		gameObject->createInstanceComputeDescriptorSets(*globalPool);
         pushGameObject(std::move(gameObject));
@@ -144,10 +143,10 @@ void ObjectManager::createPrimitive(PrimitivesModelType type, int detail, Transf
         case PrimitivesModelType::PLANE:
         {
             ModelManager::ModelID modelID = PrebuiltModel::createPlane(this->device, this->assetManager, detail, 1, { 0, 0, 0 }, filePathTexture.empty() ? "assets/textures/whiteTexture.jpg" : filePathTexture, 20);
-            return std::vector<futureObject>{ futureObject{ ModelVariant{}, modelID ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id, {}, false, modelID } };
+            return std::vector<futureObject>{ futureObject{ nullptr, modelID ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id, {}, false, modelID } };
         }
         case PrimitivesModelType::CUBE:
-            primitive = PrebuiltModel::createCube(this->device, this->assetManager);
+            //primitive = PrebuiltModel::createCube(this->device, this->assetManager);
             break;
         case PrimitivesModelType::SPHERE:
             break;
@@ -160,7 +159,7 @@ void ObjectManager::createPrimitive(PrimitivesModelType type, int detail, Transf
             break;
         }
 
-        return std::vector<futureObject>{ futureObject{ primitive, primitive ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id } };
+        return std::vector<futureObject>{ futureObject{ nullptr, primitive ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id } };
         })
      );
 }
@@ -288,6 +287,7 @@ void ObjectManager::loadScene(std::string name)
             if (element.value().contains("modelPath")) 
             {
                 std::string modelPath = element.value()["modelPath"];
+                std::cout << "load model " << modelPath << " with obj name: " << objName << "\n";
 
                 if (modelPath.find(".gltf") != std::string::npos || modelPath.find(".glb") != std::string::npos)
                     loadObjectAsync(device, assetManager, modelPath, transform, objName);
@@ -524,26 +524,19 @@ void ObjectManager::pushModel()
                      // get gameobject
                      auto* gameObject = dynamic_cast<GameObjectModel*>(get(object.id));
 
-                     if (!gameObject) {
-                         it = futureGameObjectslist.erase(it);
+                     if (!gameObject || !object.modelID) {
                          continue;
                      }
 
                      if (object.instances.size() > 0) {
                          gameObject->setMultipleInstances(object.instances);
                      }
-
-                     if (object.modelID)
-                     {
-                         createDescriptorSet(assetManager.models().get(object.modelID));
-                         gameObject->setModel(object.modelID);
-                     }
-                     else
-                        gameObject->setModel(object.model);
-
+                     
+                     createDescriptorSet(assetManager.models().get(object.modelID));
+                     gameObject->setModel(object.modelID);
 
                      gameObject->setModelType(object.type);
-                     gameObject->createDescriptorSet(*globalPool);
+
                      gameObject->show = true;
                 }
             }
@@ -583,11 +576,12 @@ void ObjectManager::loadObjectAsync(Device& device, AssetManager& assets, const 
 
     pushGameObject(std::move(gameObject));
 
-    pushFuture( std::async(std::launch::async, [filePath, &device, &assets, id]() {
-        std::shared_ptr<GlTFModel::ModelGltf> model = GlTFModel::createModelFromFile(device, assets, filePath);
-        return std::vector<futureObject>{ futureObject{ model, model ? ModelType::GLTF_MODEL : ModelType::UNDEFINED_MODEL, id }};
-        }) 
-	);
+    pushFuture(std::async(std::launch::async, [filePath, &device, &assets, id]() {
+        ModelBuilder builder(device, assets);
+        ModelManager::ModelID modelId = assets.models().create(builder.fromFile(filePath));
+
+        return std::vector<futureObject>{ futureObject{ nullptr, modelId ? ModelType::GLTF_MODEL : ModelType::UNDEFINED_MODEL, id, { }, true, modelId }};
+        }));
 }
 
 void ObjectManager::loadObjectAsync(Device& device, AssetManager& assets, const std::string& filePath, const std::string filePathTexture, TransformComponent transform, const std::string& name)
@@ -611,8 +605,7 @@ void ObjectManager::loadObjectAsync(Device& device, AssetManager& assets, const 
             ModelBuilder builder(device, assets);
             ModelManager::ModelID modelId = assets.models().create(builder.fromFile(filePath).withTexture(texture));
 
-            std::shared_ptr<Model> model;// = Model::createModelFromFile(device, assets, filePath, filePathTexture.c_str());
-            return std::vector<futureObject> {futureObject{ model, modelId ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id, {}, true, modelId }};
+            return std::vector<futureObject> {futureObject{ nullptr, modelId ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id, {}, true, modelId }};
         }) 
      );
 }
