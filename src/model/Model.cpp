@@ -28,14 +28,14 @@ namespace std {
 	};
 }
 
-std::vector<DescriptorSetObject> Model::getDescriptorType()
+/*std::vector<DescriptorSetObject> Model::getDescriptorType()
 {
 	std::vector<DescriptorObject> set1 = {
 		 {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1}
 	};
 
 	return std::vector<DescriptorSetObject>{{set1, 2}};
-}
+}*/
 
 
 /*Model::Model(Device& device, AssetManager& assets, const Model::Builder& builder) : device{device}, aabb{builder.aabb}, assets{assets}
@@ -268,7 +268,7 @@ void Model::createAABB(const std::vector<Vertex>& vertices)
 	aabb.valid = true;
 }*/
 
-std::vector<VkVertexInputBindingDescription> Model::Vertex::getBindingDescriptions(bool hasMutipleInstances = false)
+/*std::vector<VkVertexInputBindingDescription> Model::Vertex::getBindingDescriptions(bool hasMutipleInstances = false)
 {
 	std::vector<VkVertexInputBindingDescription> bindingDescription(1);
 	bindingDescription[0].binding = 0;
@@ -279,9 +279,9 @@ std::vector<VkVertexInputBindingDescription> Model::Vertex::getBindingDescriptio
 		bindingDescription.push_back({ 1, sizeof(ModelInstance), VK_VERTEX_INPUT_RATE_INSTANCE });
 		
 	return bindingDescription;
-}
+}*/
 
-std::vector<VkVertexInputAttributeDescription> Model::Vertex::getAttributeDescriptions(bool hasMutipleInstances = false)
+/*std::vector<VkVertexInputAttributeDescription> Model::Vertex::getAttributeDescriptions(bool hasMutipleInstances = false)
 {
 	std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
 
@@ -297,9 +297,9 @@ std::vector<VkVertexInputAttributeDescription> Model::Vertex::getAttributeDescri
 	}
 
 	return attributeDescriptions;
-}
+}*/
 
-std::vector<VkVertexInputAttributeDescription> Model::Vertex::getAttributeDescriptionsShadow(bool hasMutipleInstances = false)
+/*std::vector<VkVertexInputAttributeDescription> Model::Vertex::getAttributeDescriptionsShadow(bool hasMutipleInstances = false)
 {
 	std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
 
@@ -312,9 +312,9 @@ std::vector<VkVertexInputAttributeDescription> Model::Vertex::getAttributeDescri
 	}
 	
 	return attributeDescriptions;
-}
+}*/
 
-bool Model::Builder::loadOBJModel(const std::string& filepath)
+/*bool Model::Builder::loadOBJModel(const std::string& filepath)
 {
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
@@ -415,6 +415,6 @@ bool Model::Builder::loadOBJModel(const std::string& filepath)
 	}
 
 	return true;
-}
+}*/
 
 

@@ -270,8 +270,6 @@ std::unique_ptr<ModelAsset> ModelBuilder::buildGlTF()
             model.materials.push_back(mat);
         }
 
-
-
         fullModel->lods.push_back(std::move(model));
     }
 

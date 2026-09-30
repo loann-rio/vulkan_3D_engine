@@ -217,8 +217,8 @@ void Pipeline::defaultPipelineConfigInfo(PipelineConfigInfo& configInfo)
 	configInfo.dynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(configInfo.dynamicStateEnables.size());
 	configInfo.dynamicStateInfo.flags = 0;
 
-	configInfo.bindingDescription = Model::Vertex::getBindingDescriptions(false);
-	configInfo.attributeDescription = Model::Vertex::getAttributeDescriptions(false);
+	//configInfo.bindingDescription = Model::Vertex::getBindingDescriptions(false);
+	//configInfo.attributeDescription = Model::Vertex::getAttributeDescriptions(false);
 
 }
 

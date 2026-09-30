@@ -10,7 +10,7 @@
 #define TINYGLTF_NO_STB_IMAGE_WRITE
 #include "../../external/tiny_gltf.h"
 
-#include "../Vertex/GltfVertexData.h"
+#include "../Vertex/ObjVertexData.h"
 
 namespace {
 
@@ -131,13 +131,13 @@ DecodedModel GlTFModelDecoder::decode(const std::filesystem::path& path) const {
 	if (!ret) throw std::runtime_error("Failed to load glTF file: " + path.string());
 
 	DecodedModel out{};
-	std::vector<GltfVertex> vertices;
+	std::vector<ObjVertex> vertices;
 	std::vector<uint32_t> indices;
 	std::vector<Primitive> primitives;
 	std::vector<DecodedMaterial> materials;
 
 	// extract materials (only baseColorTexture uri for now)
-	for (const auto& mat : model.materials) {
+	/*for (const auto& mat : model.materials) {
 		DecodedMaterial dm;
 		dm.name = mat.name;
 		if (mat.pbrMetallicRoughness.baseColorTexture.index >= 0) {
@@ -194,7 +194,7 @@ DecodedModel GlTFModelDecoder::decode(const std::filesystem::path& path) const {
 			static_cast<float>(mat.pbrMetallicRoughness.baseColorFactor[3])
 		);
 		materials.push_back(dm);
-	}
+	}*/
 
 	// iterate meshes/primitives
 	for (const auto& mesh : model.meshes) {
@@ -231,13 +231,10 @@ DecodedModel GlTFModelDecoder::decode(const std::filesystem::path& path) const {
 				// create one vertex per index (no dedup)
 				for (size_t k = 0; k < primIndices.size(); ++k) {
 					uint32_t idx = primIndices[k];
-					GltfVertex v{};
+					ObjVertex v{};
 					v.position = readVec3(model, posAcc, idx);
 					if (normalAcc) v.normal = readVec3(model, *normalAcc, idx);
-					if (tex0Acc) v.uv0 = readVec2(model, *tex0Acc, idx);
-					//if (tex1Acc) v.uv1 = readVec2(model, *tex1Acc, idx);
-					//if (jointsAcc) v.joint0 = readUVec4(model, *jointsAcc, idx);
-					//if (weightsAcc) v.weight0 = readVec4f(model, *weightsAcc, idx);
+					if (tex0Acc) v.uv = readVec2(model, *tex0Acc, idx);
 					if (colorAcc) {
 						glm::vec4 c = readVec4f(model, *colorAcc, idx);
 						v.color = glm::vec3(c.r, c.g, c.b);
@@ -256,13 +253,10 @@ DecodedModel GlTFModelDecoder::decode(const std::filesystem::path& path) const {
 				// no indices -> use accessor count
 				size_t count = posAcc.count;
 				for (size_t k = 0; k < count; ++k) {
-					GltfVertex v{};
+					ObjVertex v{};
 					v.position = readVec3(model, posAcc, k);
 					if (normalAcc) v.normal = readVec3(model, *normalAcc, k);
-					if (tex0Acc) v.uv0 = readVec2(model, *tex0Acc, k);
-					//if (tex1Acc) v.uv1 = readVec2(model, *tex1Acc, k);
-					//if (jointsAcc) v.joint0 = readUVec4(model, *jointsAcc, k);
-					//if (weightsAcc) v.weight0 = readVec4f(model, *weightsAcc, k);
+					if (tex0Acc) v.uv = readVec2(model, *tex0Acc, k);
 					if (colorAcc) {
 						glm::vec4 c = readVec4f(model, *colorAcc, k);
 						v.color = glm::vec3(c.r, c.g, c.b);
@@ -288,7 +282,7 @@ DecodedModel GlTFModelDecoder::decode(const std::filesystem::path& path) const {
 		maxV = glm::max(maxV, v.position);
 	}
 
-	out.vertices = std::make_unique<GltfVertexData>(std::move(vertices));
+	out.vertices = std::make_unique<ObjVertexData>(std::move(vertices));
 	out.indices = std::move(indices);
 	out.primitives = std::move(primitives);
 	out.materials = std::move(materials);

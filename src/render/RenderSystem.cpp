@@ -226,7 +226,7 @@ void RenderSystem::drawModel(VkCommandBuffer& commandBuffer, ModelAsset* model, 
 		&push
 	);
 
-	uint32_t firstInstance = (instanceCount == 1) ? 0 : 1;
+	uint32_t firstInstance = (instanceCount < 2) ? 0 : 1;
 
 	vkCmdDrawIndexed(commandBuffer, primitive.indexCount, std::max((uint32_t) 1, instanceCount), primitive.firstIndex, 0, firstInstance);
 }

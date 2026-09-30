@@ -10,6 +10,8 @@
 #include "../assetManager/ModelManager.h"
 #include "../base/device.h"
 #include "GlobalRenderSystemBuilder.h"
+#include "../model/Vertex/ObjVertexData.h"
+#include "../model/Vertex/GlTFVertexData.h"
 
 
 
@@ -440,9 +442,10 @@ void Renderer::createBuffers(ObjectManager& objectManager)
 		.vertexShader("shaders\\fullscreen.vert.spv")
 		.fragmentShader("shaders\\equirectangular_to_cube.frag.spv")
 		.renderPass(skyboxSwapChain.getRenderPass())
+		.modelFilterType(ModelType::OBJ_MODEL)
 		.fullscreen()
 		.pushStage(static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_FRAGMENT_BIT))
-		.build<Model>();
+		.build<Model, ObjVertexLayout>();
 }
 
 /*

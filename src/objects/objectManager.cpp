@@ -39,7 +39,7 @@ void ObjectManager::startLoadModel()
         }
     }
 
-    if (true)
+    if (false)
     {
         std::vector<ModelInstance> instances;
         for (int x = 0; x < 64; x++) {
@@ -88,9 +88,9 @@ void ObjectManager::startLoadModel()
         computeList.push_back(computeGrass);
     }
 
-    /*{
+    {
         ModelBuilder builder(device, assetManager);
-        ModelManager::ModelID id = assetManager.models().create(builder.fromFile("model/buster_drone/scene.gltf"));
+        ModelManager::ModelID id = assetManager.models().create(builder.fromFile("C:\\Users\\riolo\\Desktop\\vulkan_3D_engine\\assets\\model\\DamagedHelmet.gltf"));
 
         if (id)
         {
@@ -98,6 +98,7 @@ void ObjectManager::startLoadModel()
 
             auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
             gameObject->setName("testModelBuilder");
+            // Treat the decoded glTF model as an OBJ model so it can be rendered by the simple_shader pipeline
             gameObject->setModelType(ModelType::OBJ_MODEL);
             gameObject->setModel(id);
             gameObject->transform.rotation.x = 3.141592f;
@@ -105,10 +106,10 @@ void ObjectManager::startLoadModel()
             gameObject->transform.translation = { 0, 0.2f, 8 };
             gameObject->saveable = false;
 
-            gameObject->createDescriptorSet(*globalPool);
+//            gameObject->createDescriptorSet(*globalPool);
             pushGameObject(std::move(gameObject));
         }
-    }*/
+    }
 
 
     /* {

@@ -3,6 +3,25 @@
 #include "../assetManager/AssetManager.h"
 #include <vulkan/vulkan_core.h>
 
+namespace {
+    std::vector<VkVertexInputAttributeDescription> getVertexInputAttributeDescription(std::vector<IVertexLayout::Attribute> attributes) {
+
+        std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
+
+        uint16_t i = 0;
+        for (auto element : attributes) {
+            VkFormat format = VK_FORMAT_R32G32B32_SFLOAT;
+            if (element.size == 12Ui64) format = VK_FORMAT_R32G32B32_SFLOAT;
+            if (element.size == 8Ui64) format = VK_FORMAT_R32G32B32_SFLOAT;
+            attributeDescriptions.push_back({ i++, 0, format, element.offset });
+        }
+
+        return attributeDescriptions;
+
+    }
+
+}
+
 
 class GlobalRenderSystemBuilder
 {
@@ -26,31 +45,33 @@ public:
     GlobalRenderSystemBuilder& descriptorBindings(std::vector<DescriptorSetObject> descriptorBindings) { config.descriptorBindings = descriptorBindings; return *this; }
     GlobalRenderSystemBuilder& pushStage(VkShaderStageFlags pushStage) { config.pushStage = pushStage; return *this; }
 
-    template<class T>
+    template<class T, class Vertex>
     std::unique_ptr<RenderSystem> build()
     {
         std::vector<DescriptorSetObject> descriptorBindings;
         std::vector<VkVertexInputAttributeDescription> attributeDescription;
         std::vector<VkVertexInputBindingDescription> bindingDescription; 
 
-        ModelType modelType = static_cast<ModelType>(T::getModelType());
+        ModelType modelType = static_cast<ModelType>(config.modelType);
+
+        Vertex vertex{};
 
         // Only populate vertex binding/attribute descriptions if the pipeline needs vertex input
         if (!config.fullscreen) {
-            bindingDescription = T::Vertex::getBindingDescriptions(true);
+            bindingDescription = getBindingDescriptions<Vertex>();
 
             if (config.shadow) {
-                descriptorBindings = T::getDescriptorType();
-                attributeDescription = T::Vertex::getAttributeDescriptionsShadow(true);
+                descriptorBindings = getDescriptorType();
+                attributeDescription = getVertexInputAttributeDescription(std::vector<IVertexLayout::Attribute>{ vertex.attributes()[0] });
             }
             else {
-                descriptorBindings = T::getDescriptorType();
-                attributeDescription = T::Vertex::getAttributeDescriptions(true);
+                descriptorBindings = getDescriptorType();
+                attributeDescription = getVertexInputAttributeDescription(vertex.attributes());
             }
         }
         else {
             // fullscreen: still may need descriptor bindings
-            descriptorBindings = T::getDescriptorType();
+            descriptorBindings = getDescriptorType();
             // leave bindingDescription and attributeDescription empty
         }
 
@@ -88,6 +109,31 @@ private:
 
         return true;
     }
+
+    template <class Vertex>
+    std::vector<VkVertexInputBindingDescription> getBindingDescriptions()
+    {
+        Vertex vertex{};
+        std::vector<VkVertexInputBindingDescription> bindingDescription(1);
+        bindingDescription[0].binding = 0;
+        bindingDescription[0].stride = vertex.stride();
+        bindingDescription[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+        //if (hasMutipleInstances)
+        //bindingDescription.push_back({ 1, sizeof(ModelInstance), VK_VERTEX_INPUT_RATE_INSTANCE });
+
+        return bindingDescription;
+    }
+
+    std::vector<DescriptorSetObject> getDescriptorType()
+    {
+        std::vector<DescriptorObject> set1 = {
+             {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1}
+        };
+
+        return std::vector<DescriptorSetObject>{{set1, 2}};
+    }
+
 
     Device& device;
     AssetManager& assets;

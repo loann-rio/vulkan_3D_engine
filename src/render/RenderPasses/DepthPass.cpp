@@ -2,7 +2,7 @@
 
 #include "../../base/Device.h"
 #include "../GlobalRenderSystemBuilder.h"
-
+#include "../../model/Vertex/ObjVertexData.h"
 
 void DepthPass::createRenderSystems()
 {
@@ -20,25 +20,28 @@ void DepthPass::createRenderSystems()
         .renderPass(renderPass)
         .addSetLayout(globalSetLayout->getDescriptorSetLayout())
         .addSetLayout(shadowSetLayout->getDescriptorSetLayout())
+        .modelFilterType(ModelType::OBJ_MODEL)
         .shadow()
-        .build<GlTFModel::ModelGltf>();
+        .build<GlTFModel::ModelGltf, ObjVertexLayout>();
 
     depthRenderSystem = GlobalRenderSystemBuilder(device, assets)
         .vertexShader("shaders\\shadowmap.vert.spv")
         .renderPass(renderPass)
         .addSetLayout(globalSetLayout->getDescriptorSetLayout())
         .addSetLayout(shadowSetLayout->getDescriptorSetLayout())
+        .modelFilterType(ModelType::OBJ_MODEL)
         .shadow()
-        .build<Model>();
+        .build<Model, ObjVertexLayout>();
 
     depthTerrainRenderSystem = GlobalRenderSystemBuilder(device, assets)
         .vertexShader("shaders\\shadowMapTerrain.vert.spv")
         .renderPass(renderPass)
         .addSetLayout(globalSetLayout->getDescriptorSetLayout())
         .addSetLayout(shadowSetLayout->getDescriptorSetLayout())
+        .modelFilterType(ModelType::OBJ_MODEL)
         .shadow()
         .modelSubType(ModelSubType::TERRAIN)
-        .build<Model>();
+        .build<Model, ObjVertexLayout>();
 }
 
 void DepthPass::recordPass(ObjectManager & objectManager, FrameInfo & frameInfo, VkCommandBuffer & commandBuffer)

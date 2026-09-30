@@ -1,6 +1,7 @@
 #include "PostProPass.h"
 
 #include "../GlobalRenderSystemBuilder.h"
+#include "../../model/Vertex/ObjVertexData.h"
 
 void PostProPass::recordPass(ObjectManager& objectManager, FrameInfo& frameInfo, VkCommandBuffer& commandBuffer)
 {
@@ -111,6 +112,7 @@ void PostProPass::createRenderSystems()
         .renderPass(renderPass)
         .addSetLayout(globalSetLayout->getDescriptorSetLayout())
         .addSetLayout(colorSetLayout->getDescriptorSetLayout())
+        .modelFilterType(ModelType::OBJ_MODEL)
         .fullscreen()
-        .build<Model>();
+        .build<Model, ObjVertexLayout>();
 }

@@ -1,6 +1,7 @@
 #include "ColorPass.h"
 
 #include "../GlobalRenderSystemBuilder.h"
+#include "../../model/Vertex/ObjVertexData.h"
 //#include "DepthPass.h"
 
 void ColorPass::createRenderSystems()
@@ -23,14 +24,15 @@ void ColorPass::createRenderSystems()
         .build();
 
     
-    gltfRenderSystem = GlobalRenderSystemBuilder(device, assets)
+    /*gltfRenderSystem = GlobalRenderSystemBuilder(device, assets)
         .fragmentShader("shaders\\GlTFshader.frag.spv")
         .vertexShader("shaders\\GlTFshader.vert.spv")
         .renderPass(renderPass)
         .addSetLayout(globalSetLayout->getDescriptorSetLayout())
         .addSetLayout(shadowSetLayout->getDescriptorSetLayout())
         .addSetLayout(skyboxSetLayout->getDescriptorSetLayout())
-        .build<GlTFModel::ModelGltf>();
+        .modelFilterType(ModelType::OBJ_MODEL)
+        .build<GlTFModel::ModelGltf>();*/
     
     objRenderSystem = GlobalRenderSystemBuilder(device, assets)
         .fragmentShader("shaders\\simple_shader.frag.spv")
@@ -38,22 +40,24 @@ void ColorPass::createRenderSystems()
         .renderPass(renderPass)
         .addSetLayout(globalSetLayout->getDescriptorSetLayout())
         .addSetLayout(shadowSetLayout->getDescriptorSetLayout())
-        .build<Model>();
+        .modelFilterType(ModelType::OBJ_MODEL)
+        .build<Model, ObjVertexLayout>();
 
     skyboxRenderSystem = GlobalRenderSystemBuilder(device, assets)
         .fragmentShader("shaders\\skybox.frag.spv")
         .vertexShader("shaders\\skybox.vert.spv")
         .renderPass(renderPass)
         .addSetLayout(globalSetLayout->getDescriptorSetLayout())
+        .modelFilterType(ModelType::OBJ_MODEL)
         .skybox()
-        .build<Model>();
+        .build<Model, ObjVertexLayout>();
 }
 
 void ColorPass::recordPass(ObjectManager& objectManager, FrameInfo& frameInfo, VkCommandBuffer& commandBuffer)
 {
     beginRenderPass(commandBuffer, 0, frameInfo.frameIndex);
 
-    if (objectManager.baseSkyBox)
+    /*if (objectManager.baseSkyBox)
         gltfRenderSystem->renderGameObjects(
             commandBuffer, 
             frameInfo,
@@ -64,7 +68,7 @@ void ColorPass::recordPass(ObjectManager& objectManager, FrameInfo& frameInfo, V
             },
             frameInfo.mainCameraFrustrumPlanes);
     else
-        objectManager.baseSkyBox = dynamic_cast<GameObjectModel*>(objectManager.get("cubemap"));
+        objectManager.baseSkyBox = dynamic_cast<GameObjectModel*>(objectManager.get("cubemap"));*/
 
 
     objRenderSystem->renderGameObjects(
