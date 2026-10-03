@@ -45,7 +45,7 @@ public:
     GlobalRenderSystemBuilder& descriptorBindings(std::vector<DescriptorSetObject> descriptorBindings) { config.descriptorBindings = descriptorBindings; return *this; }
     GlobalRenderSystemBuilder& pushStage(VkShaderStageFlags pushStage) { config.pushStage = pushStage; return *this; }
 
-    template<class T, class Vertex>
+    template<class Vertex>
     std::unique_ptr<RenderSystem> build()
     {
         std::vector<DescriptorSetObject> descriptorBindings;

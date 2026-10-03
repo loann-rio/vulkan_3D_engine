@@ -114,5 +114,5 @@ void PostProPass::createRenderSystems()
         .addSetLayout(colorSetLayout->getDescriptorSetLayout())
         .modelFilterType(ModelType::OBJ_MODEL)
         .fullscreen()
-        .build<Model, ObjVertexLayout>();
+        .build<ObjVertexLayout>();
 }

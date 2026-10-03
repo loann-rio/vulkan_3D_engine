@@ -99,7 +99,7 @@ void ObjectManager::startLoadModel()
             auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
             gameObject->setName("testModelBuilder");
             // Treat the decoded glTF model as an OBJ model so it can be rendered by the simple_shader pipeline
-            gameObject->setModelType(ModelType::OBJ_MODEL);
+            gameObject->setModelType(ModelType::GLTF_MODEL);
             gameObject->setModel(id);
             gameObject->transform.rotation.x = 3.141592f;
             gameObject->transform.rotation.y = 15;

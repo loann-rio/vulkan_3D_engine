@@ -445,7 +445,7 @@ void Renderer::createBuffers(ObjectManager& objectManager)
 		.modelFilterType(ModelType::OBJ_MODEL)
 		.fullscreen()
 		.pushStage(static_cast<VkShaderStageFlagBits>(VK_SHADER_STAGE_FRAGMENT_BIT))
-		.build<Model, ObjVertexLayout>();
+		.build<ObjVertexLayout>();
 }
 
 /*

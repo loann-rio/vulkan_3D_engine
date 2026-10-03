@@ -2,6 +2,7 @@
 
 #include "../GlobalRenderSystemBuilder.h"
 #include "../../model/Vertex/ObjVertexData.h"
+#include "../../model/Vertex/GltfVertexData.h"
 //#include "DepthPass.h"
 
 void ColorPass::createRenderSystems()
@@ -24,15 +25,15 @@ void ColorPass::createRenderSystems()
         .build();
 
     
-    /*gltfRenderSystem = GlobalRenderSystemBuilder(device, assets)
-        .fragmentShader("shaders\\GlTFshader.frag.spv")
-        .vertexShader("shaders\\GlTFshader.vert.spv")
+    gltfRenderSystem = GlobalRenderSystemBuilder(device, assets)
+        .fragmentShader("shaders\\simple_shader_gltf.frag.spv")
+        .vertexShader("shaders\\simple_shader_gltf.vert.spv")
         .renderPass(renderPass)
         .addSetLayout(globalSetLayout->getDescriptorSetLayout())
         .addSetLayout(shadowSetLayout->getDescriptorSetLayout())
         .addSetLayout(skyboxSetLayout->getDescriptorSetLayout())
-        .modelFilterType(ModelType::OBJ_MODEL)
-        .build<GlTFModel::ModelGltf>();*/
+        .modelFilterType(ModelType::GLTF_MODEL)
+        .build<GltfVertexData>();
     
     objRenderSystem = GlobalRenderSystemBuilder(device, assets)
         .fragmentShader("shaders\\simple_shader.frag.spv")
@@ -41,7 +42,7 @@ void ColorPass::createRenderSystems()
         .addSetLayout(globalSetLayout->getDescriptorSetLayout())
         .addSetLayout(shadowSetLayout->getDescriptorSetLayout())
         .modelFilterType(ModelType::OBJ_MODEL)
-        .build<Model, ObjVertexLayout>();
+        .build<ObjVertexLayout>();
 
     skyboxRenderSystem = GlobalRenderSystemBuilder(device, assets)
         .fragmentShader("shaders\\skybox.frag.spv")
@@ -50,7 +51,7 @@ void ColorPass::createRenderSystems()
         .addSetLayout(globalSetLayout->getDescriptorSetLayout())
         .modelFilterType(ModelType::OBJ_MODEL)
         .skybox()
-        .build<Model, ObjVertexLayout>();
+        .build<ObjVertexLayout>();
 }
 
 void ColorPass::recordPass(ObjectManager& objectManager, FrameInfo& frameInfo, VkCommandBuffer& commandBuffer)
