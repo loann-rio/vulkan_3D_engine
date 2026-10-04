@@ -284,7 +284,6 @@ public:
 		hasModel = true; 
 	}
 
-	void setModel(std::shared_ptr<GlTFModel::ModelGltf> model);
 	void setModel(ModelManager::ModelID _model);
 	void setModel(std::vector<ModelManager::ModelID> lod_models);
 

@@ -11,6 +11,7 @@
 #include "../../external/tiny_gltf.h"
 
 #include "../Vertex/ObjVertexData.h"
+#include "../Vertex/GlTFVertexData.h"
 
 namespace {
 
@@ -69,9 +70,50 @@ namespace {
 		return out;
 	}
 
-	float readIndexValue(const tinygltf::Model& /*model*/, const tinygltf::Accessor& /*accessor*/, size_t /*idx*/) {
-		// not used
-		return 0.0f;
+	// tinygltf decodes every image (external file, data uri or glb buffer) into img.image,
+	// hand those pixels over as RGBA8, fall back to the file path if decoding didn't happen
+	DecodedTexture readTexture(const tinygltf::Model& model, int textureIndex, const std::filesystem::path& modelDir) {
+		DecodedTexture out{};
+		if (textureIndex < 0 || textureIndex >= static_cast<int>(model.textures.size())) return out;
+
+		const tinygltf::Texture& tex = model.textures[textureIndex];
+		if (tex.source < 0 || tex.source >= static_cast<int>(model.images.size())) return out;
+
+		const tinygltf::Image& img = model.images[tex.source];
+
+		if (!img.image.empty() && img.bits == 8 && img.component >= 1 && img.component <= 4) {
+			const size_t pixelCount = static_cast<size_t>(img.width) * img.height;
+			out.width = static_cast<uint32_t>(img.width);
+			out.height = static_cast<uint32_t>(img.height);
+
+			if (img.component == 4) {
+				out.pixels = img.image;
+			}
+			else {
+				// most devices don't support RGB only on Vulkan, expand to RGBA
+				out.pixels.resize(pixelCount * 4);
+				for (size_t i = 0; i < pixelCount; ++i) {
+					const unsigned char* src = &img.image[i * img.component];
+					unsigned char* dst = &out.pixels[i * 4];
+					dst[0] = src[0];
+					dst[1] = img.component >= 2 ? src[1] : src[0];
+					dst[2] = img.component >= 3 ? src[2] : src[0];
+					dst[3] = img.component == 2 ? src[1] : 255;
+				}
+			}
+			return out;
+		}
+
+		if (!img.uri.empty() && img.uri.rfind("data:", 0) != 0) {
+			std::filesystem::path imgPath(img.uri);
+			if (imgPath.is_relative()) imgPath = modelDir / imgPath;
+			out.path = imgPath.string();
+		}
+		else {
+			std::cerr << "GLTF warning: unsupported image format for texture " << textureIndex << std::endl;
+		}
+
+		return out;
 	}
 
 	std::vector<uint32_t> readIndices(const tinygltf::Model& model, const tinygltf::Accessor& accessor) {
@@ -131,60 +173,27 @@ DecodedModel GlTFModelDecoder::decode(const std::filesystem::path& path) const {
 	if (!ret) throw std::runtime_error("Failed to load glTF file: " + path.string());
 
 	DecodedModel out{};
-	std::vector<ObjVertex> vertices;
+	std::vector<GltfVertex> vertices;
 	std::vector<uint32_t> indices;
 	std::vector<Primitive> primitives;
 	std::vector<DecodedMaterial> materials;
 
-	// extract materials (only baseColorTexture uri for now)
-	/*for (const auto& mat : model.materials) {
+	// extract materials
+	for (const auto& mat : model.materials) {
 		DecodedMaterial dm;
 		dm.name = mat.name;
-		if (mat.pbrMetallicRoughness.baseColorTexture.index >= 0) {
-			int texIndex = mat.pbrMetallicRoughness.baseColorTexture.index;
-			if (texIndex < model.textures.size()) {
-				const tinygltf::Texture& tex = model.textures[texIndex];
-				if (tex.source >= 0 && tex.source < model.images.size()) {
-					const tinygltf::Image& img = model.images[tex.source];
-					// Build absolute path for texture. If image has an uri and it's relative, combine with model path.
-					std::filesystem::path modelDir = path.parent_path();
-					std::string texPath;
-					if (!img.uri.empty()) {
-						// if data URI or absolute, handle accordingly
-						if (img.uri.rfind("data:", 0) == 0) {
-							// data URI: tinygltf should have decoded into img.image; write to disk
-							std::string ext = "png";
-							if (!img.mimeType.empty()) {
-								if (img.mimeType.find("jpeg") != std::string::npos) ext = "jpg";
-								else if (img.mimeType.find("png") != std::string::npos) ext = "png";
-							}
-							std::filesystem::path out = modelDir / (path.stem().string() + std::string("_image_") + std::to_string(texIndex) + "." + ext);
-							std::ofstream ofs(out, std::ios::binary);
-							if (ofs && !img.image.empty()) ofs.write(reinterpret_cast<const char*>(img.image.data()), static_cast<std::streamsize>(img.image.size()));
-							texPath = out.string();
-						}
-						else {
-							std::filesystem::path imgPath(img.uri);
-							if (imgPath.is_relative()) imgPath = modelDir / imgPath;
-							texPath = imgPath.string();
-						}
-					}
-					else if (!img.image.empty()) {
-						// no uri but raw image data exists (embedded), write it
-						std::string ext = "png";
-						if (!img.mimeType.empty()) {
-							if (img.mimeType.find("jpeg") != std::string::npos) ext = "jpg";
-							else if (img.mimeType.find("png") != std::string::npos) ext = "png";
-						}
-						std::filesystem::path out = modelDir / (path.stem().string() + std::string("_image_") + std::to_string(texIndex) + "." + ext);
-						std::ofstream ofs(out, std::ios::binary);
-						if (ofs) ofs.write(reinterpret_cast<const char*>(img.image.data()), static_cast<std::streamsize>(img.image.size()));
-						texPath = out.string();
-					}
-					dm.albedoTexture = texPath; // may be empty if we couldn't resolve
-				}
-			}
-		}
+		dm.albedoTexture = readTexture(model, mat.pbrMetallicRoughness.baseColorTexture.index, path.parent_path());
+		dm.normalTexture = readTexture(model, mat.normalTexture.index, path.parent_path());
+		dm.metallicRoughnessTexture = readTexture(model, mat.pbrMetallicRoughness.metallicRoughnessTexture.index, path.parent_path());
+		dm.occlusionTexture = readTexture(model, mat.occlusionTexture.index, path.parent_path());
+		dm.emissiveTexture = readTexture(model, mat.emissiveTexture.index, path.parent_path());
+		dm.emissiveFactor = glm::vec3(
+			static_cast<float>(mat.emissiveFactor[0]),
+			static_cast<float>(mat.emissiveFactor[1]),
+			static_cast<float>(mat.emissiveFactor[2])
+		);
+		dm.alphaMask = mat.alphaMode == "MASK";
+		dm.alphaCutoff = static_cast<float>(mat.alphaCutoff);
 		dm.metallic = static_cast<float>(mat.pbrMetallicRoughness.metallicFactor);
 		dm.roughness = static_cast<float>(mat.pbrMetallicRoughness.roughnessFactor);
 		dm.baseColorFactor = glm::vec4(
@@ -193,8 +202,8 @@ DecodedModel GlTFModelDecoder::decode(const std::filesystem::path& path) const {
 			static_cast<float>(mat.pbrMetallicRoughness.baseColorFactor[2]),
 			static_cast<float>(mat.pbrMetallicRoughness.baseColorFactor[3])
 		);
-		materials.push_back(dm);
-	}*/
+		materials.push_back(std::move(dm));
+	}
 
 	// iterate meshes/primitives
 	for (const auto& mesh : model.meshes) {
@@ -216,9 +225,9 @@ DecodedModel GlTFModelDecoder::decode(const std::filesystem::path& path) const {
 
 			auto it = prim.attributes.find("NORMAL"); if (it != prim.attributes.end()) normalAcc = &model.accessors[it->second];
 			it = prim.attributes.find("TEXCOORD_0"); if (it != prim.attributes.end()) tex0Acc = &model.accessors[it->second];
-			//it = prim.attributes.find("TEXCOORD_1"); if (it != prim.attributes.end()) tex1Acc = &model.accessors[it->second];
-			//it = prim.attributes.find("JOINTS_0"); if (it != prim.attributes.end()) jointsAcc = &model.accessors[it->second];
-			//it = prim.attributes.find("WEIGHTS_0"); if (it != prim.attributes.end()) weightsAcc = &model.accessors[it->second];
+			it = prim.attributes.find("TEXCOORD_1"); if (it != prim.attributes.end()) tex1Acc = &model.accessors[it->second];
+			it = prim.attributes.find("JOINTS_0"); if (it != prim.attributes.end()) jointsAcc = &model.accessors[it->second];
+			it = prim.attributes.find("WEIGHTS_0"); if (it != prim.attributes.end()) weightsAcc = &model.accessors[it->second];
 			it = prim.attributes.find("COLOR_0"); if (it != prim.attributes.end()) colorAcc = &model.accessors[it->second];
 
 			std::vector<uint32_t> primIndices;
@@ -231,10 +240,10 @@ DecodedModel GlTFModelDecoder::decode(const std::filesystem::path& path) const {
 				// create one vertex per index (no dedup)
 				for (size_t k = 0; k < primIndices.size(); ++k) {
 					uint32_t idx = primIndices[k];
-					ObjVertex v{};
+					GltfVertex v{};
 					v.position = readVec3(model, posAcc, idx);
 					if (normalAcc) v.normal = readVec3(model, *normalAcc, idx);
-					if (tex0Acc) v.uv = readVec2(model, *tex0Acc, idx);
+					if (tex0Acc) v.uv0 = readVec2(model, *tex0Acc, idx);
 					if (colorAcc) {
 						glm::vec4 c = readVec4f(model, *colorAcc, idx);
 						v.color = glm::vec3(c.r, c.g, c.b);
@@ -246,17 +255,17 @@ DecodedModel GlTFModelDecoder::decode(const std::filesystem::path& path) const {
 				Primitive p;
 				p.firstIndex = static_cast<uint32_t>(primFirstIndex);
 				p.indexCount = static_cast<uint32_t>(primIndices.size());
-				p.materialIndex = prim.material;
+				p.materialIndex = prim.material >= 0 ? static_cast<uint32_t>(prim.material) : 0;
 				primitives.push_back(p);
 			}
 			else {
 				// no indices -> use accessor count
 				size_t count = posAcc.count;
 				for (size_t k = 0; k < count; ++k) {
-					ObjVertex v{};
+					GltfVertex v{};
 					v.position = readVec3(model, posAcc, k);
 					if (normalAcc) v.normal = readVec3(model, *normalAcc, k);
-					if (tex0Acc) v.uv = readVec2(model, *tex0Acc, k);
+					if (tex0Acc) v.uv0 = readVec2(model, *tex0Acc, k);
 					if (colorAcc) {
 						glm::vec4 c = readVec4f(model, *colorAcc, k);
 						v.color = glm::vec3(c.r, c.g, c.b);
@@ -268,7 +277,7 @@ DecodedModel GlTFModelDecoder::decode(const std::filesystem::path& path) const {
 				Primitive p;
 				p.firstIndex = static_cast<uint32_t>(primFirstIndex);
 				p.indexCount = static_cast<uint32_t>(count);
-				p.materialIndex = prim.material;
+				p.materialIndex = prim.material >= 0 ? static_cast<uint32_t>(prim.material) : 0;
 				primitives.push_back(p);
 			}
 		}
@@ -282,7 +291,7 @@ DecodedModel GlTFModelDecoder::decode(const std::filesystem::path& path) const {
 		maxV = glm::max(maxV, v.position);
 	}
 
-	out.vertices = std::make_unique<ObjVertexData>(std::move(vertices));
+	out.vertices = std::make_unique<GltfVertexData>(std::move(vertices));
 	out.indices = std::move(indices);
 	out.primitives = std::move(primitives);
 	out.materials = std::move(materials);

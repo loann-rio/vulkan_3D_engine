@@ -13,6 +13,24 @@
 #include "ModelAsset.h"
 #include "Vertex/IVertexData.h"
 #include <vulkan/vulkan_core.h>
+#include <algorithm>
+#include <cmath>
+#include <iostream>
+
+namespace {
+	TextureManager::TextureID createTexture(Device& device, AssetManager& assets, const DecodedTexture& texture)
+	{
+		TextureBuilder builder(device);
+
+		// embedded image, already decoded to RGBA8 by the decoder
+		if (!texture.pixels.empty()) {
+			uint32_t mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texture.width, texture.height)))) + 1;
+			return assets.textures().create(builder.fromCharBuffer(texture.pixels, texture.width, texture.height, 4, mipLevels));
+		}
+
+		return assets.textures().create(builder.fromFile(texture.path));
+	}
+}
 
 ModelLOD ModelUploader::uploadDecodedModel(Device& device, AssetManager& assets, DecodedModel& obj)
 {
@@ -101,6 +119,84 @@ std::unique_ptr<Buffer> ModelUploader::createIndexBuffers(Device& device, const 
 	return std::move(indexBuffer);
 }
 
+void ModelUploader::uploadShaderMaterials(Device& device, ModelLOD& lod)
+{
+	lod.textures.clear();
+
+	// returns the index of the texture in lod.textures, -1 if the material doesn't use it
+	auto textureIndex = [&lod](TextureManager::TextureID id) -> int {
+		if (!id) return -1;
+
+		auto it = std::find(lod.textures.begin(), lod.textures.end(), id);
+		if (it != lod.textures.end()) return static_cast<int>(it - lod.textures.begin());
+
+		if (lod.textures.size() >= MAX_MODEL_TEXTURES) {
+			std::cerr << "ModelUploader: more than " << MAX_MODEL_TEXTURES << " textures in model, texture ignored\n";
+			return -1;
+		}
+
+		lod.textures.push_back(id);
+		return static_cast<int>(lod.textures.size() - 1);
+	};
+
+	std::vector<ShaderMaterialData> shaderMaterials{};
+	shaderMaterials.reserve(lod.materials.size());
+
+	for (const auto& material : lod.materials) {
+		ShaderMaterialData data{};
+
+		data.baseColorFactor = material.baseColorFactor;
+		data.emissiveFactor = glm::vec4(material.emissiveFactor, 1.f);
+		data.metallicFactor = material.metallic;
+		data.roughnessFactor = material.roughness;
+		data.alphaMask = material.alphaMask ? 1.f : 0.f;
+		data.alphaMaskCutoff = material.alphaCutoff;
+
+		data.baseColorTextureIndex = textureIndex(material.albedoTexture);
+		data.metallicRoughnessTextureIndex = textureIndex(material.metallicRoughnessTexture);
+		data.normalTextureIndex = textureIndex(material.normalTexture);
+		data.occlusionTextureIndex = textureIndex(material.occlusionTexture);
+		data.emissiveTextureIndex = textureIndex(material.emissiveTexture);
+
+		// only TEXCOORD_0 is decoded for now
+		data.baseColorTextureSet = data.baseColorTextureIndex > -1 ? 0 : -1;
+		data.physicalDescriptorTextureSet = data.metallicRoughnessTextureIndex > -1 ? 0 : -1;
+		data.normalTextureSet = data.normalTextureIndex > -1 ? 0 : -1;
+		data.occlusionTextureSet = data.occlusionTextureIndex > -1 ? 0 : -1;
+		data.emissiveTextureSet = data.emissiveTextureIndex > -1 ? 0 : -1;
+
+		shaderMaterials.push_back(data);
+	}
+
+	if (shaderMaterials.empty())
+		shaderMaterials.push_back(ShaderMaterialData{});
+
+	uint32_t instanceSize = sizeof(ShaderMaterialData);
+	uint32_t instanceCount = static_cast<uint32_t>(shaderMaterials.size());
+	VkDeviceSize bufferSize = static_cast<VkDeviceSize>(instanceSize) * instanceCount;
+
+	Buffer stagingBuffer{
+		device,
+		instanceSize,
+		instanceCount,
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+	};
+
+	stagingBuffer.map();
+	stagingBuffer.writeToBuffer((void*)shaderMaterials.data());
+
+	lod.materialBuffer = std::make_unique<Buffer>(
+		device,
+		instanceSize,
+		instanceCount,
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+	);
+
+	device.copyBuffer(stagingBuffer.getBuffer(), lod.materialBuffer->getBuffer(), bufferSize);
+}
+
 std::vector<Material> ModelUploader::uploadMaterialsTextures(Device& device, AssetManager& assets, std::vector<DecodedMaterial> materials)
 {
 	std::vector<Material> outMaterials{};
@@ -109,30 +205,28 @@ std::vector<Material> ModelUploader::uploadMaterialsTextures(Device& device, Ass
 		Material targetMat;
 
 		if (!mat.albedoTexture.empty())
-		{
-			TextureBuilder builder(device);
-			targetMat.albedoTexture = assets.textures().create(builder.fromFile(mat.albedoTexture));
-		}
-		else {
-			TextureBuilder builder(device);
-			targetMat.albedoTexture = assets.textures().create(builder.fromFile("assets/textures/whiteTexture.jpg"));
-		}
+			targetMat.albedoTexture = createTexture(device, assets, mat.albedoTexture);
+		else
+			targetMat.albedoTexture = createTexture(device, assets, DecodedTexture("assets/textures/whiteTexture.jpg"));
 
 		if (!mat.normalTexture.empty())
-		{
-			TextureBuilder builder(device);
-			targetMat.normalTexture = assets.textures().create(builder.fromFile(mat.normalTexture));
-		}
+			targetMat.normalTexture = createTexture(device, assets, mat.normalTexture);
 
 		if (!mat.metallicRoughnessTexture.empty())
-		{
-			TextureBuilder builder(device);
-			targetMat.metallicRoughnessTexture = assets.textures().create(builder.fromFile(mat.metallicRoughnessTexture));
-		}
+			targetMat.metallicRoughnessTexture = createTexture(device, assets, mat.metallicRoughnessTexture);
+
+		if (!mat.occlusionTexture.empty())
+			targetMat.occlusionTexture = createTexture(device, assets, mat.occlusionTexture);
+
+		if (!mat.emissiveTexture.empty())
+			targetMat.emissiveTexture = createTexture(device, assets, mat.emissiveTexture);
 
 		targetMat.metallic = mat.metallic;
 		targetMat.roughness = mat.roughness;
 		targetMat.baseColorFactor = mat.baseColorFactor;
+		targetMat.emissiveFactor = mat.emissiveFactor;
+		targetMat.alphaMask = mat.alphaMask;
+		targetMat.alphaCutoff = mat.alphaCutoff;
 
 		outMaterials.push_back(targetMat);
 	}

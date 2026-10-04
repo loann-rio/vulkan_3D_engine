@@ -224,6 +224,7 @@ std::unique_ptr<ModelAsset> ModelBuilder::buildDecodedModel()
 
     fullModel->lods.push_back(std::move(model));
     fullModel->hasShadow = computeShadow;
+    fullModel->aabb = decodedModel.aabb;
 
     return fullModel;
 }
@@ -243,8 +244,6 @@ std::unique_ptr<ModelAsset> ModelBuilder::buildGlTF()
         if (modelFilePath.empty()) {
             throw std::runtime_error("path cannot be empty for obj");
         }
-
-        //throw std::runtime_error("build type not implemented yet: GLTF");
 
         GlTFModelDecoder decoder;
         if (!decoder.canDecode(modelFilePath)) {
@@ -270,11 +269,13 @@ std::unique_ptr<ModelAsset> ModelBuilder::buildGlTF()
             model.materials.push_back(mat);
         }
 
+        ModelUploader::uploadShaderMaterials(device, model);
+
         fullModel->lods.push_back(std::move(model));
     }
 
     return fullModel;
-    
+
 }
 
 

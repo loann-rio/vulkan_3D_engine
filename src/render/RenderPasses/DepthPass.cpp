@@ -3,6 +3,7 @@
 #include "../../base/Device.h"
 #include "../GlobalRenderSystemBuilder.h"
 #include "../../model/Vertex/ObjVertexData.h"
+#include "../../model/Vertex/GltfVertexData.h"
 
 void DepthPass::createRenderSystems()
 {
@@ -16,13 +17,13 @@ void DepthPass::createRenderSystems()
         .build();
 
     depthRenderSystemGltf = GlobalRenderSystemBuilder(device, assets)
-        .vertexShader("shaders\\shadowmapgltf.vert.spv")
+        .vertexShader("shaders\\shadowmap.vert.spv") // TODO: shadowmapgltf.vert.spv once GltfVertexLayout + node SSBO (set 3) are wired
         .renderPass(renderPass)
         .addSetLayout(globalSetLayout->getDescriptorSetLayout())
         .addSetLayout(shadowSetLayout->getDescriptorSetLayout())
         .modelFilterType(ModelType::GLTF_MODEL)
         .shadow()
-        .build<ObjVertexLayout>();
+        .build<GltfVertexLayout>();
 
     depthRenderSystem = GlobalRenderSystemBuilder(device, assets)
         .vertexShader("shaders\\shadowmap.vert.spv")
@@ -41,6 +42,7 @@ void DepthPass::createRenderSystems()
         .modelFilterType(ModelType::OBJ_MODEL)
         .shadow()
         .modelSubType(ModelSubType::TERRAIN)
+        .noInstancing()
         .build<ObjVertexLayout>();
 }
 

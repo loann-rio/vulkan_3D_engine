@@ -1,10 +1,11 @@
 #include "RenderSystem.h"
 #include "../base/Device.h"
 #include "../assetManager/AssetManager.h"
+#include "../assetManager/ModelManager.h"
 #include <vulkan/vulkan_core.h>
 
 namespace {
-    std::vector<VkVertexInputAttributeDescription> getVertexInputAttributeDescription(std::vector<IVertexLayout::Attribute> attributes) {
+    std::vector<VkVertexInputAttributeDescription> getVertexInputAttributeDescription(const std::vector<IVertexLayout::Attribute>& attributes) {
 
         std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
 
@@ -12,12 +13,21 @@ namespace {
         for (auto element : attributes) {
             VkFormat format = VK_FORMAT_R32G32B32_SFLOAT;
             if (element.size == 12Ui64) format = VK_FORMAT_R32G32B32_SFLOAT;
-            if (element.size == 8Ui64) format = VK_FORMAT_R32G32B32_SFLOAT;
+            if (element.size == 16Ui64) format = VK_FORMAT_R32G32B32A32_SFLOAT;
+            if (element.size == 8Ui64) format = VK_FORMAT_R32G32_SFLOAT;
             attributeDescriptions.push_back({ i++, 0, format, element.offset });
         }
 
         return attributeDescriptions;
 
+    }
+
+    std::vector<VkVertexInputAttributeDescription> getInstanceInputAttributeDescriptions(uint32_t firstLocation) {
+        return {
+            { firstLocation + 0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ModelInstance, position) },
+            { firstLocation + 1, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ModelInstance, rotation) },
+            { firstLocation + 2, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ModelInstance, scale) }
+        };
     }
 
 }
@@ -38,7 +48,9 @@ public:
     GlobalRenderSystemBuilder& modelSubType(ModelSubType type) { config.modelSubType = type; return *this; }
     GlobalRenderSystemBuilder& fullscreen() { config.fullscreen = true; return *this; }
     GlobalRenderSystemBuilder& shadow() { config.shadow = true; return *this; }
-    GlobalRenderSystemBuilder& skybox() { config.skybox = true; config.modelSubType = ModelSubType::SKYBOX; return *this; }
+    GlobalRenderSystemBuilder& skybox() { config.skybox = true; config.instanced = false; config.modelSubType = ModelSubType::SKYBOX; return *this; }
+    GlobalRenderSystemBuilder& noInstancing() { config.instanced = false; return *this; }
+    GlobalRenderSystemBuilder& materialBuffer() { config.materialBuffer = true; return *this; }
     GlobalRenderSystemBuilder& addSetLayout(VkDescriptorSetLayout set) { config.globalLayouts.push_back(set); return *this; }
     GlobalRenderSystemBuilder& bindingDescriptions(std::vector<VkVertexInputBindingDescription> bindings) { config.bindingDescriptions = bindings; return *this; }
     GlobalRenderSystemBuilder& attributeDescriptions(std::vector<VkVertexInputAttributeDescription> attributeDescriptions) { config.attributeDescriptions = attributeDescriptions; return *this; }
@@ -59,19 +71,23 @@ public:
         // Only populate vertex binding/attribute descriptions if the pipeline needs vertex input
         if (!config.fullscreen) {
             bindingDescription = getBindingDescriptions<Vertex>();
+            descriptorBindings = config.materialBuffer ? getMaterialBufferDescriptorType() : getDescriptorType();
 
-            if (config.shadow) {
-                descriptorBindings = getDescriptorType();
+            if (config.shadow)
                 attributeDescription = getVertexInputAttributeDescription(std::vector<IVertexLayout::Attribute>{ vertex.attributes()[0] });
-            }
-            else {
-                descriptorBindings = getDescriptorType();
+            else
                 attributeDescription = getVertexInputAttributeDescription(vertex.attributes());
+
+            if (config.instanced) {
+                auto instanceAttributes = getInstanceInputAttributeDescriptions(static_cast<uint32_t>(attributeDescription.size()));
+                attributeDescription.insert(attributeDescription.end(), instanceAttributes.begin(), instanceAttributes.end());
+
+                bindingDescription.push_back({ 1, static_cast<uint32_t>(sizeof(ModelInstance)), VK_VERTEX_INPUT_RATE_INSTANCE });
             }
         }
         else {
             // fullscreen: still may need descriptor bindings
-            descriptorBindings = getDescriptorType();
+            descriptorBindings = config.materialBuffer ? getMaterialBufferDescriptorType() : getDescriptorType();
             // leave bindingDescription and attributeDescription empty
         }
 
@@ -129,6 +145,17 @@ private:
     {
         std::vector<DescriptorObject> set1 = {
              {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1}
+        };
+
+        return std::vector<DescriptorSetObject>{{set1, 2}};
+    }
+
+    // model texture array + material SSBO, see ObjectManager::createDescriptorSet
+    std::vector<DescriptorSetObject> getMaterialBufferDescriptorType()
+    {
+        std::vector<DescriptorObject> set1 = {
+             {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, MAX_MODEL_TEXTURES},
+             {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 1}
         };
 
         return std::vector<DescriptorSetObject>{{set1, 2}};

@@ -302,7 +302,6 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <None Include="shaders\depthView.vert" />
     <None Include="shaders\equirectangular_to_cube.frag" />
     <None Include="shaders\fullscreen.vert" />
-    <None Include="shaders\global_ubo.minc" />
     <None Include="shaders\GlTFshader.frag" />
     <None Include="shaders\GlTFshader.vert" />
     <None Include="shaders\particule_update.comp" />
@@ -313,8 +312,9 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <None Include="shaders\shadowmapgltf.vert" />
     <None Include="shaders\shadowMapTerrain.vert" />
     <None Include="shaders\simple_shader.frag" />
-    <None Include="shaders\simple_shader.mfrag" />
     <None Include="shaders\simple_shader.vert" />
+    <None Include="shaders\simple_shader_gltf.frag" />
+    <None Include="shaders\simple_shader_gltf.vert" />
     <None Include="shaders\skybox.frag" />
     <None Include="shaders\skybox.vert" />
     <None Include="shaders\terrainShader.frag" />

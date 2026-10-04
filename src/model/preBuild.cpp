@@ -1,6 +1,7 @@
 #include "preBuild.h"
 
 #include <random>
+#include <algorithm>
 #include "../base/perlinNoise.h"
 #include "../base/VoronoiNoise.h"
 
@@ -37,201 +38,97 @@
 }*/
 
 
+namespace {
+
+    /// <summary>
+    /// generate a flat grid on the XZ plane as a DecodedModel (single primitive, single default material)
+    /// </summary>
+    DecodedModel buildPlaneModel(float width, float depth, uint32_t widthDetail, uint32_t depthDetail, glm::vec3 color, float UVfactor, const std::string& name)
+    {
+        widthDetail = std::max(widthDetail, 1u);
+        depthDetail = std::max(depthDetail, 1u);
+
+        // Vertices
+        // the winding below gives faces pointing toward -Y, which is "up" in this engine
+        std::vector<ObjVertex> verts;
+        verts.reserve((static_cast<size_t>(widthDetail) + 1) * (static_cast<size_t>(depthDetail) + 1));
+
+        for (uint32_t i = 0; i <= widthDetail; i++) {
+            for (uint32_t j = 0; j <= depthDetail; j++) {
+                ObjVertex v{};
+                v.position = { i * width / widthDetail, 0.f, j * depth / depthDetail };
+                v.color = color;
+                v.normal = { 0.f, -1.f, 0.f };
+                v.uv = { (float)(i * UVfactor) / (float)widthDetail, (float)(j * UVfactor) / (float)depthDetail };
+                verts.push_back(v);
+            }
+        }
+
+        // Indices
+        std::vector<uint32_t> indices;
+        indices.reserve(static_cast<size_t>(widthDetail) * depthDetail * 6);
+        for (uint32_t i = 0; i < widthDetail; i++) {
+            for (uint32_t j = 0; j < depthDetail; j++) {
+                uint32_t topLeft = i * (depthDetail + 1) + j;
+                uint32_t topRight = topLeft + 1;
+                uint32_t bottomLeft = (i + 1) * (depthDetail + 1) + j;
+                uint32_t bottomRight = bottomLeft + 1;
+
+                // First triangle
+                indices.push_back(topLeft);
+                indices.push_back(bottomLeft);
+                indices.push_back(topRight);
+
+                // Second triangle
+                indices.push_back(topRight);
+                indices.push_back(bottomLeft);
+                indices.push_back(bottomRight);
+            }
+        }
+
+        DecodedModel decodedModel;
+
+        decodedModel.aabb = BoundingBox(glm::vec3(0.f), glm::vec3(width, 0.f, depth));
+        decodedModel.aabb.valid = true;
+
+        Primitive prim{};
+        prim.aabb = decodedModel.aabb;
+        prim.firstIndex = 0;
+        prim.indexCount = static_cast<uint32_t>(indices.size());
+        prim.materialIndex = 0;
+        decodedModel.primitives.push_back(prim);
+
+        decodedModel.vertices = std::make_unique<ObjVertexData>(std::move(verts));
+        decodedModel.indices = std::move(indices);
+        decodedModel.name = name;
+
+        return decodedModel;
+    }
+}
+
 ModelManager::ModelID PrebuiltModel::createPlane(Device& device, AssetManager& assets, float width, float depth, uint16_t widthDetail, uint16_t depthDetail, glm::vec3 color, float UVfactor)
 {
-    DecodedModel decodedModel;
-
-    // Vertex array using ObjVertex
-    std::vector<ObjVertex> verts;
-    verts.reserve((static_cast<size_t>(widthDetail) + 1) * (static_cast<size_t>(depthDetail) + 1));
-
-    for (unsigned int i = 0; i <= widthDetail; i++) {
-        for (unsigned int j = 0; j <= depthDetail; j++) {
-            ObjVertex v{};
-            v.position = { i * width / widthDetail, 0.f, j * depth / depthDetail };
-            v.color = color;
-            v.normal = { 0.f, 1.f, 0.f };
-            v.uv = { (float)(i * UVfactor) / (float)widthDetail, (float)(j * UVfactor) / (float)depthDetail };
-            verts.push_back(v);
-        }
-    }
-
-    // Indices
-    std::vector<uint32_t> indices;
-    indices.reserve(static_cast<size_t>(widthDetail) * depthDetail * 6);
-    for (unsigned int i = 0; i < widthDetail; i++) {
-        for (unsigned int j = 0; j < depthDetail; j++) {
-            uint32_t topLeft = i * (depthDetail + 1) + j;
-            uint32_t topRight = topLeft + 1;
-            uint32_t bottomLeft = (i + 1) * (depthDetail + 1) + j;
-            uint32_t bottomRight = bottomLeft + 1;
-
-            // First triangle
-            indices.push_back(topLeft);
-            indices.push_back(bottomLeft);
-            indices.push_back(topRight);
-
-            // Second triangle
-            indices.push_back(topRight);
-            indices.push_back(bottomLeft);
-            indices.push_back(bottomRight);
-        }
-    }
-
-    // Compute normals by accumulating face normals per vertex
-    std::vector<glm::vec3> accumulatedNormals(verts.size(), glm::vec3(0.0f));
-    for (size_t k = 0; k + 2 < indices.size(); k += 3) {
-        const glm::vec3& p0 = verts[indices[k + 0]].position;
-        const glm::vec3& p1 = verts[indices[k + 1]].position;
-        const glm::vec3& p2 = verts[indices[k + 2]].position;
-
-        glm::vec3 faceNormal = glm::normalize(glm::cross(p1 - p0, p2 - p0));
-        accumulatedNormals[indices[k + 0]] += faceNormal;
-        accumulatedNormals[indices[k + 1]] += faceNormal;
-        accumulatedNormals[indices[k + 2]] += faceNormal;
-    }
-
-    for (size_t i = 0; i < verts.size(); ++i) {
-        if (glm::length(accumulatedNormals[i]) > 0.0f)
-            verts[i].normal = glm::normalize(accumulatedNormals[i]);
-        else
-            verts[i].normal = glm::vec3(0.f, 1.f, 0.f);
-    }
-
-    // Fill DecodedModel
-    decodedModel.vertices = std::make_unique<ObjVertexData>(std::move(verts));
-    decodedModel.indices = std::move(indices);
-
-    // Single primitive covering entire mesh
-    Primitive prim;
-    prim.firstIndex = 0;
-    prim.indexCount = static_cast<uint32_t>(decodedModel.indices.size());
-    prim.materialIndex = 0;
-    decodedModel.primitives.push_back(prim);
-
-    // Default material (empty texture -> ModelUploader will assign white)
-    DecodedMaterial mat;
-    mat.name = "default";
-    decodedModel.materials.push_back(mat);
-
-    // Compute AABB
-    glm::vec3 minV(std::numeric_limits<float>::infinity());
-    glm::vec3 maxV(-std::numeric_limits<float>::infinity());
-    const auto& cpuVerts = static_cast<ObjVertexData*>(decodedModel.vertices.get())->cpuData();
-    for (const auto& v : cpuVerts) {
-        minV = glm::min(minV, v.position);
-        maxV = glm::max(maxV, v.position);
-    }
-    decodedModel.aabb = BoundingBox(minV, maxV);
-    decodedModel.aabb.valid = true;
-
-    decodedModel.name = "generated_plane";
-
-    // Build and cache the model via ModelManager
     ModelBuilder builder(device, assets);
-    builder.fromDecodedModel(std::move(decodedModel));
+    builder.fromDecodedModel(buildPlaneModel(width, depth, widthDetail, depthDetail, color, UVfactor, "generated_plane"));
 
     return assets.models().create(builder);
 }
 
 /// <summary>
-/// create a terrain made of triangles
+/// create a square plane made of triangles
 /// </summary>
 /// <param name="device"></param>
-/// <param name="detail"> length of the plane in term of triangles </param>
-/// <param name="sizePlane"> length of the plane in term of pixels </param>
-/// <param name="color"></param>
-/// <returns> pointer to a new model </returns>
+/// <param name="detail"> length of the plane in term of quads </param>
+/// <param name="sizePlane"> length of the plane in world units </param>
+/// <param name="color"> vertex color, multiplied with the texture </param>
+/// <returns> id of the model in the ModelManager </returns>
 ModelManager::ModelID PrebuiltModel::createPlane(Device& device, AssetManager& assets, const unsigned int detail, const float sizePlane, glm::vec3 color, const std::string texturePath, float uvFactor)
 {
-    DecodedModel decodedModel;
-
-    // Build vertices
-    std::vector<ObjVertex> verts;
-    verts.reserve(static_cast<size_t>(detail + 1) * static_cast<size_t>(detail + 1));
-    for (unsigned int i = 0; i <= detail; ++i) {
-        for (unsigned int j = 0; j <= detail; ++j) {
-            ObjVertex v{};
-            v.position = { i * sizePlane / detail, 0.f, j * sizePlane / detail };
-            v.color = color;
-            v.normal = { 0.f, 1.f, 0.f };
-            v.uv = { (float)(i * uvFactor) / (float)detail, (float)(j * uvFactor) / (float)detail };
-            verts.push_back(v);
-        }
-    }
-
-    // Build indices
-    std::vector<uint32_t> indices;
-    indices.reserve(static_cast<size_t>(detail) * detail * 6);
-    for (unsigned int i = 0; i < detail; ++i) {
-        for (unsigned int j = 0; j < detail; ++j) {
-            uint32_t topLeft = i * (detail + 1) + j;
-            uint32_t topRight = topLeft + 1;
-            uint32_t bottomLeft = (i + 1) * (detail + 1) + j;
-            uint32_t bottomRight = bottomLeft + 1;
-
-            // first triangle
-            indices.push_back(topLeft);
-            indices.push_back(bottomLeft);
-            indices.push_back(topRight);
-
-            // second triangle
-            indices.push_back(topRight);
-            indices.push_back(bottomLeft);
-            indices.push_back(bottomRight);
-        }
-    }
-
-    // Compute normals
-    std::vector<glm::vec3> accumulatedNormals(verts.size(), glm::vec3(0.0f));
-    for (size_t k = 0; k + 2 < indices.size(); k += 3) {
-        const glm::vec3& p0 = verts[indices[k + 0]].position;
-        const glm::vec3& p1 = verts[indices[k + 1]].position;
-        const glm::vec3& p2 = verts[indices[k + 2]].position;
-
-        glm::vec3 faceNormal = glm::normalize(glm::cross(p1 - p0, p2 - p0));
-        accumulatedNormals[indices[k + 0]] += faceNormal;
-        accumulatedNormals[indices[k + 1]] += faceNormal;
-        accumulatedNormals[indices[k + 2]] += faceNormal;
-    }
-
-    for (size_t i = 0; i < verts.size(); ++i) {
-        if (glm::length(accumulatedNormals[i]) > 0.0f)
-            verts[i].normal = glm::normalize(accumulatedNormals[i]);
-        else
-            verts[i].normal = glm::vec3(0.f, 1.f, 0.f);
-    }
-
-    // Fill decoded model
-    decodedModel.vertices = std::make_unique<ObjVertexData>(std::move(verts));
-    decodedModel.indices = std::move(indices);
-
-    // Primitive covering full mesh
-    Primitive prim{};
-    prim.firstIndex = 0;
-    prim.indexCount = static_cast<uint32_t>(decodedModel.indices.size());
-    prim.materialIndex = 0;
-    decodedModel.primitives.push_back(prim);
-
-    // AABB
-    const auto& cpuVerts = static_cast<ObjVertexData*>(decodedModel.vertices.get())->cpuData();
-    glm::vec3 minV(std::numeric_limits<float>::infinity());
-    glm::vec3 maxV(-std::numeric_limits<float>::infinity());
-    for (const auto& v : cpuVerts) {
-        minV = glm::min(minV, v.position);
-        maxV = glm::max(maxV, v.position);
-    }
-    decodedModel.aabb = BoundingBox(minV, maxV);
-    decodedModel.aabb.valid = true;
-    decodedModel.name = "generated_plane_detail";
-
     TextureBuilder textBuilder(device);
     auto texture = assets.textures().create(textBuilder.fromFile(texturePath));
 
-
-    // Build via ModelBuilder and cache in ModelManager
     ModelBuilder builder(device, assets);
-    builder.fromDecodedModel(std::move(decodedModel)).withTexture(texture);
+    builder.fromDecodedModel(buildPlaneModel(sizePlane, sizePlane, detail, detail, color, uvFactor, "generated_plane_detail")).withTexture(texture);
 
     return assets.models().create(builder);
 }

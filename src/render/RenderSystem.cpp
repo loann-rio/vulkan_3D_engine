@@ -7,6 +7,12 @@
 #include <stdexcept>
 #include <array>
 #include <cassert>
+#include <cstddef>
+
+namespace {
+	// push only up to materialIndex, without the alignas(16) padding
+	constexpr uint32_t MATERIAL_PUSH_SIZE = static_cast<uint32_t>(offsetof(MaterialPushConstantData, materialIndex) + sizeof(int));
+}
 
 //if (!Camera::isAABBinFrustrum(obj->getAABB().getAABB(obj->getTransformMat()), frustrumPlanes)) return;
 
@@ -17,7 +23,9 @@ RenderSystem::RenderSystem(Device& device, AssetManager& assets, RenderSystemCon
 	modelSubType{ config.modelSubType },
 	isShadow{ config.shadow },
 	isSkyBox{ config.skybox },
-	isFullscreenRender{ config.fullscreen }, 
+	isFullscreenRender{ config.fullscreen },
+	hasInstanceBinding{ config.instanced && !config.fullscreen },
+	useMaterialBuffer{ config.materialBuffer && !config.shadow && !config.fullscreen },
 	modelDescriptorSetIndex{ config.modelDescriptorSetIndex },
 	customPushStage{ config.pushStage != 0 },
 	pushStage{ static_cast<VkShaderStageFlagBits>(config.pushStage) }
@@ -47,7 +55,7 @@ RenderSystem::RenderSystem(Device& device, AssetManager& assets, RenderSystemCon
 
 	// create pipelinelayout with the global and model descriptor set layout
 	createPipelineLayout(
-		layoutsToCreate//config.globalLayouts
+		layoutsToCreate
 	);
 
 	// create pipeline
@@ -58,6 +66,21 @@ RenderSystem::RenderSystem(Device& device, AssetManager& assets, RenderSystemCon
 		config.bindingDescriptions,
 		config.attributeDescriptions
 	);
+
+	if (hasInstanceBinding) {
+		ModelInstance identity{ glm::vec4(0.f), glm::vec4(0.f), glm::vec4(1.f) };
+
+		dummyInstanceBuffer = std::make_unique<Buffer>(
+			device,
+			sizeof(ModelInstance),
+			1,
+			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+		);
+		dummyInstanceBuffer->map();
+		dummyInstanceBuffer->writeToBuffer(&identity);
+		dummyInstanceBuffer->unmap();
+	}
 }
 
 /// <summary>
@@ -82,16 +105,16 @@ void RenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout> descr
 		pushConstantRange.size = sizeof(DepthPushConstantData);
 	}
 
+	else if (useMaterialBuffer) {
+		// materialIndex is read in the fragment shader; 132 bytes, above the 128 bytes guaranteed by the spec (desktop GPUs have 256)
+		pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+		pushConstantRange.size = MATERIAL_PUSH_SIZE;
+	}
+
 	else {
-		if (modelType == ModelType::GLTF_MODEL) {
-			// gltf model need the push constant both in vertex and frag shader 
-			pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-			pushConstantRange.size = sizeof(GltfPushConstant); 
-		}
-		else {
-			pushConstantRange.stageFlags = isFullscreenRender ? VK_SHADER_STAGE_FRAGMENT_BIT : VK_SHADER_STAGE_VERTEX_BIT;
-			pushConstantRange.size = sizeof(SimplePushConstantData);
-		}
+		// drawModel pushes SimplePushConstantData for every other model type
+		pushConstantRange.stageFlags = isFullscreenRender ? VK_SHADER_STAGE_FRAGMENT_BIT : VK_SHADER_STAGE_VERTEX_BIT;
+		pushConstantRange.size = sizeof(SimplePushConstantData);
 	}
 
 	if (customPushStage) pushConstantRange.stageFlags = pushStage;
@@ -193,10 +216,21 @@ void RenderSystem::bindGlobalSets(VkCommandBuffer& commandBuffer, std::vector<Vk
 void RenderSystem::bindModel(VkCommandBuffer& commandBuffer, ModelAsset* model, GameObjectModel& obj, uint16_t frameIndex)
 {
 
-	Buffer* instanceBuffer = obj.getFrameInstancesBuffer(frameIndex);
-	VkBuffer buffers[] = { model->lods[0].vertexBuffer->getBuffer() , instanceBuffer ? instanceBuffer->getBuffer() : nullptr };
-	VkDeviceSize offsets[] = { 0, 0 };
-	vkCmdBindVertexBuffers(commandBuffer, 0, instanceBuffer ? 2 : 1, buffers, offsets);
+	VkBuffer vertexBuffer = model->lods[0].vertexBuffer->getBuffer();
+
+	if (hasInstanceBinding) {
+		Buffer* instanceBuffer = obj.getFrameInstancesBuffer(frameIndex);
+		if (!instanceBuffer) instanceBuffer = dummyInstanceBuffer.get();
+
+		VkBuffer buffers[] = { vertexBuffer, instanceBuffer->getBuffer() };
+		VkDeviceSize offsets[] = { 0, 0 };
+		vkCmdBindVertexBuffers(commandBuffer, 0, 2, buffers, offsets);
+	}
+	else {
+		VkDeviceSize offset = 0;
+		vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer, &offset);
+	}
+
 	vkCmdBindIndexBuffer(commandBuffer, model->lods[0].indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 }
 
@@ -211,20 +245,48 @@ void RenderSystem::bindTextures(VkCommandBuffer& commandBuffer, ModelAsset* mode
 		nullptr);
 }
 
+void RenderSystem::bindMaterialBuffer(VkCommandBuffer& commandBuffer, ModelAsset* model, uint16_t frameIndex)
+{
+	vkCmdBindDescriptorSets(commandBuffer,
+		VK_PIPELINE_BIND_POINT_GRAPHICS,
+		pipelineLayout,
+		modelDescriptorSetIndex, 1,
+		&model->lods[0].descriptorSet[frameIndex],
+		0,
+		nullptr);
+}
+
 void RenderSystem::drawModel(VkCommandBuffer& commandBuffer, ModelAsset* model, Primitive& primitive, glm::mat4 modelMat, glm::mat4 normalM, uint32_t instanceCount = 1)
 {
-	SimplePushConstantData push{};
-	push.modelMatrix = modelMat;
-	push.normalMatrix = normalM;
+	if (useMaterialBuffer) {
+		MaterialPushConstantData push{};
+		push.modelMatrix = modelMat;
+		push.normalMatrix = normalM;
+		push.materialIndex = static_cast<int>(primitive.materialIndex);
 
-	vkCmdPushConstants(
-		commandBuffer,
-		pipelineLayout,
-		VK_SHADER_STAGE_VERTEX_BIT,
-		0,
-		sizeof(push),
-		&push
-	);
+		vkCmdPushConstants(
+			commandBuffer,
+			pipelineLayout,
+			VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+			0,
+			MATERIAL_PUSH_SIZE,
+			&push
+		);
+	}
+	else {
+		SimplePushConstantData push{};
+		push.modelMatrix = modelMat;
+		push.normalMatrix = normalM;
+
+		vkCmdPushConstants(
+			commandBuffer,
+			pipelineLayout,
+			VK_SHADER_STAGE_VERTEX_BIT,
+			0,
+			sizeof(push),
+			&push
+		);
+	}
 
 	uint32_t firstInstance = (instanceCount < 2) ? 0 : 1;
 
@@ -246,9 +308,10 @@ void RenderSystem::drawDepth(VkCommandBuffer& commandBuffer, ModelAsset* model, 
 		&push
 	);
 
-	uint32_t firstInstance = (instanceCount == 1) ? 0 : 1;
+	// non-instanced objects have instanceCount == 0, still draw them once
+	uint32_t firstInstance = (instanceCount < 2) ? 0 : 1;
 
-	vkCmdDrawIndexed(commandBuffer, primitive.indexCount, instanceCount, primitive.firstIndex, 0, firstInstance);
+	vkCmdDrawIndexed(commandBuffer, primitive.indexCount, std::max((uint32_t) 1, instanceCount), primitive.firstIndex, 0, firstInstance);
 }
 
 void RenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, std::vector<VkDescriptorSet> globalDescriptorSets, const std::array<FrustumPlane, 6>& frustrumPlanes)
@@ -265,9 +328,16 @@ void RenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& 
 
 				bindModel(commandBuffer, modelAsset, *obj, frameInfo.frameIndex);
 
+				if (useMaterialBuffer) {
+					// descriptor set not created yet
+					if (modelAsset->lods[0].descriptorSet.empty()) continue;
+					bindMaterialBuffer(commandBuffer, modelAsset, frameInfo.frameIndex);
+				}
+
 				for (auto primitive : modelAsset->lods[0].primitives)
 				{
-					bindTextures(commandBuffer, modelAsset, primitive, frameInfo.frameIndex);
+					if (!useMaterialBuffer)
+						bindTextures(commandBuffer, modelAsset, primitive, frameInfo.frameIndex);
 					drawModel(commandBuffer, modelAsset, primitive, obj->getTransformMat(), obj->getNormalMat(), obj->getInstanceCount());
 				}
 			}

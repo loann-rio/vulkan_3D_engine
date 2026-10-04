@@ -453,9 +453,6 @@
     <None Include="shaders\shadowmap.vert">
       <Filter>shaders</Filter>
     </None>
-    <None Include="shaders\shadowmapgltf.vert">
-      <Filter>shaders</Filter>
-    </None>
     <None Include="shaders\simple_shader.frag">
       <Filter>shaders</Filter>
     </None>
@@ -480,12 +477,6 @@
     <None Include="shaders\terrainShader.vert">
       <Filter>shaders</Filter>
     </None>
-    <None Include="shaders\global_ubo.minc">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="shaders\simple_shader.mfrag">
-      <Filter>shaders</Filter>
-    </None>
     <None Include="shaders\fullscreen.vert">
       <Filter>shaders</Filter>
     </None>
@@ -505,6 +496,15 @@
       <Filter>shaders</Filter>
     </None>
     <None Include="shaders\particule_update.comp">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\simple_shader_gltf.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\simple_shader_gltf.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\shadowmapgltf.vert">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>

@@ -38,6 +38,8 @@ struct RenderSystemConfig
 	bool shadow = false;
 	bool skybox = false;
 	bool fullscreen = false;
+	bool instanced = true;
+	bool materialBuffer = false;
 };
 
 class RenderSystem
@@ -109,6 +111,12 @@ private:
 		uint16_t frameIndex
 	);
 
+	void bindMaterialBuffer(
+		VkCommandBuffer& commandBuffer,
+		ModelAsset* model,
+		uint16_t frameIndex
+	);
+
 	void drawModel(
 		VkCommandBuffer& commandBuffer, 
 		ModelAsset* model, 
@@ -138,6 +146,10 @@ private:
 	const bool isShadow = false;
 	const bool isSkyBox = false;
 	const bool isFullscreenRender = false;
+	const bool hasInstanceBinding = false;
+	const bool useMaterialBuffer = false;
+
+	std::unique_ptr<Buffer> dummyInstanceBuffer = nullptr;
 
 	bool customPushStage = false;
 	VkShaderStageFlagBits pushStage;

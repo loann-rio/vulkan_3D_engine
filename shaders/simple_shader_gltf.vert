@@ -5,11 +5,14 @@
 layout(location = 0) in vec3 position;
 layout(location = 1) in vec3 color;
 layout(location = 2) in vec3 normal;
-layout(location = 3) in vec2 uv;
+layout(location = 3) in vec2 uv0;
+layout(location = 4) in vec2 uv1;
+layout(location = 5) in vec3 joint0;
+layout(location = 6) in vec3 weight0; 
 
-layout(location = 4) in vec3 instancePosition;
-layout(location = 5) in vec3 instanceRotation;
-layout(location = 6) in vec3 instanceScale; 
+layout(location = 7) in vec3 instancePosition;
+layout(location = 8) in vec3 instanceRotation;
+layout(location = 9) in vec3 instanceScale; 
 
 
 layout(location = 0) out vec3 fragColor;
@@ -48,6 +51,7 @@ layout(set = 0, binding = 0) uniform GlobalUbo {
 layout(push_constant) uniform Push {
 	mat4 modelMatrix;
 	mat4 normalMatrix;
+	int materialIndex;
 } push;
 
 layout(set = 1, binding = 0) uniform SpotLightUbo {
@@ -96,5 +100,5 @@ void main() {
 	fragNormalWorld = normalize(mat3(normalMat)*normal);
 	fragPosWorld = positionWorld.xyz;
 	fragColor = color;
-	texCoord = uv;
+	texCoord = uv0;
 }

@@ -15,6 +15,8 @@ public:
 
 	static ModelLOD uploadDecodedModel(Device& device, AssetManager& assets, DecodedModel& obj);
 
+	static void uploadShaderMaterials(Device& device, ModelLOD& lod);
+
 private:
 	static std::unique_ptr<Buffer> createVertexBuffers(Device& device, IVertexData* vertices);
 	static std::unique_ptr<Buffer> createIndexBuffers(Device& device, const std::vector<uint32_t>& indices);

@@ -39,7 +39,7 @@ void Engine::run()
 
     auto* textureObject = dynamic_cast<GameObjectModel*>(objectManager.get("cubemap1"));
 
-    vkQueueWaitIdle(device.presentQueue());
+    device.waitQueueIdle(device.presentQueue());
 	while (!window.shouldClose())
 	{   
 		glfwPollEvents();
@@ -131,5 +131,5 @@ void Engine::run()
         renderer.renderFrame(frameInfo, objectManager);
 	}
 
-    vkQueueWaitIdle(device.presentQueue());
+    device.waitQueueIdle(device.presentQueue());
 }

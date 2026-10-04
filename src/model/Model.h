@@ -26,6 +26,13 @@ struct alignas(16) SimplePushConstantData {
 	glm::mat4 normalMatrix{ 1.f }; 
 };
 
+// SimplePushConstantData + material index in ModelLOD::materialBuffer (vertex and fragment stage)
+struct alignas(16) MaterialPushConstantData {
+	glm::mat4 modelMatrix{ 1.f };
+	glm::mat4 normalMatrix{ 1.f };
+	int materialIndex{ 0 };
+};
+
 struct alignas(16) DepthPushConstantData {
 	glm::mat4 modelMatrix{ 1.f };
 	int indexDepthCamera{ 0 };

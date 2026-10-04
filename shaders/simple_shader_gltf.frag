@@ -1,4 +1,5 @@
 #version 450
+#extension GL_EXT_nonuniform_qualifier : require
 
 #define MAX_NUM_SPOT_LIGHT 4
 
@@ -37,8 +38,44 @@ layout(set = 0, binding = 0) uniform GlobalUbo {
 	PointLight pointLight[10]; 
 } ubo;
 
-// Define the texture sampler 
-layout(set = 2, binding = 0) uniform sampler2D texSampler;
+struct ShaderMaterial {
+	vec4 baseColorFactor;
+	vec4 emissiveFactor;
+	vec4 diffuseFactor;
+	vec4 specularFactor;
+	float workflow;
+	int baseColorTextureSet;
+	int physicalDescriptorTextureSet;
+	int normalTextureSet;
+	int occlusionTextureSet;
+	int emissiveTextureSet;
+
+	int baseColorTextureIndex;
+	int metallicRoughnessTextureIndex;
+	int normalTextureIndex;
+	int occlusionTextureIndex;
+	int emissiveTextureIndex;
+
+	float metallicFactor;
+	float roughnessFactor;
+	float alphaMask;
+	float alphaMaskCutoff;
+	float emissiveStrength;
+};
+
+layout(push_constant) uniform Push {
+	mat4 modelMatrix;
+	mat4 normalMatrix;
+	int materialIndex;
+} push;
+
+// every texture of the model, indexed by the material (ModelLOD::textures)
+layout(set = 2, binding = 0) uniform sampler2D textures[];
+
+layout(std430, set = 2, binding = 1) readonly buffer SSBO {
+	ShaderMaterial materials[];
+};
+
 layout(set = 1, binding = 1) uniform sampler2DShadow shadowMap[MAX_NUM_SPOT_LIGHT];
 
 layout(set = 1, binding = 0) uniform SpotLightUbo {
@@ -78,13 +115,45 @@ vec4 compute_shadow_factor(vec4 light_space_pos, uint indexSpotLight, vec3 surfa
 	return cosAngOfIncidence * intencity / 9 ;
 }
 
+// Perturb normal with the normal map, tangent frame built from screen space derivatives
+// see http://www.thetenthplanet.de/archives/1180
+vec3 getNormal(ShaderMaterial material, vec3 N)
+{
+	vec3 tangentNormal = texture(textures[material.normalTextureIndex], fragTexCoord).xyz * 2.0 - 1.0;
+
+	vec3 dp1 = dFdx(fragPositionWorld);
+	vec3 dp2 = dFdy(fragPositionWorld);
+	vec2 duv1 = dFdx(fragTexCoord);
+	vec2 duv2 = dFdy(fragTexCoord);
+
+	vec3 dp2perp = cross(dp2, N);
+	vec3 dp1perp = cross(N, dp1);
+	vec3 T = dp2perp * duv1.x + dp1perp * duv2.x;
+	vec3 B = dp2perp * duv1.y + dp1perp * duv2.y;
+
+	float invmax = inversesqrt(max(dot(T, T), dot(B, B)));
+
+	// gltf uv origin is top left, the bitangent points toward -v
+	mat3 TBN = mat3(T * invmax, -B * invmax, N);
+
+	return normalize(TBN * tangentNormal);
+}
+
 void main() {
 
+	ShaderMaterial material = materials[push.materialIndex];
+
 	vec3 surfaceNormal = normalize(fragNormalWorld);
+	if (material.normalTextureSet > -1)
+		surfaceNormal = getNormal(material, surfaceNormal);
 	vec3 cameraWorldPos = ubo.invView[3].xyz;
 	vec3 viewDirection = normalize(cameraWorldPos - fragPositionWorld);
 
-	vec3 diffuseLight = ubo.ambientLightColor.xyz * ubo.ambientLightColor.w;
+	float ao = 1.0;
+	if (material.occlusionTextureSet > -1)
+		ao = texture(textures[material.occlusionTextureIndex], fragTexCoord).r;
+
+	vec3 diffuseLight = ubo.ambientLightColor.xyz * ubo.ambientLightColor.w * ao;
 	vec3 specularLight = vec3(0.0);
 
 	// apply points light
@@ -125,12 +194,18 @@ void main() {
 
 
 	// get texture color
-	vec4 color = texture(texSampler, fragTexCoord);
+	vec4 color = material.baseColorFactor;
+	if (material.baseColorTextureSet > -1)
+		color *= texture(textures[material.baseColorTextureIndex], fragTexCoord);
 
-	if (color.a < 0.9)
+	if (material.alphaMask == 1.0 && color.a < material.alphaMaskCutoff)
 		discard;
 
 	color = color * vec4(fragColor, 1.0);
+
+	vec3 emissive = material.emissiveFactor.rgb * material.emissiveStrength;
+	if (material.emissiveTextureSet > -1)
+		emissive *= texture(textures[material.emissiveTextureIndex], fragTexCoord).rgb;
 
 
 	// spot light mapping
@@ -142,5 +217,6 @@ void main() {
 
 	// sum colors
 	outColor = ((vec4(diffuseLight, 1.0) + vec4(specularLight, 1.0) + cosAngOfIncidence * ubo.globalLightDir.w + spotLightLight) * color);
+	outColor.rgb += emissive;
 
 }
