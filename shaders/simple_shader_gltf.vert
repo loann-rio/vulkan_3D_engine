@@ -7,8 +7,8 @@ layout(location = 1) in vec3 color;
 layout(location = 2) in vec3 normal;
 layout(location = 3) in vec2 uv0;
 layout(location = 4) in vec2 uv1;
-layout(location = 5) in vec3 joint0;
-layout(location = 6) in vec3 weight0; 
+layout(location = 5) in uvec4 joint0;
+layout(location = 6) in vec4 weight0; 
 
 layout(location = 7) in vec3 instancePosition;
 layout(location = 8) in vec3 instanceRotation;

@@ -8,6 +8,7 @@
 
 #include <cstdint>
 #include <vector>
+#include <vulkan/vulkan_core.h>
 
 
 struct ObjVertex {
@@ -30,10 +31,10 @@ public:
     ObjVertexLayout() {
         m_attrs.clear();
 
-        m_attrs.push_back({ "position", offsetof(ObjVertex, position), sizeof(ObjVertex::position) });
-        m_attrs.push_back({ "color",    offsetof(ObjVertex, color)   , sizeof(ObjVertex::color) });
-        m_attrs.push_back({ "normal",   offsetof(ObjVertex, normal)  , sizeof(ObjVertex::normal) });
-        m_attrs.push_back({ "uv",       offsetof(ObjVertex, uv)      , sizeof(ObjVertex::uv) });
+        m_attrs.push_back(IVertexLayout::Attribute{ "position", offsetof(ObjVertex, position), sizeof(ObjVertex::position),  VK_FORMAT_R32G32B32_SFLOAT });
+        m_attrs.push_back(IVertexLayout::Attribute{ "color",    offsetof(ObjVertex, color)   , sizeof(ObjVertex::color),     VK_FORMAT_R32G32B32_SFLOAT });
+        m_attrs.push_back(IVertexLayout::Attribute{ "normal",   offsetof(ObjVertex, normal)  , sizeof(ObjVertex::normal),    VK_FORMAT_R32G32B32_SFLOAT });
+        m_attrs.push_back(IVertexLayout::Attribute{ "uv",       offsetof(ObjVertex, uv)      , sizeof(ObjVertex::uv),        VK_FORMAT_R32G32_SFLOAT });
 
         m_stride = static_cast<uint32_t>(sizeof(ObjVertex));
     };

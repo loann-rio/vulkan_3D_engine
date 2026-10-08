@@ -8,6 +8,7 @@
 
 #include <cstdint>
 #include <vector>
+#include <vulkan/vulkan_core.h>
 
 
 struct GltfVertex {
@@ -39,13 +40,13 @@ public:
     GltfVertexLayout() {
         m_attrs.clear();
 
-        m_attrs.push_back({ "position", offsetof(GltfVertex, position) , sizeof(GltfVertex::position) });
-        m_attrs.push_back({ "color",    offsetof(GltfVertex, color)    , sizeof(GltfVertex::color)    });
-        m_attrs.push_back({ "normal",   offsetof(GltfVertex, normal)   , sizeof(GltfVertex::normal)   });
-        m_attrs.push_back({ "uv0",      offsetof(GltfVertex, uv0)      , sizeof(GltfVertex::uv0)      });
-        m_attrs.push_back({ "uv1",      offsetof(GltfVertex, uv1)      , sizeof(GltfVertex::uv1)      });
-        m_attrs.push_back({ "joint0",   offsetof(GltfVertex, joint0)   , sizeof(GltfVertex::joint0)   });
-        m_attrs.push_back({ "weight0",  offsetof(GltfVertex, weight0)  , sizeof(GltfVertex::weight0)  });
+        m_attrs.push_back(IVertexLayout::Attribute{ "position", offsetof(GltfVertex, position) , sizeof(GltfVertex::position),  VK_FORMAT_R32G32B32_SFLOAT });
+        m_attrs.push_back(IVertexLayout::Attribute{ "color",    offsetof(GltfVertex, color)    , sizeof(GltfVertex::color),     VK_FORMAT_R32G32B32_SFLOAT });
+        m_attrs.push_back(IVertexLayout::Attribute{ "normal",   offsetof(GltfVertex, normal)   , sizeof(GltfVertex::normal),    VK_FORMAT_R32G32B32_SFLOAT });
+        m_attrs.push_back(IVertexLayout::Attribute{ "uv0",      offsetof(GltfVertex, uv0)      , sizeof(GltfVertex::uv0),       VK_FORMAT_R32G32_SFLOAT });
+        m_attrs.push_back(IVertexLayout::Attribute{ "uv1",      offsetof(GltfVertex, uv1)      , sizeof(GltfVertex::uv1),       VK_FORMAT_R32G32_SFLOAT });
+        m_attrs.push_back(IVertexLayout::Attribute{ "joint0",   offsetof(GltfVertex, joint0)   , sizeof(GltfVertex::joint0),    VK_FORMAT_R32G32B32A32_UINT });
+        m_attrs.push_back(IVertexLayout::Attribute{ "weight0",  offsetof(GltfVertex, weight0)  , sizeof(GltfVertex::weight0),   VK_FORMAT_R32G32B32A32_SFLOAT });
 
         m_stride = static_cast<uint32_t>(sizeof(GltfVertex));
     };

@@ -10,7 +10,6 @@
 #include <cstddef>
 
 namespace {
-	// push only up to materialIndex, without the alignas(16) padding
 	constexpr uint32_t MATERIAL_PUSH_SIZE = static_cast<uint32_t>(offsetof(MaterialPushConstantData, materialIndex) + sizeof(int));
 }
 
@@ -329,7 +328,6 @@ void RenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& 
 				bindModel(commandBuffer, modelAsset, *obj, frameInfo.frameIndex);
 
 				if (useMaterialBuffer) {
-					// descriptor set not created yet
 					if (modelAsset->lods[0].descriptorSet.empty()) continue;
 					bindMaterialBuffer(commandBuffer, modelAsset, frameInfo.frameIndex);
 				}

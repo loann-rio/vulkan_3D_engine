@@ -12,6 +12,7 @@
 
 #include "../Vertex/ObjVertexData.h"
 #include "../Vertex/GlTFVertexData.h"
+#include <glm/gtc/type_ptr.hpp>
 
 namespace {
 
@@ -36,13 +37,51 @@ namespace {
 	}
 
 	glm::vec4 readVec4f(const tinygltf::Model& model, const tinygltf::Accessor& accessor, size_t index) {
-		if (accessor.componentType != TINYGLTF_COMPONENT_TYPE_FLOAT) return glm::vec4(0.0f);
 		const tinygltf::BufferView& view = model.bufferViews[accessor.bufferView];
 		const tinygltf::Buffer& buffer = model.buffers[view.buffer];
+
+		if (accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE) {
+			size_t stride = view.byteStride ? view.byteStride : sizeof(uint8_t) * 4;
+			const uint8_t* v = &buffer.data[view.byteOffset + accessor.byteOffset + index * stride];
+			return glm::vec4(v[0], v[1], v[2], v[3]) / 255.f;
+		}
+		if (accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) {
+			size_t stride = view.byteStride ? view.byteStride : sizeof(uint16_t) * 4;
+			const uint16_t* v = reinterpret_cast<const uint16_t*>(&buffer.data[view.byteOffset + accessor.byteOffset +
+				index * stride]);
+			return glm::vec4(v[0], v[1], v[2], v[3]) / 65535.f;
+		}
+
+		if (accessor.componentType != TINYGLTF_COMPONENT_TYPE_FLOAT) return glm::vec4(0.0f);
+
 		size_t stride = view.byteStride ? view.byteStride : sizeof(float) * 4;
 		size_t byteOffset = view.byteOffset + accessor.byteOffset + index * stride;
 		const float* f = reinterpret_cast<const float*>(&buffer.data[byteOffset]);
 		return glm::vec4(f[0], f[1], f[2], f[3]);
+	}
+
+	glm::mat4 nodeLocalMatrix(const tinygltf::Node& node) {
+		if (node.matrix.size() == 16) {
+			glm::dmat4 m = glm::make_mat4(node.matrix.data());
+			return glm::mat4(m);
+		}
+
+		glm::mat4 m(1.f);
+		if (node.translation.size() == 3)
+			m = glm::translate(m, glm::vec3(glm::make_vec3(node.translation.data())));
+		if (node.rotation.size() == 4) {
+			// gltf stores x, y, z, w; glm::quat constructor takes w, x, y, z
+			glm::quat q(
+				static_cast<float>(node.rotation[3]),
+				static_cast<float>(node.rotation[0]),
+				static_cast<float>(node.rotation[1]),
+				static_cast<float>(node.rotation[2])
+			);
+			m *= glm::mat4_cast(q);
+		}
+		if (node.scale.size() == 3)
+			m = glm::scale(m, glm::vec3(glm::make_vec3(node.scale.data())));
+		return m;
 	}
 
 	glm::uvec4 readUVec4(const tinygltf::Model& model, const tinygltf::Accessor& accessor, size_t index) {

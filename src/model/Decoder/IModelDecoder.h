@@ -45,6 +45,9 @@ struct Primitive {
     uint32_t indexCount;
 
     uint32_t materialIndex = 0;
+
+    uint32_t nodeIndex = -1;
+    uint32_t skinIndex = -1;
 };
 
 // Texture source: either a file on disk or already decoded RGBA8 pixels (embedded gltf images)

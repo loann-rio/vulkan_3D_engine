@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <vector>
 #include <memory>
+#include <vulkan/vulkan_core.h>
 
 #include "IVertexLayout.h"
 

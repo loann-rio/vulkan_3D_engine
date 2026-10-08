@@ -2,6 +2,7 @@
 #include "../base/Device.h"
 #include "../assetManager/AssetManager.h"
 #include "../assetManager/ModelManager.h"
+#include "../objects/GameObject.h"
 #include <vulkan/vulkan_core.h>
 
 namespace {
@@ -11,11 +12,7 @@ namespace {
 
         uint16_t i = 0;
         for (auto element : attributes) {
-            VkFormat format = VK_FORMAT_R32G32B32_SFLOAT;
-            if (element.size == 12Ui64) format = VK_FORMAT_R32G32B32_SFLOAT;
-            if (element.size == 16Ui64) format = VK_FORMAT_R32G32B32A32_SFLOAT;
-            if (element.size == 8Ui64) format = VK_FORMAT_R32G32_SFLOAT;
-            attributeDescriptions.push_back({ i++, 0, format, element.offset });
+            attributeDescriptions.push_back({ i++, 0, element.format, element.offset });
         }
 
         return attributeDescriptions;
@@ -64,7 +61,6 @@ public:
         std::vector<VkVertexInputAttributeDescription> attributeDescription;
         std::vector<VkVertexInputBindingDescription> bindingDescription; 
 
-        ModelType modelType = static_cast<ModelType>(config.modelType);
 
         Vertex vertex{};
 
@@ -94,7 +90,6 @@ public:
         if (config.attributeDescriptions.empty()) config.attributeDescriptions = attributeDescription;
         if (config.bindingDescriptions.empty())   config.bindingDescriptions = bindingDescription;
         if (config.descriptorBindings.empty())   config.descriptorBindings = descriptorBindings;
-        if (config.modelType == ModelType::UNDEFINED_MODEL) config.modelType = modelType;
 
         config.modelDescriptorSetIndex = static_cast<uint16_t>(config.globalLayouts.size());
 
@@ -150,7 +145,6 @@ private:
         return std::vector<DescriptorSetObject>{{set1, 2}};
     }
 
-    // model texture array + material SSBO, see ObjectManager::createDescriptorSet
     std::vector<DescriptorSetObject> getMaterialBufferDescriptorType()
     {
         std::vector<DescriptorObject> set1 = {
