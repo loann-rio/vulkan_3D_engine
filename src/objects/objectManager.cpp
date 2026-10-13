@@ -105,6 +105,7 @@ void ObjectManager::startLoadModel()
             gameObject->transform.rotation.y = 15;
             gameObject->transform.translation = { 0, 0.2f, 8 };
             gameObject->saveable = false;
+            gameObject->createPoseResources(*globalPool);
             pushGameObject(std::move(gameObject));
         }
     }

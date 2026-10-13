@@ -10,7 +10,21 @@
 #include <cstddef>
 
 namespace {
-	constexpr uint32_t MATERIAL_PUSH_SIZE = static_cast<uint32_t>(offsetof(MaterialPushConstantData, materialIndex) + sizeof(int));
+
+	constexpr uint32_t MATERIAL_PUSH_SIZE = static_cast<uint32_t>(offsetof(MaterialPushConstantData, jointCount) + sizeof(uint32_t));
+
+	struct NodeDrawInfo { uint32_t nodeIndex = 0, jointOffset = 0, jointCount = 0; };
+
+	NodeDrawInfo nodeDrawInfo(const ModelAsset* model, const Primitive& primitive) {
+		NodeDrawInfo info{};
+		if (primitive.nodeIndex != UINT32_MAX) info.nodeIndex = primitive.nodeIndex;
+		if (primitive.skinIndex != UINT32_MAX && primitive.skinIndex < model->skeleton.skins.size()) {
+			const Skin& skin = model->skeleton.skins[primitive.skinIndex];
+			info.jointOffset = skin.jointOffset;
+			info.jointCount = static_cast<uint32_t>(skin.joints.size());
+		}
+		return info;
+	}
 }
 
 //if (!Camera::isAABBinFrustrum(obj->getAABB().getAABB(obj->getTransformMat()), frustrumPlanes)) return;
@@ -27,6 +41,7 @@ RenderSystem::RenderSystem(Device& device, AssetManager& assets, RenderSystemCon
 	useMaterialBuffer{ config.materialBuffer && !config.shadow && !config.fullscreen },
 	modelDescriptorSetIndex{ config.modelDescriptorSetIndex },
 	customPushStage{ config.pushStage != 0 },
+	usePoseBuffer{ config.poseBuffer },
 	pushStage{ static_cast<VkShaderStageFlagBits>(config.pushStage) }
 {
 	// Build descriptor set layouts for model descriptorBindings and append to the global layouts
@@ -258,7 +273,12 @@ void RenderSystem::bindMaterialBuffer(VkCommandBuffer& commandBuffer, ModelAsset
 void RenderSystem::drawModel(VkCommandBuffer& commandBuffer, ModelAsset* model, Primitive& primitive, glm::mat4 modelMat, glm::mat4 normalM, uint32_t instanceCount = 1)
 {
 	if (useMaterialBuffer) {
+		const NodeDrawInfo node = nodeDrawInfo(model, primitive);
+
 		MaterialPushConstantData push{};
+		push.nodeIndex = node.nodeIndex;
+		push.jointOffset = node.jointOffset;
+		push.jointCount = node.jointCount;
 		push.modelMatrix = modelMat;
 		push.normalMatrix = normalM;
 		push.materialIndex = static_cast<int>(primitive.materialIndex);
@@ -294,7 +314,12 @@ void RenderSystem::drawModel(VkCommandBuffer& commandBuffer, ModelAsset* model, 
 
 void RenderSystem::drawDepth(VkCommandBuffer& commandBuffer, ModelAsset* model, Primitive& primitive, glm::mat4 modelMat, uint32_t cameraIndex, uint32_t instanceCount = 1)
 {
+	const NodeDrawInfo node = nodeDrawInfo(model, primitive);
+
 	DepthPushConstantData push{};
+	push.nodeIndex = node.nodeIndex;
+	push.jointOffset = node.jointOffset;
+	push.jointCount = node.jointCount;
 	push.modelMatrix = modelMat;
 	push.indexDepthCamera = cameraIndex;
 
@@ -311,6 +336,25 @@ void RenderSystem::drawDepth(VkCommandBuffer& commandBuffer, ModelAsset* model, 
 	uint32_t firstInstance = (instanceCount < 2) ? 0 : 1;
 
 	vkCmdDrawIndexed(commandBuffer, primitive.indexCount, std::max((uint32_t) 1, instanceCount), primitive.firstIndex, 0, firstInstance);
+}
+
+bool RenderSystem::bindPose(VkCommandBuffer& commandBuffer, GameObjectModel& obj, uint16_t frameIndex)
+{
+	VkDescriptorSet set = obj.getPoseDescriptorSet(frameIndex);
+	if (set == VK_NULL_HANDLE) return false;
+
+	vkCmdBindDescriptorSets(
+		commandBuffer, 
+		VK_PIPELINE_BIND_POINT_GRAPHICS,
+		pipelineLayout,
+		modelDescriptorSetIndex + 1, 
+		1, 
+		&set, 
+		0,
+		nullptr
+	);
+
+	return true;
 }
 
 void RenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& frameInfo, std::vector<VkDescriptorSet> globalDescriptorSets, const std::array<FrustumPlane, 6>& frustrumPlanes)
@@ -331,6 +375,8 @@ void RenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& 
 					if (modelAsset->lods[0].descriptorSet.empty()) continue;
 					bindMaterialBuffer(commandBuffer, modelAsset, frameInfo.frameIndex);
 				}
+				
+				if (usePoseBuffer && !bindPose(commandBuffer, *obj, frameInfo.frameIndex)) continue;
 
 				for (auto primitive : modelAsset->lods[0].primitives)
 				{

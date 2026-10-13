@@ -40,6 +40,7 @@ struct RenderSystemConfig
 	bool fullscreen = false;
 	bool instanced = true;
 	bool materialBuffer = false;
+	bool poseBuffer = false;
 };
 
 class RenderSystem
@@ -135,6 +136,12 @@ private:
 		uint32_t instanceCount
 	);
 
+	bool bindPose(
+		VkCommandBuffer& commandBuffer,
+		GameObjectModel& obj,
+		uint16_t frameIndex
+	);
+
 	Device& device;
 	AssetManager& assets;
 
@@ -148,6 +155,7 @@ private:
 	const bool isFullscreenRender = false;
 	const bool hasInstanceBinding = false;
 	const bool useMaterialBuffer = false;
+	const bool usePoseBuffer = false;
 
 	std::unique_ptr<Buffer> dummyInstanceBuffer = nullptr;
 

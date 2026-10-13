@@ -235,6 +235,9 @@ void Renderer::renderFrame(FrameInfo& frameInfo, ObjectManager& objectManager)
 		frameInfo.frameIndex = frameRenderer.getCurrentFrameIndex();
 		frameInfo.imageIndex = *frameRenderer.getCurrentImageIndex();
 
+		for (auto* obj : objectManager.getByType<GameObjectModel>())
+			obj->uploadPose(static_cast<uint16_t>(frameInfo.frameIndex));
+
 		if (auto commandBuffer = frameRenderer.beginFrame()) {
 			depthPass->recordPass(
 				objectManager,

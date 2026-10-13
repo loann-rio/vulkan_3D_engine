@@ -53,6 +53,7 @@ public:
     GlobalRenderSystemBuilder& attributeDescriptions(std::vector<VkVertexInputAttributeDescription> attributeDescriptions) { config.attributeDescriptions = attributeDescriptions; return *this; }
     GlobalRenderSystemBuilder& descriptorBindings(std::vector<DescriptorSetObject> descriptorBindings) { config.descriptorBindings = descriptorBindings; return *this; }
     GlobalRenderSystemBuilder& pushStage(VkShaderStageFlags pushStage) { config.pushStage = pushStage; return *this; }
+    GlobalRenderSystemBuilder& poseBuffer() { config.poseBuffer = true; return *this; }
 
     template<class Vertex>
     std::unique_ptr<RenderSystem> build()
@@ -70,7 +71,11 @@ public:
             descriptorBindings = config.materialBuffer ? getMaterialBufferDescriptorType() : getDescriptorType();
 
             if (config.shadow)
-                attributeDescription = getVertexInputAttributeDescription(std::vector<IVertexLayout::Attribute>{ vertex.attributes()[0] });
+                std::vector<IVertexLayout::Attribute> shadowAttributes;
+                for (const auto& attribute : vertex.attributes())
+                    if (attribute.name == "position" || (config.poseBuffer && (attribute.name == "joint0" || attribute.name == "weight0")))
+                        shadowAttributes.push_back(attribute);
+                attributeDescription = getVertexInputAttributeDescription(shadowAttributes);
             else
                 attributeDescription = getVertexInputAttributeDescription(vertex.attributes());
 
@@ -86,6 +91,9 @@ public:
             descriptorBindings = config.materialBuffer ? getMaterialBufferDescriptorType() : getDescriptorType();
             // leave bindingDescription and attributeDescription empty
         }
+
+        if (config.poseBuffer)
+            descriptorBindings.push_back({ { { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 1 } }, 3 });
 
         if (config.attributeDescriptions.empty()) config.attributeDescriptions = attributeDescription;
         if (config.bindingDescriptions.empty())   config.bindingDescriptions = bindingDescription;

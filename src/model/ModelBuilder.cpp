@@ -32,7 +32,7 @@ ModelBuilder& ModelBuilder::fromFile(const std::string& path)
     auto ext = getExtension(path);
     if (ext == "obj")
     {
-        if (source != SourceType::Obj && source != SourceType::None)
+        if (source != SourceType::Obj && source != SourceType::None) 
             throw std::runtime_error("all model should have the same type");
 
         source = SourceType::Obj;
@@ -225,6 +225,7 @@ std::unique_ptr<ModelAsset> ModelBuilder::buildDecodedModel()
     fullModel->lods.push_back(std::move(model));
     fullModel->hasShadow = computeShadow;
     fullModel->aabb = decodedModel.aabb;
+    fullModel->skeleton = std::move(decodedModel.skeleton);
 
     return fullModel;
 }
@@ -269,7 +270,12 @@ std::unique_ptr<ModelAsset> ModelBuilder::buildGlTF()
             model.materials.push_back(mat);
         }
 
+        if (i == 0) fullModel->skeleton = std::move(decodedModel.skeleton);
+
         ModelUploader::uploadShaderMaterials(device, model);
+
+        if (fullModel->lods.empty())
+            fullModel->skeleton = std::move(decodedModel.skeleton);
 
         fullModel->lods.push_back(std::move(model));
     }

@@ -7,6 +7,7 @@
 #include "../model/Model.h"
 #include "../render/Camera.h"
 #include "../assetManager/AssetManager.h"
+#include "../model/Animation/Animation.h"
 
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
@@ -311,10 +312,6 @@ public:
 
 	void update(float dtime);
 
-	//void bindModel(VkCommandBuffer& commandBuffer, bool bindTexture, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, uint16_t modelDescriptorSetIndex) const;
-	//void drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, const std::array<FrustumPlane, 6>& frustrumPlanes);
-	//void drawModelDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, int cameraIndex, uint16_t frameIndex, const std::array<FrustumPlane, 6>& planes);
-
 	Buffer* getOriginalInstancesBuffer() const { return instancesBuffer ? instancesBuffer.get() : nullptr; }
 	Buffer* getFrameInstancesBuffer(uint16_t index) const {
 		if (index >= frameInstancesBuffer.size()) return nullptr;
@@ -337,8 +334,19 @@ public:
 	// primitive info
 	int primitiveLOD = 0;
 
+	void createPoseResources(DescriptorPool& pool);
+	void uploadPose(uint16_t frameIndex);
+	VkDescriptorSet getPoseDescriptorSet(uint16_t frameIndex) const {
+		return frameIndex < poseDescriptorSets.size() ? poseDescriptorSets[frameIndex] : VK_NULL_HANDLE;
+	}
+
+	Animator animator;
+
 	GameObjectModel(id_t id, Device& device, AssetManager& assets) : GameObject(id, device, assets) { setMultipleInstances({}); }
 private:
+	std::vector<std::unique_ptr<Buffer>> framePoseBuffers;
+	std::vector<VkDescriptorSet> poseDescriptorSets;
+	int32_t animationIndex{ 0 };
 
 	bool hasModel = false;
 
@@ -352,10 +360,6 @@ private:
 	std::vector<std::unique_ptr<Buffer>> frameInstancesBuffer;
 	std::vector<VkDescriptorSet> instanceComputeDescriptorSets;
 	uint32_t instanceCount = 1;
-
-	int32_t animationIndex{ 0 }; 
-	float animationTimer = 0.0f;
-	bool animate = false;
 
 	friend class GameObjectFactory; 
 };

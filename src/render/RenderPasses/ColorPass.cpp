@@ -33,6 +33,7 @@ void ColorPass::createRenderSystems()
         .addSetLayout(shadowSetLayout->getDescriptorSetLayout())
         .modelFilterType(ModelType::GLTF_MODEL)
         .materialBuffer()
+        .poseBuffer()
         .build<GltfVertexLayout>();
     
     objRenderSystem = GlobalRenderSystemBuilder(device, assets)

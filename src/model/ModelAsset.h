@@ -84,6 +84,9 @@ public:
 	// Axis Aligned Bounding Box
 	BoundingBox aabb;
 
+	Skeleton skeleton;
+	bool isAnimated() const { return !skeleton.clips.empty(); }
+
 	size_t pickLODIndex(const glm::vec3& cameraPosition, const glm::vec3& worldPosition) const {
 		if (lods.empty()) return 0;
 		float d = glm::length(cameraPosition - worldPosition);

@@ -16,7 +16,7 @@
 
 
 #include "../Vertex/IVertexData.h"
-
+#include "../Animation/Skeleton.h"
 #include "../BoundingBox.h"
 
 namespace moDecoder {
@@ -89,6 +89,8 @@ struct DecodedModel {
     std::vector<Primitive> primitives;
     std::vector<DecodedMaterial> materials;
     BoundingBox aabb;
+
+	Skeleton skeleton;
 
     std::string name;
 };

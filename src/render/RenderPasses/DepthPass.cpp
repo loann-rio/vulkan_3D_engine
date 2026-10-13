@@ -17,12 +17,13 @@ void DepthPass::createRenderSystems()
         .build();
 
     depthRenderSystemGltf = GlobalRenderSystemBuilder(device, assets)
-        .vertexShader("shaders\\shadowmap.vert.spv") // TODO: shadowmapgltf.vert.spv once GltfVertexLayout + node SSBO (set 3) are wired
+        .vertexShader("shaders\\shadowmapgltf.vert.spv")
         .renderPass(renderPass)
         .addSetLayout(globalSetLayout->getDescriptorSetLayout())
         .addSetLayout(shadowSetLayout->getDescriptorSetLayout())
         .modelFilterType(ModelType::GLTF_MODEL)
         .shadow()
+        .poseBuffer()
         .build<GltfVertexLayout>();
 
     depthRenderSystem = GlobalRenderSystemBuilder(device, assets)

@@ -334,12 +334,62 @@ void GameObjectModel::debugUI()
     ImGui::Text("animation:");
     ImGui::InputInt("index", &animationIndex);
 
-    if (ImGui::Button("start"))
-    {
-        animate = true;
-    }
+
+    if (ImGui::Button("start")) animator.play(static_cast<uint32_t>(std::max(0, animationIndex)));
+    ImGui::SameLine();
+    if (ImGui::Button("stop")) animator.stop();
 
 	ImGui::Checkbox("show", &show);
+}
+
+void GameObjectModel::createPoseResources(DescriptorPool& pool)
+{
+    if (lodModelAssets.empty()) return;
+    const ModelAsset* asset = assets.models().get(lodModelAssets[0]);
+    if (!asset || asset->skeleton.empty()) return;
+
+    animator.init(asset->skeleton);
+
+    auto setLayout = DescriptorSetLayout::Builder(device)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+        .build();
+
+    framePoseBuffers.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
+    poseDescriptorSets.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
+
+    for (int i = 0; i < Swap_chain::MAX_FRAMES_IN_FLIGHT; ++i) {
+        framePoseBuffers[i] = std::make_unique<Buffer>(
+            device,
+            sizeof(glm::mat4),
+            asset->skeleton.matrixCount,
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+        );
+        framePoseBuffers[i]->map();
+
+        auto info = framePoseBuffers[i]->descriptorInfo();
+        DescriptorWriter(*setLayout, pool)
+            .writeBuffer(0, &info)
+            .build(poseDescriptorSets[i]);
+
+        uploadPose(static_cast<uint16_t>(i));
+    }
+}
+
+void GameObjectModel::uploadPose(uint16_t frameIndex)
+{
+    if (frameIndex >= framePoseBuffers.size()) return;
+    const auto& matrices = animator.matrices();
+    if (matrices.empty()) return;
+
+    framePoseBuffers[frameIndex]->writeToBuffer((void*)matrices.data(), matrices.size() * sizeof(glm::mat4));
+}
+
+void GameObjectModel::update(float dtime)
+{
+    if (lodModelAssets.empty()) return;
+    const ModelAsset* asset = assets.models().get(lodModelAssets[0]);
+    if (asset) animator.update(dtime, asset->skeleton);
 }
 
 void GameObjectPointLight::debugUI()
