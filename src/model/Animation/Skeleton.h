@@ -4,6 +4,7 @@
 #include <limits>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <cstdint>
 
 struct NodePose {
     glm::vec3 translation{ 0.f };
@@ -23,6 +24,7 @@ struct Skin {
     int32_t skeletonRoot = -1;
     std::vector<uint32_t> joints;
     std::vector<glm::mat4> inverseBindMatrices;
+    uint32_t jointOffset = 0;
 };
 
 struct AnimationSampler {
@@ -50,6 +52,7 @@ struct Skeleton {
     std::vector<uint32_t> evalOrder;
     std::vector<Skin> skins;
     std::vector<AnimationClip> clips;
+    uint32_t matrixCount = 0;
 
     bool empty() const { return nodes.empty(); }
 };

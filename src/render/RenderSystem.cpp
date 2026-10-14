@@ -406,6 +406,8 @@ void RenderSystem::renderGameObjectsDepth(VkCommandBuffer& commandBuffer, FrameI
 
 				bindModel(commandBuffer, modelAsset, *obj, frameInfo.frameIndex);
 
+				if (usePoseBuffer && !bindPose(commandBuffer, *obj, frameInfo.frameIndex)) continue;
+
 				for (auto primitive : modelAsset->lods[0].primitives)
 				{
 					drawDepth(commandBuffer, modelAsset, primitive, obj->getTransformMat(), lightIndex, obj->getInstanceCount());

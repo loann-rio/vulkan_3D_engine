@@ -220,45 +220,6 @@ std::vector<VkDescriptorSet> GameObjectModel::getDescriptorSets() const
     return model->getDescriptorSets(); 
 }
 
-void GameObjectModel::update(float dtime)
-{
-    if (animate) {
-        animationTimer += dtime;
-       
-        if (!model->updateAnimation(animationIndex, animationTimer)) {
-            animationTimer = 0.f;
-            animate = false;
-        }
-    }
-}
-
-/*void GameObjectModel::bindModel(VkCommandBuffer& commandBuffer, bool bindTexture, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, uint16_t modelDescriptorSetIndex) const
-{
-    std::visit([&](const auto& modelInstance) {  
-        if (modelInstance) {
-            modelInstance->bind(commandBuffer, bindTexture, pipelineLayout, frameIndex, modelDescriptorSetIndex, frameInstancesBuffer[frameIndex].get());
-        }
-        }, model);
-}
-
-void GameObjectModel::drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frame_index, const std::array<FrustumPlane, 6>& frustrumPlanes)
-{ 
-    std::visit([&](const auto& modelInstance) {
-        if (modelInstance) {
-            modelInstance->draw(commandBuffer, pipelineLayout, frame_index, getTransformMat(), getNormalMat(), frustrumPlanes, instanceCount);
-        }
-        }, model);
-}
-
-void GameObjectModel::drawModelDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, int cameraIndex, uint16_t frame_index, const std::array<FrustumPlane, 6>& planes)
-{
-    std::visit([&](const auto& modelInstance) { 
-        if (modelInstance) {  
-            modelInstance->drawDepth(commandBuffer, pipelineLayout, frame_index, getTransformMat(), cameraIndex, planes, instanceCount);
-        }
-        }, model); 
-}*/
-
 BoundingBox GameObjectModel::getAABB() const
 {
     BoundingBox aabb;
@@ -335,7 +296,7 @@ void GameObjectModel::debugUI()
     ImGui::InputInt("index", &animationIndex);
 
 
-    if (ImGui::Button("start")) animator.play(static_cast<uint32_t>(std::max(0, animationIndex)));
+    if (ImGui::Button("start")) animator.play(static_cast<uint32_t>(std::max(0, animationIndex)), false);
     ImGui::SameLine();
     if (ImGui::Button("stop")) animator.stop();
 

@@ -49,15 +49,32 @@ layout(set = 0, binding = 0) uniform GlobalUbo {
 } ubo;
 
 layout(push_constant) uniform Push {
-	mat4 modelMatrix;
-	mat4 normalMatrix;
-	int materialIndex;
+        mat4 modelMatrix;
+        mat4 normalMatrix;
+        int materialIndex;
+        uint nodeIndex;
+        uint jointOffset;
+        uint jointCount;
 } push;
+
 
 layout(set = 1, binding = 0) uniform SpotLightUbo {
 	SpotLight spotLight[MAX_NUM_SPOT_LIGHT];
 	int numLights;
 } spotLightUbo;
+
+layout(std430, set = 3, binding = 0) readonly buffer Pose {
+        mat4 m[];
+} pose;
+
+mat4 localMatrix() {
+        if (push.jointCount == 0) return pose.m[push.nodeIndex];
+
+        return weight0.x * pose.m[push.jointOffset + joint0.x]
+             + weight0.y * pose.m[push.jointOffset + joint0.y]
+             + weight0.z * pose.m[push.jointOffset + joint0.z]
+             + weight0.w * pose.m[push.jointOffset + joint0.w];
+}
 
 mat4 composeModelMatrix(vec3 translation, vec3 rotation, vec3 scale) { 
     float c3 = cos(rotation.z);
@@ -89,16 +106,19 @@ void main() {
 		normalMat = push.normalMatrix;
 	}
 
-	vec4 positionWorld = model * vec4(position, 1.0); 
+	 mat4 local = localMatrix();
+    mat3 localNormal = transpose(inverse(mat3(local)));
 
-	gl_Position = ubo.projection * ubo.view * positionWorld;
+    vec4 positionWorld = model * local * vec4(position, 1.0);
 
-	for (uint indexSpotLight = 0; indexSpotLight < spotLightUbo.numLights && indexSpotLight < MAX_NUM_SPOT_LIGHT; ++indexSpotLight) {
-		fragPosShadow[indexSpotLight] = spotLightUbo.spotLight[indexSpotLight].lightMatrix * positionWorld;
-	}
+    gl_Position = ubo.projection * ubo.view * positionWorld;
 
-	fragNormalWorld = normalize(mat3(normalMat)*normal);
-	fragPosWorld = positionWorld.xyz;
-	fragColor = color;
-	texCoord = uv0;
+    for (uint indexSpotLight = 0; indexSpotLight < spotLightUbo.numLights && indexSpotLight < MAX_NUM_SPOT_LIGHT; ++indexSpotLight) {
+            fragPosShadow[indexSpotLight] = spotLightUbo.spotLight[indexSpotLight].lightMatrix * positionWorld;
+    }
+
+    fragNormalWorld = normalize(mat3(normalMat) * localNormal * normal);
+    fragPosWorld = positionWorld.xyz;
+    fragColor = color;
+    texCoord = uv0;
 }

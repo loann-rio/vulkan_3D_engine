@@ -70,12 +70,13 @@ public:
             bindingDescription = getBindingDescriptions<Vertex>();
             descriptorBindings = config.materialBuffer ? getMaterialBufferDescriptorType() : getDescriptorType();
 
-            if (config.shadow)
+            if (config.shadow) {
                 std::vector<IVertexLayout::Attribute> shadowAttributes;
                 for (const auto& attribute : vertex.attributes())
                     if (attribute.name == "position" || (config.poseBuffer && (attribute.name == "joint0" || attribute.name == "weight0")))
                         shadowAttributes.push_back(attribute);
                 attributeDescription = getVertexInputAttributeDescription(shadowAttributes);
+            }
             else
                 attributeDescription = getVertexInputAttributeDescription(vertex.attributes());
 

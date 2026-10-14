@@ -562,6 +562,8 @@ void ObjectManager::pushModel()
 
                      gameObject->setModelType(object.type);
 
+                     gameObject->createPoseResources(*globalPool);
+
                      gameObject->show = true;
                 }
             }

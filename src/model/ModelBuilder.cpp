@@ -270,8 +270,6 @@ std::unique_ptr<ModelAsset> ModelBuilder::buildGlTF()
             model.materials.push_back(mat);
         }
 
-        if (i == 0) fullModel->skeleton = std::move(decodedModel.skeleton);
-
         ModelUploader::uploadShaderMaterials(device, model);
 
         if (fullModel->lods.empty())
