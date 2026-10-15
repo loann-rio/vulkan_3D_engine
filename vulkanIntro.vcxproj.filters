@@ -82,12 +82,6 @@
     <ClCompile Include="src\objects\objectManager.cpp">
       <Filter>objects</Filter>
     </ClCompile>
-    <ClCompile Include="src\model\GlTFModel.cpp">
-      <Filter>model</Filter>
-    </ClCompile>
-    <ClCompile Include="src\model\Model.cpp">
-      <Filter>model</Filter>
-    </ClCompile>
     <ClCompile Include="src\model\preBuild.cpp">
       <Filter>model</Filter>
     </ClCompile>
@@ -219,6 +213,7 @@
     <ClCompile Include="src\model\Decoder\GlTFModelDecoder.cpp">
       <Filter>model\Decoder</Filter>
     </ClCompile>
+    <ClCompile Include="src\model\Animation\Animation.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tiny_gltf.h">
@@ -235,12 +230,6 @@
     </ClInclude>
     <ClInclude Include="src\objects\objectManager.h">
       <Filter>objects</Filter>
-    </ClInclude>
-    <ClInclude Include="src\model\GlTFModel.h">
-      <Filter>model</Filter>
-    </ClInclude>
-    <ClInclude Include="src\model\Model.h">
-      <Filter>model</Filter>
     </ClInclude>
     <ClInclude Include="src\model\preBuild.h">
       <Filter>model</Filter>
@@ -427,6 +416,8 @@
     <ClInclude Include="external\stb_image_write.h">
       <Filter>Fichiers de ressources</Filter>
     </ClInclude>
+    <ClInclude Include="src\model\Animation\Animation.h" />
+    <ClInclude Include="src\model\Animation\Skeleton.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\compile.bat">

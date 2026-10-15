@@ -3,8 +3,6 @@
 #include "../base/Swap_chain.h"
 #include "../base/descriptors.h"
 #include "../base/Device.h"
-#include "../model/GlTFModel.h"
-#include "../model/Model.h"
 #include "../render/Camera.h"
 #include "../assetManager/AssetManager.h"
 #include "../model/Animation/Animation.h"
@@ -21,6 +19,7 @@
 #include <type_traits>
 #include <variant>
 #include <unordered_map>
+#include <functional>
 
 #define REGISTER_BEHAVIOR(T)                                \
     std::string getClassName() const override { return #T; }\
@@ -42,7 +41,6 @@ class ObjectManager;
 class GameObject;
 class GameObjectBehavior;
 
-using ModelVariant = std::variant<std::shared_ptr<Model>, std::shared_ptr<GlTFModel::ModelGltf>>;
 
 enum class ModelType {
 	UNDEFINED_MODEL = 0,
@@ -277,13 +275,6 @@ private:
 class GameObjectModel : public GameObject 
 {
 public:
-	template <typename T>
-	void setModel(std::shared_ptr<T> newModel)
-	{
-		model = std::move(newModel); 
-		modelType = static_cast<ModelType>(T::getModelType()); 
-		hasModel = true; 
-	}
 
 	void setModel(ModelManager::ModelID _model);
 	void setModel(std::vector<ModelManager::ModelID> lod_models);
@@ -298,12 +289,8 @@ public:
 	void setPrimitivesModelType(PrimitivesModelType type) { primitivesModelType = type; }
 	PrimitivesModelType getPrimitivesModelType() const { return primitivesModelType; }
 
-	VkDescriptorImageInfo getTextureImageInfo() const;
-	std::vector<VkDescriptorSet> getDescriptorSets() const;
-
 	void setMultipleInstances(std::vector<ModelInstance> instances);
 
-	void createDescriptorSet(DescriptorPool& pool) const; 
 	void createInstanceComputeDescriptorSets(DescriptorPool& pool);
 	VkDescriptorSet getInstanceComputeDescriptorSet(uint16_t frameIndex) const;
 
@@ -354,8 +341,6 @@ private:
 	ModelSubType modelSubType = ModelSubType::NONE;
 	PrimitivesModelType primitivesModelType = PrimitivesModelType::NONE;
 	
-	std::shared_ptr<GlTFModel::ModelGltf> model;
-
 	std::unique_ptr<Buffer> instancesBuffer = nullptr;
 	std::vector<std::unique_ptr<Buffer>> frameInstancesBuffer;
 	std::vector<VkDescriptorSet> instanceComputeDescriptorSets;

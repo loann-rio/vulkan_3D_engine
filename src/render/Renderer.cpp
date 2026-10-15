@@ -139,7 +139,7 @@ bool Renderer::aquireNextImage(ObjectManager& objectManager)
 	return true;
 }
 
-void Renderer::beginSingleTimeRender(VkCommandBuffer commandBuffer, int buffer_index)
+void Renderer::beginSingleTimeRender(VkCommandBuffer commandBuffer, uint16_t buffer_index)
 {
 	VkRenderPassBeginInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

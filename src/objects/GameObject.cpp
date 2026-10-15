@@ -1,4 +1,5 @@
 #include "GameObject.h"
+#include <glm/gtc/type_ptr.hpp>
 
  
 GameObject::id_t GameObjectFactory::nextId = 0;
@@ -109,12 +110,6 @@ std::string GameObject::getName() const
     return name;
 }
 
-VkDescriptorImageInfo GameObjectModel::getTextureImageInfo() const
-{
-    if (!hasModel) return VkDescriptorImageInfo{};
-
-    return model->getTextureImageInfo();
-}
 
 void GameObjectModel::setMultipleInstances(std::vector<ModelInstance> instances)
 {
@@ -205,28 +200,6 @@ VkDescriptorSet GameObjectModel::getInstanceComputeDescriptorSet(uint16_t frameI
 {
     if (frameIndex >= instanceComputeDescriptorSets.size()) return VK_NULL_HANDLE;
     return instanceComputeDescriptorSets[frameIndex];
-}
-
-
-void GameObjectModel::createDescriptorSet(DescriptorPool& pool) const
-{
-    if (!hasModel) return;
-
-    model->createDescriptorSet(pool, device);
-}
-
-std::vector<VkDescriptorSet> GameObjectModel::getDescriptorSets() const
-{
-    return model->getDescriptorSets(); 
-}
-
-BoundingBox GameObjectModel::getAABB() const
-{
-    BoundingBox aabb;
-    
-    aabb = model->getAABB();
-    
-    return aabb;
 }
 
 void GameObjectSpotLight::updateCameraView() { camera->setViewYXZ(transform.translation, transform.rotation); }

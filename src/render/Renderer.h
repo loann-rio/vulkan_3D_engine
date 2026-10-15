@@ -58,7 +58,7 @@ private:
 
 	bool aquireNextImage(ObjectManager& objectManager);
 
-	void beginSingleTimeRender(VkCommandBuffer commandBuffer, int buffer_index = 0);
+	void beginSingleTimeRender(VkCommandBuffer commandBuffer, uint16_t buffer_index = 0);
 	TextureManager::TextureID renderHdriToCubeTexture(std::shared_ptr<RenderSystem> renderSystem, VkDescriptorSet descriptorSet);
 
 	Window& window;

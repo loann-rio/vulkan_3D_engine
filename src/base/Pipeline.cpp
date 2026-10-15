@@ -1,7 +1,5 @@
 #include "Pipeline.h"
 
-#include "../model/Model.h"
-
 #include <fstream>
 #include <iostream>
 #include <cassert>

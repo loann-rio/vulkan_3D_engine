@@ -9,6 +9,7 @@
 #include <cassert>
 #include <cstddef>
 
+
 namespace {
 
 	constexpr uint32_t MATERIAL_PUSH_SIZE = static_cast<uint32_t>(offsetof(MaterialPushConstantData, jointCount) + sizeof(uint32_t));

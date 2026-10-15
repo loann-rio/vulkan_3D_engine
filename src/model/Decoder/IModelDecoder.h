@@ -41,16 +41,15 @@ namespace moDecoder {
 struct Primitive {
     BoundingBox aabb;
 
-    uint32_t firstIndex;
-    uint32_t indexCount;
+    uint32_t firstIndex{ 0 };
+    uint32_t indexCount{ 0 };
 
-    uint32_t materialIndex = 0;
+    uint32_t materialIndex{ 0 };
 
-    uint32_t nodeIndex = -1;
-    uint32_t skinIndex = -1;
+    uint32_t nodeIndex{ 0 };
+    uint32_t skinIndex{ 0 };
 };
 
-// Texture source: either a file on disk or already decoded RGBA8 pixels (embedded gltf images)
 struct DecodedTexture {
     DecodedTexture() = default;
     DecodedTexture(std::string filePath) : path(std::move(filePath)) {}
@@ -98,14 +97,12 @@ struct DecodedModel {
 
 
 struct Material {
-    // References to textures IDs from TextureManager
     TextureManager::TextureID albedoTexture = 0;
     TextureManager::TextureID normalTexture = 0;
     TextureManager::TextureID metallicRoughnessTexture = 0;
     TextureManager::TextureID occlusionTexture = 0;
     TextureManager::TextureID emissiveTexture = 0;
 
-    // Scalar parameters
     float metallic = 0.0f;
     float roughness = 1.0f;
     glm::vec4 baseColorFactor = glm::vec4(1.0f);

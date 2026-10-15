@@ -12,7 +12,6 @@
 
 #include <../json.hpp>
 #include "../assetManager/ModelManager.h"
-#include "../model/GlTFModel.h"
 using json = nlohmann::json;
 
 class GameObject;
@@ -21,7 +20,6 @@ class GameObject;
 /// Represents a future game object with associated model information and instances.
 /// </summary>
 struct futureObject {
-    std::shared_ptr<GlTFModel::ModelGltf> model;
     ModelType type;
     GameObject::id_t id; 
     std::vector<ModelInstance> instances{};

@@ -158,7 +158,7 @@ void ObjectManager::createPrimitive(PrimitivesModelType type, int detail, Transf
             break;
         }
 
-        return std::vector<futureObject>{ futureObject{ nullptr, modelID ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id, {}, true, modelID } };
+        return std::vector<futureObject>{ futureObject{ modelID ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id, {}, true, modelID } };
         })
      );
 }
@@ -607,7 +607,7 @@ void ObjectManager::loadObjectAsync(Device& device, AssetManager& assets, const 
         ModelBuilder builder(device, assets);
         ModelManager::ModelID modelId = assets.models().create(builder.fromFile(filePath));
 
-        return std::vector<futureObject>{ futureObject{ nullptr, modelId ? ModelType::GLTF_MODEL : ModelType::UNDEFINED_MODEL, id, { }, true, modelId }};
+        return std::vector<futureObject>{ futureObject{ modelId ? ModelType::GLTF_MODEL : ModelType::UNDEFINED_MODEL, id, { }, true, modelId }};
         }));
 }
 
@@ -632,7 +632,7 @@ void ObjectManager::loadObjectAsync(Device& device, AssetManager& assets, const 
             ModelBuilder builder(device, assets);
             ModelManager::ModelID modelId = assets.models().create(builder.fromFile(filePath).withTexture(texture));
 
-            return std::vector<futureObject> {futureObject{ nullptr, modelId ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id, {}, true, modelId }};
+            return std::vector<futureObject> {futureObject{ modelId ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id, {}, true, modelId }};
         }) 
      );
 }

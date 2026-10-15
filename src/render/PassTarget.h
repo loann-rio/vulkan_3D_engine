@@ -18,7 +18,7 @@ public:
         VkExtent2D extent_,
         bool hasDepth,
         bool hasColor,
-        size_t imageCount = 1,
+        uint16_t imageCount = 1,
         bool isFinal = false
     );
 
@@ -26,7 +26,7 @@ public:
 
     void resizeTargets(
         VkExtent2D newExtent, 
-        uint32_t imageCount, 
+        uint16_t imageCount,
         VkFormat format, 
         VkFormat depthFormat
     );

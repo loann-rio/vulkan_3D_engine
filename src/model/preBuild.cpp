@@ -132,10 +132,10 @@ ModelManager::ModelID PrebuiltModel::createPlane(Device& device, AssetManager& a
 
     return assets.models().create(builder);
 }
-
+/*
 
 std::shared_ptr<Model> PrebuiltModel::createIcoSphere(Device& device, AssetManager& assets, uint16_t detail)
-{
+{*/
     /*Model::Builder modelBuilder{};
 
     glm::vec3 color = { 1.0f, 1.0f, 1.0f };
@@ -187,16 +187,16 @@ std::shared_ptr<Model> PrebuiltModel::createIcoSphere(Device& device, AssetManag
     model->setTexture(assets.textures().create((builder.fromFile("textures/floor.jpg"))));
 
     return model;*/
-    return std::shared_ptr<Model>();
-}
+//    return std::shared_ptr<Model>();
+//}
 
-std::shared_ptr<Model> PrebuiltModel::createCube(Device& device, AssetManager& assets, uint16_t detail)
+/*std::shared_ptr<Model> PrebuiltModel::createCube(Device& device, AssetManager& assets, uint16_t detail)
 {
     return std::shared_ptr<Model>();
-}
-
+}*/
+/*
 std::shared_ptr<Model> PrebuiltModel::createCube(Device& device, AssetManager& assets)
-{
+{*/
     /*Model::Builder modelBuilder{};
     glm::vec3 color = { 1.0f, 1.0f, 1.0f };
     float h = 0.5f;
@@ -250,7 +250,7 @@ std::shared_ptr<Model> PrebuiltModel::createCube(Device& device, AssetManager& a
     model->setTexture(assets.textures().create((builder.fromFile("assets/textures/whiteTexture.jpg"))));
 
     return model;*/
-    return std::shared_ptr<Model>();
+  /*  return std::shared_ptr<Model>();
 }
 
 
@@ -265,7 +265,7 @@ std::shared_ptr<Model> PrebuiltModel::createTerrain(Device& device, AssetManager
     float heightMultiplier,
     float Xoffset, float Yoffset
     )
-{
+{*/
 
     /*PerlinNoise pn{ 3141592 };
     std::vector<std::vector<float>> noiseMap = pn.GenerateGradientTrick2DnoiseMap(widthDetail + 1, depthDetail + 1, scale, octaves, persistance, lacunarity, Xoffset, Yoffset, gradientFactor, heightMultiplier);
@@ -344,11 +344,11 @@ std::shared_ptr<Model> PrebuiltModel::createTerrain(Device& device, AssetManager
     model->setTexture(assets.textures().create((builder.fromFile("assets/textures/whiteTexture.jpg"))));
 
     return model;*/
-    return std::shared_ptr<Model>();
+/*    return std::shared_ptr<Model>();
 }
 
 std::shared_ptr<Model> PrebuiltModel::createTerrain(Device& device, AssetManager& assets, float width, float depth, std::vector<std::vector<float>> heightMap, float UVfactor)
-{
+{*/
 
     /*uint16_t widthDetail = heightMap.size() - 1;
     uint16_t depthDetail = heightMap[0].size() - 1;
@@ -459,5 +459,5 @@ std::shared_ptr<Model> PrebuiltModel::createTerrain(Device& device, AssetManager
     model->setTexture(assets.textures().create((builder.fromFile("assets/textures/whiteTexture.jpg"))));
 
     return model;*/
-    return std::shared_ptr<Model>{};
-}
+   /* return std::shared_ptr<Model>{};
+}*/
