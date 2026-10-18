@@ -139,9 +139,6 @@ private:
         bindingDescription[0].stride = vertex.stride();
         bindingDescription[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-        //if (hasMutipleInstances)
-        //bindingDescription.push_back({ 1, sizeof(ModelInstance), VK_VERTEX_INPUT_RATE_INSTANCE });
-
         return bindingDescription;
     }
 

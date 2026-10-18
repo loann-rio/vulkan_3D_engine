@@ -73,26 +73,4 @@ void ComputeSystem::dispatch(VkCommandBuffer commandBuffer, uint16_t frameIndex,
     }
 
     vkCmdDispatch(commandBuffer, groupCountX, groupCountY, groupCountZ);
-
-/*    VkBuffer buffer = getBuffer();
-
-    VkBufferMemoryBarrier bufferBarrier{};
-    bufferBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-    bufferBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-    bufferBarrier.dstAccessMask = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
-    bufferBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    bufferBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    bufferBarrier.buffer = buffer;
-    bufferBarrier.offset = 0;
-    bufferBarrier.size = getBufferSize();
-
-    vkCmdPipelineBarrier(
-        commandBuffer,
-        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,       // src stage
-        VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,         // dst stage (vertex input)
-        0,
-        0, nullptr,
-        1, &bufferBarrier,
-        0, nullptr
-    );*/
 }

@@ -41,6 +41,9 @@
     <Filter Include="render\RenderPasses">
       <UniqueIdentifier>{ef8799bc-e935-4c91-be9b-5ef8501fbb95}</UniqueIdentifier>
     </Filter>
+    <Filter Include="model\animation">
+      <UniqueIdentifier>{6786d429-447e-4f4b-9104-6c24fc44588d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="external\basisu\transcoder\basisu_transcoder.cpp">
@@ -213,7 +216,9 @@
     <ClCompile Include="src\model\Decoder\GlTFModelDecoder.cpp">
       <Filter>model\Decoder</Filter>
     </ClCompile>
-    <ClCompile Include="src\model\Animation\Animation.cpp" />
+    <ClCompile Include="src\model\Animation\Animation.cpp">
+      <Filter>model\animation</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tiny_gltf.h">
@@ -416,8 +421,12 @@
     <ClInclude Include="external\stb_image_write.h">
       <Filter>Fichiers de ressources</Filter>
     </ClInclude>
-    <ClInclude Include="src\model\Animation\Animation.h" />
-    <ClInclude Include="src\model\Animation\Skeleton.h" />
+    <ClInclude Include="src\model\Animation\Skeleton.h">
+      <Filter>model\animation</Filter>
+    </ClInclude>
+    <ClInclude Include="src\model\Animation\Animation.h">
+      <Filter>model\animation</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\compile.bat">
