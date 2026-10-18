@@ -182,7 +182,6 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClCompile Include="src\base\descriptors.cpp" />
     <ClCompile Include="src\base\Device.cpp" />
     <ClCompile Include="src\base\Pipeline.cpp" />
-    <ClCompile Include="src\base\SecondarySwapchain.cpp" />
     <ClCompile Include="src\base\SingleRenderSwap.cpp" />
     <ClCompile Include="src\base\Swap_chain.cpp" />
     <ClCompile Include="src\base\Window.cpp" />
@@ -241,7 +240,6 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClInclude Include="src\base\Frame_info.h" />
     <ClInclude Include="src\base\PerlinNoise.h" />
     <ClInclude Include="src\base\Pipeline.h" />
-    <ClInclude Include="src\base\SecondarySwapchain.h" />
     <ClInclude Include="src\base\SingleRenderSwap.h" />
     <ClInclude Include="src\base\Swap_chain.h" />
     <ClInclude Include="src\base\Utils.h" />

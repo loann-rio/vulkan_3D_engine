@@ -22,8 +22,7 @@ struct alignas(16) SimplePushConstantData {
 
 struct alignas(16) MaterialPushConstantData {
 	glm::mat4 modelMatrix{ 1.f };
-	glm::mat4 normalMatrix{ 1.f };
-	int materialIndex{ 0 };
+	uint32_t materialIndex{ 0 };
 	uint32_t nodeIndex{ 0 };
 	uint32_t jointOffset{ 0 };
 	uint32_t jointCount{ 0 };
@@ -31,7 +30,7 @@ struct alignas(16) MaterialPushConstantData {
 
 struct alignas(16) DepthPushConstantData {
 	glm::mat4 modelMatrix{ 1.f };
-	int indexDepthCamera{ 0 };
+	uint32_t indexDepthCamera{ 0 };
 	uint32_t nodeIndex{ 0 };
 	uint32_t jointOffset{ 0 };
 	uint32_t jointCount{ 0 };

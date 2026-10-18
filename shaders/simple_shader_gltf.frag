@@ -64,9 +64,11 @@ struct ShaderMaterial {
 };
 
 layout(push_constant) uniform Push {
-	mat4 modelMatrix;
-	mat4 normalMatrix;
-	int materialIndex;
+        mat4 modelMatrix;
+        int materialIndex;
+        uint nodeIndex;
+        uint jointOffset;
+        uint jointCount;
 } push;
 
 // every texture of the model, indexed by the material (ModelLOD::textures)

@@ -281,7 +281,6 @@ void RenderSystem::drawModel(VkCommandBuffer& commandBuffer, ModelAsset* model, 
 		push.jointOffset = node.jointOffset;
 		push.jointCount = node.jointCount;
 		push.modelMatrix = modelMat;
-		push.normalMatrix = normalM;
 		push.materialIndex = static_cast<int>(primitive.materialIndex);
 
 		vkCmdPushConstants(

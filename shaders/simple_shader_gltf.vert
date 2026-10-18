@@ -50,7 +50,6 @@ layout(set = 0, binding = 0) uniform GlobalUbo {
 
 layout(push_constant) uniform Push {
         mat4 modelMatrix;
-        mat4 normalMatrix;
         int materialIndex;
         uint nodeIndex;
         uint jointOffset;
@@ -94,30 +93,25 @@ mat4 composeModelMatrix(vec3 translation, vec3 rotation, vec3 scale) {
 
 void main() {
 	mat4 model;
-	mat4 normalMat;
 
 	if (gl_InstanceIndex > 0) {
 		model = push.modelMatrix * composeModelMatrix(instancePosition, instanceRotation, instanceScale);
-		normalMat = push.normalMatrix * composeModelMatrix(instancePosition, instanceRotation, instanceScale);
 	} 
 	else
 	{
 		model = push.modelMatrix ;
-		normalMat = push.normalMatrix;
 	}
-
-	 mat4 local = localMatrix();
-    mat3 localNormal = transpose(inverse(mat3(local)));
-
-    vec4 positionWorld = model * local * vec4(position, 1.0);
-
-    gl_Position = ubo.projection * ubo.view * positionWorld;
+     
+    mat4 local = localMatrix(); 
+    mat4 world = model * local;
+    vec4 positionWorld = world * vec4(position, 1.0);
 
     for (uint indexSpotLight = 0; indexSpotLight < spotLightUbo.numLights && indexSpotLight < MAX_NUM_SPOT_LIGHT; ++indexSpotLight) {
             fragPosShadow[indexSpotLight] = spotLightUbo.spotLight[indexSpotLight].lightMatrix * positionWorld;
     }
 
-    fragNormalWorld = normalize(mat3(normalMat) * localNormal * normal);
+    gl_Position = ubo.projection * ubo.view * positionWorld;
+    fragNormalWorld = normalize(transpose(inverse(mat3(world))) * normal);
     fragPosWorld = positionWorld.xyz;
     fragColor = color;
     texCoord = uv0;
