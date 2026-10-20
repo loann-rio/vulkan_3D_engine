@@ -122,6 +122,16 @@ void Renderer::initUi()
 	colorPass->setUi(imgui.get()); // imgui need to have depth test enable -> not usable in post pro
 }
 
+void Renderer::updateModelPositionBuffer(std::vector<GameObjectModel*>& listGameObjects, uint16_t frameIndex)
+{
+	auto* objects = static_cast<GpuObjectData*>(objectBuffers[frameIndex]->getMappedMemory());
+	uint32_t count = 0;
+	for (auto* obj : listGameObjects) {
+		if (count == MAX_GPU_OBJECTS) break;  
+		obj->gpuObjectIndex = count;
+		objects[count++].model = obj->getTransformMat();
+	}
+}
 
 bool Renderer::aquireNextImage(ObjectManager& objectManager)
 {
@@ -238,6 +248,8 @@ void Renderer::renderFrame(FrameInfo& frameInfo, ObjectManager& objectManager)
 		for (auto* obj : objectManager.getByType<GameObjectModel>())
 			obj->uploadPose(static_cast<uint16_t>(frameInfo.frameIndex));
 
+		updateModelPositionBuffer(frameInfo.listGameObjects, static_cast<uint16_t>(frameInfo.frameIndex));
+
 		if (auto commandBuffer = frameRenderer.beginFrame()) {
 			depthPass->recordPass(
 				objectManager,
@@ -324,7 +336,7 @@ TextureManager::TextureID Renderer::renderHdriToCubeTexture(std::shared_ptr<Rend
 
 void Renderer::createBuffers(ObjectManager& objectManager)
 {
-	/// global buffer
+	/// global buffer + object matrix buffer
 	uboBuffers.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
 	for (int i = 0; i < uboBuffers.size(); i++)
 	{
@@ -340,17 +352,35 @@ void Renderer::createBuffers(ObjectManager& objectManager)
 		uboBuffers[i]->map();
 	}
 
+	objectBuffers.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
+		for (int i = 0; i < objectBuffers.size(); i++)
+		{
+			objectBuffers[i] = std::make_unique<Buffer>(
+				device,
+				sizeof(GpuObjectData) * MAX_GPU_OBJECTS,
+				1,
+				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+				device.properties.limits.minUniformBufferOffsetAlignment
+			);
+
+			objectBuffers[i]->map();
+		}
+
 	auto globalSetLayout = DescriptorSetLayout::Builder(device)
 		.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+		.addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
 		.build();
 
 	globalDescriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
 	for (int i = 0; i < globalDescriptorSet.size() && i < 2; i++)
 	{
 		auto bufferInfo = uboBuffers[i]->descriptorInfo();
+		auto objectInfo = objectBuffers[i]->descriptorInfo();
 
 		DescriptorWriter(*globalSetLayout, *objectManager.getPool())
 			.writeBuffer(0, &bufferInfo)
+			.writeBuffer(1, &objectInfo)
 			.build(globalDescriptorSet[i]);
 	}
 

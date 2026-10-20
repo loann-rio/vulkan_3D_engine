@@ -63,9 +63,10 @@ struct ShaderMaterial {
 	float emissiveStrength;
 };
 
+
 layout(push_constant) uniform Push {
-        mat4 modelMatrix;
-        int materialIndex;
+        uint matrixIndex;
+        uint materialIndex;
         uint nodeIndex;
         uint jointOffset;
         uint jointCount;

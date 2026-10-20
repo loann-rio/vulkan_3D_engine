@@ -32,6 +32,18 @@ struct SpotLight {
 	vec4 orientation;
 	mat4 lightMatrix;
 };
+
+struct ObjectData {
+    mat4 model;
+};
+
+layout(push_constant) uniform Push {
+        uint matrixIndex;
+        uint materialIndex;
+        uint nodeIndex;
+        uint jointOffset;
+        uint jointCount;
+} push;
 			
 layout(set = 0, binding = 0) uniform GlobalUbo {
 	mat4 projection;
@@ -48,14 +60,8 @@ layout(set = 0, binding = 0) uniform GlobalUbo {
 	PointLight pointLight[10]; 
 } ubo;
 
-layout(push_constant) uniform Push {
-        mat4 modelMatrix;
-        int materialIndex;
-        uint nodeIndex;
-        uint jointOffset;
-        uint jointCount;
-} push;
 
+layout(std430, set = 0, binding = 1) readonly buffer Objects { ObjectData objects[]; };
 
 layout(set = 1, binding = 0) uniform SpotLightUbo {
 	SpotLight spotLight[MAX_NUM_SPOT_LIGHT];
@@ -95,11 +101,11 @@ void main() {
 	mat4 model;
 
 	if (gl_InstanceIndex > 0) {
-		model = push.modelMatrix * composeModelMatrix(instancePosition, instanceRotation, instanceScale);
+		model = objects[push.matrixIndex].model * composeModelMatrix(instancePosition, instanceRotation, instanceScale);
 	} 
 	else
 	{
-		model = push.modelMatrix ;
+		model = objects[push.matrixIndex].model ;
 	}
      
     mat4 local = localMatrix(); 

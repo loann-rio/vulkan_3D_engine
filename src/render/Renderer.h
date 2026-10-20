@@ -56,6 +56,8 @@ private:
 	void createPasses();
 	void initUi();
 
+	void updateModelPositionBuffer(std::vector<GameObjectModel*>& listGameObjects, uint16_t frameIndex);
+
 	bool aquireNextImage(ObjectManager& objectManager);
 
 	void beginSingleTimeRender(VkCommandBuffer commandBuffer, uint16_t buffer_index = 0);
@@ -71,6 +73,8 @@ private:
 	SingleSwapChain skyboxSwapChain{ device, assets, {2000, 2000} };
 
 	std::unique_ptr<BasicUI> imgui;
+
+	std::vector<std::unique_ptr<Buffer>> objectBuffers;
 
 	// target
 	std::unique_ptr<PassTarget> depthFrameTarget;

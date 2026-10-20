@@ -329,6 +329,8 @@ public:
 
 	Animator animator;
 
+	uint32_t gpuObjectIndex{ 0 };
+
 	GameObjectModel(id_t id, Device& device, AssetManager& assets) : GameObject(id, device, assets) { setMultipleInstances({}); }
 private:
 	std::vector<std::unique_ptr<Buffer>> framePoseBuffers;

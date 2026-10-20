@@ -271,7 +271,7 @@ void RenderSystem::bindMaterialBuffer(VkCommandBuffer& commandBuffer, ModelAsset
 		nullptr);
 }
 
-void RenderSystem::drawModel(VkCommandBuffer& commandBuffer, ModelAsset* model, Primitive& primitive, glm::mat4 modelMat, glm::mat4 normalM, uint32_t instanceCount = 1)
+void RenderSystem::drawModel(VkCommandBuffer& commandBuffer, ModelAsset* model, Primitive& primitive, uint32_t modelMatrixIndex, glm::mat4 modelMat, glm::mat4 normalM, uint32_t instanceCount = 1)
 {
 	if (useMaterialBuffer) {
 		const NodeDrawInfo node = nodeDrawInfo(model, primitive);
@@ -280,8 +280,8 @@ void RenderSystem::drawModel(VkCommandBuffer& commandBuffer, ModelAsset* model, 
 		push.nodeIndex = node.nodeIndex;
 		push.jointOffset = node.jointOffset;
 		push.jointCount = node.jointCount;
-		push.modelMatrix = modelMat;
-		push.materialIndex = static_cast<int>(primitive.materialIndex);
+		push.materialIndex = primitive.materialIndex;
+		push.objectIndex = modelMatrixIndex;
 
 		vkCmdPushConstants(
 			commandBuffer,
@@ -312,15 +312,15 @@ void RenderSystem::drawModel(VkCommandBuffer& commandBuffer, ModelAsset* model, 
 	vkCmdDrawIndexed(commandBuffer, primitive.indexCount, std::max((uint32_t) 1, instanceCount), primitive.firstIndex, 0, firstInstance);
 }
 
-void RenderSystem::drawDepth(VkCommandBuffer& commandBuffer, ModelAsset* model, Primitive& primitive, glm::mat4 modelMat, uint32_t cameraIndex, uint32_t instanceCount = 1)
+void RenderSystem::drawDepth(VkCommandBuffer& commandBuffer, ModelAsset* model, Primitive& primitive, uint32_t modelMatrixIndex, glm::mat4 modelMat, uint32_t cameraIndex, uint32_t instanceCount = 1)
 {
 	const NodeDrawInfo node = nodeDrawInfo(model, primitive);
 
 	DepthPushConstantData push{};
+	push.objectIndex = modelMatrixIndex;
 	push.nodeIndex = node.nodeIndex;
 	push.jointOffset = node.jointOffset;
 	push.jointCount = node.jointCount;
-	push.modelMatrix = modelMat;
 	push.indexDepthCamera = cameraIndex;
 
 	vkCmdPushConstants(
@@ -382,7 +382,7 @@ void RenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& 
 				{
 					if (!useMaterialBuffer)
 						bindTextures(commandBuffer, modelAsset, primitive, frameInfo.frameIndex);
-					drawModel(commandBuffer, modelAsset, primitive, obj->getTransformMat(), obj->getNormalMat(), obj->getInstanceCount());
+					drawModel(commandBuffer, modelAsset, primitive, obj->gpuObjectIndex, obj->getTransformMat(), obj->getNormalMat(), obj->getInstanceCount());
 				}
 			}
 		}
@@ -410,7 +410,7 @@ void RenderSystem::renderGameObjectsDepth(VkCommandBuffer& commandBuffer, FrameI
 
 				for (auto primitive : modelAsset->lods[0].primitives)
 				{
-					drawDepth(commandBuffer, modelAsset, primitive, obj->getTransformMat(), lightIndex, obj->getInstanceCount());
+					drawDepth(commandBuffer, modelAsset, primitive, obj->gpuObjectIndex, obj->getTransformMat(), lightIndex, obj->getInstanceCount());
 				}
 			}
 	}
