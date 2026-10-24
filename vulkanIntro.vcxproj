@@ -316,7 +316,6 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <None Include="shaders\skybox.vert" />
     <None Include="shaders\terrainShader.frag" />
     <None Include="shaders\terrainShader.vert" />
-    <None Include="shaders\test.vert" />
     <None Include="shaders\testRed.frag" />
     <None Include="shaders\text.frag" />
     <None Include="shaders\text.vert" />

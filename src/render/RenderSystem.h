@@ -2,22 +2,29 @@
 
 #include "../base/Pipeline.h"
 #include "../base/device.h"
-
 #include "../base/Frame_info.h"
 #include "../base/descriptors.h"
+#include "../base/Buffer.h"
+
 #include "../objects/GameObject.h"
+
 #include "../render/Camera.h"
 
 #include "../model/ModelAsset.h"
+#include "../model/Decoder/IModelDecoder.h"
 
 #include "../assetManager/AssetManager.h"
 
 #include <memory>
 #include <vector>
+#include <glm/fwd.hpp>
+#include <array>
+#include <vulkan/vulkan_core.h>
+#include <cstdint>
+#include <string>
 
 struct alignas(16) SimplePushConstantData {
-	glm::mat4 modelMatrix{ 1.f };
-	glm::mat4 normalMatrix{ 1.f };
+	uint32_t objectIndex{ 0 };
 };
 
 struct alignas(16) MaterialPushConstantData {
@@ -131,39 +138,36 @@ private:
 		ModelAsset* model, 
 		Primitive& primitive, 
 		uint16_t frameIndex
-	);
+	) const;
 
 	void bindMaterialBuffer(
 		VkCommandBuffer& commandBuffer,
 		ModelAsset* model,
 		uint16_t frameIndex
-	);
+	) const;
 
 	void drawModel(
 		VkCommandBuffer& commandBuffer, 
 		ModelAsset* model, 
 		Primitive& primitive,
 		uint32_t modelMatrixIndex,
-		glm::mat4 modelMat, 
-		glm::mat4 normalM,
 		uint32_t instanceCount
-	);
+	) const;
 
 	void drawDepth(
 		VkCommandBuffer& commandBuffer, 
 		ModelAsset* model, 
 		Primitive& primitive, 
 		uint32_t modelMatrixIndex,
-		glm::mat4 modelMat, 
 		uint32_t cameraIndex,
 		uint32_t instanceCount
-	);
+	) const;
 
 	bool bindPose(
 		VkCommandBuffer& commandBuffer,
 		GameObjectModel& obj,
 		uint16_t frameIndex
-	);
+	) const;
 
 	Device& device;
 	AssetManager& assets;

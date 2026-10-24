@@ -2,7 +2,8 @@
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
+#include <glm/detail/qualifier.hpp>
+#include <glm/fwd.hpp>
 
 #include <stdexcept>
 #include <array>
@@ -249,7 +250,7 @@ void RenderSystem::bindModel(VkCommandBuffer& commandBuffer, ModelAsset* model, 
 	vkCmdBindIndexBuffer(commandBuffer, model->lods[0].indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 }
 
-void RenderSystem::bindTextures(VkCommandBuffer& commandBuffer, ModelAsset* model, Primitive& primitive, uint16_t frameIndex)
+void RenderSystem::bindTextures(VkCommandBuffer& commandBuffer, ModelAsset* model, Primitive& primitive, uint16_t frameIndex) const
 {
 	vkCmdBindDescriptorSets(commandBuffer,
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -260,7 +261,7 @@ void RenderSystem::bindTextures(VkCommandBuffer& commandBuffer, ModelAsset* mode
 		nullptr);
 }
 
-void RenderSystem::bindMaterialBuffer(VkCommandBuffer& commandBuffer, ModelAsset* model, uint16_t frameIndex)
+void RenderSystem::bindMaterialBuffer(VkCommandBuffer& commandBuffer, ModelAsset* model, uint16_t frameIndex) const
 {
 	vkCmdBindDescriptorSets(commandBuffer,
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -271,7 +272,7 @@ void RenderSystem::bindMaterialBuffer(VkCommandBuffer& commandBuffer, ModelAsset
 		nullptr);
 }
 
-void RenderSystem::drawModel(VkCommandBuffer& commandBuffer, ModelAsset* model, Primitive& primitive, uint32_t modelMatrixIndex, glm::mat4 modelMat, glm::mat4 normalM, uint32_t instanceCount = 1)
+void RenderSystem::drawModel(VkCommandBuffer& commandBuffer, ModelAsset* model, Primitive& primitive, uint32_t modelMatrixIndex, uint32_t instanceCount = 1) const
 {
 	if (useMaterialBuffer) {
 		const NodeDrawInfo node = nodeDrawInfo(model, primitive);
@@ -294,8 +295,7 @@ void RenderSystem::drawModel(VkCommandBuffer& commandBuffer, ModelAsset* model, 
 	}
 	else {
 		SimplePushConstantData push{};
-		push.modelMatrix = modelMat;
-		push.normalMatrix = normalM;
+		push.objectIndex = modelMatrixIndex;
 
 		vkCmdPushConstants(
 			commandBuffer,
@@ -312,7 +312,7 @@ void RenderSystem::drawModel(VkCommandBuffer& commandBuffer, ModelAsset* model, 
 	vkCmdDrawIndexed(commandBuffer, primitive.indexCount, std::max((uint32_t) 1, instanceCount), primitive.firstIndex, 0, firstInstance);
 }
 
-void RenderSystem::drawDepth(VkCommandBuffer& commandBuffer, ModelAsset* model, Primitive& primitive, uint32_t modelMatrixIndex, glm::mat4 modelMat, uint32_t cameraIndex, uint32_t instanceCount = 1)
+void RenderSystem::drawDepth(VkCommandBuffer& commandBuffer, ModelAsset* model, Primitive& primitive, uint32_t modelMatrixIndex, uint32_t cameraIndex, uint32_t instanceCount = 1) const
 {
 	const NodeDrawInfo node = nodeDrawInfo(model, primitive);
 
@@ -338,7 +338,7 @@ void RenderSystem::drawDepth(VkCommandBuffer& commandBuffer, ModelAsset* model, 
 	vkCmdDrawIndexed(commandBuffer, primitive.indexCount, std::max((uint32_t) 1, instanceCount), primitive.firstIndex, 0, firstInstance);
 }
 
-bool RenderSystem::bindPose(VkCommandBuffer& commandBuffer, GameObjectModel& obj, uint16_t frameIndex)
+bool RenderSystem::bindPose(VkCommandBuffer& commandBuffer, GameObjectModel& obj, uint16_t frameIndex) const
 {
 	VkDescriptorSet set = obj.getPoseDescriptorSet(frameIndex);
 	if (set == VK_NULL_HANDLE) return false;
@@ -382,7 +382,8 @@ void RenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& 
 				{
 					if (!useMaterialBuffer)
 						bindTextures(commandBuffer, modelAsset, primitive, frameInfo.frameIndex);
-					drawModel(commandBuffer, modelAsset, primitive, obj->gpuObjectIndex, obj->getTransformMat(), obj->getNormalMat(), obj->getInstanceCount());
+					
+					drawModel(commandBuffer, modelAsset, primitive, obj->gpuObjectIndex,obj->getInstanceCount());
 				}
 			}
 		}
@@ -410,7 +411,7 @@ void RenderSystem::renderGameObjectsDepth(VkCommandBuffer& commandBuffer, FrameI
 
 				for (auto primitive : modelAsset->lods[0].primitives)
 				{
-					drawDepth(commandBuffer, modelAsset, primitive, obj->gpuObjectIndex, obj->getTransformMat(), lightIndex, obj->getInstanceCount());
+					drawDepth(commandBuffer, modelAsset, primitive, obj->gpuObjectIndex, lightIndex, obj->getInstanceCount());
 				}
 			}
 	}

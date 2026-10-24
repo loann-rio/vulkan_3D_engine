@@ -23,11 +23,6 @@ struct SpotLight {
 // Define the texture sampler 
 layout(set = 0, binding = 1) uniform sampler2D texSampler;
 
-layout(push_constant) uniform Push {
-    mat4 view; 
-    mat4 proj;
-} push;
-
 void main() {
     //outColor = vec4(texCoord.xy,0,1);
 

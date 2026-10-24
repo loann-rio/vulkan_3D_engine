@@ -39,7 +39,7 @@ void ObjectManager::startLoadModel()
         }
     }
 
-    if (false)
+    if (true)
     {
         std::vector<ModelInstance> instances;
         for (int x = 0; x < 64; x++) {
@@ -90,7 +90,7 @@ void ObjectManager::startLoadModel()
 
     {
         ModelBuilder builder(device, assetManager);
-        ModelManager::ModelID id = assetManager.models().create(builder.fromFile("C:\\Users\\riolo\\dev\\vulkan_3D_engine\\assets\\model\\2.0\\DamagedHelmet\\glTF\\DamagedHelmet.gltf"));
+        ModelManager::ModelID id = assetManager.models().create(builder.fromFile("assets\\model\\2.0\\DamagedHelmet\\glTF\\DamagedHelmet.gltf"));
 
         if (id)
         {
@@ -363,9 +363,6 @@ void ObjectManager::addObjectToScene(GameObject* gameObject)
     objJson["transform"]["rotation"]    = { t.rotation.x,    t.rotation.y,    t.rotation.z             };
     objJson["transform"]["scale"]       = { t.scale.x,       t.scale.y,       t.scale.z                };
     objJson["transform"]["color"]       = { t.color.r,       t.color.g,       t.color.b,    t.color.a  };
-
-    // TODO:
-	// parent object
 
     // type-specific params
     if (objJson["type"] == GameObjectType::MODEL) {

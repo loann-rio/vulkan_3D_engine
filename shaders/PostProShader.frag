@@ -8,11 +8,6 @@ struct PointLight {
        vec4 color;
 };
 
-layout(push_constant) uniform Push {
-    mat4 view;   
-    mat4 proj; 
-} push;
-
 
 layout(set = 0, binding = 0) uniform GlobalUbo {
 

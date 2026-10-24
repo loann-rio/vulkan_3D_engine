@@ -46,11 +46,6 @@ layout(set = 2, binding = 0) uniform TerrainUbo {
 	float height_snow;
 } terrainUbo;
 
-layout(push_constant) uniform Push {
-	mat4 modelMatrix;
-	mat4 normalMatrix;
-} push;
-
 // Define the texture sampler 
 layout(set = 3, binding = 0) uniform sampler2D texSampler;
 layout(set = 1, binding = 1) uniform sampler2DShadow shadowMap[MAX_NUM_SPOT_LIGHT];

@@ -480,9 +480,6 @@
     <None Include="shaders\testRed.frag">
       <Filter>shaders</Filter>
     </None>
-    <None Include="shaders\test.vert">
-      <Filter>shaders</Filter>
-    </None>
     <None Include="shaders\shadowMapTerrain.vert">
       <Filter>shaders</Filter>
     </None>

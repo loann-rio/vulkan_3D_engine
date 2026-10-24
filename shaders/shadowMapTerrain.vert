@@ -11,14 +11,17 @@ struct SpotLight {
 	mat4 lightMatrix;
 };
 	
-
-struct ObjectData { mat4 model; };
-layout(std430, set = 0, binding = 1) readonly buffer Objects { ObjectData objects[]; };
+struct ObjectData {
+    mat4 model;
+};
 
 layout(push_constant) uniform Push {
-	uint matrixIndex;
-	uint lightIndex;
+        uint matrixIndex;
+		uint lightIndex;
 } push;
+
+layout(std430, set = 0, binding = 1) readonly buffer Objects { ObjectData objects[]; };
+
 
 
 layout(set = 1, binding = 0) uniform SpotLightUbo {

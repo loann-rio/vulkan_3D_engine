@@ -100,4 +100,3 @@ private:
 	std::vector<VkDescriptorSet> postProDescriptorSet;
 	std::vector<VkDescriptorSet> terrainDescriptorSet;
 };
-
