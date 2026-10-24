@@ -1,7 +1,5 @@
 #include "Pipeline.h"
 
-#include "../model/Model.h"
-
 #include <fstream>
 #include <iostream>
 #include <cassert>
@@ -130,7 +128,8 @@ void Pipeline::createGraphicsPipeline(const std::string& vertFilepath,
 }
 
 
-void Pipeline::createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule) {
+void Pipeline::createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule) 
+{
 	VkShaderModuleCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 	createInfo.codeSize = code.size();
@@ -215,10 +214,6 @@ void Pipeline::defaultPipelineConfigInfo(PipelineConfigInfo& configInfo)
 	configInfo.dynamicStateInfo.pDynamicStates = configInfo.dynamicStateEnables.data();
 	configInfo.dynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(configInfo.dynamicStateEnables.size());
 	configInfo.dynamicStateInfo.flags = 0;
-
-	configInfo.bindingDescription = Model::Vertex::getBindingDescriptions(false);
-	configInfo.attributeDescription = Model::Vertex::getAttributeDescriptions(false);
-
 }
 
 

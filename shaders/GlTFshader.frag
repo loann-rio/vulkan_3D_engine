@@ -75,7 +75,6 @@ struct SpotLight {
 };
 
 layout(push_constant) uniform Push {
-	
 	mat4 nodeMatrix;
 	int materialIndex;
 } push;
@@ -102,9 +101,7 @@ layout(set = 1, binding = 0) uniform SpotLightUbo {
 } spotLightUbo;
 
 layout(set = 1, binding = 1) uniform sampler2DShadow shadowMap[MAX_NUM_SPOT_LIGHT];
-
 layout(set = 2, binding = 0) uniform samplerCube skybox;
-
 layout(set = 3, binding = 0) uniform sampler2D textures[];
 
 layout(std430, set = 3, binding = 1) readonly buffer SSBO

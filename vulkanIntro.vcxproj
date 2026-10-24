@@ -126,13 +126,13 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)\external\KTX\include;$(SolutionDir)\external\glm-1.0.0;$(SolutionDir)\external\stb-master;$(SolutionDir)\external\basis_universal-master\transcoder;$(SolutionDir)\external\glfw-3.3.9.bin.WIN64\include;$(SolutionDir)\external\tinyobjloader-release;C:\VulkanSDK\1.4.313.2\Include;$(SolutionDir)\external\nativefiledialog-master\src\include;$(SolutionDir)\external\imgui-master;$(SolutionDir)\external\imgui-master\backends</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\external\KTX\include;$(SolutionDir)\external\glm-1.0.0;$(SolutionDir)\external\stb-master;$(SolutionDir)\external\basis_universal-master\transcoder;$(SolutionDir)\external\glfw-3.3.9.bin.WIN64\include;$(SolutionDir)\external\tinyobjloader-release;C:\VulkanSDK\1.4.313.0\Include;$(SolutionDir)\external\nativefiledialog-master\src\include;$(SolutionDir)\external\imgui-master;$(SolutionDir)\external\imgui-master\backends</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)\external\KTX\lib;$(SolutionDir)\external\KTX-Software-main\build\Debug;$(SolutionDir)\external\KTX-Software-main\lib;$(SolutionDir)\external\glfw-3.3.9.bin.WIN64\lib-vc2022;C:\VulkanSDK\1.4.313.2\Lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)\external\KTX\lib;$(SolutionDir)\external\KTX-Software-main\build\Debug;$(SolutionDir)\external\KTX-Software-main\lib;$(SolutionDir)\external\glfw-3.3.9.bin.WIN64\lib-vc2022;C:\VulkanSDK\1.4.313.0\Lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;ole32.lib;
 shell32.lib;
 uuid.lib;
@@ -174,13 +174,14 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClCompile Include="external\imgui-master\imgui_widgets.cpp" />
     <ClCompile Include="external\nativefiledialog-master\src\nfd_common.c" />
     <ClCompile Include="external\nativefiledialog-master\src\nfd_win.cpp" />
-    <ClCompile Include="src\App.cpp" />
+    <ClCompile Include="src\assetManager\ModelManager.cpp" />
+    <ClCompile Include="src\assetManager\TextureManager.cpp" />
+    <ClCompile Include="src\base\ComputePipeline.cpp" />
+    <ClCompile Include="src\Engine.cpp" />
     <ClCompile Include="src\base\Buffer.cpp" />
-    <ClCompile Include="src\base\depthSwapChain.cpp" />
     <ClCompile Include="src\base\descriptors.cpp" />
     <ClCompile Include="src\base\Device.cpp" />
     <ClCompile Include="src\base\Pipeline.cpp" />
-    <ClCompile Include="src\base\SecondarySwapchain.cpp" />
     <ClCompile Include="src\base\SingleRenderSwap.cpp" />
     <ClCompile Include="src\base\Swap_chain.cpp" />
     <ClCompile Include="src\base\Window.cpp" />
@@ -188,16 +189,29 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClCompile Include="src\GameObjectClassAssets\finiteSizedTerrainGeneration.cpp" />
     <ClCompile Include="src\GameObjectClassAssets\TerrainGenerator.cpp" />
     <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\model\GlTFModel.cpp" />
-    <ClCompile Include="src\model\Model.cpp" />
+    <ClCompile Include="src\model\Animation\Animation.cpp" />
+    <ClCompile Include="src\model\Decoder\GlTFModelDecoder.cpp" />
+    <ClCompile Include="src\model\Decoder\ObjModelDecoder.cpp" />
+    <ClCompile Include="src\model\ModelBuilder.cpp" />
+    <ClCompile Include="src\model\ModelUploader.cpp" />
     <ClCompile Include="src\model\preBuild.cpp" />
+    <ClCompile Include="src\model\Vertex\GltfVertexData.cpp" />
+    <ClCompile Include="src\model\Vertex\ObjVertexData.cpp" />
     <ClCompile Include="src\objects\BasicUI.cpp" />
     <ClCompile Include="src\objects\GameObject.cpp" />
+    <ClCompile Include="src\objects\GameObjectRegistry.cpp" />
     <ClCompile Include="src\objects\KeyboardMovementController.cpp" />
     <ClCompile Include="src\objects\objectManager.cpp" />
     <ClCompile Include="src\render\Camera.cpp" />
-    <ClCompile Include="src\render\GlobalRenderSystem.cpp" />
+    <ClCompile Include="src\render\ComputeSystem.cpp" />
+    <ClCompile Include="src\render\FrameRenderer.cpp" />
+    <ClCompile Include="src\render\RenderPasses\ComputePass.cpp" />
+    <ClCompile Include="src\render\RenderSystem.cpp" />
+    <ClCompile Include="src\render\PassTarget.cpp" />
     <ClCompile Include="src\render\Renderer.cpp" />
+    <ClCompile Include="src\render\RenderPasses\ColorPass.cpp" />
+    <ClCompile Include="src\render\RenderPasses\DepthPass.cpp" />
+    <ClCompile Include="src\render\RenderPasses\PostProPass.cpp" />
     <ClCompile Include="src\render\TextOverlay.cpp" />
     <ClCompile Include="src\Textures\Decoder\HDRDecoder.cpp" />
     <ClCompile Include="src\Textures\Decoder\KTX2Decoder.cpp" />
@@ -213,16 +227,19 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClInclude Include="external\nativefiledialog-master\src\include\nfd.h" />
     <ClInclude Include="external\nativefiledialog-master\src\nfd_common.h" />
     <ClInclude Include="external\nativefiledialog-master\src\simple_exec.h" />
-    <ClInclude Include="src\App.h" />
+    <ClInclude Include="external\stb_image_write.h" />
+    <ClInclude Include="src\assetManager\AssetManager.h" />
+    <ClInclude Include="src\assetManager\ModelManager.h" />
+    <ClInclude Include="src\assetManager\TextureManager.h" />
+    <ClInclude Include="src\base\ComputePipeline.h" />
+    <ClInclude Include="src\Engine.h" />
     <ClInclude Include="src\base\Buffer.h" />
-    <ClInclude Include="src\base\depthSwapChain.h" />
     <ClInclude Include="src\base\descriptors.h" />
     <ClInclude Include="src\base\Device.h" />
     <ClInclude Include="src\base\FrameRateCounter.h" />
     <ClInclude Include="src\base\Frame_info.h" />
     <ClInclude Include="src\base\PerlinNoise.h" />
     <ClInclude Include="src\base\Pipeline.h" />
-    <ClInclude Include="src\base\SecondarySwapchain.h" />
     <ClInclude Include="src\base\SingleRenderSwap.h" />
     <ClInclude Include="src\base\Swap_chain.h" />
     <ClInclude Include="src\base\Utils.h" />
@@ -233,17 +250,37 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClInclude Include="src\GameObjectClassAssets\mainLightBehavior.h" />
     <ClInclude Include="src\GameObjectClassAssets\TerrainGenerator.h" />
     <ClInclude Include="src\GameObjectClassAssets\test.h" />
+    <ClInclude Include="src\model\Animation\Animation.h" />
+    <ClInclude Include="src\model\Animation\Skeleton.h" />
     <ClInclude Include="src\model\BoundingBox.h" />
-    <ClInclude Include="src\model\GlTFModel.h" />
-    <ClInclude Include="src\model\Model.h" />
+    <ClInclude Include="src\model\Decoder\GlTFModelDecoder.h" />
+    <ClInclude Include="src\model\Decoder\IModelDecoder.h" />
+    <ClInclude Include="src\model\Decoder\ObjModelDecoder.h" />
+    <ClInclude Include="src\model\ModelAsset.h" />
+    <ClInclude Include="src\model\ModelBuilder.h" />
+    <ClInclude Include="src\model\ModelUploader.h" />
     <ClInclude Include="src\model\preBuild.h" />
+    <ClInclude Include="src\model\Vertex\GltfVertexData.h" />
+    <ClInclude Include="src\model\Vertex\IVertexData.h" />
+    <ClInclude Include="src\model\Vertex\IVertexLayout.h" />
+    <ClInclude Include="src\model\Vertex\ObjVertexData.h" />
     <ClInclude Include="src\objects\BasicUI.h" />
     <ClInclude Include="src\objects\GameObject.h" />
+    <ClInclude Include="src\objects\GameObjectRegistry.h" />
     <ClInclude Include="src\objects\KeyboardMovementController.h" />
     <ClInclude Include="src\objects\objectManager.h" />
     <ClInclude Include="src\render\Camera.h" />
-    <ClInclude Include="src\render\GlobalRenderSystem.h" />
+    <ClInclude Include="src\render\ComputeSystem.h" />
+    <ClInclude Include="src\render\FrameRenderer.h" />
+    <ClInclude Include="src\render\RenderPasses\ComputePass.h" />
+    <ClInclude Include="src\render\RenderSystem.h" />
+    <ClInclude Include="src\render\GlobalRenderSystemBuilder.h" />
+    <ClInclude Include="src\render\PassTarget.h" />
     <ClInclude Include="src\render\Renderer.h" />
+    <ClInclude Include="src\render\RenderPasses\BaseRenderPass.h" />
+    <ClInclude Include="src\render\RenderPasses\ColorPass.h" />
+    <ClInclude Include="src\render\RenderPasses\DepthPass.h" />
+    <ClInclude Include="src\render\RenderPasses\PostProPass.h" />
     <ClInclude Include="src\render\TextOverlay.h" />
     <ClInclude Include="src\Textures\Decoder\HDRDecoder.h" />
     <ClInclude Include="src\Textures\Decoder\ImageDecoder.h" />
@@ -262,22 +299,23 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <None Include="shaders\depthView.vert" />
     <None Include="shaders\equirectangular_to_cube.frag" />
     <None Include="shaders\fullscreen.vert" />
-    <None Include="shaders\global_ubo.minc" />
     <None Include="shaders\GlTFshader.frag" />
     <None Include="shaders\GlTFshader.vert" />
+    <None Include="shaders\particule_update.comp" />
     <None Include="shaders\point_light.frag" />
     <None Include="shaders\point_light.vert" />
+    <None Include="shaders\PostProShader.frag" />
     <None Include="shaders\shadowmap.vert" />
     <None Include="shaders\shadowmapgltf.vert" />
     <None Include="shaders\shadowMapTerrain.vert" />
     <None Include="shaders\simple_shader.frag" />
-    <None Include="shaders\simple_shader.mfrag" />
     <None Include="shaders\simple_shader.vert" />
+    <None Include="shaders\simple_shader_gltf.frag" />
+    <None Include="shaders\simple_shader_gltf.vert" />
     <None Include="shaders\skybox.frag" />
     <None Include="shaders\skybox.vert" />
     <None Include="shaders\terrainShader.frag" />
     <None Include="shaders\terrainShader.vert" />
-    <None Include="shaders\test.vert" />
     <None Include="shaders\testRed.frag" />
     <None Include="shaders\text.frag" />
     <None Include="shaders\text.vert" />

@@ -4,13 +4,13 @@
 #include "../base/VoronoiNoise.h"
 #include "../base/Device.h"
 #include "../model/preBuild.h"
-#include "../model/Model.h"
 
 #include "../objects/objectManager.h"
 
 #include <map>
 #include <unordered_set>
 #include <array>
+#include "../assetManager/ModelManager.h"
 
 
 class TerrainGenerator : public GameObjectBehavior 
@@ -40,7 +40,7 @@ public:
 
 	TerrainGenerator(Device& device);
 	std::vector<std::vector<glm::vec2>> generateChunck(float Xoffset, float Yoffset);
-	std::vector<Model::Instance> placeTrees(std::vector<std::vector<glm::vec2>> heightMap, float Xoffset, float Yoffset) const;
+	std::vector<ModelInstance> placeTrees(std::vector<std::vector<glm::vec2>> heightMap, float Xoffset, float Yoffset) const;
 
 	const uint32_t sizeWorldInChunck = 5;
 	const uint16_t chunkSize = 158;

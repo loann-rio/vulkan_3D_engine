@@ -3,12 +3,14 @@
 #include "../base/Swap_chain.h"
 #include "../base/descriptors.h"
 #include "../base/Device.h"
-#include "../model/GlTFModel.h"
-#include "../model/Model.h"
 #include "../render/Camera.h"
+#include "../assetManager/AssetManager.h"
+#include "../model/Animation/Animation.h"
 
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
+
+#include "../model/ModelAsset.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -17,6 +19,7 @@
 #include <type_traits>
 #include <variant>
 #include <unordered_map>
+#include <functional>
 
 #define REGISTER_BEHAVIOR(T)                                \
     std::string getClassName() const override { return #T; }\
@@ -38,8 +41,6 @@ class ObjectManager;
 class GameObject;
 class GameObjectBehavior;
 
-using ModelVariant = std::variant<std::shared_ptr<Model>,
-	std::shared_ptr<GlTFModel::ModelGltf>>;
 
 enum class ModelType {
 	UNDEFINED_MODEL = 0,
@@ -138,7 +139,7 @@ public:
 	GameObject(GameObject&&) = default; 
 	GameObject& operator=(GameObject&&) = default;
 
-	GameObject(id_t id, Device& device) : id(id), device(device) {}
+	GameObject(id_t id, Device& device, AssetManager& assets) : id(id), device(device), assets(assets) {}
 	virtual ~GameObject() = default;
 
 	// UI
@@ -183,6 +184,7 @@ protected:
 
 	std::string name;
 	Device& device;
+	AssetManager& assets;
 	id_t id;
 
 	friend class GameObjectBehavior;
@@ -191,8 +193,8 @@ protected:
 class GameObjectCamera : public GameObject { 
 
 public:
-	GameObjectCamera(id_t id, Device& device, float fov, float aspect_ratio, float nearClip, float farClip)
-		: GameObject(id, device), _fov(fov), _aspect_ratio(aspect_ratio), _nearClip(nearClip), _farClip(farClip) { 
+	GameObjectCamera(id_t id, Device& device, AssetManager& assets, float fov, float aspect_ratio, float nearClip, float farClip)
+		: GameObject(id, device, assets), _fov(fov), _aspect_ratio(aspect_ratio), _nearClip(nearClip), _farClip(farClip) { 
 		camera = std::make_unique<Camera>(aspect_ratio);
 		camera->setPerspectiveProjection(fov, aspect_ratio, nearClip, farClip);
 	} 
@@ -222,8 +224,8 @@ private:
 class GameObjectPointLight : public GameObject {
 
 public:
-	GameObjectPointLight(id_t id, Device& device, float intencity, float radius, glm::vec3 color = glm::vec3{ 1.f })
-		: GameObject(id, device) {
+	GameObjectPointLight(id_t id, Device& device, AssetManager& assets, float intencity, float radius, glm::vec3 color = glm::vec3{ 1.f })
+		: GameObject(id, device, assets) {
 		transform.color = glm::vec4(color, intencity); 
 		transform.scale.x = radius; 
 	}
@@ -237,8 +239,8 @@ public:
 class GameObjectSpotLight : public GameObject {
 
 public:
-	GameObjectSpotLight(id_t id, Device& device, float fov, float aspect_ratio, float nearClip, float farClip)
-		: GameObject(id, device), _fov(fov), _aspect_ratio(aspect_ratio), _nearClip(nearClip), _farClip(farClip) {
+	GameObjectSpotLight(id_t id, Device& device, AssetManager& assets, float fov, float aspect_ratio, float nearClip, float farClip)
+		: GameObject(id, device, assets), _fov(fov), _aspect_ratio(aspect_ratio), _nearClip(nearClip), _farClip(farClip) {
 
 		camera = std::make_unique<Camera>();
 		camera->setPerspectiveProjection(fov, aspect_ratio, nearClip, farClip);
@@ -273,18 +275,9 @@ private:
 class GameObjectModel : public GameObject 
 {
 public:
-	template <typename T>
-	void setModel(std::shared_ptr<T> newModel)
-	{
-		model = std::move(newModel); 
-		modelType = static_cast<ModelType>(T::getModelType()); 
-		hasModel = true; 
-	}
 
-	void setModel(std::shared_ptr<Model> model);
-	void setModel(std::shared_ptr<GlTFModel::ModelGltf> model);
-	void setModel(ModelVariant newModel);
-
+	void setModel(ModelManager::ModelID _model);
+	void setModel(std::vector<ModelManager::ModelID> lod_models);
 
 	// setters getters
 	void setModelType(ModelType type) { modelType = type; } 
@@ -296,22 +289,28 @@ public:
 	void setPrimitivesModelType(PrimitivesModelType type) { primitivesModelType = type; }
 	PrimitivesModelType getPrimitivesModelType() const { return primitivesModelType; }
 
-	VkDescriptorImageInfo getTextureImageInfo() const;
-	std::vector<VkDescriptorSet> getDescriptorSets() const;
+	void setMultipleInstances(std::vector<ModelInstance> instances);
 
-	void setMultipleInstances(std::vector<Model::Instance> instances);
+	void createInstanceComputeDescriptorSets(DescriptorPool& pool);
+	VkDescriptorSet getInstanceComputeDescriptorSet(uint16_t frameIndex) const;
 
-	void createDescriptorSet(DescriptorPool& pool) const; 
 
 	BoundingBox getAABB() const;
 
 	void update(float dtime);
 
-	void bindModel(VkCommandBuffer& commandBuffer, bool bindTexture, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, uint16_t modelDescriptorSetIndex) const;
-	void drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, const std::array<FrustumPlane, 6>& frustrumPlanes);
-	void drawModelDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, int cameraIndex, uint16_t frameIndex, const std::array<FrustumPlane, 6>& planes);
+	Buffer* getOriginalInstancesBuffer() const { return instancesBuffer ? instancesBuffer.get() : nullptr; }
+	Buffer* getFrameInstancesBuffer(uint16_t index) const {
+		if (index >= frameInstancesBuffer.size()) return nullptr;
+		return frameInstancesBuffer[index].get();
+	}
+
+	uint32_t getInstanceCount() const { return instanceCount; }
+
 
 	void debugUI(); 
+
+	std::vector<ModelManager::ModelID> lodModelAssets;
 
 	bool show = true;
 
@@ -322,8 +321,21 @@ public:
 	// primitive info
 	int primitiveLOD = 0;
 
-	GameObjectModel(id_t id, Device& device) : GameObject(id, device) { setMultipleInstances({ {} }); }
+	void createPoseResources(DescriptorPool& pool);
+	void uploadPose(uint16_t frameIndex);
+	VkDescriptorSet getPoseDescriptorSet(uint16_t frameIndex) const {
+		return frameIndex < poseDescriptorSets.size() ? poseDescriptorSets[frameIndex] : VK_NULL_HANDLE;
+	}
+
+	Animator animator;
+
+	uint32_t gpuObjectIndex{ 0 };
+
+	GameObjectModel(id_t id, Device& device, AssetManager& assets) : GameObject(id, device, assets) { setMultipleInstances({}); }
 private:
+	std::vector<std::unique_ptr<Buffer>> framePoseBuffers;
+	std::vector<VkDescriptorSet> poseDescriptorSets;
+	int32_t animationIndex{ 0 };
 
 	bool hasModel = false;
 
@@ -331,14 +343,10 @@ private:
 	ModelSubType modelSubType = ModelSubType::NONE;
 	PrimitivesModelType primitivesModelType = PrimitivesModelType::NONE;
 	
-	ModelVariant model;
-
 	std::unique_ptr<Buffer> instancesBuffer = nullptr;
+	std::vector<std::unique_ptr<Buffer>> frameInstancesBuffer;
+	std::vector<VkDescriptorSet> instanceComputeDescriptorSets;
 	uint32_t instanceCount = 1;
-
-	int32_t animationIndex{ 0 }; 
-	float animationTimer = 0.0f;
-	bool animate = false;
 
 	friend class GameObjectFactory; 
 };
@@ -349,7 +357,7 @@ public:
 	static GameObject::id_t nextId;
 
 	template <typename T, typename... Args>
-	static std::unique_ptr<T> createGameObject(Device& device, Args&&... args) {
-		return std::make_unique<T>(nextId++, device, std::forward<Args>(args)...);
+	static std::unique_ptr<T> createGameObject(Device& device, AssetManager& assets, Args&&... args) {
+		return std::make_unique<T>(nextId++, device, assets, std::forward<Args>(args)...);
 	}
 };

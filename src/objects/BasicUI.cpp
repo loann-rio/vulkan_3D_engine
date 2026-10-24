@@ -1,6 +1,7 @@
 #include "BasicUI.h"
+#include <glm/gtc/type_ptr.hpp>
 
-BasicUI::BasicUI(Device& device, GLFWwindow* window, VkRenderPass renderPass) : device{ device }
+BasicUI::BasicUI(Device& device, AssetManager& assets, GLFWwindow* window, VkRenderPass renderPass) : device{ device }, assets{ assets }
 {
    // the size of the pool is very oversize, but it's copied from imgui demo itself.
     VkDescriptorPoolSize pool_sizes[] =
@@ -58,7 +59,7 @@ BasicUI::~BasicUI()
     vkDestroyDescriptorPool(device.device(), imguiPool, nullptr); 
 }
 
-void BasicUI::drawUI(VkCommandBuffer commandBuffer, ObjectManager* manager, TerrainUbo& terrainUbo, float fps)
+void BasicUI::drawUI(VkCommandBuffer commandBuffer, ObjectManager* manager, float fps)
 {
     isWindowSelected = false;
 
@@ -76,8 +77,6 @@ void BasicUI::drawUI(VkCommandBuffer commandBuffer, ObjectManager* manager, Terr
     }   
 
     objectSelectionWindow(listObjectsName, manager, fps);
-
-	terrainUboWindow(terrainUbo);
 
     auto gameObject = manager->get(selected_object);
     if (gameObject != nullptr) {
@@ -274,7 +273,7 @@ void BasicUI::createObjWindow(ObjectManager* manager)
 
     if (ImGui::Button("create"))
     {
-        manager->loadObjectAsync(device, path, pathTexture ? pathTexture : "textures\\whiteTexture.jpg", TransformComponent{}, name);
+        manager->loadObjectAsync(device, assets, path, pathTexture ? pathTexture : "textures\\whiteTexture.jpg", TransformComponent{}, name);
         show_create_go_window = false; 
       
     }
@@ -309,7 +308,7 @@ void BasicUI::createGLTFWindow(ObjectManager* manager)
 
     if (ImGui::Button("create"))
     {
-        manager->loadObjectAsync(device, path, TransformComponent{}, name);
+        manager->loadObjectAsync(device, assets, path, TransformComponent{}, name);
         show_create_go_window = false;
         //std::memset(path, 0, sizeof(path));
     }
@@ -384,7 +383,7 @@ void BasicUI::createCameraWindow(ObjectManager* manager, bool isSpotLight = fals
 
         if (isSpotLight)
         {
-            auto spotLight = GameObjectFactory::createGameObject<GameObjectSpotLight>(device, fov, ar, .1f, 100.f);
+            auto spotLight = GameObjectFactory::createGameObject<GameObjectSpotLight>(device, manager->assetManager, fov, ar, .1f, 100.f);
 
             spotLight->transform.color = color;
             spotLight->setName(name);
@@ -392,7 +391,7 @@ void BasicUI::createCameraWindow(ObjectManager* manager, bool isSpotLight = fals
             manager->pushGameObject(std::move(spotLight));
         }
         else {
-            auto camera = GameObjectFactory::createGameObject<GameObjectCamera>(device, fov, ar, .1f, 100.f); 
+            auto camera = GameObjectFactory::createGameObject<GameObjectCamera>(device, manager->assetManager, fov, ar, .1f, 100.f);
 
             camera->setName(name);
 
@@ -424,7 +423,7 @@ void BasicUI::createEmptyObjectWindow(ObjectManager* manager)
 	// create
     if (ImGui::Button("create"))
     {
-        auto emptyObject = GameObjectFactory::createGameObject<GameObject>(device);
+        auto emptyObject = GameObjectFactory::createGameObject<GameObject>(device, manager->assetManager);
         emptyObject->setName(name);
 
         auto behavior = GameObjectBehavior::createBehaviorFromType(behaviorClass, device);

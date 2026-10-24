@@ -469,7 +469,7 @@ bool Device::isFormatSupported(const VkFormat candidate)
 
 void Device::submitToTransferQueue(VkSubmitInfo& submitInfo, VkFence fence)
 {
-    std::lock_guard<std::mutex> lock(transferQueueMutex);
+    std::lock_guard<std::mutex> lock(queueMutex);
     if (vkQueueSubmit(transferQueue_, 1, &submitInfo, fence) != VK_SUCCESS) {
         throw std::runtime_error("failed to submit command buffer!");
     }
@@ -477,7 +477,7 @@ void Device::submitToTransferQueue(VkSubmitInfo& submitInfo, VkFence fence)
 
 void Device::submitToGraphicQueue(VkSubmitInfo& submitInfo, VkFence fence)
 {
-    std::lock_guard<std::mutex> lock(graphicQueueMutex);
+    std::lock_guard<std::mutex> lock(queueMutex);
     if (vkQueueSubmit(graphicsQueue_, 1, &submitInfo, fence) != VK_SUCCESS) {
         throw std::runtime_error("failed to submit command buffer!");
     }
@@ -485,13 +485,13 @@ void Device::submitToGraphicQueue(VkSubmitInfo& submitInfo, VkFence fence)
 
 VkResult Device::present(const VkPresentInfoKHR* presentInfo)
 {
-    std::lock_guard<std::mutex> lock(graphicQueueMutex);
+    std::lock_guard<std::mutex> lock(queueMutex);
     return vkQueuePresentKHR(presentQueue_, presentInfo);
 }
 
 VkResult Device::submitAndPresent(VkSubmitInfo& submitInfo, VkFence fence, const VkPresentInfoKHR* presentInfo)
 {
-    std::lock_guard<std::mutex> lock(graphicQueueMutex);
+    std::lock_guard<std::mutex> lock(queueMutex);
 
     if (vkQueueSubmit(graphicsQueue_, 1, &submitInfo, fence) != VK_SUCCESS) {
         throw std::runtime_error("failed to submit command buffer!");

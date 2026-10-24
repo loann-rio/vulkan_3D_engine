@@ -1,4 +1,4 @@
- #include "App.h"
+ #include "Engine.h"
 
 #include <cstdlib>
 #include <iostream>
@@ -6,10 +6,10 @@
 
 int main() {
 
-    App app{};
+    Engine engine{};
 
     try {
-        app.run();
+        engine.run();
     }
     catch (const std::exception& e) {
         std::cerr << e.what() << "\n";

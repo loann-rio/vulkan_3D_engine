@@ -2,6 +2,7 @@
 
 #include "Device.h"
 #include "../Textures/TextureObject.h"
+#include "../assetManager/AssetManager.h"
 
 // vulkan headers
 #include <vulkan/vulkan.h>
@@ -15,7 +16,7 @@
 class SingleSwapChain
 {
 public:
-	SingleSwapChain(Device& deviceRef, VkExtent2D imageExtent);
+	SingleSwapChain(Device& deviceRef, AssetManager& assets, VkExtent2D imageExtent);
 	~SingleSwapChain();
 
 	SingleSwapChain(const SingleSwapChain&) = delete;
@@ -23,13 +24,13 @@ public:
 
 	VkRenderPass getRenderPass() const { return renderPass; }
 	
-	VkImageView getColorImageView() { return textureTargetColor->view(); }
-	VkImageView getDepthImageView() { return textureTargetDepth->view(); }
+	VkImageView getColorImageView() { return assets.textures().get(textureTargetColor)->view(); }
+	VkImageView getDepthImageView() { return assets.textures().get(textureTargetDepth)->view(); }
 
 	VkFramebuffer getFrameBuffer(int index = 0) const { return frameBuffer[index]; }
 	
-	std::shared_ptr<TextureObject> getTextureColor() { return textureTargetColor; }
-	std::shared_ptr<TextureObject> getTextureDepth() { return textureTargetDepth; }
+	TextureManager::TextureID getTextureColor() { return textureTargetColor; }
+	TextureManager::TextureID getTextureDepth() { return textureTargetDepth; }
 
 	VkExtent2D getSwapChainExtent() { return textureExtent; }
 
@@ -64,12 +65,13 @@ private:
 
 	VkRenderPass renderPass;
 
-	std::shared_ptr<TextureObject> textureTargetColor;
-	std::shared_ptr<TextureObject> textureTargetDepth;
+	TextureManager::TextureID textureTargetColor;
+	TextureManager::TextureID textureTargetDepth;
 
 	VkDescriptorImageInfo depthDescriptorImageInfo;
 	VkDescriptorImageInfo colorDescriptorImageInfo;
 
 	Device& device;
+	AssetManager& assets;
 };
 

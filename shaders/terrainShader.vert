@@ -45,10 +45,16 @@ layout(set = 0, binding = 0) uniform GlobalUbo {
 	PointLight pointLight[10]; 
 } ubo;
 
+struct ObjectData {
+    mat4 model;
+};
+
 layout(push_constant) uniform Push {
-	mat4 modelMatrix;
-	mat4 normalMatrix;
+        uint matrixIndex;
 } push;
+
+layout(std430, set = 0, binding = 1) readonly buffer Objects { ObjectData objects[]; };
+
 
 layout(set = 1, binding = 0) uniform SpotLightUbo {
 	SpotLight spotLight[MAX_NUM_SPOT_LIGHT];
@@ -72,19 +78,12 @@ mat4 composeModelMatrix(vec3 translation, vec3 rotation, vec3 scale) {
 }
 
 void main() {
-	mat4 model;
-	mat4 normalMat;
+	mat4 model = objects[push.matrixIndex].model;
 
 	if (gl_InstanceIndex > 0) {
-		model = push.modelMatrix * composeModelMatrix(instancePosition, instanceRotation, instanceScale);
-		normalMat = push.normalMatrix * composeModelMatrix(instancePosition, instanceRotation, instanceScale);
+		model = model * composeModelMatrix(instancePosition, instanceRotation, instanceScale);
 	} 
-	else
-	{
-		model = push.modelMatrix ;
-		normalMat = push.normalMatrix;
-	}
-
+	
 	vec4 positionWorld = model * vec4(position, 1.0); 
 
 	gl_Position = ubo.projection * ubo.view * positionWorld;
@@ -93,7 +92,7 @@ void main() {
 		fragPosShadow[indexSpotLight] = spotLightUbo.spotLight[indexSpotLight].lightMatrix * positionWorld;
 	}
 
-	fragNormalWorld = normalize(mat3(normalMat)*normal);
+    fragNormalWorld = normalize(transpose(inverse(mat3(model))) * normal);
 	fragPosWorld = positionWorld.xyz;
 	fragColor = color;
 	texCoord = uv;

@@ -4,15 +4,17 @@
 #include "../Textures/TextureObject.h"
 
 #include <array>
+#include "../assetManager/ModelManager.h"
 
 void TerrainGenerator::loop(Device& device, ObjectManager* objManager, GameObject* object)
 {
-	int posX = object->transform.translation.x / chunkWorldSide;
+	/*int posX = object->transform.translation.x / chunkWorldSide;
 	int posY = object->transform.translation.z / chunkWorldSide;
 
 	//int posX = 0;
 	//int posY = 0;
 
+	AssetManager& assets = objManager->assetManager;
 	
 	
 	for (int i = posX - int(sizeWorldInChunck / 2); i <= posX + int(sizeWorldInChunck / 2); i++)
@@ -24,7 +26,7 @@ void TerrainGenerator::loop(Device& device, ObjectManager* objManager, GameObjec
 			std::cout << "chunk not found, creating chunk \n";
 			
 			// push terrain
-			auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
+			auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, objManager->assetManager);
 			gameObject->transform.translation = { i * chunkWorldSide, 4, j * chunkWorldSide };
 			gameObject->setModelSubType(ModelSubType::TERRAIN);
 			//gameObject->setParent(objManager->get("terrain G"));
@@ -35,7 +37,7 @@ void TerrainGenerator::loop(Device& device, ObjectManager* objManager, GameObjec
 			loadedChunk[hash] = id_terrain;
 
 			// create terrain and place trees
-			objManager->pushFuture(std::async(std::launch::async, [this, id_terrain, i, j]() {
+			objManager->pushFuture(std::async(std::launch::async, [this, &assets, id_terrain, i, j]() {
 
 				// create height map from noise function
 				std::vector<std::vector<glm::vec2>> heightMap = generateChunck(i * (this->chunkSize - 1), j * (this->chunkSize - 1));
@@ -45,7 +47,7 @@ void TerrainGenerator::loop(Device& device, ObjectManager* objManager, GameObjec
 				for (int x = 0; x < this->chunkSize; x++) for (int y = 0; y < this->chunkSize; y++) map[y][x] = heightMap[x][y].x;
 
 				// create plane object
-				std::shared_ptr<Model> plane = PrebuiltModel::createTerrain(this->device, 4, 4, map);
+				std::shared_ptr<Model> plane = PrebuiltModel::createTerrain(this->device, assets, 4, 4, map);
 				
 
 
@@ -58,10 +60,8 @@ void TerrainGenerator::loop(Device& device, ObjectManager* objManager, GameObjec
 					heightMapVector[y][x][1] = heightMap[x][y].y;
 				}
 				
-				TextureBuilder builder(this->device);
-				std::unique_ptr<TextureObject> text = builder.fromVector(heightMapVector).build();
-
-				plane->setTexture(std::move(text));
+				TextureBuilder builder(this->device);				
+				plane->setTexture(assets.textures().create((builder.fromVector(heightMapVector))));
 					
 				return std::vector<futureObject>{futureObject{ plane, plane ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id_terrain, {}, false }};
 				}));
@@ -90,7 +90,7 @@ void TerrainGenerator::loop(Device& device, ObjectManager* objManager, GameObjec
 		else {
 			++it;
 		}
-	}
+	}*/
 
 }
 
@@ -104,7 +104,7 @@ TerrainGenerator::TerrainGenerator(Device& device) : device(device)
 
 
 std::vector<std::vector<glm::vec2>> TerrainGenerator::generateChunck(float Xoffset, float Yoffset) {
-	std::mt19937 prng(seed);
+	/*std::mt19937 prng(seed);
 
 	std::vector<glm::vec2> octavesOffsets(maxOctaves);
 	for (int i = 0; i < maxOctaves; i++) {
@@ -171,12 +171,13 @@ std::vector<std::vector<glm::vec2>> TerrainGenerator::generateChunck(float Xoffs
 		}
 	}
 
-	return noiseMap;
+	return noiseMap;*/
+	return std::vector<std::vector<glm::vec2>>{};
 }
 
-std::vector<Model::Instance> TerrainGenerator::placeTrees(std::vector<std::vector<glm::vec2>> heightMap, float Xoffset, float Yoffset) const
+std::vector<ModelInstance> TerrainGenerator::placeTrees(std::vector<std::vector<glm::vec2>> heightMap, float Xoffset, float Yoffset) const
 {
-	std::vector<Model::Instance> treeList = {};
+	std::vector<ModelInstance> treeList = {};
 
 	srand(Xoffset + Yoffset);
 
@@ -193,10 +194,10 @@ std::vector<Model::Instance> TerrainGenerator::placeTrees(std::vector<std::vecto
 
 			if (abs(heightMap[x][y].y) < 0.02 && heightMap[x][y].x < 2.f)
 			{
-				Model::Instance instance = {
-					{ Xoffset + xPos, -heightMap[x][y].x, Yoffset + yPos},
-					{0, 0, 0},
-					{0.1,  -0.1 * sizeFactor, 0.1} 
+				ModelInstance instance = {
+					{ Xoffset + xPos, -heightMap[x][y].x, Yoffset + yPos, 1.f },
+					{0.f, 0.f, 0.f, 0.f },
+					{0.1f,  -0.1 * sizeFactor, 0.1f, 1.f } 
 				};
 
 				treeList.push_back(instance);
