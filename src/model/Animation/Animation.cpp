@@ -4,13 +4,12 @@
 #include <algorithm>
 #include <cmath>
 
-#include <glm/gtc/matrix_transform.hpp>
+#include <glm/ext/matrix_transform.inl>
 
 namespace {
 
     glm::quat toQuat(const glm::vec4& v) { return glm::quat(v.w, v.x, v.y, v.z); }
 
-    // index i such that inputs[i] <= t <= inputs[i + 1]
     size_t findKey(const std::vector<float>& inputs, float t) {
         auto it = std::upper_bound(inputs.begin(), inputs.end(), t);
         if (it == inputs.begin()) return 0;

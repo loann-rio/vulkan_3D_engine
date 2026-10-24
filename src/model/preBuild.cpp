@@ -40,16 +40,11 @@
 
 namespace {
 
-    /// <summary>
-    /// generate a flat grid on the XZ plane as a DecodedModel (single primitive, single default material)
-    /// </summary>
     DecodedModel buildPlaneModel(float width, float depth, uint32_t widthDetail, uint32_t depthDetail, glm::vec3 color, float UVfactor, const std::string& name)
     {
         widthDetail = std::max(widthDetail, 1u);
         depthDetail = std::max(depthDetail, 1u);
 
-        // Vertices
-        // the winding below gives faces pointing toward -Y, which is "up" in this engine
         std::vector<ObjVertex> verts;
         verts.reserve((static_cast<size_t>(widthDetail) + 1) * (static_cast<size_t>(depthDetail) + 1));
 
