@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <cmath>
 
-#include <glm/ext/matrix_transform.inl>
+#include <glm/glm.hpp>
 
 namespace {
 
