@@ -1,13 +1,16 @@
 #include "preBuild.h"
 
 #include <random>
+#include <algorithm>
 #include "../base/perlinNoise.h"
 #include "../base/VoronoiNoise.h"
 
 #include "../Textures/TextureBuilder.h"
 #include "../Textures/TextureObject.h"
+#include "../model/ModelBuilder.h"
+#include "Vertex/ObjVertexData.h"
 
-std::shared_ptr<Model> PrebuiltModel::createFullScreenQuad(Device& device, AssetManager& assets)
+/*std::shared_ptr<Model> PrebuiltModel::createFullScreenQuad(Device& device, AssetManager& assets)
 {
     Model::Builder modelBuilder{};
 
@@ -32,123 +35,108 @@ std::shared_ptr<Model> PrebuiltModel::createFullScreenQuad(Device& device, Asset
     model->setTexture(assets.textures().create((builder.fromFile("assets/textures/whiteTexture.jpg"))));
 
     return model;
+}*/
+
+
+namespace {
+
+    /// <summary>
+    /// generate a flat grid on the XZ plane as a DecodedModel (single primitive, single default material)
+    /// </summary>
+    DecodedModel buildPlaneModel(float width, float depth, uint32_t widthDetail, uint32_t depthDetail, glm::vec3 color, float UVfactor, const std::string& name)
+    {
+        widthDetail = std::max(widthDetail, 1u);
+        depthDetail = std::max(depthDetail, 1u);
+
+        // Vertices
+        // the winding below gives faces pointing toward -Y, which is "up" in this engine
+        std::vector<ObjVertex> verts;
+        verts.reserve((static_cast<size_t>(widthDetail) + 1) * (static_cast<size_t>(depthDetail) + 1));
+
+        for (uint32_t i = 0; i <= widthDetail; i++) {
+            for (uint32_t j = 0; j <= depthDetail; j++) {
+                ObjVertex v{};
+                v.position = { i * width / widthDetail, 0.f, j * depth / depthDetail };
+                v.color = color;
+                v.normal = { 0.f, -1.f, 0.f };
+                v.uv = { (float)(i * UVfactor) / (float)widthDetail, (float)(j * UVfactor) / (float)depthDetail };
+                verts.push_back(v);
+            }
+        }
+
+        // Indices
+        std::vector<uint32_t> indices;
+        indices.reserve(static_cast<size_t>(widthDetail) * depthDetail * 6);
+        for (uint32_t i = 0; i < widthDetail; i++) {
+            for (uint32_t j = 0; j < depthDetail; j++) {
+                uint32_t topLeft = i * (depthDetail + 1) + j;
+                uint32_t topRight = topLeft + 1;
+                uint32_t bottomLeft = (i + 1) * (depthDetail + 1) + j;
+                uint32_t bottomRight = bottomLeft + 1;
+
+                // First triangle
+                indices.push_back(topLeft);
+                indices.push_back(bottomLeft);
+                indices.push_back(topRight);
+
+                // Second triangle
+                indices.push_back(topRight);
+                indices.push_back(bottomLeft);
+                indices.push_back(bottomRight);
+            }
+        }
+
+        DecodedModel decodedModel;
+
+        decodedModel.aabb = BoundingBox(glm::vec3(0.f), glm::vec3(width, 0.f, depth));
+        decodedModel.aabb.valid = true;
+
+        Primitive prim{};
+        prim.aabb = decodedModel.aabb;
+        prim.firstIndex = 0;
+        prim.indexCount = static_cast<uint32_t>(indices.size());
+        prim.materialIndex = 0;
+        decodedModel.primitives.push_back(prim);
+
+        decodedModel.vertices = std::make_unique<ObjVertexData>(std::move(verts));
+        decodedModel.indices = std::move(indices);
+        decodedModel.name = name;
+
+        return decodedModel;
+    }
 }
 
-
-std::shared_ptr<Model> PrebuiltModel::createPlane(Device& device, AssetManager& assets, float width, float depth, uint16_t widthDetail, uint16_t depthDetail, glm::vec3 color, float UVfactor)
+ModelManager::ModelID PrebuiltModel::createPlane(Device& device, AssetManager& assets, float width, float depth, uint16_t widthDetail, uint16_t depthDetail, glm::vec3 color, float UVfactor)
 {
-    Model::Builder modelBuilder{};
-    // Step 1: Generate vertices
-    for (unsigned int i = 0; i <= widthDetail; i++) {
-        for (unsigned int j = 0; j <= depthDetail; j++) {
+    ModelBuilder builder(device, assets);
+    builder.fromDecodedModel(buildPlaneModel(width, depth, widthDetail, depthDetail, color, UVfactor, "generated_plane"));
 
-            glm::vec3 position = { i * width / widthDetail, 0.f, j * depth / depthDetail };
-            glm::vec3 normal = { 0, 1, 0 };  // Upward-facing normal
-            glm::vec2 uv = { (float)(i * UVfactor) / (float)widthDetail, (float)(j * UVfactor) / (float)depthDetail };
-
-            modelBuilder.vertices.push_back({ position, color, normal, uv });
-        }
-    }
-
-    // Step 2: Generate indices (triangles)
-    for (unsigned int i = 0; i < widthDetail; i++) {
-        for (unsigned int j = 0; j < depthDetail; j++) {
-            int topLeft = i * (depthDetail + 1) + j;
-            int topRight = topLeft + 1;
-            int bottomLeft = (i + 1) * (depthDetail + 1) + j;
-            int bottomRight = bottomLeft + 1;
-
-            // First triangle
-            modelBuilder.indices.push_back(topLeft);
-            modelBuilder.indices.push_back(bottomLeft);
-            modelBuilder.indices.push_back(topRight);
-
-            // Second triangle
-            modelBuilder.indices.push_back(topRight);
-            modelBuilder.indices.push_back(bottomLeft);
-            modelBuilder.indices.push_back(bottomRight);
-        }
-    }
-
-    // Step 3: Compute normals
-    std::vector<glm::vec3> accumulatedNormals(modelBuilder.vertices.size(), glm::vec3(0.0f));
-
-    for (size_t i = 0; i < modelBuilder.indices.size(); i += 3) {
-        glm::vec3& v0 = modelBuilder.vertices[modelBuilder.indices[i]].position;
-        glm::vec3& v1 = modelBuilder.vertices[modelBuilder.indices[i + 1]].position;
-        glm::vec3& v2 = modelBuilder.vertices[modelBuilder.indices[i + 2]].position;
-
-        glm::vec3 normal = glm::normalize(glm::cross(v1 - v0, v2 - v0));
-
-        accumulatedNormals[modelBuilder.indices[i]] += normal;
-        accumulatedNormals[modelBuilder.indices[i + 1]] += normal;
-        accumulatedNormals[modelBuilder.indices[i + 2]] += normal;
-    }
-
-    // Normalize accumulated normals
-    for (size_t i = 0; i < modelBuilder.vertices.size(); i++) {
-        modelBuilder.vertices[i].normal = glm::normalize(accumulatedNormals[i]);
-    }
-
-    auto model = std::make_unique<Model>(device, assets, modelBuilder);
-
-    TextureBuilder builder(device);
-    model->setTexture(assets.textures().create((builder.fromFile("assets/textures/whiteTexture.jpg"))));
-
-    return model;
+    return assets.models().create(builder);
 }
 
 /// <summary>
-/// create a terrain made of triangles
+/// create a square plane made of triangles
 /// </summary>
 /// <param name="device"></param>
-/// <param name="detail"> length of the plane in term of triangles </param>
-/// <param name="sizePlane"> length of the plane in term of pixels </param>
-/// <param name="color"></param>
-/// <returns> pointer to a new model </returns>
-/// 
-std::unique_ptr<Model> PrebuiltModel::createPlane(Device& device, AssetManager& assets, const unsigned int detail, const float sizePlane, glm::vec3 color, const std::string texturePath, float uvFactor)
+/// <param name="detail"> length of the plane in term of quads </param>
+/// <param name="sizePlane"> length of the plane in world units </param>
+/// <param name="color"> vertex color, multiplied with the texture </param>
+/// <returns> id of the model in the ModelManager </returns>
+ModelManager::ModelID PrebuiltModel::createPlane(Device& device, AssetManager& assets, const unsigned int detail, const float sizePlane, glm::vec3 color, const std::string texturePath, float uvFactor)
 {
-    Model::Builder modelBuilder{};
+    TextureBuilder textBuilder(device);
+    auto texture = assets.textures().create(textBuilder.fromFile(texturePath));
 
-    for (unsigned int i = 0; i < detail + 1; i++) {
-        for (unsigned int j = 0; j < detail + 1; j++)
-        {
-            modelBuilder.vertices.push_back({ {i * sizePlane / detail, 0.f, j * sizePlane / detail}, {1, 1, 1}, {0, -1, 0}, {(float)(i * uvFactor) / (float)detail , (float)(j * uvFactor) / (float)detail } });
-        }
-    }
+    ModelBuilder builder(device, assets);
+    builder.fromDecodedModel(buildPlaneModel(sizePlane, sizePlane, detail, detail, color, uvFactor, "generated_plane_detail")).withTexture(texture);
 
-    int row = 0;
-    for (unsigned int i = 0; i < (detail + 1) * detail - 1; i++) {
-        if ((i - row) % detail == 0 && i != 0) {
-            i++;
-            row++;
-        }
-
-        modelBuilder.indices.push_back(i);
-        modelBuilder.indices.push_back(i + detail + 1);
-        modelBuilder.indices.push_back(i + 1);
-        
-
-        modelBuilder.indices.push_back(i + 1);
-        modelBuilder.indices.push_back(i + detail + 1);
-        modelBuilder.indices.push_back(i + detail + 2);
-        
-
-        modelBuilder.vertices[i].normal = -glm::normalize(glm::cross(modelBuilder.vertices[i].position - modelBuilder.vertices[i + 1].position, modelBuilder.vertices[i].position - modelBuilder.vertices[i + detail + 1].position));
-    }
-
-	auto model = std::make_unique<Model>(device, assets, modelBuilder);
-
-    TextureBuilder builder(device);
-    model->setTexture(assets.textures().create((builder.fromFile(texturePath.c_str()))));
-
-    return model;
+    return assets.models().create(builder);
 }
+/*
 
 std::shared_ptr<Model> PrebuiltModel::createIcoSphere(Device& device, AssetManager& assets, uint16_t detail)
-{
-    Model::Builder modelBuilder{};
+{*/
+    /*Model::Builder modelBuilder{};
 
     glm::vec3 color = { 1.0f, 1.0f, 1.0f };
     glm::vec3 normal = { 0, 1, 0 }; 
@@ -198,17 +186,18 @@ std::shared_ptr<Model> PrebuiltModel::createIcoSphere(Device& device, AssetManag
     TextureBuilder builder(device);
     model->setTexture(assets.textures().create((builder.fromFile("textures/floor.jpg"))));
 
-    return model;
-}
+    return model;*/
+//    return std::shared_ptr<Model>();
+//}
 
-std::shared_ptr<Model> PrebuiltModel::createCube(Device& device, AssetManager& assets, uint16_t detail)
+/*std::shared_ptr<Model> PrebuiltModel::createCube(Device& device, AssetManager& assets, uint16_t detail)
 {
     return std::shared_ptr<Model>();
-}
-
+}*/
+/*
 std::shared_ptr<Model> PrebuiltModel::createCube(Device& device, AssetManager& assets)
-{
-    Model::Builder modelBuilder{};
+{*/
+    /*Model::Builder modelBuilder{};
     glm::vec3 color = { 1.0f, 1.0f, 1.0f };
     float h = 0.5f;
 
@@ -260,7 +249,8 @@ std::shared_ptr<Model> PrebuiltModel::createCube(Device& device, AssetManager& a
     TextureBuilder builder(device);
     model->setTexture(assets.textures().create((builder.fromFile("assets/textures/whiteTexture.jpg"))));
 
-    return model;
+    return model;*/
+  /*  return std::shared_ptr<Model>();
 }
 
 
@@ -275,9 +265,9 @@ std::shared_ptr<Model> PrebuiltModel::createTerrain(Device& device, AssetManager
     float heightMultiplier,
     float Xoffset, float Yoffset
     )
-{
+{*/
 
-    PerlinNoise pn{ 3141592 };
+    /*PerlinNoise pn{ 3141592 };
     std::vector<std::vector<float>> noiseMap = pn.GenerateGradientTrick2DnoiseMap(widthDetail + 1, depthDetail + 1, scale, octaves, persistance, lacunarity, Xoffset, Yoffset, gradientFactor, heightMultiplier);
 
     Model::Builder modelBuilder{};
@@ -353,13 +343,14 @@ std::shared_ptr<Model> PrebuiltModel::createTerrain(Device& device, AssetManager
     TextureBuilder builder(device);
     model->setTexture(assets.textures().create((builder.fromFile("assets/textures/whiteTexture.jpg"))));
 
-    return model;
+    return model;*/
+/*    return std::shared_ptr<Model>();
 }
 
 std::shared_ptr<Model> PrebuiltModel::createTerrain(Device& device, AssetManager& assets, float width, float depth, std::vector<std::vector<float>> heightMap, float UVfactor)
-{
+{*/
 
-    uint16_t widthDetail = heightMap.size() - 1;
+    /*uint16_t widthDetail = heightMap.size() - 1;
     uint16_t depthDetail = heightMap[0].size() - 1;
 
     Model::Builder modelBuilder{};
@@ -467,5 +458,6 @@ std::shared_ptr<Model> PrebuiltModel::createTerrain(Device& device, AssetManager
     TextureBuilder builder(device);
     model->setTexture(assets.textures().create((builder.fromFile("assets/textures/whiteTexture.jpg"))));
 
-    return model;
-}
+    return model;*/
+   /* return std::shared_ptr<Model>{};
+}*/

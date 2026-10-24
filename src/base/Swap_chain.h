@@ -24,9 +24,9 @@ public:
     Swap_chain(const Swap_chain&) = delete;
     Swap_chain& operator=(const Swap_chain&) = delete;
 
-    VkImageView getImageView(int index) { return swapChainImageViews[index]; }
+    VkImageView getImageView(uint16_t index) { return swapChainImageViews[index]; }
 
-    size_t imageCount() const { return swapChainImages.size(); }
+    uint16_t imageCount() const { return swapChainImages.size(); }
     std::vector<VkImage> getSwapChainImages() const { return swapChainImages; }
 
     VkFormat getSwapChainImageFormat() const { return swapChainImageFormat; }

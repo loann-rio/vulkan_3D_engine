@@ -21,7 +21,7 @@
 
 std::vector<GameObject::id_t> finiteSizedTerrainGeneration::createChunk(Device& device, ObjectManager* objManager, int chunkX, int chunkY, float chunkWorldSizeUnit)
 {
-	auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, objManager->assetManager);
+	/*auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, objManager->assetManager);
 	gameObject->transform.translation = { chunkX * chunkWorldSizeUnit, 0, chunkY * chunkWorldSizeUnit };
 	gameObject->setModelSubType(ModelSubType::TERRAIN);
 	gameObject->saveable = false;
@@ -75,12 +75,13 @@ std::vector<GameObject::id_t> finiteSizedTerrainGeneration::createChunk(Device& 
 		}));
 
 
-	return { id_terrain };
+	return { id_terrain };*/
+	return std::vector<GameObject::id_t>{};
 }
 
 std::vector<std::vector<glm::vec2>> finiteSizedTerrainGeneration::generateChunckHeight(float Xoffset, float Yoffset, uint16_t sizeX, uint16_t sizeY)
 {
-	std::mt19937 prng(seed);
+	/*std::mt19937 prng(seed);
 
 	std::vector<glm::vec2> octavesOffsets(maxOctaves);
 	for (int i = 0; i < maxOctaves; i++) {
@@ -133,14 +134,14 @@ std::vector<std::vector<glm::vec2>> finiteSizedTerrainGeneration::generateChunck
 		}
 	}
 
-	return noiseMap;
+	return noiseMap;*/
 
-	//return std::vector<std::vector<glm::vec2>>{};
+	return std::vector<std::vector<glm::vec2>>{};
 }
 
 float finiteSizedTerrainGeneration::weightedRegionValue(const std::vector<glm::vec2>& lookupVoronoi, float RegionVariables::* member)
 {
-	float r = 0;
+	/*float r = 0;
 	float sum = 0;
 
 	for (glm::vec2 val : lookupVoronoi) {
@@ -149,5 +150,6 @@ float finiteSizedTerrainGeneration::weightedRegionValue(const std::vector<glm::v
 		sum += val.x;
 	}
 
-	return r / sum;
+	return r / sum;*/
+	return 0.0;
 }

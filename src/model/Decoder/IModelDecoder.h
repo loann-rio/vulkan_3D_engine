@@ -16,7 +16,7 @@
 
 
 #include "../Vertex/IVertexData.h"
-
+#include "../Animation/Skeleton.h"
 #include "../BoundingBox.h"
 
 namespace moDecoder {
@@ -41,22 +41,43 @@ namespace moDecoder {
 struct Primitive {
     BoundingBox aabb;
 
-    uint32_t firstIndex;
-    uint32_t indexCount;
+    uint32_t firstIndex{ 0 };
+    uint32_t indexCount{ 0 };
 
-    uint32_t materialIndex = 0;
+    uint32_t materialIndex{ 0 };
+
+    uint32_t nodeIndex{ 0 };
+    uint32_t skinIndex{ 0 };
+};
+
+struct DecodedTexture {
+    DecodedTexture() = default;
+    DecodedTexture(std::string filePath) : path(std::move(filePath)) {}
+
+    std::string path;
+
+    std::vector<unsigned char> pixels;
+    uint32_t width = 0;
+    uint32_t height = 0;
+
+    bool empty() const { return path.empty() && pixels.empty(); }
 };
 
 struct DecodedMaterial {
-    // References to textures IDs from TextureManager
-    std::string albedoTexture;
-    std::string normalTexture;
-    std::string metallicRoughnessTexture;
+    DecodedTexture albedoTexture;
+    DecodedTexture normalTexture;
+    DecodedTexture metallicRoughnessTexture;
+    DecodedTexture occlusionTexture;
+    DecodedTexture emissiveTexture;
 
     // Scalar parameters
     float metallic = 0.0f;
     float roughness = 1.0f;
     glm::vec4 baseColorFactor = glm::vec4(1.0f);
+    glm::vec3 emissiveFactor = glm::vec3(0.0f);
+
+    bool alphaMask = false;
+    float alphaCutoff = 0.5f;
 
     std::string name;
 };
@@ -68,21 +89,27 @@ struct DecodedModel {
     std::vector<DecodedMaterial> materials;
     BoundingBox aabb;
 
+	Skeleton skeleton;
+
     std::string name;
 };
 
 
 
 struct Material {
-    // References to textures IDs from TextureManager
     TextureManager::TextureID albedoTexture = 0;
     TextureManager::TextureID normalTexture = 0;
     TextureManager::TextureID metallicRoughnessTexture = 0;
+    TextureManager::TextureID occlusionTexture = 0;
+    TextureManager::TextureID emissiveTexture = 0;
 
-    // Scalar parameters
     float metallic = 0.0f;
     float roughness = 1.0f;
     glm::vec4 baseColorFactor = glm::vec4(1.0f);
+    glm::vec3 emissiveFactor = glm::vec3(0.0f);
+
+    bool alphaMask = false;
+    float alphaCutoff = 0.5f;
 
     std::vector<VkDescriptorSet> descriptorSet; 
 

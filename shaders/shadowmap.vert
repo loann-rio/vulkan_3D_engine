@@ -9,9 +9,12 @@ struct SpotLight {
 	mat4 lightMatrix;
 };
 
+struct ObjectData { mat4 model; };
+layout(std430, set = 0, binding = 1) readonly buffer Objects { ObjectData objects[]; };
+
 layout(push_constant) uniform Push {
-	mat4 modelMatrix;
-	int lightIndex;
+	uint matrixIndex;
+	uint lightIndex;
 } push;
 
 layout(set = 1, binding = 0) uniform SpotLightUbo {
@@ -45,11 +48,11 @@ void main()
 {
 	mat4 model;
 	if (gl_InstanceIndex > 0) {
-		model = push.modelMatrix * composeModelMatrix(instancePosition, instanceRotation, instanceScale);
+		model = objects[push.matrixIndex].model * composeModelMatrix(instancePosition, instanceRotation, instanceScale);
 	} 
 	else
 	{
-		model = push.modelMatrix ;
+		model = objects[push.matrixIndex].model;
 	}
 
 	vec4 positionWorld = model * vec4(position, 1.0);

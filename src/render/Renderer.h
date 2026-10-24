@@ -56,9 +56,11 @@ private:
 	void createPasses();
 	void initUi();
 
+	void updateModelPositionBuffer(std::vector<GameObjectModel*>& listGameObjects, uint16_t frameIndex);
+
 	bool aquireNextImage(ObjectManager& objectManager);
 
-	void beginSingleTimeRender(VkCommandBuffer commandBuffer, int buffer_index = 0);
+	void beginSingleTimeRender(VkCommandBuffer commandBuffer, uint16_t buffer_index = 0);
 	TextureManager::TextureID renderHdriToCubeTexture(std::shared_ptr<RenderSystem> renderSystem, VkDescriptorSet descriptorSet);
 
 	Window& window;
@@ -71,6 +73,8 @@ private:
 	SingleSwapChain skyboxSwapChain{ device, assets, {2000, 2000} };
 
 	std::unique_ptr<BasicUI> imgui;
+
+	std::vector<std::unique_ptr<Buffer>> objectBuffers;
 
 	// target
 	std::unique_ptr<PassTarget> depthFrameTarget;
@@ -96,4 +100,3 @@ private:
 	std::vector<VkDescriptorSet> postProDescriptorSet;
 	std::vector<VkDescriptorSet> terrainDescriptorSet;
 };
-

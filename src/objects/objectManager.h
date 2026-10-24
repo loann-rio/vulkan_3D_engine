@@ -11,6 +11,7 @@
 #include "../model/ModelAsset.h"
 
 #include <../json.hpp>
+#include "../assetManager/ModelManager.h"
 using json = nlohmann::json;
 
 class GameObject;
@@ -19,11 +20,11 @@ class GameObject;
 /// Represents a future game object with associated model information and instances.
 /// </summary>
 struct futureObject {
-    ModelVariant model;
     ModelType type;
     GameObject::id_t id; 
-    std::vector<Model::Instance> instances{};
+    std::vector<ModelInstance> instances{};
     bool saveable = true;
+    ModelManager::ModelID modelID;
 }; 
 
 struct ComputeObject {

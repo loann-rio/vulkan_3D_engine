@@ -54,6 +54,5 @@ private:
     VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
 
     bool hasPushConstants = false;
-    //  VkShaderStageFlags pushStage;
     size_t pushSize = 0;
 };

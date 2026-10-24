@@ -14,7 +14,8 @@ public:
     struct Attribute {
         std::string name;
         uint32_t offset;
-        uint32_t size; // in bytes
+        uint32_t size;
+		VkFormat format;
     };
 
     virtual const std::vector<Attribute>& attributes() const = 0;

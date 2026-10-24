@@ -3,10 +3,9 @@
 #include "../base/Swap_chain.h"
 #include "../base/descriptors.h"
 #include "../base/Device.h"
-#include "../model/GlTFModel.h"
-#include "../model/Model.h"
 #include "../render/Camera.h"
 #include "../assetManager/AssetManager.h"
+#include "../model/Animation/Animation.h"
 
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
@@ -20,6 +19,7 @@
 #include <type_traits>
 #include <variant>
 #include <unordered_map>
+#include <functional>
 
 #define REGISTER_BEHAVIOR(T)                                \
     std::string getClassName() const override { return #T; }\
@@ -41,8 +41,6 @@ class ObjectManager;
 class GameObject;
 class GameObjectBehavior;
 
-using ModelVariant = std::variant<std::shared_ptr<Model>,
-	std::shared_ptr<GlTFModel::ModelGltf>>;
 
 enum class ModelType {
 	UNDEFINED_MODEL = 0,
@@ -277,25 +275,9 @@ private:
 class GameObjectModel : public GameObject 
 {
 public:
-	template <typename T>
-	void setModel(std::shared_ptr<T> newModel)
-	{
-		model = std::move(newModel); 
-		modelType = static_cast<ModelType>(T::getModelType()); 
-		hasModel = true; 
-	}
 
-	void setModel(std::shared_ptr<Model> model);
-	void setModel(std::shared_ptr<GlTFModel::ModelGltf> model);
-	void setModel(ModelVariant newModel);
-
-
-	void setModel(ModelManager::ModelID _model) {
-		modelAsset = _model;
-		modelType = ModelType::OBJ_MODEL;
-		hasModel = true;
-	}
-
+	void setModel(ModelManager::ModelID _model);
+	void setModel(std::vector<ModelManager::ModelID> lod_models);
 
 	// setters getters
 	void setModelType(ModelType type) { modelType = type; } 
@@ -307,12 +289,8 @@ public:
 	void setPrimitivesModelType(PrimitivesModelType type) { primitivesModelType = type; }
 	PrimitivesModelType getPrimitivesModelType() const { return primitivesModelType; }
 
-	VkDescriptorImageInfo getTextureImageInfo() const;
-	std::vector<VkDescriptorSet> getDescriptorSets() const;
+	void setMultipleInstances(std::vector<ModelInstance> instances);
 
-	void setMultipleInstances(std::vector<Model::Instance> instances);
-
-	void createDescriptorSet(DescriptorPool& pool) const; 
 	void createInstanceComputeDescriptorSets(DescriptorPool& pool);
 	VkDescriptorSet getInstanceComputeDescriptorSet(uint16_t frameIndex) const;
 
@@ -320,11 +298,6 @@ public:
 	BoundingBox getAABB() const;
 
 	void update(float dtime);
-
-	void bindModel(VkCommandBuffer& commandBuffer, bool bindTexture, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, uint16_t modelDescriptorSetIndex) const;
-	void bind_original_instance_buffer(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex) const;
-	void drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, const std::array<FrustumPlane, 6>& frustrumPlanes);
-	void drawModelDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, int cameraIndex, uint16_t frameIndex, const std::array<FrustumPlane, 6>& planes);
 
 	Buffer* getOriginalInstancesBuffer() const { return instancesBuffer ? instancesBuffer.get() : nullptr; }
 	Buffer* getFrameInstancesBuffer(uint16_t index) const {
@@ -337,7 +310,7 @@ public:
 
 	void debugUI(); 
 
-	ModelManager::ModelID modelAsset;
+	std::vector<ModelManager::ModelID> lodModelAssets;
 
 	bool show = true;
 
@@ -348,8 +321,21 @@ public:
 	// primitive info
 	int primitiveLOD = 0;
 
-	GameObjectModel(id_t id, Device& device, AssetManager& assets) : GameObject(id, device, assets) { setMultipleInstances({ {} }); }
+	void createPoseResources(DescriptorPool& pool);
+	void uploadPose(uint16_t frameIndex);
+	VkDescriptorSet getPoseDescriptorSet(uint16_t frameIndex) const {
+		return frameIndex < poseDescriptorSets.size() ? poseDescriptorSets[frameIndex] : VK_NULL_HANDLE;
+	}
+
+	Animator animator;
+
+	uint32_t gpuObjectIndex{ 0 };
+
+	GameObjectModel(id_t id, Device& device, AssetManager& assets) : GameObject(id, device, assets) { setMultipleInstances({}); }
 private:
+	std::vector<std::unique_ptr<Buffer>> framePoseBuffers;
+	std::vector<VkDescriptorSet> poseDescriptorSets;
+	int32_t animationIndex{ 0 };
 
 	bool hasModel = false;
 
@@ -357,16 +343,10 @@ private:
 	ModelSubType modelSubType = ModelSubType::NONE;
 	PrimitivesModelType primitivesModelType = PrimitivesModelType::NONE;
 	
-	ModelVariant model;
-
 	std::unique_ptr<Buffer> instancesBuffer = nullptr;
 	std::vector<std::unique_ptr<Buffer>> frameInstancesBuffer;
 	std::vector<VkDescriptorSet> instanceComputeDescriptorSets;
 	uint32_t instanceCount = 1;
-
-	int32_t animationIndex{ 0 }; 
-	float animationTimer = 0.0f;
-	bool animate = false;
 
 	friend class GameObjectFactory; 
 };

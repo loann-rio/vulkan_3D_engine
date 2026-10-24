@@ -1,5 +1,8 @@
 C:\VulkanSDK\1.4.313.0\Bin\glslc.exe simple_shader.vert -o simple_shader.vert.spv --target-env=vulkan1.2
 C:\VulkanSDK\1.4.313.0\Bin\glslc.exe simple_shader.frag -o simple_shader.frag.spv --target-env=vulkan1.2
+
+C:\VulkanSDK\1.4.313.0\Bin\glslc.exe simple_shader_gltf.vert -o simple_shader_gltf.vert.spv --target-env=vulkan1.2
+C:\VulkanSDK\1.4.313.0\Bin\glslc.exe simple_shader_gltf.frag -o simple_shader_gltf.frag.spv --target-env=vulkan1.2
 					 
 C:\VulkanSDK\1.4.313.0\Bin\glslc.exe point_light.vert -o point_light.vert.spv --target-env=vulkan1.2
 C:\VulkanSDK\1.4.313.0\Bin\glslc.exe point_light.frag -o point_light.frag.spv --target-env=vulkan1.2

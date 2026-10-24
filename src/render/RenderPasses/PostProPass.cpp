@@ -1,6 +1,7 @@
 #include "PostProPass.h"
 
 #include "../GlobalRenderSystemBuilder.h"
+#include "../../model/Vertex/ObjVertexData.h"
 
 void PostProPass::recordPass(ObjectManager& objectManager, FrameInfo& frameInfo, VkCommandBuffer& commandBuffer)
 {
@@ -99,6 +100,7 @@ void PostProPass::createRenderSystems()
 {
     auto globalSetLayout = DescriptorSetLayout::Builder(device)
         .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+        .addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
         .build();
 
     auto colorSetLayout = DescriptorSetLayout::Builder(device)
@@ -111,6 +113,7 @@ void PostProPass::createRenderSystems()
         .renderPass(renderPass)
         .addSetLayout(globalSetLayout->getDescriptorSetLayout())
         .addSetLayout(colorSetLayout->getDescriptorSetLayout())
+        .modelFilterType(ModelType::OBJ_MODEL)
         .fullscreen()
-        .build<Model>();
+        .build<ObjVertexLayout>();
 }

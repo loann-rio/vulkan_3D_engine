@@ -1,7 +1,33 @@
 #include "RenderSystem.h"
 #include "../base/Device.h"
 #include "../assetManager/AssetManager.h"
+#include "../assetManager/ModelManager.h"
+#include "../objects/GameObject.h"
 #include <vulkan/vulkan_core.h>
+
+namespace {
+    std::vector<VkVertexInputAttributeDescription> getVertexInputAttributeDescription(const std::vector<IVertexLayout::Attribute>& attributes) {
+
+        std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
+
+        uint16_t i = 0;
+        for (auto element : attributes) {
+            attributeDescriptions.push_back({ i++, 0, element.format, element.offset });
+        }
+
+        return attributeDescriptions;
+
+    }
+
+    std::vector<VkVertexInputAttributeDescription> getInstanceInputAttributeDescriptions(uint32_t firstLocation) {
+        return {
+            { firstLocation + 0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ModelInstance, position) },
+            { firstLocation + 1, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ModelInstance, rotation) },
+            { firstLocation + 2, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ModelInstance, scale) }
+        };
+    }
+
+}
 
 
 class GlobalRenderSystemBuilder
@@ -19,45 +45,60 @@ public:
     GlobalRenderSystemBuilder& modelSubType(ModelSubType type) { config.modelSubType = type; return *this; }
     GlobalRenderSystemBuilder& fullscreen() { config.fullscreen = true; return *this; }
     GlobalRenderSystemBuilder& shadow() { config.shadow = true; return *this; }
-    GlobalRenderSystemBuilder& skybox() { config.skybox = true; config.modelSubType = ModelSubType::SKYBOX; return *this; }
+    GlobalRenderSystemBuilder& skybox() { config.skybox = true; config.instanced = false; config.modelSubType = ModelSubType::SKYBOX; return *this; }
+    GlobalRenderSystemBuilder& noInstancing() { config.instanced = false; return *this; }
+    GlobalRenderSystemBuilder& materialBuffer() { config.materialBuffer = true; return *this; }
     GlobalRenderSystemBuilder& addSetLayout(VkDescriptorSetLayout set) { config.globalLayouts.push_back(set); return *this; }
     GlobalRenderSystemBuilder& bindingDescriptions(std::vector<VkVertexInputBindingDescription> bindings) { config.bindingDescriptions = bindings; return *this; }
     GlobalRenderSystemBuilder& attributeDescriptions(std::vector<VkVertexInputAttributeDescription> attributeDescriptions) { config.attributeDescriptions = attributeDescriptions; return *this; }
     GlobalRenderSystemBuilder& descriptorBindings(std::vector<DescriptorSetObject> descriptorBindings) { config.descriptorBindings = descriptorBindings; return *this; }
     GlobalRenderSystemBuilder& pushStage(VkShaderStageFlags pushStage) { config.pushStage = pushStage; return *this; }
+    GlobalRenderSystemBuilder& poseBuffer() { config.poseBuffer = true; return *this; }
 
-    template<class T>
+    template<class Vertex>
     std::unique_ptr<RenderSystem> build()
     {
         std::vector<DescriptorSetObject> descriptorBindings;
         std::vector<VkVertexInputAttributeDescription> attributeDescription;
         std::vector<VkVertexInputBindingDescription> bindingDescription; 
 
-        ModelType modelType = static_cast<ModelType>(T::getModelType());
+
+        Vertex vertex{};
 
         // Only populate vertex binding/attribute descriptions if the pipeline needs vertex input
         if (!config.fullscreen) {
-            bindingDescription = T::Vertex::getBindingDescriptions(true);
+            bindingDescription = getBindingDescriptions<Vertex>();
+            descriptorBindings = config.materialBuffer ? getMaterialBufferDescriptorType() : getDescriptorType();
 
             if (config.shadow) {
-                descriptorBindings = T::getDescriptorType();
-                attributeDescription = T::Vertex::getAttributeDescriptionsShadow(true);
+                std::vector<IVertexLayout::Attribute> shadowAttributes;
+                for (const auto& attribute : vertex.attributes())
+                    if (attribute.name == "position" || (config.poseBuffer && (attribute.name == "joint0" || attribute.name == "weight0")))
+                        shadowAttributes.push_back(attribute);
+                attributeDescription = getVertexInputAttributeDescription(shadowAttributes);
             }
-            else {
-                descriptorBindings = T::getDescriptorType();
-                attributeDescription = T::Vertex::getAttributeDescriptions(true);
+            else
+                attributeDescription = getVertexInputAttributeDescription(vertex.attributes());
+
+            if (config.instanced) {
+                auto instanceAttributes = getInstanceInputAttributeDescriptions(static_cast<uint32_t>(attributeDescription.size()));
+                attributeDescription.insert(attributeDescription.end(), instanceAttributes.begin(), instanceAttributes.end());
+
+                bindingDescription.push_back({ 1, static_cast<uint32_t>(sizeof(ModelInstance)), VK_VERTEX_INPUT_RATE_INSTANCE });
             }
         }
         else {
             // fullscreen: still may need descriptor bindings
-            descriptorBindings = T::getDescriptorType();
+            descriptorBindings = config.materialBuffer ? getMaterialBufferDescriptorType() : getDescriptorType();
             // leave bindingDescription and attributeDescription empty
         }
+
+        if (config.poseBuffer)
+            descriptorBindings.push_back({ { { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 1 } }, 3 });
 
         if (config.attributeDescriptions.empty()) config.attributeDescriptions = attributeDescription;
         if (config.bindingDescriptions.empty())   config.bindingDescriptions = bindingDescription;
         if (config.descriptorBindings.empty())   config.descriptorBindings = descriptorBindings;
-        if (config.modelType == ModelType::UNDEFINED_MODEL) config.modelType = modelType;
 
         config.modelDescriptorSetIndex = static_cast<uint16_t>(config.globalLayouts.size());
 
@@ -88,6 +129,38 @@ private:
 
         return true;
     }
+
+    template <class Vertex>
+    std::vector<VkVertexInputBindingDescription> getBindingDescriptions()
+    {
+        Vertex vertex{};
+        std::vector<VkVertexInputBindingDescription> bindingDescription(1);
+        bindingDescription[0].binding = 0;
+        bindingDescription[0].stride = vertex.stride();
+        bindingDescription[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+        return bindingDescription;
+    }
+
+    std::vector<DescriptorSetObject> getDescriptorType()
+    {
+        std::vector<DescriptorObject> set1 = {
+             {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1}
+        };
+
+        return std::vector<DescriptorSetObject>{{set1, 2}};
+    }
+
+    std::vector<DescriptorSetObject> getMaterialBufferDescriptorType()
+    {
+        std::vector<DescriptorObject> set1 = {
+             {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, MAX_MODEL_TEXTURES},
+             {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 1}
+        };
+
+        return std::vector<DescriptorSetObject>{{set1, 2}};
+    }
+
 
     Device& device;
     AssetManager& assets;

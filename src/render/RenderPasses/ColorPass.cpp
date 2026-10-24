@@ -1,12 +1,15 @@
 #include "ColorPass.h"
 
 #include "../GlobalRenderSystemBuilder.h"
+#include "../../model/Vertex/ObjVertexData.h"
+#include "../../model/Vertex/GltfVertexData.h"
 //#include "DepthPass.h"
 
 void ColorPass::createRenderSystems()
 {
     auto globalSetLayout = DescriptorSetLayout::Builder(device)
         .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+        .addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
         .build();
 
     auto terrainSetLayout = DescriptorSetLayout::Builder(device)
@@ -24,13 +27,15 @@ void ColorPass::createRenderSystems()
 
     
     gltfRenderSystem = GlobalRenderSystemBuilder(device, assets)
-        .fragmentShader("shaders\\GlTFshader.frag.spv")
-        .vertexShader("shaders\\GlTFshader.vert.spv")
+        .fragmentShader("shaders\\simple_shader_gltf.frag.spv")
+        .vertexShader("shaders\\simple_shader_gltf.vert.spv")
         .renderPass(renderPass)
         .addSetLayout(globalSetLayout->getDescriptorSetLayout())
         .addSetLayout(shadowSetLayout->getDescriptorSetLayout())
-        .addSetLayout(skyboxSetLayout->getDescriptorSetLayout())
-        .build<GlTFModel::ModelGltf>();
+        .modelFilterType(ModelType::GLTF_MODEL)
+        .materialBuffer()
+        .poseBuffer()
+        .build<GltfVertexLayout>();
     
     objRenderSystem = GlobalRenderSystemBuilder(device, assets)
         .fragmentShader("shaders\\simple_shader.frag.spv")
@@ -38,36 +43,33 @@ void ColorPass::createRenderSystems()
         .renderPass(renderPass)
         .addSetLayout(globalSetLayout->getDescriptorSetLayout())
         .addSetLayout(shadowSetLayout->getDescriptorSetLayout())
-        .build<Model>();
+        .modelFilterType(ModelType::OBJ_MODEL)
+        .build<ObjVertexLayout>();
 
     skyboxRenderSystem = GlobalRenderSystemBuilder(device, assets)
         .fragmentShader("shaders\\skybox.frag.spv")
         .vertexShader("shaders\\skybox.vert.spv")
         .renderPass(renderPass)
         .addSetLayout(globalSetLayout->getDescriptorSetLayout())
+        .modelFilterType(ModelType::OBJ_MODEL)
         .skybox()
-        .build<Model>();
+        .build<ObjVertexLayout>();
 }
 
 void ColorPass::recordPass(ObjectManager& objectManager, FrameInfo& frameInfo, VkCommandBuffer& commandBuffer)
 {
     beginRenderPass(commandBuffer, 0, frameInfo.frameIndex);
 
-    if (objectManager.baseSkyBox)
-        gltfRenderSystem->renderGameObjects(
-            commandBuffer, 
-            frameInfo,
-            {
-                frameInfo.globalDescriptorSet[frameInfo.frameIndex],
-                frameInfo.shadowDescriptorSet[frameInfo.frameIndex],
-                assets.models().get(objectManager.baseSkyBox->modelAsset)->lods[0].materials[0].descriptorSet[frameInfo.frameIndex]
-            },
-            frameInfo.mainCameraFrustrumPlanes);
-    else
-        objectManager.baseSkyBox = dynamic_cast<GameObjectModel*>(objectManager.get("cubemap1"));
-
-
     objRenderSystem->renderGameObjects(
+        commandBuffer,
+        frameInfo,
+        {
+            frameInfo.globalDescriptorSet[frameInfo.frameIndex],
+            frameInfo.shadowDescriptorSet[frameInfo.frameIndex]
+        }
+    );
+
+    gltfRenderSystem->renderGameObjects(
         commandBuffer,
         frameInfo,
         {

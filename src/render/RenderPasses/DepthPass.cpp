@@ -2,12 +2,14 @@
 
 #include "../../base/Device.h"
 #include "../GlobalRenderSystemBuilder.h"
-
+#include "../../model/Vertex/ObjVertexData.h"
+#include "../../model/Vertex/GltfVertexData.h"
 
 void DepthPass::createRenderSystems()
 {
     auto globalSetLayout = DescriptorSetLayout::Builder(device)
         .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+        .addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
         .build();
 
     auto shadowSetLayout = DescriptorSetLayout::Builder(device)
@@ -20,25 +22,30 @@ void DepthPass::createRenderSystems()
         .renderPass(renderPass)
         .addSetLayout(globalSetLayout->getDescriptorSetLayout())
         .addSetLayout(shadowSetLayout->getDescriptorSetLayout())
+        .modelFilterType(ModelType::GLTF_MODEL)
         .shadow()
-        .build<GlTFModel::ModelGltf>();
+        .poseBuffer()
+        .build<GltfVertexLayout>();
 
     depthRenderSystem = GlobalRenderSystemBuilder(device, assets)
         .vertexShader("shaders\\shadowmap.vert.spv")
         .renderPass(renderPass)
         .addSetLayout(globalSetLayout->getDescriptorSetLayout())
         .addSetLayout(shadowSetLayout->getDescriptorSetLayout())
+        .modelFilterType(ModelType::OBJ_MODEL)
         .shadow()
-        .build<Model>();
+        .build<ObjVertexLayout>();
 
     depthTerrainRenderSystem = GlobalRenderSystemBuilder(device, assets)
         .vertexShader("shaders\\shadowMapTerrain.vert.spv")
         .renderPass(renderPass)
         .addSetLayout(globalSetLayout->getDescriptorSetLayout())
         .addSetLayout(shadowSetLayout->getDescriptorSetLayout())
+        .modelFilterType(ModelType::OBJ_MODEL)
         .shadow()
         .modelSubType(ModelSubType::TERRAIN)
-        .build<Model>();
+        .noInstancing()
+        .build<ObjVertexLayout>();
 }
 
 void DepthPass::recordPass(ObjectManager & objectManager, FrameInfo & frameInfo, VkCommandBuffer & commandBuffer)

@@ -3,8 +3,10 @@
 #include <algorithm> 
 #include <stdexcept>
 #include <iostream>
+#include <random>
 
 #include "Decoder/ObjModelDecoder.h"
+#include "Decoder/GlTFModelDecoder.h"
 #include "ModelUploader.h"
 
 namespace {
@@ -30,7 +32,7 @@ ModelBuilder& ModelBuilder::fromFile(const std::string& path)
     auto ext = getExtension(path);
     if (ext == "obj")
     {
-        if (source != SourceType::Obj && source != SourceType::None)
+        if (source != SourceType::Obj && source != SourceType::None) 
             throw std::runtime_error("all model should have the same type");
 
         source = SourceType::Obj;
@@ -75,10 +77,26 @@ ModelBuilder& ModelBuilder::fromGlTF(const std::string& path)
     return *this;
 }
 
+ModelBuilder& ModelBuilder::fromDecodedModel(DecodedModel decodedModelParam)
+{
+    if (source != SourceType::Decoded && source != SourceType::None)
+        throw std::runtime_error("all model should have the same type");
+
+    source = SourceType::Decoded;
+    decodedModel = std::move(decodedModelParam);
+    return *this;
+}
+
 ModelBuilder& ModelBuilder::withTexture(TextureManager::TextureID texture)
 {
     textures.push_back(texture);
     return *this;
+}
+
+ModelBuilder& ModelBuilder::withShadow(bool enable)
+{
+	computeShadow = enable;
+	return *this;
 }
 
 uint64_t ModelBuilder::hash() const
@@ -91,6 +109,14 @@ uint64_t ModelBuilder::hash() const
     std::hash<uint64_t> intHash;
 
     uint64_t h = 0;
+
+    if (source == SourceType::Decoded) {
+        std::random_device rd;
+        std::mt19937_64 gen(rd());
+        uint64_t rnd = gen();
+        combine(h, rnd);
+        return h;
+    }
 
     for (auto path: modelPath)
         combine(h, strHash(path));
@@ -111,7 +137,10 @@ std::unique_ptr<ModelAsset> ModelBuilder::build()
 
             case ModelBuilder::SourceType::Obj:
                 return buildObj();
-        
+
+			case ModelBuilder::SourceType::Decoded:
+				return buildDecodedModel();        
+
             case ModelBuilder::SourceType::None:
             default:
                 throw std::runtime_error("no suported file provided");
@@ -164,13 +193,41 @@ std::unique_ptr<ModelAsset> ModelBuilder::buildObj()
             model.materials.push_back(mat);
         }
 
-        
-
         fullModel->lods.push_back(std::move(model));
+		fullModel->hasShadow = computeShadow;
     }
 
     return fullModel;
 
+}
+
+std::unique_ptr<ModelAsset> ModelBuilder::buildDecodedModel()
+{
+    std::unique_ptr<ModelAsset> fullModel = std::make_unique<ModelAsset>();
+
+    ModelLOD model = ModelUploader::uploadDecodedModel(device, assets, decodedModel);
+
+    if (textures.size())
+    {
+        model.materials.clear();
+        Material mat;
+        mat.albedoTexture = textures[0];
+        model.materials.push_back(mat);
+    }
+
+    if (model.materials.empty()) {
+        Material mat;   
+        TextureBuilder builder(device);
+        mat.albedoTexture = assets.textures().create(builder.fromFile("assets/textures/whiteTexture.jpg"));
+        model.materials.push_back(mat);
+    }
+
+    fullModel->lods.push_back(std::move(model));
+    fullModel->hasShadow = computeShadow;
+    fullModel->aabb = decodedModel.aabb;
+    fullModel->skeleton = std::move(decodedModel.skeleton);
+
+    return fullModel;
 }
 
 std::unique_ptr<ModelAsset> ModelBuilder::buildGlTF()
@@ -189,18 +246,16 @@ std::unique_ptr<ModelAsset> ModelBuilder::buildGlTF()
             throw std::runtime_error("path cannot be empty for obj");
         }
 
-        //throw std::runtime_error("build type not implemented yet");
-
-        ObjModelDecoder decoder;
+        GlTFModelDecoder decoder;
         if (!decoder.canDecode(modelFilePath)) {
             throw std::runtime_error("obj not suported by decoder");
         }
 
         DecodedModel decodedModel = decoder.decode(modelFilePath);
 
-
         ModelLOD model = ModelUploader::uploadDecodedModel(device, assets, decodedModel);
 
+        // if there is more than one model, each with texture
         if (i < textures.size())
         {
             Material mat;
@@ -215,13 +270,16 @@ std::unique_ptr<ModelAsset> ModelBuilder::buildGlTF()
             model.materials.push_back(mat);
         }
 
+        ModelUploader::uploadShaderMaterials(device, model);
 
+        if (fullModel->lods.empty())
+            fullModel->skeleton = std::move(decodedModel.skeleton);
 
         fullModel->lods.push_back(std::move(model));
     }
 
     return fullModel;
-    
+
 }
 
 

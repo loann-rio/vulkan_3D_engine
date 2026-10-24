@@ -41,6 +41,9 @@
     <Filter Include="render\RenderPasses">
       <UniqueIdentifier>{ef8799bc-e935-4c91-be9b-5ef8501fbb95}</UniqueIdentifier>
     </Filter>
+    <Filter Include="model\animation">
+      <UniqueIdentifier>{6786d429-447e-4f4b-9104-6c24fc44588d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="external\basisu\transcoder\basisu_transcoder.cpp">
@@ -81,12 +84,6 @@
     </ClCompile>
     <ClCompile Include="src\objects\objectManager.cpp">
       <Filter>objects</Filter>
-    </ClCompile>
-    <ClCompile Include="src\model\GlTFModel.cpp">
-      <Filter>model</Filter>
-    </ClCompile>
-    <ClCompile Include="src\model\Model.cpp">
-      <Filter>model</Filter>
     </ClCompile>
     <ClCompile Include="src\model\preBuild.cpp">
       <Filter>model</Filter>
@@ -131,9 +128,6 @@
     </ClCompile>
     <ClCompile Include="external\nativefiledialog-master\src\nfd_win.cpp">
       <Filter>Fichiers de ressources</Filter>
-    </ClCompile>
-    <ClCompile Include="src\base\SecondarySwapchain.cpp">
-      <Filter>base</Filter>
     </ClCompile>
     <ClCompile Include="src\base\SingleRenderSwap.cpp">
       <Filter>base</Filter>
@@ -213,6 +207,15 @@
     <ClCompile Include="src\render\RenderPasses\ComputePass.cpp">
       <Filter>render\RenderPasses</Filter>
     </ClCompile>
+    <ClCompile Include="src\model\Vertex\GltfVertexData.cpp">
+      <Filter>model\Vertex</Filter>
+    </ClCompile>
+    <ClCompile Include="src\model\Decoder\GlTFModelDecoder.cpp">
+      <Filter>model\Decoder</Filter>
+    </ClCompile>
+    <ClCompile Include="src\model\Animation\Animation.cpp">
+      <Filter>model\animation</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tiny_gltf.h">
@@ -229,12 +232,6 @@
     </ClInclude>
     <ClInclude Include="src\objects\objectManager.h">
       <Filter>objects</Filter>
-    </ClInclude>
-    <ClInclude Include="src\model\GlTFModel.h">
-      <Filter>model</Filter>
-    </ClInclude>
-    <ClInclude Include="src\model\Model.h">
-      <Filter>model</Filter>
     </ClInclude>
     <ClInclude Include="src\model\preBuild.h">
       <Filter>model</Filter>
@@ -302,9 +299,6 @@
     </ClInclude>
     <ClInclude Include="external\nativefiledialog-master\src\simple_exec.h">
       <Filter>Fichiers de ressources</Filter>
-    </ClInclude>
-    <ClInclude Include="src\base\SecondarySwapchain.h">
-      <Filter>base</Filter>
     </ClInclude>
     <ClInclude Include="src\base\SingleRenderSwap.h">
       <Filter>base</Filter>
@@ -415,6 +409,18 @@
     <ClInclude Include="src\render\RenderPasses\ComputePass.h">
       <Filter>render\RenderPasses</Filter>
     </ClInclude>
+    <ClInclude Include="src\model\Decoder\GlTFModelDecoder.h">
+      <Filter>model\Decoder</Filter>
+    </ClInclude>
+    <ClInclude Include="external\stb_image_write.h">
+      <Filter>Fichiers de ressources</Filter>
+    </ClInclude>
+    <ClInclude Include="src\model\Animation\Skeleton.h">
+      <Filter>model\animation</Filter>
+    </ClInclude>
+    <ClInclude Include="src\model\Animation\Animation.h">
+      <Filter>model\animation</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\compile.bat">
@@ -441,9 +447,6 @@
     <None Include="shaders\shadowmap.vert">
       <Filter>shaders</Filter>
     </None>
-    <None Include="shaders\shadowmapgltf.vert">
-      <Filter>shaders</Filter>
-    </None>
     <None Include="shaders\simple_shader.frag">
       <Filter>shaders</Filter>
     </None>
@@ -468,12 +471,6 @@
     <None Include="shaders\terrainShader.vert">
       <Filter>shaders</Filter>
     </None>
-    <None Include="shaders\global_ubo.minc">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="shaders\simple_shader.mfrag">
-      <Filter>shaders</Filter>
-    </None>
     <None Include="shaders\fullscreen.vert">
       <Filter>shaders</Filter>
     </None>
@@ -483,9 +480,6 @@
     <None Include="shaders\testRed.frag">
       <Filter>shaders</Filter>
     </None>
-    <None Include="shaders\test.vert">
-      <Filter>shaders</Filter>
-    </None>
     <None Include="shaders\shadowMapTerrain.vert">
       <Filter>shaders</Filter>
     </None>
@@ -493,6 +487,15 @@
       <Filter>shaders</Filter>
     </None>
     <None Include="shaders\particule_update.comp">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\simple_shader_gltf.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\simple_shader_gltf.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\shadowmapgltf.vert">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>

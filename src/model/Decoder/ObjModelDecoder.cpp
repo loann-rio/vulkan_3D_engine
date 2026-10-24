@@ -10,9 +10,8 @@
 
 #include "../../base/Utils.h"
 
-//#define TINYOBJLOADER_IMPLEMENTATION
+#define TINYOBJLOADER_IMPLEMENTATION
 #include "../../external/tinyobjectloader/tiny_obj_loader.h"
-
 
 #include "../Vertex/ObjVertexData.h"
 

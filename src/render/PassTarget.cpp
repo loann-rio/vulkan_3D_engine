@@ -1,6 +1,6 @@
 #include "PassTarget.h"
 
-PassTarget::PassTarget(Device& device_, Swap_chain& swapchain_, AssetManager& assets_, VkExtent2D extent_, bool hasDepth, bool hasColor, size_t imageCount, bool isFinal) : device(device_), extent(extent_), assets(assets_), hasColor(hasColor), hasDepth(hasDepth) {
+PassTarget::PassTarget(Device& device_, Swap_chain& swapchain_, AssetManager& assets_, VkExtent2D extent_, bool hasDepth, bool hasColor, uint16_t imageCount, bool isFinal) : device(device_), extent(extent_), assets(assets_), hasColor(hasColor), hasDepth(hasDepth) {
 
     if (hasColor)
         createColorTargetTexture(imageCount, swapchain_.getSwapChainImageFormat(), (isFinal) ? swapchain_.getSwapChainImages() : std::vector<VkImage>{});
@@ -18,7 +18,7 @@ PassTarget::~PassTarget()
     }
 }
 
-void PassTarget::resizeTargets(VkExtent2D newExtent, uint32_t imageCount, VkFormat format, VkFormat depthFormat)
+void PassTarget::resizeTargets(VkExtent2D newExtent, uint16_t imageCount, VkFormat format, VkFormat depthFormat)
 {
     extent = newExtent;
     cleanupTargetTextures();
@@ -98,7 +98,7 @@ void PassTarget::createColorTargetTexture(uint32_t imageCount, VkFormat format, 
 {
     color.resize(imageCount);
 
-    for (int i = 0; i < imageCount; i++)
+    for (size_t i = 0; i < imageCount; i++)
     {
         VkImageCreateInfo imageInfo{};
         imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -181,7 +181,7 @@ void PassTarget::createDepthTargetTexture(uint32_t imageCount, VkFormat format)
 {
     depth.resize(imageCount);
 
-    for (int i = 0; i < imageCount; i++)
+    for (size_t i = 0; i < imageCount; i++)
     {
         VkImageCreateInfo imageInfo{};
         imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;

@@ -10,21 +10,25 @@ struct SpotLight {
 	mat4 lightMatrix;
 };
 
-layout(push_constant) uniform Push {
-	mat4 nodeMatrix;
-	int lightIndex;
-} push;
+struct ObjectData { mat4 model; };
+layout(std430, set = 0, binding = 1) readonly buffer Objects { ObjectData objects[]; };
 
 layout(set = 1, binding = 0) uniform SpotLightUbo {
 	SpotLight spotLight[MAX_NUM_SPOT_LIGHT];
 	int numLights;
 } spotLightUbo;
 
-layout (std430, set = 3, binding = 0) readonly buffer UBONode {
-	mat4 matrix;
-	mat4 jointMatrix[MAX_NUM_JOINTS];
-	uint jointCount;
-} node;
+layout(push_constant) uniform Push {
+        uint matrixIndex;
+        uint lightIndex;
+        uint nodeIndex;
+        uint jointOffset;
+        uint jointCount;
+} push;
+
+layout(std430, set = 3, binding = 0) readonly buffer Pose {
+        mat4 m[];
+} pose;
 
 mat4 composeModelMatrix(vec3 translation, vec3 rotation, vec3 scale) { 
     float c3 = cos(rotation.z);
@@ -52,27 +56,23 @@ layout(location = 5) in vec3 instanceScale;
 
 void main()
 {
-	mat4 model;
-	if (gl_InstanceIndex > 0) {
-		model = push.nodeMatrix * composeModelMatrix(instancePosition, instanceRotation, instanceScale);
-	} else {
-		model = push.nodeMatrix ;
-	}
-	
-	vec4 locPos;
-	if (node.jointCount > 0) {
-		mat4 skinMat = 
-			inWeight0.x * node.jointMatrix[inJoint0.x] +
-			inWeight0.y * node.jointMatrix[inJoint0.y] +
-			inWeight0.z * node.jointMatrix[inJoint0.z] +
-			inWeight0.w * node.jointMatrix[inJoint0.w];
+	 mat4 model;
+    if (gl_InstanceIndex > 0) {
+            model = objects[push.matrixIndex].model * composeModelMatrix(instancePosition, instanceRotation, instanceScale);
+    } else {
+            model = objects[push.matrixIndex].model;
+    }
 
-		locPos = model * node.matrix * skinMat * vec4(inPos, 1.0); 
-	} else {
-		locPos = model * node.matrix * vec4(inPos, 1.0); 
-	}
-			
-	vec3 worldPos = locPos.xyz / locPos.w;
+    mat4 local;
+    if (push.jointCount > 0) {
+            local = inWeight0.x * pose.m[push.jointOffset + inJoint0.x]
+                    + inWeight0.y * pose.m[push.jointOffset + inJoint0.y]
+                    + inWeight0.z * pose.m[push.jointOffset + inJoint0.z]
+                    + inWeight0.w * pose.m[push.jointOffset + inJoint0.w];
+    } else {
+            local = pose.m[push.nodeIndex];
+    }
 
-	gl_Position = spotLightUbo.spotLight[push.lightIndex].lightMatrix * vec4(worldPos, 1.0);  
+    vec4 worldPos = model * local * vec4(inPos, 1.0);
+    gl_Position = spotLightUbo.spotLight[push.lightIndex].lightMatrix * worldPos;
 }  
