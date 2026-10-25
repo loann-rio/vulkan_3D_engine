@@ -1,29 +1,40 @@
 #pragma once
 
-#include <iostream>
-
 #include <vector>
 #include <future>
 #include <typeindex>
 
 #include "GameObject.h"
-#include "../render/Renderer.h"
-#include "../render/GlobalRenderSystem.h" 
+
+#include "../assetManager/AssetManager.h"
+
+#include "../model/ModelAsset.h"
 
 #include <../json.hpp>
+#include "../assetManager/ModelManager.h"
 using json = nlohmann::json;
 
+class GameObject;
 
 /// <summary>
 /// Represents a future game object with associated model information and instances.
 /// </summary>
 struct futureObject {
-    ModelVariant model;
     ModelType type;
     GameObject::id_t id; 
-    std::vector<Model::Instance> instances{};
+    std::vector<ModelInstance> instances{};
     bool saveable = true;
+    ModelManager::ModelID modelID;
 }; 
+
+struct ComputeObject {
+    bool enable{ false };
+    uint32_t groupX{ 1 };
+    uint32_t groupY{ 1 };
+    uint32_t groupZ{ 1 };
+    size_t instanceCount{ 0 };
+    GameObject* gameObject;
+};
 
 class ObjectManager
 {
@@ -32,7 +43,7 @@ public:
     ObjectManager(const ObjectManager&) = delete;
     ObjectManager& operator=(const ObjectManager&) = delete;
 
-    ObjectManager(Device& device);
+    ObjectManager(Device& device, AssetManager& assetManager);
 
     ~ObjectManager() { saveFullScene(); globalPool = nullptr; }
 	
@@ -55,8 +66,8 @@ public:
 
     std::shared_ptr<GameObject::Map> getGameObjects() const { return gameObjects; } 
 
-    void loadObjectAsync(Device& device, const std::string& filePath, TransformComponent transform, const std::string& name = "");
-    void loadObjectAsync(Device& device, const std::string& filePath, const std::string filePathTexture, TransformComponent transform, const std::string& name = "");
+    void loadObjectAsync(Device& device, AssetManager& assets, const std::string& filePath, TransformComponent transform, const std::string& name = "");
+    void loadObjectAsync(Device& device, AssetManager& assets, const std::string& filePath, const std::string filePathTexture, TransformComponent transform, const std::string& name = "");
 
     void pushFuture(std::future<std::vector<futureObject>> futures);
 
@@ -72,16 +83,22 @@ public:
 
     DescriptorPool* getPool() const { return globalPool.get(); }
 
-    void generateSkybox(const std::string pathTexture, const std::string goName, Renderer* renderer, std::shared_ptr<GlobalRenderSystem> skyboxRenedrSystem);
-
     // camera
     std::string mainCamera = "mainCamera"; 
 
     // main skybox
     std::string mainSkybox = "cubemap";
 
+    AssetManager& assetManager;
+
+    void createDescriptorSet(ModelAsset* model);
+    void updateGameObject(float frameTime);
+
+    std::vector<ComputeObject> computeList{};
+    GameObjectModel* baseSkyBox = nullptr;
 private:
     Device& device;
+    
 
     std::vector<std::future<futureObject>> futureGameObjects;
     std::vector<std::future<std::vector<futureObject>>> futureGameObjectslist;
@@ -93,7 +110,7 @@ private:
 
     void addObjectToScene(GameObject* gameObject);
 
-    std::unique_ptr<DescriptorPool> globalPool{};
+    std::unique_ptr<DescriptorPool> globalPool{};    
 };
 
 

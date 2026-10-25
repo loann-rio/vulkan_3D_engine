@@ -2,11 +2,17 @@
 
 #include "../render/Camera.h"
 #include "../objects/GameObject.h"
+#include "../objects/objectManager.h"
 
 #include <vulkan/vulkan.h>
 
-#define MAX_LIGHT 10
-#define MAX_SPOTLIGHT 4
+constexpr uint32_t MAX_LIGHT = 10;
+constexpr uint32_t MAX_SPOTLIGHT = 4;
+constexpr uint32_t MAX_GPU_OBJECTS = 4096;
+
+struct alignas(16) GpuObjectData {
+	glm::mat4 model{ 1.f };
+};
 
 struct PointLight {
 	glm::vec4 position{};
@@ -40,9 +46,18 @@ struct TerrainUbo {
 
 struct FrameInfo {
 	int frameIndex;
+	int imageIndex;
 	float frameTime;
 	int spotLightCount;
 	glm::vec3 cameraPos;
 	std::vector<GameObjectModel*> listGameObjects; 
+	std::vector<ComputeObject*> computesObjects;
 	std::vector<std::array<FrustumPlane, 6>> listFrustrumPlanes;
+	std::array<FrustumPlane, 6> mainCameraFrustrumPlanes;
+	float gpuFrameRate;
+
+	std::vector<VkDescriptorSet> globalDescriptorSet;
+	std::vector<VkDescriptorSet> shadowDescriptorSet;
+	std::vector<VkDescriptorSet> terrainDescriptorSet;
+	std::vector<VkDescriptorSet> postProDescriptorSet;
 };

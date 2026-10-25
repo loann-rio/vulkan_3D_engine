@@ -8,7 +8,7 @@ class TextureObject;
 struct DecodedImage;
 struct DecodedCubemap;
 
-class TextureLoader {
+class TextureAssetLoader {
 public:
 
     /// <summary>

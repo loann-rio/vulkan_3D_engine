@@ -21,7 +21,7 @@
 
 std::vector<GameObject::id_t> finiteSizedTerrainGeneration::createChunk(Device& device, ObjectManager* objManager, int chunkX, int chunkY, float chunkWorldSizeUnit)
 {
-	auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device);
+	/*auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, objManager->assetManager);
 	gameObject->transform.translation = { chunkX * chunkWorldSizeUnit, 0, chunkY * chunkWorldSizeUnit };
 	gameObject->setModelSubType(ModelSubType::TERRAIN);
 	gameObject->saveable = false;
@@ -29,8 +29,10 @@ std::vector<GameObject::id_t> finiteSizedTerrainGeneration::createChunk(Device& 
 	GameObject::id_t id_terrain = gameObject->getId();
 	objManager->pushGameObject(std::move(gameObject));
 
+	AssetManager& assets = objManager->assetManager;
+
 	// create terrain and place trees
-	objManager->pushFuture(std::async(std::launch::async, [this, &device, id_terrain, chunkX, chunkY, chunkWorldSizeUnit]() {
+	objManager->pushFuture(std::async(std::launch::async, [this, &device, &assets, id_terrain, chunkX, chunkY, chunkWorldSizeUnit]() {
 
 		// voronoi map
 		std::vector<std::vector<glm::vec2>> noiseMap(chunkSize, std::vector<glm::vec2>(chunkSize));
@@ -55,7 +57,7 @@ std::vector<GameObject::id_t> finiteSizedTerrainGeneration::createChunk(Device& 
 		}
 	
 		// create plane object
-		std::shared_ptr<Model> plane = PrebuiltModel::createTerrain(device, chunkWorldSizeUnit, chunkWorldSizeUnit, heightMap, 1.f);
+		std::shared_ptr<Model> plane = PrebuiltModel::createTerrain(device, assets, chunkWorldSizeUnit, chunkWorldSizeUnit, heightMap, 1.f);
 
 		std::vector<std::vector<std::vector<float>>> heightMapTexture = std::vector<std::vector<std::vector<float>>>(chunkSize, std::vector<std::vector<float>>(chunkSize, std::vector<float>(2)));
 		for (int x = 0; x < this->chunkSize; x++)
@@ -66,19 +68,20 @@ std::vector<GameObject::id_t> finiteSizedTerrainGeneration::createChunk(Device& 
 		}
 
 		TextureBuilder builder(device);
-		plane->setTexture(std::move(builder.fromVector(heightMapTexture).build()));
+		plane->setTexture(assets.textures().create((builder.fromVector(heightMapTexture))));
 
 
 		return std::vector<futureObject>{futureObject{ plane, plane ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id_terrain, {}, false }};
 		}));
 
 
-	return { id_terrain };
+	return { id_terrain };*/
+	return std::vector<GameObject::id_t>{};
 }
 
 std::vector<std::vector<glm::vec2>> finiteSizedTerrainGeneration::generateChunckHeight(float Xoffset, float Yoffset, uint16_t sizeX, uint16_t sizeY)
 {
-	std::mt19937 prng(seed);
+	/*std::mt19937 prng(seed);
 
 	std::vector<glm::vec2> octavesOffsets(maxOctaves);
 	for (int i = 0; i < maxOctaves; i++) {
@@ -131,14 +134,14 @@ std::vector<std::vector<glm::vec2>> finiteSizedTerrainGeneration::generateChunck
 		}
 	}
 
-	return noiseMap;
+	return noiseMap;*/
 
-	//return std::vector<std::vector<glm::vec2>>{};
+	return std::vector<std::vector<glm::vec2>>{};
 }
 
 float finiteSizedTerrainGeneration::weightedRegionValue(const std::vector<glm::vec2>& lookupVoronoi, float RegionVariables::* member)
 {
-	float r = 0;
+	/*float r = 0;
 	float sum = 0;
 
 	for (glm::vec2 val : lookupVoronoi) {
@@ -147,5 +150,6 @@ float finiteSizedTerrainGeneration::weightedRegionValue(const std::vector<glm::v
 		sum += val.x;
 	}
 
-	return r / sum;
+	return r / sum;*/
+	return 0.0;
 }

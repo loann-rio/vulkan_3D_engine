@@ -122,7 +122,7 @@ public:
 					float sampleX = ((float)x - halfWidth + (float)octavesOffsets[i].x) / scale * frequency;
 					float sampleY = ((float)y - halfHeight + (float)octavesOffsets[i].y) / scale * frequency;
 
-					float perlinValue = noise(sampleX, sampleY) * 2 - 1;
+					float perlinValue = (float) noise(sampleX, sampleY) * 2 - 1;
 
 					noiseHeight += perlinValue * amplitude; // range[-1, 1]
 					amplitude *= persistance;  // persistance : [0, 1]
@@ -175,8 +175,8 @@ public:
 		float minHeight = FLT_MAX;
 
 
-		float halfWidth = width / 2;
-		float halfHeight = height / 2;
+		float halfWidth = (float) width / 2;
+		float halfHeight = (float) height / 2;
 
 		std::vector<std::vector<float>> noiseMap(width, std::vector<float>(height));
 
@@ -195,7 +195,7 @@ public:
 					float sampleY = ((float)y + Yoffset - halfHeight + (float)octavesOffsets[i].y) / scale * frequency;
 
 				
-					float perlinValue = (noise(sampleX, sampleY) * 2 - 1);
+					float perlinValue = (float) (noise(sampleX, sampleY) * 2 - 1);
 				
 					noiseHeight += (perlinValue + .5f) * amplitude;
 					amplitude *= persistance;  // persistance : [0, 1]

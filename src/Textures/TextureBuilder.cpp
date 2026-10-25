@@ -8,6 +8,7 @@
 #include "TextureObject.h"
 
 #include <stdexcept>
+#include <iostream>
 
 TextureBuilder::TextureBuilder(Device& device)
     : device(device)
@@ -181,16 +182,24 @@ TextureBuilder& TextureBuilder::withWrap(VkSamplerAddressMode mode)
 /// </summary>
 std::unique_ptr<TextureObject> TextureBuilder::build()
 {
-    switch (source) {
-    case SourceType::RawBuffer: return buildFromCharBuffer();
-    case SourceType::FloatArray: return buildFromArray();
-    case SourceType::Stb:
-    case SourceType::Hdr:
-    case SourceType::Ktx1:
-    case SourceType::Ktx2:
-        return forceCubemap ? buildCubemap() : build2D();
-	default: throw std::runtime_error("TextureBuilder: No valid source set");
+    try {
+        switch (source) {
+        case SourceType::RawBuffer: return buildFromCharBuffer();
+        case SourceType::FloatArray: return buildFromArray();
+        case SourceType::Custom: return std::move(existingTexture);
+        case SourceType::Stb:
+        case SourceType::Hdr:
+        case SourceType::Ktx1: 
+        case SourceType::Ktx2:
+            return forceCubemap ? buildCubemap() : build2D();
+        default: throw std::runtime_error("TextureBuilder: No valid source set");
+        }
     }
+    catch (const std::exception& e) 
+    {
+        std::cerr << std::string("TextureBuilder: build failed: ") + e.what() << "\n";
+        return nullptr;
+	}   
 }
 
 /// <summary>
@@ -201,7 +210,7 @@ std::unique_ptr<TextureObject> TextureBuilder::build2D()
     if (path.empty())
         throw std::runtime_error("TextureBuilder: No input path set");
 
-	auto texture = TextureLoader::load(device, path, useMipmaps);
+	auto texture = TextureAssetLoader::load(device, path, useMipmaps);
 
     // Update sampler parameters
     texture->updateSampler(minFilter, magFilter, wrapMode);
@@ -217,7 +226,7 @@ std::unique_ptr<TextureObject> TextureBuilder::buildCubemap()
     if (path.empty())
         throw std::runtime_error("TextureBuilder: No input path set");
     
-    auto texture = TextureLoader::loadCubemap(device, path);
+    auto texture = TextureAssetLoader::loadCubemap(device, path);
 
     // Update sampler parameters
     texture->updateSampler(minFilter, magFilter, wrapMode);
@@ -269,28 +278,103 @@ std::unique_ptr<TextureObject> TextureBuilder::buildFromCharBuffer()
     return TextureUploader::upload2D(device, img, useMipmaps, useSRGB);
 }
 
-std::unique_ptr<TextureObject> TextureBuilder::fromTextureInfo(VkImageCreateInfo imageInfo, VkImageViewCreateInfo viewInfo, VkSamplerCreateInfo samplerInfo, VkImageLayout initImageLayout, uint32_t layerCount)
+TextureBuilder& TextureBuilder::fromTextureInfo(VkImageCreateInfo imageInfo, VkImageViewCreateInfo viewInfo, VkSamplerCreateInfo samplerInfo, VkImageLayout initImageLayout, uint32_t layerCount)
 {
-	std::unique_ptr<TextureObject> texture = std::make_unique<TextureObject>(device);
-    texture->textureExtent = { imageInfo.extent.width, imageInfo.extent.height };
+    source = SourceType::Custom;
+
+    existingTexture = std::make_unique<TextureObject>(device);
+    existingTexture->textureExtent = { imageInfo.extent.width, imageInfo.extent.height };
 
     // create image
-    device.createImageWithInfo(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture->textureImage, texture->textureImageMemory);
+    device.createImageWithInfo(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, existingTexture->textureImage, existingTexture->textureImageMemory);
     // create image view
-    viewInfo.image = texture->textureImage;
-    if (vkCreateImageView(device.device(), &viewInfo, nullptr, &texture->textureImageView) != VK_SUCCESS) {
+    viewInfo.image = existingTexture->textureImage;
+    if (vkCreateImageView(device.device(), &viewInfo, nullptr, &existingTexture->textureImageView) != VK_SUCCESS) {
         throw std::runtime_error("failed to create texture image view!");
     }
 
     // create sampler
-    if (vkCreateSampler(device.device(), &samplerInfo, nullptr, &texture->textureSampler) != VK_SUCCESS) {
+    if (vkCreateSampler(device.device(), &samplerInfo, nullptr, &existingTexture->textureSampler) != VK_SUCCESS) {
         throw std::runtime_error("failed to create texture sampler!");
     }
 
     if (initImageLayout != VK_IMAGE_LAYOUT_UNDEFINED)
-        device.transitionImageLayout(texture->textureImage, imageInfo.format,
+        device.transitionImageLayout(existingTexture->textureImage, imageInfo.format,
             VK_IMAGE_LAYOUT_UNDEFINED, initImageLayout, layerCount);
 
-	texture->isLoaded = true;
-    return texture;
+    existingTexture->isLoaded = true;
+    existingTexture->ownsImage = true;
+    return *this;
+}
+
+TextureBuilder& TextureBuilder::fromTextureInfo(VkImage image, VkExtent3D extent, VkImageViewCreateInfo viewInfo, VkSamplerCreateInfo samplerInfo, VkImageLayout initImageLayout, uint32_t layerCount, VkFormat format)
+{
+    source = SourceType::Custom;
+
+    existingTexture = std::make_unique<TextureObject>(device);
+    existingTexture->textureExtent = { extent.width, extent.height };
+    existingTexture->textureImage = image;
+
+    // create image view
+    viewInfo.image = existingTexture->textureImage;
+    if (vkCreateImageView(device.device(), &viewInfo, nullptr, &existingTexture->textureImageView) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create texture image view!");
+    }
+
+    // create sampler
+    if (vkCreateSampler(device.device(), &samplerInfo, nullptr, &existingTexture->textureSampler) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create texture sampler!");
+    }
+
+    if (initImageLayout != VK_IMAGE_LAYOUT_UNDEFINED)
+        device.transitionImageLayout(existingTexture->textureImage, format,
+            VK_IMAGE_LAYOUT_UNDEFINED, initImageLayout, layerCount);
+
+    existingTexture->isLoaded = true;
+    return *this;
+}
+
+uint64_t TextureBuilder::hash() const
+{
+    if (source == SourceType::Custom || source == SourceType::RawBuffer || source == SourceType::FloatArray)
+    {
+		// Generate a unique id for custom textures
+        static std::atomic<uint64_t> customCounter = 1;
+        return 0xFFFFFFFF00000000ull | customCounter++;
+    }
+
+    auto combine = [](uint64_t& seed, uint64_t v) {
+        seed ^= v + 0x9e3779b97f4a7c15ULL + (seed << 6) + (seed >> 2);
+        };
+
+    // simple hash combining path and options
+    std::hash<std::string>      strHash;
+    std::hash<bool>             boolHash;
+    std::hash<uint32_t>         u32Hash;
+    std::hash<unsigned char>    u8Hash;
+    std::hash<float>            fHash;
+    std::hash<int>              intHash;
+
+    uint64_t h = 0;
+
+    combine(h, intHash(static_cast<int>(source)));
+
+    combine(h, boolHash(useSRGB));
+    combine(h, boolHash(useMipmaps));
+    combine(h, intHash(minFilter));
+    combine(h, intHash(magFilter));
+    combine(h, intHash(wrapMode));
+    combine(h, boolHash(forceCubemap));
+
+    if (source == SourceType::Stb ||
+        source == SourceType::Hdr ||
+        source == SourceType::Ktx1 ||
+        source == SourceType::Ktx2)
+    {
+        combine(h, strHash(path));
+        return h;
+    }
+
+    return h;
+
 }

@@ -1,8 +1,10 @@
 #include "TextureObject.h"
+
 #include "../base/Device.h"
 
 #include <stdexcept>
 #include <cassert>
+#include <cstdint>
 
 //// Public API ////
 
@@ -27,7 +29,8 @@ TextureObject::TextureObject(Device& device, const TextureInitInfo& info)
     mipLevel(info.mipLevels),
     createdArrayLayers(info.arrayLayers),
     createdImageFlags(info.flags),
-    isLoaded(true) {
+    isLoaded(true),
+    ownsImage(true){
 }
 
 
@@ -49,7 +52,7 @@ void TextureObject::destroyResources() {
         textureImageView = VK_NULL_HANDLE;
     }
 
-    if (textureImage) {
+    if (textureImage && ownsImage) {
         vkDestroyImage(logicalDevice, textureImage, nullptr);
         textureImage = VK_NULL_HANDLE;
     }

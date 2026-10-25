@@ -1,4 +1,5 @@
 #include "GameObject.h"
+#include <glm/gtc/type_ptr.hpp>
 
  
 GameObject::id_t GameObjectFactory::nextId = 0;
@@ -77,22 +78,16 @@ glm::mat3 GameObject::getNormalMat()
     return transform.normalMatrix();
 }
 
-void GameObjectModel::setModel(std::shared_ptr<Model> newModel)
+
+void GameObjectModel::setModel(ModelManager::ModelID _model)
 {
-    model = std::move(newModel);
-    modelType = ModelType::OBJ_MODEL;
+    lodModelAssets.push_back(_model);
     hasModel = true;
 }
 
-void GameObjectModel::setModel(std::shared_ptr<GlTFModel::ModelGltf> newModel) {
-    model = std::move(newModel);
-    modelType = ModelType::GLTF_MODEL;
-    hasModel = true;
-}
-
-void GameObjectModel::setModel(ModelVariant newModel)
+void GameObjectModel::setModel(std::vector<ModelManager::ModelID> lod_models)
 {
-    model = std::move(newModel);
+    lodModelAssets = lod_models;
     hasModel = true;
 }
 
@@ -115,28 +110,15 @@ std::string GameObject::getName() const
     return name;
 }
 
-VkDescriptorImageInfo GameObjectModel::getTextureImageInfo() const
-{
-    if (!hasModel) return VkDescriptorImageInfo{};
 
-    return std::visit([](const auto& modelInstance) -> VkDescriptorImageInfo {
-        if (modelInstance) {
-            return modelInstance->getTextureImageInfo();
-        }
-        return VkDescriptorImageInfo{};
-    }, model);
-}
-
-void GameObjectModel::setMultipleInstances(std::vector<Model::Instance> instances)
+void GameObjectModel::setMultipleInstances(std::vector<ModelInstance> instances)
 {
     
-    VkDeviceSize bufferSize = sizeof(Model::Instance) * instances.size();
-
-    uint32_t instanceSize = sizeof(Model::Instance);
-
+    VkDeviceSize bufferSize = sizeof(ModelInstance) * instances.size();
     instanceCount = static_cast<uint32_t>(instances.size());
-
     if (instanceCount == 0) return;
+
+    uint32_t instanceSize = sizeof(ModelInstance);
 
     Buffer stagingBuffer{ 
         device, 
@@ -147,94 +129,77 @@ void GameObjectModel::setMultipleInstances(std::vector<Model::Instance> instance
     };
 
     stagingBuffer.map(); 
-    stagingBuffer.writeToBuffer((void*)instances.data()); 
+    stagingBuffer.writeToBuffer(instances.data()); 
 
     instancesBuffer = std::make_unique<Buffer>(  
         device, 
         instanceSize, 
         instanceCount,
-        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT 
     );
 
     device.copyBuffer(stagingBuffer.getBuffer(), instancesBuffer->getBuffer(), bufferSize); 
 
-}
+    frameInstancesBuffer.clear();
+    frameInstancesBuffer.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
 
+    for (size_t i = 0; i < frameInstancesBuffer.size(); ++i) {
+        frameInstancesBuffer[i] = std::make_unique<Buffer>(
+            device,
+            instanceSize,
+            instanceCount,
+            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+        );
 
-void GameObjectModel::createDescriptorSet(DescriptorPool& pool) const
-{
-    if (!hasModel) return;
-
-    std::visit([&pool, &device = this->device](const auto& modelInstance) {
-        if (modelInstance) {
-            modelInstance->createDescriptorSet(pool, device);
-        }
-        }, model);
-}
-
-std::vector<VkDescriptorSet> GameObjectModel::getDescriptorSets() const
-{
-    return std::visit([](const auto& modelInstance) -> std::vector<VkDescriptorSet> {
-        if (modelInstance) {
-            return modelInstance->getDescriptorSets(); 
-        }
-        return {};
-        }, model);
-}
-
-void GameObjectModel::update(float dtime)
-{
-    if (animate) {
-        animationTimer += dtime;
-
-        std::visit([&](const auto& modelInstance) {
-            if (modelInstance) {
-                if (!modelInstance->updateAnimation(animationIndex, animationTimer)) {
-                    animationTimer = 0.f;
-                    animate = false;
-                }
-            }
-            }, model);
+        device.copyBuffer(instancesBuffer->getBuffer(), frameInstancesBuffer[i]->getBuffer(), bufferSize);
     }
 }
 
-void GameObjectModel::bindModel(VkCommandBuffer& commandBuffer, bool bindTexture, VkPipelineLayout& pipelineLayout, uint16_t frameIndex, uint16_t modelDescriptorSetIndex) const
+void GameObjectModel::createInstanceComputeDescriptorSets(DescriptorPool& pool)
 {
-    std::visit([&](const auto& modelInstance) {  
-        if (modelInstance) {
-            modelInstance->bind(commandBuffer, bindTexture, pipelineLayout, frameIndex, modelDescriptorSetIndex, instancesBuffer.get());
+    instanceComputeDescriptorSets.clear();
+
+    // nothing to do if no instances or no buffers
+    if (!instancesBuffer || frameInstancesBuffer.empty()) return;
+
+    instanceComputeDescriptorSets.resize(frameInstancesBuffer.size(), VK_NULL_HANDLE);
+
+    for (size_t i = 0; i < frameInstancesBuffer.size(); ++i) {
+        VkDescriptorSet set = VK_NULL_HANDLE;
+        Buffer* dstBuffer = frameInstancesBuffer[i].get();
+        if (!dstBuffer) continue;
+
+        auto setLayout = DescriptorSetLayout::Builder(device)
+            .addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+            .addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+            .build();
+
+        VkDescriptorSet computeSet = VK_NULL_HANDLE;
+        if (!pool.allocateDescriptor(setLayout->getDescriptorSetLayout(), computeSet)) {
+            std::cout << "ComputePass::createDescriptorSet: Failed to allocate descriptor set\n";
+			throw std::runtime_error("failed to allocate descriptor set!");
         }
-        }, model);
+
+        auto srcInfo = instancesBuffer.get()->descriptorInfo();
+        auto dstInfo = dstBuffer->descriptorInfo();
+
+        DescriptorWriter(*setLayout, pool)
+            .writeBuffer(0, &srcInfo)
+            .writeBuffer(1, &dstInfo)
+            .build(computeSet);
+
+
+        instanceComputeDescriptorSets[i] = computeSet;
+     
+    }
 }
 
-void GameObjectModel::drawModel(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, uint16_t frame_index, const std::array<FrustumPlane, 6>& frustrumPlanes)
-{ 
-    std::visit([&](const auto& modelInstance) {
-        if (modelInstance) {
-            modelInstance->draw(commandBuffer, pipelineLayout, frame_index, getTransformMat(), getNormalMat(), frustrumPlanes, instanceCount);
-        }
-        }, model);
-}
-
-void GameObjectModel::drawModelDepth(VkCommandBuffer& commandBuffer, VkPipelineLayout& pipelineLayout, int cameraIndex, uint16_t frame_index, const std::array<FrustumPlane, 6>& planes)
+VkDescriptorSet GameObjectModel::getInstanceComputeDescriptorSet(uint16_t frameIndex) const
 {
-    std::visit([&](const auto& modelInstance) { 
-        if (modelInstance) {  
-            modelInstance->drawDepth(commandBuffer, pipelineLayout, frame_index, getTransformMat(), cameraIndex, planes, instanceCount);
-        }
-        }, model); 
-}
-
-BoundingBox GameObjectModel::getAABB() const
-{
-    BoundingBox aabb;
-    std::visit([&](const auto& modelInstance) {
-        if (modelInstance) {
-            aabb = modelInstance->getAABB();
-        }
-        }, model);
-    return aabb;
+    if (frameIndex >= instanceComputeDescriptorSets.size()) return VK_NULL_HANDLE;
+    return instanceComputeDescriptorSets[frameIndex];
 }
 
 void GameObjectSpotLight::updateCameraView() { camera->setViewYXZ(transform.translation, transform.rotation); }
@@ -303,12 +268,62 @@ void GameObjectModel::debugUI()
     ImGui::Text("animation:");
     ImGui::InputInt("index", &animationIndex);
 
-    if (ImGui::Button("start"))
-    {
-        animate = true;
-    }
+
+    if (ImGui::Button("start")) animator.play(static_cast<uint32_t>(std::max(0, animationIndex)), false);
+    ImGui::SameLine();
+    if (ImGui::Button("stop")) animator.stop();
 
 	ImGui::Checkbox("show", &show);
+}
+
+void GameObjectModel::createPoseResources(DescriptorPool& pool)
+{
+    if (lodModelAssets.empty()) return;
+    const ModelAsset* asset = assets.models().get(lodModelAssets[0]);
+    if (!asset || asset->skeleton.empty()) return;
+
+    animator.init(asset->skeleton);
+
+    auto setLayout = DescriptorSetLayout::Builder(device)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+        .build();
+
+    framePoseBuffers.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
+    poseDescriptorSets.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
+
+    for (int i = 0; i < Swap_chain::MAX_FRAMES_IN_FLIGHT; ++i) {
+        framePoseBuffers[i] = std::make_unique<Buffer>(
+            device,
+            sizeof(glm::mat4),
+            asset->skeleton.matrixCount,
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+        );
+        framePoseBuffers[i]->map();
+
+        auto info = framePoseBuffers[i]->descriptorInfo();
+        DescriptorWriter(*setLayout, pool)
+            .writeBuffer(0, &info)
+            .build(poseDescriptorSets[i]);
+
+        uploadPose(static_cast<uint16_t>(i));
+    }
+}
+
+void GameObjectModel::uploadPose(uint16_t frameIndex)
+{
+    if (frameIndex >= framePoseBuffers.size()) return;
+    const auto& matrices = animator.matrices();
+    if (matrices.empty()) return;
+
+    framePoseBuffers[frameIndex]->writeToBuffer((void*)matrices.data(), matrices.size() * sizeof(glm::mat4));
+}
+
+void GameObjectModel::update(float dtime)
+{
+    if (lodModelAssets.empty()) return;
+    const ModelAsset* asset = assets.models().get(lodModelAssets[0]);
+    if (asset) animator.update(dtime, asset->skeleton);
 }
 
 void GameObjectPointLight::debugUI()

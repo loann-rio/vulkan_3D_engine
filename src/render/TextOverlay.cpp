@@ -11,7 +11,7 @@
 #include <cassert>
 
 
-TextOverlay::TextOverlay(Device& device, VkRenderPass renderPass) : device{ device }
+TextOverlay::TextOverlay(Device& device, AssetManager& assets, VkRenderPass renderPass) : device{ device }, assets{ assets }
 {
 	createPipelineLayout({ (*DescriptorSetLayout::Builder(device)
 		.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
@@ -95,12 +95,12 @@ void TextOverlay::renderText(VkCommandBuffer& commandBuffer, FrameInfo& frameInf
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
 		pipelineLayout,
 		0, 1,
-		&descriptorSet[frameInfo.frameIndex], 
+		&descriptorSet[frameInfo.frameIndex],
 		0,
 		nullptr
 	);
 
-	VkBuffer buffers[] = { vertexBuffer[frameInfo.frameIndex]->getBuffer()}; 
+	VkBuffer buffers[] = { vertexBuffer[frameInfo.frameIndex]->getBuffer()};
 	VkDeviceSize offsets[] = { 0 };
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
 
@@ -151,7 +151,7 @@ void TextOverlay::prepareResources(DescriptorPool& pool)
 	std::vector<unsigned char> pixels = std::vector<unsigned char>(rgbaPixels, rgbaPixels + (fontWidth * fontHeight * 4));
 		
 	TextureBuilder builder(device);
-	texture = builder.fromCharBuffer(pixels, fontWidth, fontHeight, 4, 1).build();
+	texture = assets.textures().create(builder.fromCharBuffer(pixels, fontWidth, fontHeight, 4, 1));
 
 	delete[] rgbaPixels;
 
@@ -163,7 +163,7 @@ void TextOverlay::prepareResources(DescriptorPool& pool)
 
 	for (int i = 0; i < descriptorSet.size(); i++)
 	{
-		auto imageInfo = texture->getImageInfo();
+		auto imageInfo = assets.textures().get(texture)->getImageInfo();
 		DescriptorWriter(*textureSetLayout, pool)
 			.writeImage(0, &imageInfo)
 			.build(descriptorSet[i]);

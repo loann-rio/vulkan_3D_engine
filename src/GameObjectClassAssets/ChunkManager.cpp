@@ -4,8 +4,8 @@ void ChunkManager::loop(Device& device, ObjectManager* objManager, GameObject* o
 {
 
 	// determine current chunk position
-	int posX = object->transform.translation.x / chunkWorldSize;
-	int posY = object->transform.translation.z / chunkWorldSize;
+	int posX = (int) object->transform.translation.x / chunkWorldSize;
+	int posY = (int) object->transform.translation.z / chunkWorldSize;
 
 	// load visible chunks
 	for (int i = posX - int(visibleChunk / 2); i <= posX + int(visibleChunk / 2); i++)
