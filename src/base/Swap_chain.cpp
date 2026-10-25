@@ -85,23 +85,25 @@ void Swap_chain::createFramebuffers(AssetManager& assets, PassTarget* textureTar
     }
 }
 
-VkResult Swap_chain::acquireNextImage(uint32_t* imageIndex) {
+void Swap_chain::waitForFrame()
+{
     vkWaitForFences(
         device.device(),
         1,
-        &inFlightFences[(currentFrame + 1)%MAX_FRAMES_IN_FLIGHT],
+        &inFlightFences[currentFrame],
         VK_TRUE,
         std::numeric_limits<uint64_t>::max());
+}
 
-    VkResult result = vkAcquireNextImageKHR(
+VkResult Swap_chain::acquireNextImage(uint32_t* imageIndex) {
+
+    return vkAcquireNextImageKHR(
         device.device(),
         swapChain,
         std::numeric_limits<uint64_t>::max(),
         imageAvailableSemaphores[currentFrame],  // must be a not signaled semaphore
         VK_NULL_HANDLE,
         imageIndex);                             // modified by vulkan
-
-    return result;
 }
 
 VkResult Swap_chain::submitCommandBuffers(

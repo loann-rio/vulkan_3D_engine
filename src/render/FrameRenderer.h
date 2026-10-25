@@ -12,10 +12,6 @@ class FrameRenderer
 {
 public:
 
-    static constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
-
-public:
-
     FrameRenderer(
         Device& device,
         Swap_chain* swapchain

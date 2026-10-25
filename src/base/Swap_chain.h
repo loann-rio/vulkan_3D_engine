@@ -15,7 +15,7 @@ class PassTarget;
 
 class Swap_chain {
 public:
-    static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
+    static constexpr int MAX_FRAMES_IN_FLIGHT = 3;
 
     Swap_chain(Device& deviceRef, AssetManager& assets, VkExtent2D windowExtent);
     Swap_chain(Device& deviceRef, AssetManager& assets, VkExtent2D windowExtent, std::shared_ptr<Swap_chain> previous);
@@ -43,6 +43,7 @@ public:
         return static_cast<float>(swapChainExtent.width) / static_cast<float>(swapChainExtent.height);
     }
 
+    void waitForFrame();
     VkResult acquireNextImage(uint32_t* imageIndex);
     VkResult submitCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex);
 

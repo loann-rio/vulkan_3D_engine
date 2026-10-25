@@ -16,12 +16,10 @@ public:
     void update(float frameTime) {
         if (frameTime <= 0.0f) return; // avoid division by zero
 
-        float fps = 1.0f / frameTime;
-
         // subtract the oldest sample and replace it
         sum -= samples[index];
-        samples[index] = fps;
-        sum += fps;
+        samples[index] = frameTime;
+        sum += frameTime;
 
         // move index forward
         index = (index + 1) % maxSamples;

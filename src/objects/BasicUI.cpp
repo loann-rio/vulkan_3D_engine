@@ -59,7 +59,7 @@ BasicUI::~BasicUI()
     vkDestroyDescriptorPool(device.device(), imguiPool, nullptr); 
 }
 
-void BasicUI::drawUI(VkCommandBuffer commandBuffer, ObjectManager* manager, float fps)
+void BasicUI::drawUI(VkCommandBuffer commandBuffer, ObjectManager* manager, float frameTime)
 {
     isWindowSelected = false;
 
@@ -76,7 +76,7 @@ void BasicUI::drawUI(VkCommandBuffer commandBuffer, ObjectManager* manager, floa
             listObjectsName.push_back(name);
     }   
 
-    objectSelectionWindow(listObjectsName, manager, fps);
+    objectSelectionWindow(listObjectsName, manager, frameTime);
 
     auto gameObject = manager->get(selected_object);
     if (gameObject != nullptr) {
@@ -113,7 +113,7 @@ void BasicUI::gameObjectWindow(GameObject* gameObject, ObjectManager* manager)
     ImGui::End(); 
 }
 
-void BasicUI::objectSelectionWindow(std::vector<std::string> listObjectsName, ObjectManager* manager, float fps)
+void BasicUI::objectSelectionWindow(std::vector<std::string> listObjectsName, ObjectManager* manager, float frameTime)
 {
 	
     ImGui::Begin("selector");
@@ -122,7 +122,8 @@ void BasicUI::objectSelectionWindow(std::vector<std::string> listObjectsName, Ob
 
     static bool open_sub_popup = false;
 
-    ImGui::Text("fps: %.1f", fps);
+    ImGui::Text("fps: %.3f", 1 / frameTime);
+    ImGui::Text("frame time: %.3f ms", frameTime * 1000.0f);
 
     ImGui::SeparatorText("create new game object");
     if (ImGui::Button("Select obj type"))

@@ -29,6 +29,12 @@ Renderer::Renderer(
 
 	createTextureTarget();
 	createBuffers(objectManager);
+	createTimestampPool();
+}
+
+Renderer::~Renderer()
+{
+	vkDestroyQueryPool(device.device(), timestampPool, nullptr);
 }
 
 void Renderer::createTextureTarget()
@@ -238,8 +244,6 @@ void Renderer::renderFrame(FrameInfo& frameInfo, ObjectManager& objectManager)
 	frameInfo.terrainDescriptorSet = terrainDescriptorSet;
 	frameInfo.postProDescriptorSet = postProDescriptorSet;
 
-	auto newGpuTime = std::chrono::high_resolution_clock::now();
-
 	if (aquireNextImage(objectManager))
 	{
 		frameInfo.frameIndex = frameRenderer.getCurrentFrameIndex();
@@ -251,6 +255,11 @@ void Renderer::renderFrame(FrameInfo& frameInfo, ObjectManager& objectManager)
 		updateModelPositionBuffer(frameInfo.listGameObjects, static_cast<uint16_t>(frameInfo.frameIndex));
 
 		if (auto commandBuffer = frameRenderer.beginFrame()) {
+
+			readGpuTime(frameInfo.frameIndex);
+			vkCmdResetQueryPool(commandBuffer, timestampPool, frameInfo.frameIndex * 2, 2);
+			vkCmdWriteTimestamp(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, timestampPool, frameInfo.frameIndex * 2);
+
 			depthPass->recordPass(
 				objectManager,
 				frameInfo,
@@ -277,6 +286,9 @@ void Renderer::renderFrame(FrameInfo& frameInfo, ObjectManager& objectManager)
 				commandBuffer
 			);
 
+			vkCmdWriteTimestamp(commandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, timestampPool, frameInfo.frameIndex * 2 + 1);
+			timestampWritten[frameInfo.frameIndex] = true;
+
 			VkResult result = frameRenderer.endFrame();
 
 			if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || window.wasWindowResized()) {
@@ -288,10 +300,6 @@ void Renderer::renderFrame(FrameInfo& frameInfo, ObjectManager& objectManager)
 			}
 		}
 	}
-
-	auto endGpuTime = std::chrono::high_resolution_clock::now();
-	gpuTime = std::chrono::duration<float, std::chrono::seconds::period>(endGpuTime - newGpuTime).count();
-	gpuFrameRate.update(gpuTime);
 }
 
 TextureManager::TextureID Renderer::renderHdriToCubeTexture(std::shared_ptr<RenderSystem> renderSystem, VkDescriptorSet descriptorSet)
@@ -334,6 +342,40 @@ TextureManager::TextureID Renderer::renderHdriToCubeTexture(std::shared_ptr<Rend
 	return skyboxSwapChain.getTextureColor();
 }
 
+void Renderer::createTimestampPool()
+{
+	VkQueryPoolCreateInfo info{};
+	info.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
+	info.queryType = VK_QUERY_TYPE_TIMESTAMP;
+	info.queryCount = 2 * Swap_chain::MAX_FRAMES_IN_FLIGHT;
+
+	if (vkCreateQueryPool(device.device(), &info, nullptr, &timestampPool) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create timestamp query pool");
+	}
+}
+
+void Renderer::readGpuTime(uint32_t frameIndex)
+{
+	if (!timestampWritten[frameIndex]) return;
+
+	uint64_t ts[2];
+	VkResult result = vkGetQueryPoolResults(
+		device.device(), 
+		timestampPool,
+		frameIndex * 2,
+		2,
+		sizeof(ts),
+		ts,
+		sizeof(uint64_t),
+		VK_QUERY_RESULT_64_BIT
+	);
+
+	if (result == VK_SUCCESS) {
+		gpuTime = static_cast<float>(ts[1] - ts[0]) * device.properties.limits.timestampPeriod * 1e-9f;
+		gpuFrameRate.update(gpuTime);
+	}
+}
+
 void Renderer::createBuffers(ObjectManager& objectManager)
 {
 	/// global buffer + object matrix buffer
@@ -373,7 +415,7 @@ void Renderer::createBuffers(ObjectManager& objectManager)
 		.build();
 
 	globalDescriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
-	for (int i = 0; i < globalDescriptorSet.size() && i < 2; i++)
+	for (int i = 0; i < globalDescriptorSet.size(); i++)
 	{
 		auto bufferInfo = uboBuffers[i]->descriptorInfo();
 		auto objectInfo = objectBuffers[i]->descriptorInfo();
@@ -436,7 +478,7 @@ void Renderer::createBuffers(ObjectManager& objectManager)
 		.build();
 
 	shadowDescriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
-	for (int i = 0; i < shadowDescriptorSet.size() && i < 2; i++)
+	for (int i = 0; i < shadowDescriptorSet.size(); i++)
 	{
 		auto bufferInfo = shadowUboBuffer[i]->descriptorInfo();
 
@@ -481,9 +523,6 @@ void Renderer::createBuffers(ObjectManager& objectManager)
 		.build<ObjVertexLayout>();
 }
 
-/*
-	recreate swap chain after redimentionning of the window
-*/
 void Renderer::recreateSwapChain(ObjectManager& objectManager)
 {
 	// get size window

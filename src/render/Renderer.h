@@ -34,6 +34,8 @@ public:
 
 	Renderer(const Renderer&) = delete;
 	Renderer& operator=(const Renderer&) = delete;
+
+	~Renderer();
 	
 	float getAspectRatio() const { return swapChain->extentAspectRatio(); }
 	uint32_t getFrameIndex() const { return frameRenderer.getCurrentFrameIndex(); }
@@ -43,6 +45,8 @@ public:
 	void renderFrame(FrameInfo& frameInfo, ObjectManager& objectManager);
 
 	bool isUiSelected() { return imgui->isWindowSelected; }
+
+	void waitForFrame() { swapChain->waitForFrame(); }
 
 	// buffers
 	std::vector<std::unique_ptr<Buffer>> uboBuffers;
@@ -62,6 +66,12 @@ private:
 
 	void beginSingleTimeRender(VkCommandBuffer commandBuffer, uint16_t buffer_index = 0);
 	TextureManager::TextureID renderHdriToCubeTexture(std::shared_ptr<RenderSystem> renderSystem, VkDescriptorSet descriptorSet);
+
+	void createTimestampPool();
+	void readGpuTime(uint32_t frameIndex);
+
+	VkQueryPool timestampPool = VK_NULL_HANDLE;
+	std::array<bool, Swap_chain::MAX_FRAMES_IN_FLIGHT> timestampWritten{};
 
 	Window& window;
 	Device& device;

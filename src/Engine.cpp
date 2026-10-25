@@ -59,7 +59,7 @@ void Engine::run()
             dynamic_cast<GameObjectCamera*>(objectManager.get(objectManager.mainCamera))->updateCameraView();
         }
 
-        /////// start frame ///////        
+        /////// start frame ///////       
         int frameIndex = renderer.getFrameIndex();
 
         /////// update objects ///////
@@ -92,6 +92,8 @@ void Engine::run()
             }
             ubo.numLights = i;
         }
+
+        renderer.waitForFrame();
 
         renderer.uboBuffers[frameIndex]->writeToBuffer(&ubo); 
         renderer.uboBuffers[frameIndex]->flush();
