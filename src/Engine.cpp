@@ -20,7 +20,7 @@
 
 Engine::Engine() { 
     objectManager.startLoadModel(); 
-    renderer.generateSkybox("skybox/citrus_orchard_puresky_4k.hdr", "testSkybox", objectManager);
+    renderer.generateSkybox("assets/skybox/citrus_orchard_puresky_4k.hdr", "testSkybox", objectManager);
 }
 
 

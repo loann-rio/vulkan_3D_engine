@@ -27,6 +27,11 @@ struct alignas(16) SimplePushConstantData {
 	uint32_t objectIndex{ 0 };
 };
 
+struct alignas(16) CubeMapPushConstantData {
+	glm::mat4 view;
+	glm::mat4 proj;
+};
+
 struct alignas(16) MaterialPushConstantData {
 	uint32_t objectIndex{ 0 };
 	uint32_t materialIndex{ 0 };

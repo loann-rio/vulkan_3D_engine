@@ -13,8 +13,6 @@
 
 namespace {
 
-	constexpr uint32_t MATERIAL_PUSH_SIZE = static_cast<uint32_t>(offsetof(MaterialPushConstantData, jointCount) + sizeof(uint32_t));
-
 	struct NodeDrawInfo { uint32_t nodeIndex = 0, jointOffset = 0, jointCount = 0; };
 
 	NodeDrawInfo nodeDrawInfo(const ModelAsset* model, const Primitive& primitive) {
@@ -109,27 +107,23 @@ RenderSystem::~RenderSystem()
 
 void RenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout> descriptorSetLayout)
 {
-
 	VkPushConstantRange pushConstantRange{};
 	pushConstantRange.offset = 0;
 
-
-	// find the size and flag of push constant depending on type of obj/render
-	
-	if (isShadow) { 
+	if (isShadow) {
 		pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 		pushConstantRange.size = sizeof(DepthPushConstantData);
 	}
-
 	else if (useMaterialBuffer) {
-		// materialIndex is read in the fragment shader; 132 bytes, above the 128 bytes guaranteed by the spec (desktop GPUs have 256)
 		pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-		pushConstantRange.size = MATERIAL_PUSH_SIZE;
+		pushConstantRange.size = sizeof(MaterialPushConstantData);
 	}
-
+	else if (isFullscreenRender) {
+		pushConstantRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		pushConstantRange.size = sizeof(CubeMapPushConstantData);
+	}
 	else {
-		// drawModel pushes SimplePushConstantData for every other model type
-		pushConstantRange.stageFlags = isFullscreenRender ? VK_SHADER_STAGE_FRAGMENT_BIT : VK_SHADER_STAGE_VERTEX_BIT;
+		pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 		pushConstantRange.size = sizeof(SimplePushConstantData);
 	}
 
@@ -289,7 +283,7 @@ void RenderSystem::drawModel(VkCommandBuffer& commandBuffer, ModelAsset* model, 
 			pipelineLayout,
 			VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 			0,
-			MATERIAL_PUSH_SIZE,
+			sizeof(MaterialPushConstantData),
 			&push
 		);
 	}
@@ -422,8 +416,7 @@ void RenderSystem::renderFullScreen(VkCommandBuffer& commandBuffer, std::vector<
 
 	bindGlobalSets(commandBuffer, globalDescriptorSets);
 
-	struct Push { glm::mat4 view; glm::mat4 proj; } push;
-
+	CubeMapPushConstantData push;
 	push.view = view;
 	push.proj = proj;
 

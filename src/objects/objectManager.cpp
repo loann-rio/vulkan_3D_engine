@@ -18,7 +18,7 @@ void ObjectManager::startLoadModel()
     if (true)
     {
         TextureBuilder textureBuilder(device);
-        auto texture = assetManager.textures().create(textureBuilder.fromFile("skybox/cubemap_space.ktx").asCubemap());
+        auto texture = assetManager.textures().create(textureBuilder.fromFile("assets/skybox/cubemap_space.ktx").asCubemap());
         
         ModelBuilder builder(device, assetManager);
         ModelManager::ModelID modelId = assetManager.models().create(builder.fromFile("assets/model/cube.obj").withTexture(texture));
