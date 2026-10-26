@@ -27,8 +27,6 @@ namespace {
 	}
 }
 
-//if (!Camera::isAABBinFrustrum(obj->getAABB().getAABB(obj->getTransformMat()), frustrumPlanes)) return;
-
 RenderSystem::RenderSystem(Device& device, AssetManager& assets, RenderSystemConfig config):
 	device{ device },
 	assets{ assets },
@@ -362,6 +360,11 @@ void RenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& 
 			if (obj->lodModelAssets.size()) 
 			{
 				auto modelAsset = assets.models().get(obj->lodModelAssets[0]);
+				
+				if (!Camera::isAABBinFrustrum(modelAsset->getAABB(obj->getTransformMat()), frustrumPlanes)) {
+					std::cout << "Object " << obj->getName() << " is outside the frustum and will not be rendered.\n";
+					return;
+				}
 
 				bindModel(commandBuffer, modelAsset, *obj, frameInfo.frameIndex);
 

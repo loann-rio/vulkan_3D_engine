@@ -44,6 +44,7 @@ ModelLOD ModelUploader::uploadDecodedModel(Device& device, AssetManager& assets,
 	asset.indexCount = obj.indices.size();
 	asset.vertexStride = obj.vertices->stride();
 	asset.primitives = obj.primitives;
+	asset.aabb = obj.aabb;
 	asset.materials = uploadMaterialsTextures(device, assets, obj.materials);
 
 	return asset;

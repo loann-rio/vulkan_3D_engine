@@ -294,9 +294,6 @@ public:
 	void createInstanceComputeDescriptorSets(DescriptorPool& pool);
 	VkDescriptorSet getInstanceComputeDescriptorSet(uint16_t frameIndex) const;
 
-
-	BoundingBox getAABB() const;
-
 	void update(float dtime);
 
 	Buffer* getOriginalInstancesBuffer() const { return instancesBuffer ? instancesBuffer.get() : nullptr; }

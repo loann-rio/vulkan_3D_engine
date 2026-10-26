@@ -45,6 +45,7 @@ struct ModelLOD {
 	ModelLOD(ModelLOD&&) noexcept = default;
 	ModelLOD& operator=(ModelLOD&&) noexcept = default;
 
+	BoundingBox aabb;
 
 	// Vertex Buffer
 	std::unique_ptr<Buffer> vertexBuffer;
@@ -71,13 +72,14 @@ public:
 	ModelAsset() = default;
 	~ModelAsset() = default;
 
+	BoundingBox getAABB(glm::mat4 transform) { return lods[0].aabb.getAABB(transform); }
+
 	bool hasShadow = true;
 
 	// LODs
 	std::vector<ModelLOD> lods;
 
-	// Axis Aligned Bounding Box
-	BoundingBox aabb;
+	
 
 	Skeleton skeleton;
 	bool isAnimated() const { return !skeleton.clips.empty(); }
@@ -91,6 +93,9 @@ public:
 		return lods.size() - 1;
 	}
 
+private:
+	// Axis Aligned Bounding Box
+	BoundingBox aabb;
 
 	friend ModelBuilder;
 };
