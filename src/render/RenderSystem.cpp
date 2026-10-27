@@ -366,7 +366,7 @@ void RenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& 
 
 		auto modelAsset = assets.models().get(obj->lodModelAssets[0]);
 				
-		if (modelAsset->useAABB() && !Camera::isAABBinFrustrum(modelAsset->getAABB(obj->getTransformMat()), frustrumPlanes)) {
+		if (obj->getInstanceCount() == 1 && modelAsset->useAABB() && !Camera::isAABBinFrustrum(modelAsset->getAABB(obj->getTransformMat()), frustrumPlanes)) {
 			continue;
 		}
 
