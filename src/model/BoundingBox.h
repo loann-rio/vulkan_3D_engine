@@ -8,7 +8,7 @@ class BoundingBox {
 public:
 	bool valid = false;
 	BoundingBox() {};
-	BoundingBox(glm::vec3 min, glm::vec3 max) : min{ min }, max{ max } {};
+	BoundingBox(glm::vec3 min, glm::vec3 max) : min{ min }, max{ max } { valid = true; };
 	inline BoundingBox getAABB(glm::mat4 m);
 	glm::vec3 min{};
 	glm::vec3 max{};

@@ -355,34 +355,36 @@ void RenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& 
 	
 	for (auto& obj : frameInfo.listGameObjects)
 	{
-		if (obj->show && !obj->toBeRemoved && obj->getModelType() == modelType && obj->getModelSubType() == modelSubType)
+		if (!obj->show || obj->toBeRemoved)
+			continue;
+
+		if (obj->getModelType() != modelType || obj->getModelSubType() != modelSubType)
+			continue;
+
+		if (!obj->lodModelAssets.size())
+			continue;
+
+		auto modelAsset = assets.models().get(obj->lodModelAssets[0]);
+				
+		if (modelAsset->useAABB() && !Camera::isAABBinFrustrum(modelAsset->getAABB(obj->getTransformMat()), frustrumPlanes)) {
+			continue;
+		}
+
+		bindModel(commandBuffer, modelAsset, *obj, frameInfo.frameIndex);
+
+		if (useMaterialBuffer) {
+			if (modelAsset->lods[0].descriptorSet.empty()) continue;
+			bindMaterialBuffer(commandBuffer, modelAsset, frameInfo.frameIndex);
+		}
+				
+		if (usePoseBuffer && !bindPose(commandBuffer, *obj, frameInfo.frameIndex)) continue;
+
+		for (auto primitive : modelAsset->lods[0].primitives)
 		{
-			if (obj->lodModelAssets.size()) 
-			{
-				auto modelAsset = assets.models().get(obj->lodModelAssets[0]);
-				
-				if (!Camera::isAABBinFrustrum(modelAsset->getAABB(obj->getTransformMat()), frustrumPlanes)) {
-					std::cout << "Object " << obj->getName() << " is outside the frustum and will not be rendered.\n";
-					return;
-				}
-
-				bindModel(commandBuffer, modelAsset, *obj, frameInfo.frameIndex);
-
-				if (useMaterialBuffer) {
-					if (modelAsset->lods[0].descriptorSet.empty()) continue;
-					bindMaterialBuffer(commandBuffer, modelAsset, frameInfo.frameIndex);
-				}
-				
-				if (usePoseBuffer && !bindPose(commandBuffer, *obj, frameInfo.frameIndex)) continue;
-
-				for (auto primitive : modelAsset->lods[0].primitives)
-				{
-					if (!useMaterialBuffer)
-						bindTextures(commandBuffer, modelAsset, primitive, frameInfo.frameIndex);
+			if (!useMaterialBuffer)
+				bindTextures(commandBuffer, modelAsset, primitive, frameInfo.frameIndex);
 					
-					drawModel(commandBuffer, modelAsset, primitive, obj->gpuObjectIndex,obj->getInstanceCount());
-				}
-			}
+			drawModel(commandBuffer, modelAsset, primitive, obj->gpuObjectIndex,obj->getInstanceCount());
 		}
 	}
 }

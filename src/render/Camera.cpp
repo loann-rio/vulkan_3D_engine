@@ -147,10 +147,10 @@ void Camera::updateFrustrumPlanes()
 
     // Near
     frustrum[4].equation = glm::vec4(
-        combo[0][3] + combo[0][2],
-        combo[1][3] + combo[1][2],
-        combo[2][3] + combo[2][2],
-        combo[3][3] + combo[3][2]);
+        combo[0][2],
+        combo[1][2],
+        combo[2][2],
+        combo[3][2]);
 
     // Far
     frustrum[5].equation = glm::vec4(

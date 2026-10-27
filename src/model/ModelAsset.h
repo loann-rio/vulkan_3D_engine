@@ -73,6 +73,7 @@ public:
 	~ModelAsset() = default;
 
 	BoundingBox getAABB(glm::mat4 transform) { return lods[0].aabb.getAABB(transform); }
+	bool useAABB() { return aabb.valid; }
 
 	bool hasShadow = true;
 
