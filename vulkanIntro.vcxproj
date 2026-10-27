@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -89,13 +89,13 @@
       <PreprocessorDefinitions>
       </PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\riolo\Desktop\introVulkan\external\imgui-master\backends;C:\Users\riolo\Desktop\introVulkan\external\imgui-master;C:\Users\riolo\Documents\Visual Studio 2022\library\glm-1.0.1;C:\Users\riolo\Documents\Visual Studio 2022\library\stb-master;C:\Users\riolo\Documents\Visual Studio 2022\library\basis_universal-master\transcoder;C:\Users\riolo\Documents\Visual Studio 2022\library\glfw-3.4.bin.WIN64\include;C:\Users\riolo\Documents\Visual Studio 2022\library\tinyobjloader-release;C:\VulkanSDK\1.3.290.0\Include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\riolo\Desktop\introVulkan\external\imgui-master\backends;C:\Users\riolo\Desktop\introVulkan\external\imgui-master;C:\Users\riolo\Documents\Visual Studio 2022\library\glm-1.0.1;C:\Users\riolo\Documents\Visual Studio 2022\library\stb-master;C:\Users\riolo\Documents\Visual Studio 2022\library\basis_universal-master\transcoder;C:\Users\riolo\Documents\Visual Studio 2022\library\glfw-3.4.bin.WIN64\include;C:\Users\riolo\Documents\Visual Studio 2022\library\tinyobjloader-release;$(VULKAN_SDK)\Include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\riolo\Desktop\introVulkan\external\imgui-master;C:\Users\riolo\Documents\Visual Studio 2022\library\basis_universal-master\transcoder;C:\Users\riolo\Documents\Visual Studio 2022\library\tinyobjloader-release;C:\Users\riolo\Documents\Visual Studio 2022\library\glfw-3.4.bin.WIN64\lib-vc2022;C:\VulkanSDK\1.3.290.0\Lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\riolo\Desktop\introVulkan\external\imgui-master;C:\Users\riolo\Documents\Visual Studio 2022\library\basis_universal-master\transcoder;C:\Users\riolo\Documents\Visual Studio 2022\library\tinyobjloader-release;C:\Users\riolo\Documents\Visual Studio 2022\library\glfw-3.4.bin.WIN64\lib-vc2022;$(VULKAN_SDK)\Lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib; glfw3.lib;</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -108,7 +108,7 @@
       <PreprocessorDefinitions>
       </PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\riolo\Desktop\introVulkan\external\basisu\zstd;C:\Users\riolo\Desktop\introVulkan\external\basisu\transcoder;C:\Users\riolo\Documents\Visual Studio 2022\library\glm-1.0.1;C:\Users\riolo\Documents\Visual Studio 2022\library\stb-master;C:\Users\riolo\Documents\Visual Studio 2022\library\glfw-3.4.bin.WIN64\include;C:\Users\riolo\Documents\Visual Studio 2022\library\tinyobjloader-release;C:\VulkanSDK\1.3.290.0\Include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\riolo\Desktop\introVulkan\external\basisu\zstd;C:\Users\riolo\Desktop\introVulkan\external\basisu\transcoder;C:\Users\riolo\Documents\Visual Studio 2022\library\glm-1.0.1;C:\Users\riolo\Documents\Visual Studio 2022\library\stb-master;C:\Users\riolo\Documents\Visual Studio 2022\library\glfw-3.4.bin.WIN64\include;C:\Users\riolo\Documents\Visual Studio 2022\library\tinyobjloader-release;$(VULKAN_SDK)\Include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -116,7 +116,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\riolo\Desktop\introVulkan\external\basisu\zstd;C:\Users\riolo\Desktop\introVulkan\external\basisu\transcoder;C:\Users\riolo\Documents\Visual Studio 2022\library\tinyobjloader-release;C:\Users\riolo\Documents\Visual Studio 2022\library\glfw-3.4.bin.WIN64\lib-vc2022;C:\VulkanSDK\1.3.290.0\Lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\riolo\Desktop\introVulkan\external\basisu\zstd;C:\Users\riolo\Desktop\introVulkan\external\basisu\transcoder;C:\Users\riolo\Documents\Visual Studio 2022\library\tinyobjloader-release;C:\Users\riolo\Documents\Visual Studio 2022\library\glfw-3.4.bin.WIN64\lib-vc2022;$(VULKAN_SDK)\Lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib; glfw3.lib; zstd.c;</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -126,13 +126,13 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)\external\KTX\include;$(SolutionDir)\external\glm-1.0.0;$(SolutionDir)\external\stb-master;$(SolutionDir)\external\basis_universal-master\transcoder;$(SolutionDir)\external\glfw-3.3.9.bin.WIN64\include;$(SolutionDir)\external\tinyobjloader-release;C:\VulkanSDK\1.4.313.0\Include;$(SolutionDir)\external\nativefiledialog-master\src\include;$(SolutionDir)\external\imgui-master;$(SolutionDir)\external\imgui-master\backends</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\external\KTX\include;$(SolutionDir)\external\glm-1.0.0;$(SolutionDir)\external\stb-master;$(SolutionDir)\external\basis_universal-master\transcoder;$(SolutionDir)\external\glfw-3.3.9.bin.WIN64\include;$(SolutionDir)\external\tinyobjloader-release;$(VULKAN_SDK)\Include;$(SolutionDir)\external\nativefiledialog-master\src\include;$(SolutionDir)\external\imgui-master;$(SolutionDir)\external\imgui-master\backends</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)\external\KTX\lib;$(SolutionDir)\external\KTX-Software-main\build\Debug;$(SolutionDir)\external\KTX-Software-main\lib;$(SolutionDir)\external\glfw-3.3.9.bin.WIN64\lib-vc2022;C:\VulkanSDK\1.4.313.0\Lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)\external\KTX\lib;$(SolutionDir)\external\KTX-Software-main\build\Debug;$(SolutionDir)\external\KTX-Software-main\lib;$(SolutionDir)\external\glfw-3.3.9.bin.WIN64\lib-vc2022;$(VULKAN_SDK)\Lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;ole32.lib;
 shell32.lib;
 uuid.lib;
@@ -147,7 +147,7 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)\external\KTX\include;$(SolutionDir)\external\KTX-Software-main\include;$(SolutionDir)\external\nativefiledialog-master\src\include;$(SolutionDir)\external\imgui-master\backends;$(SolutionDir)\external\imgui-master;$(SolutionDir)\external\glm-1.0.0;$(SolutionDir)\external\stb-master;$(SolutionDir)\external\basis_universal-master\transcoder;$(SolutionDir)\external\glfw-3.3.9.bin.WIN64\include;$(SolutionDir)\external\tinyobjloader-release;C:\VulkanSDK\1.4.313.2\Include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\external\KTX\include;$(SolutionDir)\external\KTX-Software-main\include;$(SolutionDir)\external\nativefiledialog-master\src\include;$(SolutionDir)\external\imgui-master\backends;$(SolutionDir)\external\imgui-master;$(SolutionDir)\external\glm-1.0.0;$(SolutionDir)\external\stb-master;$(SolutionDir)\external\basis_universal-master\transcoder;$(SolutionDir)\external\glfw-3.3.9.bin.WIN64\include;$(SolutionDir)\external\tinyobjloader-release;$(VULKAN_SDK)\Include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -155,7 +155,7 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)\external\KTX\lib;C:\Users\riolo\Desktop\vulkan_3D_engine\external\KTX-Software-main\build\Release;$(SolutionDir)\external\KTX-Software-main\lib;$(SolutionDir)\external\glfw-3.3.9.bin.WIN64\lib-vc2022;C:\VulkanSDK\1.4.313.2\Lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)\external\KTX\lib;C:\Users\riolo\Desktop\vulkan_3D_engine\external\KTX-Software-main\build\Release;$(SolutionDir)\external\KTX-Software-main\lib;$(SolutionDir)\external\glfw-3.3.9.bin.WIN64\lib-vc2022;$(VULKAN_SDK)\Lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;ole32.lib;
 shell32.lib;
 uuid.lib;
