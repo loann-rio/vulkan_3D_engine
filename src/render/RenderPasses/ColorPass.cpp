@@ -66,7 +66,8 @@ void ColorPass::recordPass(ObjectManager& objectManager, FrameInfo& frameInfo, V
         {
             frameInfo.globalDescriptorSet[frameInfo.frameIndex],
             frameInfo.shadowDescriptorSet[frameInfo.frameIndex]
-        }
+        },
+        frameInfo.mainCameraFrustrumPlanes
     );
 
     gltfRenderSystem->renderGameObjects(
@@ -75,7 +76,8 @@ void ColorPass::recordPass(ObjectManager& objectManager, FrameInfo& frameInfo, V
         {
             frameInfo.globalDescriptorSet[frameInfo.frameIndex],
             frameInfo.shadowDescriptorSet[frameInfo.frameIndex]
-        }
+        },
+        frameInfo.mainCameraFrustrumPlanes
     );
 
     skyboxRenderSystem->renderGameObjects(

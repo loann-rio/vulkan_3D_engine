@@ -8,7 +8,6 @@
 #include <stdexcept>
 #include <array>
 #include <cassert>
-#include <cstddef>
 
 
 namespace {
@@ -26,8 +25,6 @@ namespace {
 		return info;
 	}
 }
-
-//if (!Camera::isAABBinFrustrum(obj->getAABB().getAABB(obj->getTransformMat()), frustrumPlanes)) return;
 
 RenderSystem::RenderSystem(Device& device, AssetManager& assets, RenderSystemConfig config):
 	device{ device },
@@ -357,29 +354,36 @@ void RenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& 
 	
 	for (auto& obj : frameInfo.listGameObjects)
 	{
-		if (obj->show && !obj->toBeRemoved && obj->getModelType() == modelType && obj->getModelSubType() == modelSubType)
-		{
-			if (obj->lodModelAssets.size()) 
-			{
-				auto modelAsset = assets.models().get(obj->lodModelAssets[0]);
+		if (!obj->show || obj->toBeRemoved)
+			continue;
 
-				bindModel(commandBuffer, modelAsset, *obj, frameInfo.frameIndex);
+		if (obj->getModelType() != modelType || obj->getModelSubType() != modelSubType)
+			continue;
 
-				if (useMaterialBuffer) {
-					if (modelAsset->lods[0].descriptorSet.empty()) continue;
-					bindMaterialBuffer(commandBuffer, modelAsset, frameInfo.frameIndex);
-				}
+		if (!obj->lodModelAssets.size())
+			continue;
+
+		auto modelAsset = assets.models().get(obj->lodModelAssets[0]);
 				
-				if (usePoseBuffer && !bindPose(commandBuffer, *obj, frameInfo.frameIndex)) continue;
+		if (obj->hasCpuCulling() && modelAsset->useAABB() && !Camera::isAABBinFrustrum(modelAsset->getAABB(obj->getTransformMat()), frustrumPlanes)) {
+			continue;
+		}
 
-				for (auto primitive : modelAsset->lods[0].primitives)
-				{
-					if (!useMaterialBuffer)
-						bindTextures(commandBuffer, modelAsset, primitive, frameInfo.frameIndex);
+		bindModel(commandBuffer, modelAsset, *obj, frameInfo.frameIndex);
+
+		if (useMaterialBuffer) {
+			if (modelAsset->lods[0].descriptorSet.empty()) continue;
+			bindMaterialBuffer(commandBuffer, modelAsset, frameInfo.frameIndex);
+		}
+				
+		if (usePoseBuffer && !bindPose(commandBuffer, *obj, frameInfo.frameIndex)) continue;
+
+		for (auto primitive : modelAsset->lods[0].primitives)
+		{
+			if (!useMaterialBuffer)
+				bindTextures(commandBuffer, modelAsset, primitive, frameInfo.frameIndex);
 					
-					drawModel(commandBuffer, modelAsset, primitive, obj->gpuObjectIndex,obj->getInstanceCount());
-				}
-			}
+			drawModel(commandBuffer, modelAsset, primitive, obj->gpuObjectIndex,obj->getInstanceCount());
 		}
 	}
 }
