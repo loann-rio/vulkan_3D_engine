@@ -113,7 +113,8 @@ std::string GameObject::getName() const
 
 void GameObjectModel::setMultipleInstances(std::vector<ModelInstance> instances)
 {
-    
+    enableCpuCulling = false; // not managed for multiple instance, should be doe on gpu
+
     VkDeviceSize bufferSize = sizeof(ModelInstance) * instances.size();
     instanceCount = static_cast<uint32_t>(instances.size());
     if (instanceCount == 0) return;

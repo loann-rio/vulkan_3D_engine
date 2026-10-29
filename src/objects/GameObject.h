@@ -294,6 +294,9 @@ public:
 	void createInstanceComputeDescriptorSets(DescriptorPool& pool);
 	VkDescriptorSet getInstanceComputeDescriptorSet(uint16_t frameIndex) const;
 
+	void enableCPUculling(bool enable) { enableCpuCulling = false; }
+	bool hasCpuCulling() const { return enableCpuCulling; }
+
 	void update(float dtime);
 
 	Buffer* getOriginalInstancesBuffer() const { return instancesBuffer ? instancesBuffer.get() : nullptr; }
@@ -335,6 +338,7 @@ private:
 	int32_t animationIndex{ 0 };
 
 	bool hasModel = false;
+	bool enableCpuCulling = true;
 
 	ModelType modelType = ModelType::UNDEFINED_MODEL;
 	ModelSubType modelSubType = ModelSubType::NONE;

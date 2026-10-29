@@ -8,7 +8,6 @@
 #include <stdexcept>
 #include <array>
 #include <cassert>
-#include <cstddef>
 
 
 namespace {
@@ -366,7 +365,7 @@ void RenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& 
 
 		auto modelAsset = assets.models().get(obj->lodModelAssets[0]);
 				
-		if (obj->getInstanceCount() == 1 && modelAsset->useAABB() && !Camera::isAABBinFrustrum(modelAsset->getAABB(obj->getTransformMat()), frustrumPlanes)) {
+		if (obj->hasCpuCulling() && modelAsset->useAABB() && !Camera::isAABBinFrustrum(modelAsset->getAABB(obj->getTransformMat()), frustrumPlanes)) {
 			continue;
 		}
 
