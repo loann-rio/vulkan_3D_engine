@@ -1,25 +1,24 @@
 #pragma once
 
-#include "../base/Swap_chain.h"
+#include "../base/Buffer.h"
 #include "../base/descriptors.h"
 #include "../base/Device.h"
 #include "../render/Camera.h"
 #include "../assetManager/AssetManager.h"
+#include "../assetManager/ModelManager.h"
 #include "../model/Animation/Animation.h"
 
-#include "imgui.h"
-#include "backends/imgui_impl_glfw.h"
+#include <glm/detail/type_vec3.hpp>
+#include <glm/detail/type_vec4.hpp>
+#include <glm/fwd.hpp>
 
-#include "../model/ModelAsset.h"
-
-#include <glm/gtc/matrix_transform.hpp>
-
+#include <array>
+#include <cassert>
 #include <memory>
-#include <iostream>
-#include <type_traits>
-#include <variant>
+#include <vector>
 #include <unordered_map>
 #include <functional>
+#include <vulkan/vulkan_core.h>
 
 #define REGISTER_BEHAVIOR(T)                                \
     std::string getClassName() const override { return #T; }\

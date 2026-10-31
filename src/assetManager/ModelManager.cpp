@@ -1,6 +1,12 @@
 #include "ModelManager.h"
 
+#include "../model/ModelAsset.h"
 #include "../model/ModelBuilder.h"
+
+#include <mutex>
+#include <memory>
+#include <utility>
+#include <unordered_map>
 
 ModelManager::ModelManager()
 {

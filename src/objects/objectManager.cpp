@@ -1,15 +1,16 @@
 #include "objectManager.h"
 
 #include "../model/preBuild.h"
+#include "../model/ModelBuilder.h"
 
 #include "../Textures/TextureObject.h"
 #include "../Textures/TextureBuilder.h"
 
-#include "../model/ModelBuilder.h"
-
+#include "../base/Swap_chain.h"
 
 #include <chrono>
 #include <fstream>
+#include "ObjectManager.h"
 
 
 void ObjectManager::startLoadModel()
@@ -646,4 +647,3 @@ ObjectManager::ObjectManager(Device& device, AssetManager& assetManager) : devic
     gameObjects = std::make_shared<GameObject::Map>();
     loadScene(currentScene);
 };
-

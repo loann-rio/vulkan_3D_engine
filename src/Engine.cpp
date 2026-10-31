@@ -14,9 +14,9 @@
 // std
 #include <array>
 #include <chrono>
-#include <string>
-#include <thread>
-
+#include <cstdint>
+#include <memory>
+#include <iostream>
 
 Engine::Engine() { 
     objectManager.startLoadModel(); 
