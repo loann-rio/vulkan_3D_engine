@@ -216,6 +216,9 @@
     <ClCompile Include="src\model\Animation\Animation.cpp">
       <Filter>model\animation</Filter>
     </ClCompile>
+    <ClCompile Include="src\assetManager\SceneManager.cpp">
+      <Filter>assetManager</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tiny_gltf.h">
@@ -420,6 +423,12 @@
     </ClInclude>
     <ClInclude Include="src\model\Animation\Animation.h">
       <Filter>model\animation</Filter>
+    </ClInclude>
+    <ClInclude Include="src\assetManager\SceneManager.h">
+      <Filter>assetManager</Filter>
+    </ClInclude>
+    <ClInclude Include="src\assetManager\ObjectManager.h">
+      <Filter>assetManager</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

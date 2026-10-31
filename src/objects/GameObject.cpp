@@ -1,5 +1,9 @@
 #include "GameObject.h"
-#include <glm/gtc/type_ptr.hpp>
+
+#include <glm/gtc/type_ptr.inl>
+#include <iostream>
+
+#include "../base/Swap_chain.h"
 
  
 GameObject::id_t GameObjectFactory::nextId = 0;

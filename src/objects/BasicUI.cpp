@@ -1,5 +1,7 @@
 #include "BasicUI.h"
-#include <glm/gtc/type_ptr.hpp>
+
+#include <glm/gtc/type_ptr.inl>
+#include <iostream>
 
 BasicUI::BasicUI(Device& device, AssetManager& assets, GLFWwindow* window, VkRenderPass renderPass) : device{ device }, assets{ assets }
 {

@@ -3,15 +3,17 @@
 #include <vector>
 #include <future>
 #include <typeindex>
+#include <cstdint>
+#include <../json.hpp>
+#include <unordered_map>
 
 #include "GameObject.h"
 
-#include "../assetManager/AssetManager.h"
-
-#include "../model/ModelAsset.h"
-
-#include <../json.hpp>
 #include "../assetManager/ModelManager.h"
+#include "../assetManager/AssetManager.h"
+#include "../model/ModelAsset.h"
+#include "../base/descriptors.h"
+
 using json = nlohmann::json;
 
 class GameObject;
@@ -112,8 +114,6 @@ private:
 
     std::unique_ptr<DescriptorPool> globalPool{};    
 };
-
-
 
 
 /// <summary>

@@ -1,7 +1,9 @@
 #pragma once
 
 #include "../base/Device.h"
-#include "../base/Window.h"
+#include <string>
+#include <GLFW/glfw3.h>
+#include <vulkan/vulkan_core.h>
 
 #include "../objects/objectManager.h"
 #include "../objects/GameObject.h"
@@ -18,6 +20,8 @@
 
 #define _CRT_SECURE_NO_WARNINGS 
 #include <nfd.h>
+#include "../assetManager/AssetManager.h"
+#include <vector>
 
 class BasicUI
 {

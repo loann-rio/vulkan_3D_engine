@@ -11,7 +11,6 @@
 #include "../base/device.h"
 #include "GlobalRenderSystemBuilder.h"
 #include "../model/Vertex/ObjVertexData.h"
-#include "../model/Vertex/GlTFVertexData.h"
 
 
 

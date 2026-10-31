@@ -7,7 +7,10 @@
 
 #include <stdexcept>
 #include <array>
+#include <iostream>
 #include <cassert>
+
+#include "../base/Pipeline.h"
 
 
 namespace {
