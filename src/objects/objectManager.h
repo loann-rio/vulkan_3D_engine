@@ -9,7 +9,6 @@
 
 #include "GameObject.h"
 
-#include "../assetManager/ModelManager.h"
 #include "../assetManager/AssetManager.h"
 #include "../model/ModelAsset.h"
 #include "../base/descriptors.h"
@@ -64,7 +63,6 @@ public:
 
     void removeGameObject(const GameObject::id_t id);
     void removeGameObject(const std::string& name);
-    void removeGameObject(GameObject* gameObject);
 
     std::shared_ptr<GameObject::Map> getGameObjects() const { return gameObjects; } 
 
