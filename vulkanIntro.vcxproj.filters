@@ -219,6 +219,9 @@
     <ClCompile Include="src\assetManager\SceneManager.cpp">
       <Filter>assetManager</Filter>
     </ClCompile>
+    <ClCompile Include="src\assetManager\GameObjectManager.cpp">
+      <Filter>assetManager</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tiny_gltf.h">
@@ -427,7 +430,7 @@
     <ClInclude Include="src\assetManager\SceneManager.h">
       <Filter>assetManager</Filter>
     </ClInclude>
-    <ClInclude Include="src\assetManager\ObjectManager.h">
+    <ClInclude Include="src\assetManager\GameObjectManager.h">
       <Filter>assetManager</Filter>
     </ClInclude>
   </ItemGroup>

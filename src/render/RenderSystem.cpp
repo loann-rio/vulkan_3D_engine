@@ -368,9 +368,8 @@ void RenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& 
 
 		auto modelAsset = assets.models().get(obj->lodModelAssets[0]);
 				
-		if (obj->hasCpuCulling() && modelAsset->useAABB() && !Camera::isAABBinFrustrum(modelAsset->getAABB(obj->getTransformMat()), frustrumPlanes)) {
+		if (obj->hasCpuCulling() && modelAsset->useAABB() && !Camera::isAABBinFrustrum(modelAsset->getAABB(obj->getTransformMat()), frustrumPlanes))
 			continue;
-		}
 
 		bindModel(commandBuffer, modelAsset, *obj, frameInfo.frameIndex);
 
@@ -397,24 +396,28 @@ void RenderSystem::renderGameObjectsDepth(VkCommandBuffer& commandBuffer, FrameI
 
 	for (auto obj : frameInfo.listGameObjects)
 	{
-		if (obj->show && !obj->toBeRemoved && obj->getModelType() == modelType && obj->getModelSubType() == modelSubType)
-			if (obj->lodModelAssets.size())
-			{
-				auto modelAsset = assets.models().get(obj->lodModelAssets[0]);
+		if (!obj->show || obj->toBeRemoved)
+			continue;
 
-				if (!modelAsset->hasShadow) continue;
-				//if (!Camera::isAABBinFrustrum(obj->getAABB().getAABB(obj->getTransformMat()), frameInfo.listFrustrumPlanes[lightIndex])) continue;
+		if (obj->getModelType() != modelType || obj->getModelSubType() != modelSubType)
+			continue;
 
+		if (!obj->lodModelAssets.size())
+			continue;
 
-				bindModel(commandBuffer, modelAsset, *obj, frameInfo.frameIndex);
+		auto modelAsset = assets.models().get(obj->lodModelAssets[0]);
 
-				if (usePoseBuffer && !bindPose(commandBuffer, *obj, frameInfo.frameIndex)) continue;
+		if (obj->hasCpuCulling() && modelAsset->useAABB() && !Camera::isAABBinFrustrum(modelAsset->getAABB(obj->getTransformMat()), frameInfo.listFrustrumPlanes[lightIndex]))
+			continue;
 
-				for (auto primitive : modelAsset->lods[0].primitives)
-				{
-					drawDepth(commandBuffer, modelAsset, primitive, obj->gpuObjectIndex, lightIndex, obj->getInstanceCount());
-				}
-			}
+		bindModel(commandBuffer, modelAsset, *obj, frameInfo.frameIndex);
+
+		if (usePoseBuffer && !bindPose(commandBuffer, *obj, frameInfo.frameIndex)) continue;
+
+		for (auto primitive : modelAsset->lods[0].primitives)
+		{
+			drawDepth(commandBuffer, modelAsset, primitive, obj->gpuObjectIndex, lightIndex, obj->getInstanceCount());
+		}
 	}
 }
 

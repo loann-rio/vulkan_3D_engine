@@ -10,7 +10,6 @@
 
 #include <chrono>
 #include <fstream>
-#include "ObjectManager.h"
 
 
 void ObjectManager::startLoadModel()
@@ -204,11 +203,6 @@ void ObjectManager::removeGameObject(const GameObject::id_t id)
 void ObjectManager::removeGameObject(const std::string& name)
 {
 	removeGameObject(get(name)->getId());
-}
-
-void ObjectManager::removeGameObject(GameObject* gameObject)
-{
-	removeGameObject(gameObject->getId());
 }
 
     /////// scene management ///////
