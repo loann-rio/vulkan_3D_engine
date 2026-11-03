@@ -4,8 +4,8 @@
 #include <iostream>
 
 #include "../base/Swap_chain.h"
+#include "../assetManager/AssetManager.h"
 
- 
 GameObject::id_t GameObjectFactory::nextId = 0;
 
 glm::mat4 TransformComponent::mat4() 

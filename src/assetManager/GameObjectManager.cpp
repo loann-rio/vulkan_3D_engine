@@ -1,4 +1,6 @@
 #include "GameObjectManager.h"
+#include "../objects/GameObject.h"
+
 #include <stdexcept>
 #include <string>
 #include <memory>

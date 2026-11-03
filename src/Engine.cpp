@@ -37,7 +37,7 @@ void Engine::run()
     auto currentTime = std::chrono::high_resolution_clock::now();
 	float frameTime = 0.1f;
 
-    auto* textureObject = dynamic_cast<GameObjectModel*>(objectManager.get("cubemap1"));
+    auto* textureObject = dynamic_cast<GameObjectModel*>(assetManager.gameObject().findByName("cubemap1"));
 
     device.waitQueueIdle(device.presentQueue());
 	while (!window.shouldClose())
@@ -55,8 +55,8 @@ void Engine::run()
         //// move camera on event ////
         {
             if (!renderer.isUiSelected())
-                cameraController.moveInPlaneXZ(window.getGLFWwindow(), frameTime, objectManager.get(objectManager.mainCamera));
-            dynamic_cast<GameObjectCamera*>(objectManager.get(objectManager.mainCamera))->updateCameraView();
+                cameraController.moveInPlaneXZ(window.getGLFWwindow(), frameTime, assetManager.gameObject().findByName(objectManager.mainCamera));
+            dynamic_cast<GameObjectCamera*>(assetManager.gameObject().findByName(objectManager.mainCamera))->updateCameraView();
         }
 
         /////// start frame ///////       
@@ -69,7 +69,7 @@ void Engine::run()
 
         // update camera
         {
-            auto* camObj = dynamic_cast<GameObjectCamera*>(objectManager.get(objectManager.mainCamera));
+            auto* camObj = dynamic_cast<GameObjectCamera*>(assetManager.gameObject().findByName(objectManager.mainCamera));
             if (camObj->camera->aspectRatio != renderer.getAspectRatio()) {
                 std::cout << "wrong aspect ratio \n";
                 camObj->camera->setPerspectiveProjection(renderer.getAspectRatio());
@@ -122,11 +122,11 @@ void Engine::run()
             0,
             frameTime,
             spotLightUbo.numLights,
-            objectManager.get(objectManager.mainCamera)->transform.translation,
-            objectManager.getByType<GameObjectModel>(),
+            assetManager.gameObject().findByName(objectManager.mainCamera)->transform.translation,
+            assetManager.gameObject().getByType<GameObjectModel>(),
             std::vector<ComputeObject*>{},
             frustrumPlanesList,
-            dynamic_cast<GameObjectCamera*>(objectManager.get(objectManager.mainCamera))->getFrustumPlanes(),
+            dynamic_cast<GameObjectCamera*>(assetManager.gameObject().findByName(objectManager.mainCamera))->getFrustumPlanes(),
         };
 
         /////// render frame ///////

@@ -58,14 +58,6 @@ public:
     template <typename T>
     std::vector<T*> getByType();
 
-    GameObject* get(const GameObject::id_t id);
-    GameObject* get(const std::string& name);
-
-    void removeGameObject(const GameObject::id_t id);
-    void removeGameObject(const std::string& name);
-
-    std::shared_ptr<GameObject::Map> getGameObjects() const { return gameObjects; } 
-
     void loadObjectAsync(Device& device, AssetManager& assets, const std::string& filePath, TransformComponent transform, const std::string& name = "");
     void loadObjectAsync(Device& device, AssetManager& assets, const std::string& filePath, const std::string filePathTexture, TransformComponent transform, const std::string& name = "");
 
@@ -103,11 +95,6 @@ private:
     std::vector<std::future<futureObject>> futureGameObjects;
     std::vector<std::future<std::vector<futureObject>>> futureGameObjectslist;
 
-	// main storage
-    std::shared_ptr<GameObject::Map> gameObjects{};
-    std::unordered_map<std::string, GameObject*> gameObjectsByName;
-    std::unordered_map<std::type_index, std::vector<GameObject*>> gameObjectsByType; 
-
     void addObjectToScene(GameObject* gameObject);
 
     std::unique_ptr<DescriptorPool> globalPool{};    
@@ -122,16 +109,5 @@ private:
 template<typename T>
 inline std::vector<T*> ObjectManager::getByType()
 {
-    std::vector<T*> result; 
-    auto it = gameObjectsByType.find(typeid(T));  
-
-    if (it != gameObjectsByType.end()) { 
-        for (auto obj : it->second) { 
-            if (T* casted = dynamic_cast<T*>(obj)) { 
-                result.push_back(casted);
-            }
-        }
-    }
-    
-    return result;  
+    return assetManager.gameObject().getByType<T>();
 }

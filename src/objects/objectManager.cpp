@@ -10,6 +10,8 @@
 
 #include <chrono>
 #include <fstream>
+#include <utility>
+#include "../model/ModelAsset.h"
 
 
 void ObjectManager::startLoadModel()
@@ -34,7 +36,8 @@ void ObjectManager::startLoadModel()
             gameObject->setModel(modelId);
             gameObject->saveable = false;
             gameObject->show = false;
-            pushGameObject(std::move(gameObject));
+            assetManager.gameObject().add(std::move(gameObject));
+            //pushGameObject(std::move(gameObject));
 
         }
     }
@@ -74,7 +77,9 @@ void ObjectManager::startLoadModel()
         gameObject->setMultipleInstances(instances);
         gameObject->transform.translation = { 12.f, 0.f, 12.f };
 		gameObject->createInstanceComputeDescriptorSets(*globalPool);
-        pushGameObject(std::move(gameObject));
+        //pushGameObject(std::move(gameObject));
+        assetManager.gameObject().add(std::move(gameObject));
+
 
         ComputeObject computeGrass{
             true,
@@ -82,7 +87,7 @@ void ObjectManager::startLoadModel()
             1, 
             1,
             instances.size(),
-            dynamic_cast<GameObjectModel*>(get("grass"))
+            dynamic_cast<GameObjectModel*>(assetManager.gameObject().findByName("grass"))
         };
 
         computeList.push_back(computeGrass);
@@ -106,7 +111,10 @@ void ObjectManager::startLoadModel()
             gameObject->transform.translation = { 0, 0.2f, 8 };
             gameObject->saveable = false;
             gameObject->createPoseResources(*globalPool);
-            pushGameObject(std::move(gameObject));
+            //pushGameObject(std::move(gameObject));
+
+            assetManager.gameObject().add(std::move(gameObject));
+
         }
     }
 
@@ -134,7 +142,9 @@ void ObjectManager::createPrimitive(PrimitivesModelType type, int detail, Transf
 
     GameObject::id_t id = gameObject->getId();
 
-    pushGameObject(std::move(gameObject));
+    //pushGameObject(std::move(gameObject));
+    assetManager.gameObject().add(std::move(gameObject));
+
 
     pushFuture(std::async(std::launch::async, [this, id, type, detail, filePathTexture]() {
         ModelManager::ModelID modelID = 0;
@@ -163,48 +173,6 @@ void ObjectManager::createPrimitive(PrimitivesModelType type, int detail, Transf
      );
 }
 
-    /////// get and remove ///////
-
-GameObject* ObjectManager::get(const GameObject::id_t id)
-{
-    auto it = gameObjects->find(id);
-    return (it != gameObjects->end()) ? it->second.get() : nullptr;
-}
-
-GameObject* ObjectManager::get(const std::string& name)
-{
-    auto it = gameObjectsByName.find(name);
-    return (it != gameObjectsByName.end()) ? it->second : nullptr;
-}
-
-void ObjectManager::removeGameObject(const GameObject::id_t id)
-{
-    auto it = gameObjects->find(id);
-    if (it == gameObjects->end()) {
-        return; // nothing to remove
-    }
-
-    GameObject* obj = it->second.get();
-
-    // Remove from name map
-    if (!obj->getName().empty()) {
-        gameObjectsByName.erase(obj->getName());
-    }
-
-    // Remove from type-indexed list
-    std::type_index type = typeid(*obj);
-    auto& vec = gameObjectsByType[type];
-    vec.erase(std::remove(vec.begin(), vec.end(), obj), vec.end());
-
-    // remove from main storage
-    gameObjects->erase(it);
-}
-
-void ObjectManager::removeGameObject(const std::string& name)
-{
-	removeGameObject(get(name)->getId());
-}
-
     /////// scene management ///////
 /// <summary>
 /// save current scene and load new one
@@ -216,15 +184,15 @@ void ObjectManager::switchScene(std::string name)
     saveFullScene();
 
 	// mark all objects to be removed
-    for (auto obj = gameObjects->begin(); obj != gameObjects->end(); obj++) {
-        obj->second->toBeRemoved = true;
+    for (auto obj : assetManager.gameObject().getByType<GameObject>()) {
+        obj->toBeRemoved = true;
 	}
 
 	// keep skybox
-    get("cubemap")->toBeRemoved = false;
+    assetManager.gameObject().findByName("cubemap")->toBeRemoved = false;
 
 	// keep main camera
-    get("mainCamera")->toBeRemoved = false;
+    assetManager.gameObject().findByName("mainCamera")->toBeRemoved = false;
 
 	// clear all loaded async models
     futureGameObjects.clear();
@@ -309,7 +277,8 @@ void ObjectManager::loadScene(std::string name)
             auto cameraObject = GameObjectFactory::createGameObject<GameObjectCamera>(device, assetManager, fov, aspectRatio, nearPlane, farPlane);
             cameraObject->transform = transform;
             cameraObject->setName(objName);
-            pushGameObject(std::move(cameraObject));
+            assetManager.gameObject().add(std::move(cameraObject));
+            //pushGameObject(std::move(cameraObject));
         }
         else if (objType == static_cast<int>(GameObjectType::SPOT_LIGHT)) {
             float fov = element.value()["fov"];
@@ -319,7 +288,9 @@ void ObjectManager::loadScene(std::string name)
             auto spotLight = GameObjectFactory::createGameObject<GameObjectSpotLight>(device, assetManager, fov, aspectRatio, nearPlane, farPlane);
             spotLight->transform = transform;
             spotLight->setName(objName);
-            pushGameObject(std::move(spotLight));
+            //pushGameObject(std::move(spotLight));
+            assetManager.gameObject().add(std::move(spotLight));
+
         }
         else
         {
@@ -328,13 +299,15 @@ void ObjectManager::loadScene(std::string name)
             if (behavior) gameObject->setAttachedClass(std::move(behavior));
 
             gameObject->setName(objName); 
-            pushGameObject(std::move(gameObject));
+            //pushGameObject(std::move(gameObject));
+            assetManager.gameObject().add(std::move(gameObject));
+
 
         }
     }
 
 	// ensure there is a main camera
-    if (get("mainCamera") == nullptr) { 
+    if (assetManager.gameObject().findByName("mainCamera") == nullptr) {
         auto cameraObject = GameObjectFactory::createGameObject<GameObjectCamera>(device, assetManager, glm::radians(50.f), 1.f, .1f, 100.f);
         cameraObject->setName("mainCamera");
         pushGameObject(std::move(cameraObject));
@@ -457,7 +430,7 @@ void ObjectManager::updateGameObject(float frameTime)
 {
     std::vector<GameObject::id_t> toRemove;
 
-    for (auto& [id, obj] : *gameObjects) {
+    for (auto obj : assetManager.gameObject().getByType<GameObject>()) {
         if (!obj->toBeRemoved) {
             obj->loop(this);
             continue;
@@ -465,7 +438,7 @@ void ObjectManager::updateGameObject(float frameTime)
 
         // Handle removal
         if (obj->getType() == GameObjectType::MODEL) {
-            auto* modelObj = dynamic_cast<GameObjectModel*>(obj.get());
+            auto* modelObj = dynamic_cast<GameObjectModel*>(obj);
             if (modelObj->show) {
                 modelObj->show = false; // Hide first to avoid descriptor issues
                 continue;
@@ -473,12 +446,14 @@ void ObjectManager::updateGameObject(float frameTime)
         }
 
         // Either not a model, or already hidden — safe to remove
-        toRemove.push_back(id);
+        toRemove.push_back(obj->getId());
     }
 
     // Remove after iteration
     for (auto id : toRemove) {
-        removeGameObject(id);
+        assetManager.gameObject().remove(id);
+
+        //removeGameObject(id);
     }
 
     // update GLTF game objects
@@ -506,9 +481,9 @@ void ObjectManager::saveFullScene()
 {
     currentSceneJson = json::parse(R"({})");
     
-    for (auto& [id, obj] : *gameObjects) {
+    for (auto obj : assetManager.gameObject().getByType<GameObject>()) {
         if (obj->saveable)
-            addObjectToScene(obj.get());
+            addObjectToScene(obj);
 	}
 
     // save back to file
@@ -539,7 +514,7 @@ void ObjectManager::pushModel()
                 if (object.type != ModelType::UNDEFINED_MODEL) {
 
                      // get gameobject
-                     auto* gameObject = dynamic_cast<GameObjectModel*>(get(object.id));
+                     auto* gameObject = dynamic_cast<GameObjectModel*>(assetManager.gameObject().find(object.id));
 
                      if (!gameObject || !object.modelID) {
                          continue;
@@ -575,14 +550,16 @@ void ObjectManager::pushGameObject(std::unique_ptr<GameObject> gameObject)
     std::type_index type = typeid(*gameObject);
     gameObject->setup(this);
 
-    gameObjects->emplace(id, std::move(gameObject));
+    //gameObjects->emplace(id, std::move(gameObject));
+    assetManager.gameObject().add(std::move(gameObject));
+
 
     // Store pointer in name map
-    if (!name.empty()) {
+/*    if (!name.empty()) {
         gameObjectsByName[name] = gameObjects->at(id).get();
     }
     // Store in type-indexed list
-    gameObjectsByType[type].push_back(gameObjects->at(id).get());
+    gameObjectsByType[type].push_back(gameObjects->at(id).get());*/
 }
 
 void ObjectManager::loadObjectAsync(Device& device, AssetManager& assets, const std::string& filePath, TransformComponent transform, const std::string& name)
@@ -638,6 +615,5 @@ ObjectManager::ObjectManager(Device& device, AssetManager& assetManager) : devic
         .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Swap_chain::MAX_FRAMES_IN_FLIGHT * 640)
         .build();
 
-    gameObjects = std::make_shared<GameObject::Map>();
     loadScene(currentScene);
 };

@@ -40,7 +40,7 @@ void ChunkManager::loop(Device& device, ObjectManager* objManager, GameObject* o
 			// remove chunk with all its component
 			
 			for (auto id : it->second) {
-				objManager->removeGameObject(id);
+				objManager->assetManager.gameObject().remove(id);
 			}
 
 			it = loadedChunk.erase(it);
