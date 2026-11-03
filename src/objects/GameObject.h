@@ -4,7 +4,6 @@
 #include "../base/descriptors.h"
 #include "../base/Device.h"
 #include "../render/Camera.h"
-#include "../assetManager/AssetManager.h"
 #include "../assetManager/ModelManager.h"
 #include "../model/Animation/Animation.h"
 
@@ -39,7 +38,7 @@
 class ObjectManager;
 class GameObject;
 class GameObjectBehavior;
-
+class AssetManager;
 
 enum class ModelType {
 	UNDEFINED_MODEL = 0,

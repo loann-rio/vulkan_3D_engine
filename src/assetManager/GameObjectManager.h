@@ -7,7 +7,6 @@
 
 #include "../objects/GameObject.h"
 
-#pragma once
 
 class GameObjectManager final
 {
@@ -23,6 +22,9 @@ public:
     GameObject* find(ObjectId id) noexcept;
     GameObject* findByName(const std::string& name) noexcept;
 
+    template<typename T>
+    std::vector<T*> getByType() const;
+
     bool remove(ObjectId id) noexcept;
     bool removeByName(const std::string& name) noexcept;
 
@@ -37,3 +39,15 @@ private:
     std::vector<ObjectId> object_to_be_removed_;
 
 };
+
+template<typename T>
+inline std::vector<T*> GameObjectManager::getByType() const
+{
+    std::vector<T*> result;
+    for (const auto& entry : objects_) {
+        if (auto* object = dynamic_cast<T*>(entry.second.get())) {
+            result.push_back(object);
+        }
+    }
+    return result;
+}

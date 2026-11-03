@@ -69,18 +69,18 @@ void BasicUI::drawUI(VkCommandBuffer commandBuffer, ObjectManager* manager, floa
     ImGui_ImplGlfw_NewFrame(); 
     ImGui::NewFrame();  
 
-    auto objects = manager->getGameObjects();
+    auto objects = assets.gameObject().getByType<GameObject>();
 
     std::vector<std::string> listObjectsName;
-    for (auto i = objects->begin(); i != objects->end(); i++) {
-        auto name = i->second->getName();
+    for (GameObject* obj : objects) {
+        auto name = obj->getName();
         if (name.size()) 
             listObjectsName.push_back(name);
     }   
 
     objectSelectionWindow(listObjectsName, manager, frameTime);
 
-    auto gameObject = manager->get(selected_object);
+    auto gameObject = assets.gameObject().findByName(selected_object);
     if (gameObject != nullptr) {
         gameObjectWindow(gameObject, manager); 
     }
@@ -105,8 +105,8 @@ void BasicUI::gameObjectWindow(GameObject* gameObject, ObjectManager* manager)
     gameObject->debugUI();
 
     if (ImGui::Button("move to cam")) {
-		gameObject->transform.translation = manager->get(manager->mainCamera)->transform.translation;
-		gameObject->transform.rotation = manager->get(manager->mainCamera)->transform.rotation;
+		gameObject->transform.translation = assets.gameObject().findByName(manager->mainCamera)->transform.translation;
+		gameObject->transform.rotation = assets.gameObject().findByName(manager->mainCamera)->transform.rotation;
 	}
 
     if (ImGui::Button("remove object"))
