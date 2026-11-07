@@ -9,6 +9,7 @@
 #include <iostream>
 #include <vector>
 
+
 class ChunkManager : public GameObjectBehavior
 {
 public:
@@ -16,8 +17,8 @@ public:
 
 	ChunkManager(Device& device) : device{ device } {}
 
-	void setup(Device& device, ObjectManager* objManager, GameObject* object) override {} 
-	void loop(Device& device, ObjectManager* objManager, GameObject* object) override;
+	void setup(Device& device, AssetManager& assetManager, GameObject& object) override {} 
+	void loop(Device& device, AssetManager& assetManager, GameObject& object) override;
 
 private:
 

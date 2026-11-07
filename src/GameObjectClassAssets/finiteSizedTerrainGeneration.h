@@ -5,7 +5,6 @@
 
 #include "../model/preBuild.h"
 
-#include "../objects/objectManager.h"
 #include "../base/Device.h"
 
 
@@ -20,7 +19,7 @@ struct RegionVariables {
 };
 
 public:
-	std::vector<GameObject::id_t> createChunk(Device& device, ObjectManager* objManager, int chunkX, int chunkY, float chunkWorldSizeUnit); 
+	std::vector<GameObject::id_t> createChunk(Device& device, AssetManager& assetManager, int chunkX, int chunkY, float chunkWorldSizeUnit); 
 
 private:
 

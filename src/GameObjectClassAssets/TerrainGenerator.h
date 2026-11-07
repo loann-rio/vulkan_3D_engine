@@ -11,6 +11,7 @@
 #include <unordered_set>
 #include <array>
 #include "../assetManager/ModelManager.h"
+#include "../assetManager/AssetManager.h"
 
 
 class TerrainGenerator : public GameObjectBehavior 
@@ -35,8 +36,8 @@ struct RegionVariables {
 public:
 	REGISTER_BEHAVIOR(TerrainGenerator);
 
-	void setup(Device& device, ObjectManager* objManager, GameObject* object) override {}
-	void loop(Device& device, ObjectManager* objManager, GameObject* object) override;
+	void setup(Device& device, AssetManager& assetManager, GameObject& object) override {}
+	void loop(Device& device, AssetManager& assetManager, GameObject& object) override;
 
 	TerrainGenerator(Device& device);
 	std::vector<std::vector<glm::vec2>> generateChunck(float Xoffset, float Yoffset);

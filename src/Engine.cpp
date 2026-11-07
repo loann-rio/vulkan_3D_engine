@@ -65,7 +65,7 @@ void Engine::run()
         /////// update objects ///////
 
         // loop on games objects
-        objectManager.updateGameObject(frameTime);        
+        assetManager.gameObject().update(frameTime);        
 
         // update camera
         {
@@ -83,7 +83,8 @@ void Engine::run()
 
         // update pointLight 
         {
-            std::vector<GameObjectPointLight*> pointLigths = objectManager.getByType<GameObjectPointLight>();
+            std::vector<GameObjectPointLight*> pointLigths = assetManager.gameObject().getByType<GameObjectPointLight>();
+
             uint16_t i = 0;
             for (auto lightObj : pointLigths) {
                 if (lightObj->transform.color.w)
@@ -102,7 +103,7 @@ void Engine::run()
         // update spotLight
         {
             uint16_t i = 0; 
-            std::vector<GameObjectSpotLight*> spotLigths = objectManager.getByType<GameObjectSpotLight>();
+            std::vector<GameObjectSpotLight*> spotLigths = assetManager.gameObject().getByType<GameObjectSpotLight>();
             for (auto lightObj : spotLigths) {
                 if (lightObj->transform.color.w != 0)
                     spotLightUbo.spotLight[i++] = lightObj->getSpotLightInfo(true);

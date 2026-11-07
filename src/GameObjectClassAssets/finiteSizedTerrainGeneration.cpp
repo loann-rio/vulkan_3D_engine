@@ -19,7 +19,7 @@
 // volcano shape
 // random spread
 
-std::vector<GameObject::id_t> finiteSizedTerrainGeneration::createChunk(Device& device, ObjectManager* objManager, int chunkX, int chunkY, float chunkWorldSizeUnit)
+std::vector<GameObject::id_t> finiteSizedTerrainGeneration::createChunk(Device& device, AssetManager& assetManager, int chunkX, int chunkY, float chunkWorldSizeUnit)
 {
 	/*auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, objManager->assetManager);
 	gameObject->transform.translation = { chunkX * chunkWorldSizeUnit, 0, chunkY * chunkWorldSizeUnit };

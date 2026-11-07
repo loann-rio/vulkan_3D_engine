@@ -1,11 +1,13 @@
 #include "ChunkManager.h"
 
-void ChunkManager::loop(Device& device, ObjectManager* objManager, GameObject* object)
+#include <unordered_set>
+
+void ChunkManager::loop(Device& device, AssetManager& assetManager, GameObject& object)
 {
 
 	// determine current chunk position
-	int posX = (int) object->transform.translation.x / chunkWorldSize;
-	int posY = (int) object->transform.translation.z / chunkWorldSize;
+	int posX = (int) object.transform.translation.x / chunkWorldSize;
+	int posY = (int) object.transform.translation.z / chunkWorldSize;
 
 	// load visible chunks
 	for (int i = posX - int(visibleChunk / 2); i <= posX + int(visibleChunk / 2); i++)
@@ -18,7 +20,7 @@ void ChunkManager::loop(Device& device, ObjectManager* objManager, GameObject* o
 		if (loadedChunk.count(hash) > 0) continue; // if chunk already exist -> skip
 
 		// create chunk and store its object ids
-		std::vector<GameObject::id_t> chunkObjects = terrainGenerator.createChunk(device, objManager, i, j, chunkWorldSize);
+		std::vector<GameObject::id_t> chunkObjects = terrainGenerator.createChunk(device, assetManager, i, j, chunkWorldSize);
 		loadedChunk[hash] = chunkObjects;
 	}
 
@@ -40,7 +42,7 @@ void ChunkManager::loop(Device& device, ObjectManager* objManager, GameObject* o
 			// remove chunk with all its component
 			
 			for (auto id : it->second) {
-				objManager->assetManager.gameObject().remove(id);
+				assetManager.gameObject().remove(id);
 			}
 
 			it = loadedChunk.erase(it);
