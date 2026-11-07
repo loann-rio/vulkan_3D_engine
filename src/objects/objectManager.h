@@ -54,9 +54,6 @@ public:
 	// create primitive object
 	void createPrimitive(PrimitivesModelType type, int detail, TransformComponent transform, const std::string& name = "", const std::string& filePathTexture = "");
 
-    template <typename T>
-    std::vector<T*> getByType();
-
     void loadObjectAsync(Device& device, AssetManager& assets, const std::string& filePath, TransformComponent transform, const std::string& name = "");
     void loadObjectAsync(Device& device, AssetManager& assets, const std::string& filePath, const std::string filePathTexture, TransformComponent transform, const std::string& name = "");
 
@@ -76,20 +73,16 @@ public:
 
     // camera
     std::string mainCamera = "mainCamera"; 
-
-    // main skybox
     std::string mainSkybox = "cubemap";
 
-    AssetManager& assetManager;
 
     void createDescriptorSet(ModelAsset* model);
-    void updateGameObject(float frameTime);
 
     std::vector<ComputeObject> computeList{};
     GameObjectModel* baseSkyBox = nullptr;
 private:
     Device& device;
-    
+    AssetManager& assetManager;
 
     std::vector<std::future<futureObject>> futureGameObjects;
     std::vector<std::future<std::vector<futureObject>>> futureGameObjectslist;
@@ -98,15 +91,3 @@ private:
 
     std::unique_ptr<DescriptorPool> globalPool{};    
 };
-
-
-/// <summary>
-/// Retrieves all managed objects of a specified type.
-/// </summary>
-/// <typeparam name="T">The type of objects to retrieve.</typeparam>
-/// <returns>A vector containing pointers to objects of type T managed by ObjectManager.</returns>
-template<typename T>
-inline std::vector<T*> ObjectManager::getByType()
-{
-    return assetManager.gameObject().getByType<T>();
-}

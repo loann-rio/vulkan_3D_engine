@@ -94,8 +94,8 @@ public:
 
 	virtual std::string getClassName() const = 0;
 
-	virtual void setup(Device& device, ObjectManager* objManager, GameObject* object) = 0;
-	virtual void loop(Device& device, ObjectManager* objManager, GameObject* object) = 0;
+	virtual void setup(Device& device, AssetManager& assetManager, GameObject& object) = 0;
+	virtual void loop(Device& device, AssetManager& assetManager, GameObject& object) = 0;
 
 	// Factory signature
 	using CreatorFn = std::function<std::unique_ptr<GameObjectBehavior>(Device&)>;
@@ -167,8 +167,8 @@ public:
 	}
 
 	void setAttachedClass(std::unique_ptr<GameObjectBehavior> attClass) { attachedClass = std::move(attClass); hasAttachedClass = true;} 
-	void setup(ObjectManager* objManager) { if (hasAttachedClass) attachedClass->setup(device, objManager, this); } 
-	void loop(ObjectManager* objManager) { if (hasAttachedClass) attachedClass->loop(device, objManager, this); }
+	void setup() { if (hasAttachedClass) attachedClass->setup(device, assets, *this); } 
+	void loop() { if (hasAttachedClass) attachedClass->loop(device, assets, *this); }
 	
 	// mark for removal
 	bool toBeRemoved = false;

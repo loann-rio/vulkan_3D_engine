@@ -68,7 +68,41 @@ bool GameObjectManager::removeByName(const std::string& name) noexcept
 }
 
 void GameObjectManager::update(float deltaTime)
-{}
+{
+    std::vector<GameObject::id_t> toRemove;
+
+    for (auto obj : getByType<GameObject>()) {
+        if (!obj->toBeRemoved) {
+            obj->loop();
+            continue;
+        }
+
+        // Handle removal
+        if (obj->getType() == GameObjectType::MODEL) {
+            auto* modelObj = dynamic_cast<GameObjectModel*>(obj);
+            if (modelObj->show) {
+                modelObj->show = false; // Hide first to avoid descriptor issues
+                continue;
+            }
+        }
+
+        toRemove.push_back(obj->getId());
+    }
+
+    // Remove after iteration
+    for (auto id : toRemove) {
+        remove(id);
+    }
+
+    // update GLTF game objects
+    {
+        std::vector<GameObjectModel*> objects = getByType<GameObjectModel>();
+        for (auto obj : objects) {
+            obj->update(deltaTime);
+        }
+    }
+
+}
 
 void GameObjectManager::indexObject(GameObject& object)
 {

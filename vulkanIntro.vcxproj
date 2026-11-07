@@ -286,6 +286,7 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClInclude Include="src\render\RenderPasses\DepthPass.h" />
     <ClInclude Include="src\render\RenderPasses\PostProPass.h" />
     <ClInclude Include="src\render\TextOverlay.h" />
+    <ClInclude Include="src\Scene\SceneLoader.h" />
     <ClInclude Include="src\Textures\Decoder\HDRDecoder.h" />
     <ClInclude Include="src\Textures\Decoder\ImageDecoder.h" />
     <ClInclude Include="src\Textures\Decoder\KTX2Decoder.h" />

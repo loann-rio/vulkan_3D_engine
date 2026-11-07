@@ -386,7 +386,7 @@ void BasicUI::createCameraWindow(ObjectManager* manager, bool isSpotLight = fals
 
         if (isSpotLight)
         {
-            auto spotLight = GameObjectFactory::createGameObject<GameObjectSpotLight>(device, manager->assetManager, fov, ar, .1f, 100.f);
+            auto spotLight = GameObjectFactory::createGameObject<GameObjectSpotLight>(device, assets, fov, ar, .1f, 100.f);
 
             spotLight->transform.color = color;
             spotLight->setName(name);
@@ -394,7 +394,7 @@ void BasicUI::createCameraWindow(ObjectManager* manager, bool isSpotLight = fals
             manager->pushGameObject(std::move(spotLight));
         }
         else {
-            auto camera = GameObjectFactory::createGameObject<GameObjectCamera>(device, manager->assetManager, fov, ar, .1f, 100.f);
+            auto camera = GameObjectFactory::createGameObject<GameObjectCamera>(device, assets, fov, ar, .1f, 100.f);
 
             camera->setName(name);
 
@@ -426,7 +426,7 @@ void BasicUI::createEmptyObjectWindow(ObjectManager* manager)
 	// create
     if (ImGui::Button("create"))
     {
-        auto emptyObject = GameObjectFactory::createGameObject<GameObject>(device, manager->assetManager);
+        auto emptyObject = GameObjectFactory::createGameObject<GameObject>(device, assets);
         emptyObject->setName(name);
 
         auto behavior = GameObjectBehavior::createBehaviorFromType(behaviorClass, device);

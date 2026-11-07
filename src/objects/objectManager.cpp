@@ -77,7 +77,6 @@ void ObjectManager::startLoadModel()
         gameObject->setMultipleInstances(instances);
         gameObject->transform.translation = { 12.f, 0.f, 12.f };
 		gameObject->createInstanceComputeDescriptorSets(*globalPool);
-        //pushGameObject(std::move(gameObject));
         assetManager.gameObject().add(std::move(gameObject));
 
 
@@ -111,7 +110,6 @@ void ObjectManager::startLoadModel()
             gameObject->transform.translation = { 0, 0.2f, 8 };
             gameObject->saveable = false;
             gameObject->createPoseResources(*globalPool);
-            //pushGameObject(std::move(gameObject));
 
             assetManager.gameObject().add(std::move(gameObject));
 
@@ -278,7 +276,6 @@ void ObjectManager::loadScene(std::string name)
             cameraObject->transform = transform;
             cameraObject->setName(objName);
             assetManager.gameObject().add(std::move(cameraObject));
-            //pushGameObject(std::move(cameraObject));
         }
         else if (objType == static_cast<int>(GameObjectType::SPOT_LIGHT)) {
             float fov = element.value()["fov"];
@@ -288,7 +285,6 @@ void ObjectManager::loadScene(std::string name)
             auto spotLight = GameObjectFactory::createGameObject<GameObjectSpotLight>(device, assetManager, fov, aspectRatio, nearPlane, farPlane);
             spotLight->transform = transform;
             spotLight->setName(objName);
-            //pushGameObject(std::move(spotLight));
             assetManager.gameObject().add(std::move(spotLight));
 
         }
@@ -299,10 +295,7 @@ void ObjectManager::loadScene(std::string name)
             if (behavior) gameObject->setAttachedClass(std::move(behavior));
 
             gameObject->setName(objName); 
-            //pushGameObject(std::move(gameObject));
             assetManager.gameObject().add(std::move(gameObject));
-
-
         }
     }
 
@@ -426,46 +419,6 @@ void ObjectManager::createDescriptorSet(ModelAsset* model)
     }  
 }
 
-void ObjectManager::updateGameObject(float frameTime)
-{
-    std::vector<GameObject::id_t> toRemove;
-
-    for (auto obj : assetManager.gameObject().getByType<GameObject>()) {
-        if (!obj->toBeRemoved) {
-            obj->loop(this);
-            continue;
-        }
-
-        // Handle removal
-        if (obj->getType() == GameObjectType::MODEL) {
-            auto* modelObj = dynamic_cast<GameObjectModel*>(obj);
-            if (modelObj->show) {
-                modelObj->show = false; // Hide first to avoid descriptor issues
-                continue;
-            }
-        }
-
-        // Either not a model, or already hidden — safe to remove
-        toRemove.push_back(obj->getId());
-    }
-
-    // Remove after iteration
-    for (auto id : toRemove) {
-        assetManager.gameObject().remove(id);
-
-        //removeGameObject(id);
-    }
-
-    // update GLTF game objects
-    {
-        std::vector<GameObjectModel*> objects = getByType<GameObjectModel>();
-        for (auto obj : objects) {
-            obj->update(frameTime);
-        }
-    }
-
-}
-
 void ObjectManager::createScene(std::string name)
 {
     json empty = json::parse(R"({})");
@@ -548,18 +501,10 @@ void ObjectManager::pushGameObject(std::unique_ptr<GameObject> gameObject)
     GameObject::id_t id = gameObject->getId();
     std::string name = gameObject->getName();
     std::type_index type = typeid(*gameObject);
-    gameObject->setup(this);
 
-    //gameObjects->emplace(id, std::move(gameObject));
+    gameObject->setup();
+
     assetManager.gameObject().add(std::move(gameObject));
-
-
-    // Store pointer in name map
-/*    if (!name.empty()) {
-        gameObjectsByName[name] = gameObjects->at(id).get();
-    }
-    // Store in type-indexed list
-    gameObjectsByType[type].push_back(gameObjects->at(id).get());*/
 }
 
 void ObjectManager::loadObjectAsync(Device& device, AssetManager& assets, const std::string& filePath, TransformComponent transform, const std::string& name)
