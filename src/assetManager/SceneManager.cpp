@@ -1,7 +1,10 @@
-#include "SceneManager.h"
+/*#include "SceneManager.h"
+#include "../objects/GameObject.h"
+
 #include <fstream>
 
 #include <../json.hpp>
+#include <vector>
 using json = nlohmann::json;
 
 namespace {
@@ -10,8 +13,20 @@ namespace {
 
 }
 
-void SceneManager::save()
-{}
+void SceneManager::save(std::vector<GameObject*> gameObjects)
+{
+	json currentSceneJson = json::parse(R"({})");
+
+	for (auto obj : gameObjects) {
+		if (obj->saveable)
+			addObjectToScene(currentSceneJson, obj);
+	}
+
+	std::string scenePath = "scenes/" + currentSceneName + ".json";
+	std::ofstream o(scenePath);
+	o << currentSceneJson << std::endl;
+
+}
 
 void SceneManager::open(std::string new_scene)
 {
@@ -31,5 +46,13 @@ void SceneManager::open(std::string new_scene)
 void SceneManager::load()
 {}
 
-void SceneManager::create(std::string path)
-{}
+void SceneManager::create(std::string name)
+{
+	json empty = json::parse(R"({})");
+
+	std::string path = "scenes/" + name + ".json";
+
+	// create json file with name
+	std::ofstream o(path);
+	o << empty << std::endl;
+}*/
