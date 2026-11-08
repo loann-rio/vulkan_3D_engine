@@ -225,6 +225,9 @@
     <ClCompile Include="src\assetManager\GameObjectManager.cpp">
       <Filter>assetManager</Filter>
     </ClCompile>
+    <ClCompile Include="src\Scene\SceneLoader.cpp">
+      <Filter>Scene</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tiny_gltf.h">

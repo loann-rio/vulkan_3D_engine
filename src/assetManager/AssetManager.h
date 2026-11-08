@@ -3,24 +3,22 @@
 #include "ModelManager.h"
 #include "TextureManager.h"
 #include "GameObjectManager.h"
-#include "SceneManager.h"
 //#include "ShaderManager.h"
 //#include "ScriptManager.h"
 
 class AssetManager {
 public:
-    AssetManager() {
+    AssetManager() 
+    {
 		textureMgr = std::make_unique<TextureManager>();
         modelMgr = std::make_unique<ModelManager>();
         GameObjectMgr = std::make_unique<GameObjectManager>();
-        sceneMgr = std::make_unique<SceneManager>();
     };
 
     
     TextureManager& textures() { return *textureMgr; }
     ModelManager& models() { return *modelMgr; }
     GameObjectManager& gameObject() { return *GameObjectMgr; }
-    SceneManager& scene() { return *sceneMgr; }
     //ShaderManager& shaders() { return *shaderMgr; }
     //ScriptManager& scripts() { return *scriptMgr; }
 
@@ -31,7 +29,6 @@ private:
     std::unique_ptr<ModelManager> modelMgr;
     std::unique_ptr<TextureManager> textureMgr;
     std::unique_ptr<GameObjectManager> GameObjectMgr;
-    std::unique_ptr<SceneManager> sceneMgr;
     //std::unique_ptr<ShaderManager> shaderMgr;
     //std::unique_ptr<ScriptManager> scriptMgr;
 };
