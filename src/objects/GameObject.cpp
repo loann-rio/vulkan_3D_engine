@@ -273,8 +273,7 @@ void GameObjectModel::debugUI()
     ImGui::Text("animation:");
     ImGui::InputInt("index", &animationIndex);
 
-
-    if (ImGui::Button("start")) animator.play(static_cast<uint32_t>(std::max(0, animationIndex)), false);
+    if (ImGui::Button("start")) animator.play(static_cast<uint32_t>(std::max(0, animationIndex)), true);
     ImGui::SameLine();
     if (ImGui::Button("stop")) animator.stop();
 

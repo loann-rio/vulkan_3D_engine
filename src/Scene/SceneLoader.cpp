@@ -75,8 +75,7 @@ std::filesystem::path SceneLoader::makeScenePath(const std::string& sceneName)
 {
     const std::string filename =
         sceneName.size() >= 5 && sceneName.substr(sceneName.size() - 5) == ".json"
-        ? sceneName
-        : sceneName + ".json";
+        ? sceneName : sceneName + ".json";
 
     return std::filesystem::path("scenes") / filename;
 }
