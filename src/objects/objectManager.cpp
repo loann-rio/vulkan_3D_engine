@@ -102,7 +102,6 @@ void ObjectManager::startLoadModel()
 
             auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
             gameObject->setName("testModelBuilder");
-            // Treat the decoded glTF model as an OBJ model so it can be rendered by the simple_shader pipeline
             gameObject->setModelType(ModelType::GLTF_MODEL);
             gameObject->setModel(id);
             gameObject->transform.rotation.x = 3.141592f;
@@ -116,6 +115,38 @@ void ObjectManager::startLoadModel()
         }
     }
 
+    {
+        ModelBuilder builder(device, assetManager);
+        ModelManager::ModelID id = assetManager.models().create(builder.fromFile("assets\\model\\UAL1_Standard.glb"));
+
+        if (id)
+        {
+            createDescriptorSet(assetManager.models().get(id));
+
+            auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
+            gameObject->setName("player");
+            gameObject->setModelType(ModelType::GLTF_MODEL);
+            gameObject->setModel(id);
+            gameObject->transform.rotation.x = 3.141592f;
+            gameObject->transform.rotation.y = 15;
+            gameObject->transform.translation = { 5.5f, 0.02f, -3.f };
+            gameObject->saveable = false;
+            gameObject->createPoseResources(*globalPool);
+
+            auto& obj = assetManager.gameObject().add(std::move(gameObject));
+
+            // player camera -> child of player
+
+            auto cameraObject = GameObjectFactory::createGameObject<GameObjectCamera>(device, assetManager, 0.5f, 1.f, 0.1f, 100.f);
+            cameraObject->setName("player camera");
+            cameraObject->transform.translation = { 1, -1, 1 };
+            cameraObject->saveable = false;
+            cameraObject->setParent(&obj);
+            assetManager.gameObject().add(std::move(cameraObject));
+
+
+        }
+    }
 
     /* {
         auto behavior = GameObjectBehavior::createBehaviorFromType("ChunkManager", device);

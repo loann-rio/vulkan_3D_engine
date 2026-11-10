@@ -37,7 +37,7 @@ ModelBuilder& ModelBuilder::fromFile(const std::string& path)
 
         source = SourceType::Obj;
     }
-    else if (ext == "gltf")
+    else if (ext == "gltf" || ext == "glb")
     {
         if (source != SourceType::GlTF && source != SourceType::None)
             throw std::runtime_error("all model should have the same type");
@@ -69,7 +69,7 @@ ModelBuilder& ModelBuilder::fromGlTF(const std::string& path)
         throw std::runtime_error("all model should have the same type");
 
     auto ext = getExtension(path);
-    if (ext != "gltf")
+    if (ext != "gltf" && ext != "glb")
         throw std::runtime_error("not compatible type");
 
     source = SourceType::GlTF;

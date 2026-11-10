@@ -303,7 +303,7 @@ void BasicUI::createGLTFWindow(ObjectManager* manager)
     ImGui::InputTextWithHint("##path", "enter model path", path, IM_ARRAYSIZE(path));
 
     if (ImGui::Button("open dialog")) {
-        std::string filePath = openFileDialog("gltf");
+        std::string filePath = openFileDialog("gltf,glb");
 
         if (!filePath.empty())
             snprintf(path, sizeof(path), "%s", filePath.c_str());
