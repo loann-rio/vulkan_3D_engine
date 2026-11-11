@@ -75,13 +75,6 @@ glm::mat4 GameObject::getTransformMat()
     return transform.mat4(); 
 }
 
-glm::mat3 GameObject::getNormalMat()
-{
-    if (parentObject != nullptr) 
-        return parentObject->getNormalMat() * transform.normalMatrix();
-    return transform.normalMatrix();
-}
-
 
 void GameObjectModel::setModel(ModelManager::ModelID _model)
 {
@@ -245,7 +238,17 @@ void GameObjectCamera::debugUI()
     }
 }
 
-void GameObjectCamera::updateCameraView() { camera->setViewYXZ(transform.translation, transform.rotation); camera->updateFrustrumPlanes(); }
+void GameObjectCamera::updateCameraView() { 
+    glm::mat4 transformMat = getTransformMat();
+
+    glm::vec3 rot;
+    rot.x = atan2f(-transformMat[2][1], sqrtf(transformMat[2][0] * transformMat[2][0] + transformMat[2][2] * transformMat[2][2]));
+    rot.y = atan2f(transformMat[2][0], transformMat[2][2]);
+    rot.z = atan2f(transformMat[0][1], transformMat[1][1]);
+
+    camera->setViewYXZ(glm::vec3(transformMat[3]), rot);
+    camera->updateFrustrumPlanes(); 
+}
 
 SpotLight GameObjectSpotLight::getSpotLightInfo(bool _updateCameraView)
 {

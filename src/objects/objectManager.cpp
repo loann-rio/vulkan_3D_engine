@@ -12,6 +12,7 @@
 #include <fstream>
 #include <utility>
 #include "../model/ModelAsset.h"
+#include <glm/detail/func_trigonometric.inl>
 
 
 void ObjectManager::startLoadModel()
@@ -123,13 +124,15 @@ void ObjectManager::startLoadModel()
         {
             createDescriptorSet(assetManager.models().get(id));
 
+            //auto behavior = GameObjectBehavior::createBehaviorFromType("PlayerBehavior", device);
+
             auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
             gameObject->setName("player");
+            //gameObject->setAttachedClass(std::move(behavior));
             gameObject->setModelType(ModelType::GLTF_MODEL);
             gameObject->setModel(id);
-            gameObject->transform.rotation.x = 3.141592f;
-            gameObject->transform.rotation.y = 15;
-            gameObject->transform.translation = { 5.5f, 0.02f, -3.f };
+            gameObject->transform.rotation = { 0.33f, 0.f, 3.141592f };
+            gameObject->transform.translation = { 0.33f, 2.6f, -4.2f };
             gameObject->saveable = false;
             gameObject->createPoseResources(*globalPool);
 
@@ -143,8 +146,6 @@ void ObjectManager::startLoadModel()
             cameraObject->saveable = false;
             cameraObject->setParent(&obj);
             assetManager.gameObject().add(std::move(cameraObject));
-
-
         }
     }
 

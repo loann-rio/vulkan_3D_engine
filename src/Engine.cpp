@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <memory>
 #include <iostream>
+#include <glm/fwd.hpp>
 
 Engine::Engine() { 
     objectManager.startLoadModel(); 
@@ -77,8 +78,7 @@ void Engine::run()
 
             ubo.projection = camObj->camera->getProjection();
             ubo.view = camObj->camera->getView(); 
-            ubo.inverseView = camObj->camera->getInverseView();
-            ubo.lightPos = camObj->transform.translation; 
+            ubo.lightPos = glm::vec3(camObj->getTransformMat()[3]);
         }
 
         // update pointLight 

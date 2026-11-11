@@ -156,7 +156,6 @@ public:
 
 	// matrices
 	glm::mat4 getTransformMat();
-	glm::mat3 getNormalMat();
 
 	// attached behavior class 
 	bool hasAttachedClass = false; 

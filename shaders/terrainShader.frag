@@ -25,7 +25,6 @@ struct SpotLight {
 layout(set = 0, binding = 0) uniform GlobalUbo {
 	mat4 projection;
 	mat4 view;
-	mat4 invView;
 
 	vec4 ambientLightColor;
 	vec4 globalLightDir;
@@ -90,8 +89,7 @@ vec4 compute_shadow_factor(vec4 light_space_pos, uint indexSpotLight, vec3 surfa
 void main() {
 
 	vec3 surfaceNormal = normalize(fragNormalWorld);
-	vec3 cameraWorldPos = ubo.invView[3].xyz;
-	vec3 viewDirection = normalize(cameraWorldPos - fragPositionWorld);
+	vec3 viewDirection = normalize(ubo.camPos - fragPositionWorld);
 
 	vec3 diffuseLight = ubo.ambientLightColor.xyz * ubo.ambientLightColor.w;
 
