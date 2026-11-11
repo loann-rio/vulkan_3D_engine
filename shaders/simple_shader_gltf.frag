@@ -26,7 +26,6 @@ struct SpotLight {
 layout(set = 0, binding = 0) uniform GlobalUbo {
 	mat4 projection;
 	mat4 view;
-	mat4 invView;
 
 	vec4 ambientLightColor;
 	vec4 globalLightDir;
@@ -149,8 +148,7 @@ void main() {
 	vec3 surfaceNormal = normalize(fragNormalWorld);
 	if (material.normalTextureSet > -1)
 		surfaceNormal = getNormal(material, surfaceNormal);
-	vec3 cameraWorldPos = ubo.invView[3].xyz;
-	vec3 viewDirection = normalize(cameraWorldPos - fragPositionWorld);
+	vec3 viewDirection = normalize(ubo.camPos - fragPositionWorld);
 
 	float ao = 1.0;
 	if (material.occlusionTextureSet > -1)
