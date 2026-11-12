@@ -1,11 +1,16 @@
 #pragma once
 
-#include "../objects/ObjectManager.h"
 
 #include "../../external/json.hpp"
 
 #include <filesystem>
 #include <string>
+#include <glm/glm.hpp>
+
+class Device;
+class AssetManager;
+class ObjectManager;
+struct TransformComponent;
 
 class SceneLoader final
 {

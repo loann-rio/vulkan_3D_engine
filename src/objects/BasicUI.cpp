@@ -1,6 +1,6 @@
 #include "BasicUI.h"
 
-#include <glm/gtc/type_ptr.inl>
+#include <glm/gtc/type_ptr.hpp>
 #include <iostream>
 
 BasicUI::BasicUI(Device& device, AssetManager& assets, GLFWwindow* window, VkRenderPass renderPass) : device{ device }, assets{ assets }
@@ -195,7 +195,7 @@ void BasicUI::objectSelectionWindow(std::vector<std::string> listObjectsName, Ob
     ImGui::InputTextWithHint("##newScene", "new scene path", newScene, IM_ARRAYSIZE(newScene));
 
     if (ImGui::Button("change scene"))
-        manager->switchScene(newScene);
+        manager->switchScene(std::string(newScene));
 
     ////// object selection //////
     ImGui::SeparatorText("loaded game objects"); 

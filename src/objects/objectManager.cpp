@@ -12,7 +12,6 @@
 #include <fstream>
 #include <utility>
 #include "../model/ModelAsset.h"
-#include <glm/detail/func_trigonometric.inl>
 
 
 void ObjectManager::startLoadModel()
@@ -38,8 +37,6 @@ void ObjectManager::startLoadModel()
             gameObject->saveable = false;
             gameObject->show = false;
             assetManager.gameObject().add(std::move(gameObject));
-            //pushGameObject(std::move(gameObject));
-
         }
     }
 
@@ -118,7 +115,7 @@ void ObjectManager::startLoadModel()
 
     {
         ModelBuilder builder(device, assetManager);
-        ModelManager::ModelID id = assetManager.models().create(builder.fromFile("assets\\model\\UAL1_Standard.glb"));
+        ModelManager::ModelID id = assetManager.models().create(builder.fromFile("assets\\model\\people\\UAL1_Standard.glb"));
 
         if (id)
         {
@@ -208,37 +205,46 @@ void ObjectManager::createPrimitive(PrimitivesModelType type, int detail, Transf
 /// save current scene and load new one
 /// </summary>
 /// <param name="name"> new scene name </param>
-void ObjectManager::switchScene(std::string name)
+void ObjectManager::switchScene(std::string sceneName)
 {
-    // save current scene
-    saveFullScene();
 
-	// mark all objects to be removed
-    for (auto obj : assetManager.gameObject().getByType<GameObject>()) {
-        obj->toBeRemoved = true;
+	if (assetManager.scenes.find(sceneName) == assetManager.scenes.end()) {
+		assetManager.createNewScene(sceneName);
 	}
 
+	assetManager.switchScene(sceneName);
+
+    // save current scene
+    //saveFullScene();
+    //
+	// mark all objects to be removed
+    //for (auto obj : assetManager.gameObject().getByType<GameObject>()) {
+    //    obj->toBeRemoved = true;
+	//}
+    //
 	// keep skybox
-    assetManager.gameObject().findByName("cubemap")->toBeRemoved = false;
-
+    //assetManager.gameObject().findByName("cubemap")->toBeRemoved = false;
+    //
 	// keep main camera
-    assetManager.gameObject().findByName("mainCamera")->toBeRemoved = false;
-
+    //assetManager.gameObject().findByName("mainCamera")->toBeRemoved = false;
+    //
 	// clear all loaded async models
-    futureGameObjects.clear();
-    futureGameObjectslist.clear();
-
+    //futureGameObjects.clear();
+    //futureGameObjectslist.clear();
+    //
     // load new scene
-    currentScene = name;
-    scenePath = "scenes/" + name + ".json";
-    loadScene(name);
+    //currentScene = name;
+    //scenePath = "scenes/" + name + ".json";
+    //loadScene(name);
 
 }
 
 void ObjectManager::loadScene(std::string name)
 {
+
+	sceneLoader.load(name);
 	// test if file exists
-    scenePath = "scenes/" + name + ".json";
+/*    scenePath = "scenes/" + name + ".json";
 
 	std::ifstream i(scenePath);
     if (!i.good()) {
@@ -336,14 +342,14 @@ void ObjectManager::loadScene(std::string name)
         auto cameraObject = GameObjectFactory::createGameObject<GameObjectCamera>(device, assetManager, glm::radians(50.f), 1.f, .1f, 100.f);
         cameraObject->setName("mainCamera");
         pushGameObject(std::move(cameraObject));
-	}
+	}*/
 
 }
 
 void ObjectManager::addObjectToScene(GameObject* gameObject)
 {
     
-    if (!currentSceneJson.contains("objects")) {
+/*    if (!currentSceneJson.contains("objects")) {
         currentSceneJson["objects"] = json::object();
     }
 
@@ -400,71 +406,24 @@ void ObjectManager::addObjectToScene(GameObject* gameObject)
         objJson["behavior_type"] = gameObject->getAttachedClassType();
     }
 
-    currentSceneJson["objects"][gameObject->getName()] = objJson;
+    currentSceneJson["objects"][gameObject->getName()] = objJson;*/
 
-}
-
-void ObjectManager::createDescriptorSet(ModelAsset* model)
-{
-
-    for (auto& lod : model->lods) {
-
-        if (lod.materialBuffer) {
-            auto textureSetLayout = DescriptorSetLayout::Builder(device)
-                .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, MAX_MODEL_TEXTURES)
-                .addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
-                .build();
-
-            VkDescriptorImageInfo firstInfo = assetManager.textures().get(lod.textures[0])->getImageInfo();
-            std::vector<VkDescriptorImageInfo> texturesInfo(MAX_MODEL_TEXTURES, firstInfo);
-            for (size_t i = 0; i < lod.textures.size(); i++)
-                texturesInfo[i] = assetManager.textures().get(lod.textures[i])->getImageInfo();
-
-            VkDescriptorBufferInfo materialBufferInfo = lod.materialBuffer->descriptorInfo();
-
-            lod.descriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
-            for (auto& set : lod.descriptorSet)
-            {
-                DescriptorWriter(*textureSetLayout, *globalPool)
-                    .writeImage(0, texturesInfo.data(), MAX_MODEL_TEXTURES)
-                    .writeBuffer(1, &materialBufferInfo)
-                    .build(set);
-            }
-            continue;
-        }
-
-        for (auto& material : lod.materials)
-        {
-            auto textureSetLayout = DescriptorSetLayout::Builder(device)
-                .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-                .build();
-
-            material.descriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT * lod.materials.size());
-            for (int i = 0; i < material.descriptorSet.size(); i++)
-            {
-                auto imageInfo = assetManager.textures().get(material.albedoTexture)->getImageInfo();
-                DescriptorWriter(*textureSetLayout, *globalPool)
-                    .writeImage(0, &imageInfo)
-                    .build(material.descriptorSet[i]);
-            }
-        }
-    }  
 }
 
 void ObjectManager::createScene(std::string name)
 {
-    json empty = json::parse(R"({})");
+/*    json empty = json::parse(R"({})");
 
 	std::string path = "scenes/" + name + ".json";
 
 	// create json file with name
     std::ofstream o(path);
-    o << empty << std::endl;
+    o << empty << std::endl;*/
 }
 
 void ObjectManager::saveFullScene()
 {
-    currentSceneJson = json::parse(R"({})");
+/*    currentSceneJson = json::parse(R"({})");
     
     for (auto obj : assetManager.gameObject().getByType<GameObject>()) {
         if (obj->saveable)
@@ -473,7 +432,7 @@ void ObjectManager::saveFullScene()
 
     // save back to file
     std::ofstream o(scenePath);
-    o << currentSceneJson << std::endl;
+    o << currentSceneJson << std::endl;*/
 }
     
     /////// add objects ///////
@@ -594,3 +553,50 @@ ObjectManager::ObjectManager(Device& device, AssetManager& assetManager) : devic
 
     loadScene(currentScene);
 };
+
+void ObjectManager::createDescriptorSet(ModelAsset* model)
+{
+
+    for (auto& lod : model->lods) {
+
+        if (lod.materialBuffer) {
+            auto textureSetLayout = DescriptorSetLayout::Builder(device)
+                .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, MAX_MODEL_TEXTURES)
+                .addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
+                .build();
+
+            VkDescriptorImageInfo firstInfo = assetManager.textures().get(lod.textures[0])->getImageInfo();
+            std::vector<VkDescriptorImageInfo> texturesInfo(MAX_MODEL_TEXTURES, firstInfo);
+            for (size_t i = 0; i < lod.textures.size(); i++)
+                texturesInfo[i] = assetManager.textures().get(lod.textures[i])->getImageInfo();
+
+            VkDescriptorBufferInfo materialBufferInfo = lod.materialBuffer->descriptorInfo();
+
+            lod.descriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
+            for (auto& set : lod.descriptorSet)
+            {
+                DescriptorWriter(*textureSetLayout, *globalPool)
+                    .writeImage(0, texturesInfo.data(), MAX_MODEL_TEXTURES)
+                    .writeBuffer(1, &materialBufferInfo)
+                    .build(set);
+            }
+            continue;
+        }
+
+        for (auto& material : lod.materials)
+        {
+            auto textureSetLayout = DescriptorSetLayout::Builder(device)
+                .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+                .build();
+
+            material.descriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT * lod.materials.size());
+            for (int i = 0; i < material.descriptorSet.size(); i++)
+            {
+                auto imageInfo = assetManager.textures().get(material.albedoTexture)->getImageInfo();
+                DescriptorWriter(*textureSetLayout, *globalPool)
+                    .writeImage(0, &imageInfo)
+                    .build(material.descriptorSet[i]);
+            }
+        }
+    }
+}

@@ -23,46 +23,45 @@ class AssetManager {
 public:
     AssetManager() 
     {
-        createNewScene();
+        createNewScene("default");
     };
 
     
-    TextureManager& textures(int targetScene = -1) { 
-        if (targetScene == -1) targetScene = currentSceneIndex;
+    TextureManager& textures(std::string targetScene = "") { 
+        if (targetScene == "") targetScene = currentSceneName;
         return *scenes[targetScene]->textureMgr; 
     }
 
-    ModelManager& models(int targetScene = -1) { 
-        if (targetScene == -1) targetScene = currentSceneIndex;
+    ModelManager& models(std::string targetScene = "") { 
+        if (targetScene == "") targetScene = currentSceneName;
         return *scenes[targetScene]->modelMgr;
     }
 
-    GameObjectManager& gameObject(int targetScene = -1) { 
-        if (targetScene == -1) targetScene = currentSceneIndex;
+    GameObjectManager& gameObject(std::string targetScene = "") { 
+        if (targetScene == "") targetScene = currentSceneName;
         return *scenes[targetScene]->GameObjectMgr;
     }
 
     //void update();
-    void switchScene(uint16_t newSceneIndex) {
-        if (newSceneIndex >= scenes.size())
+    void switchScene(std::string newSceneName) {
+        if (scenes.find(newSceneName) == scenes.end())
             throw std::runtime_error("could not switch to scene: target does not exist");
 
-        currentSceneIndex = newSceneIndex;
+        currentSceneName = newSceneName;
     }
 
-    std::vector<std::unique_ptr<Scene>> scenes{};
-
-private:
-    uint16_t currentSceneIndex = 0;
-
-
-    void createNewScene() {
+    std::unordered_map<std::string, std::unique_ptr<Scene>> scenes{};
+    
+    void createNewScene(std::string sceneName) {
         auto newScene = std::make_unique<Scene>();
 
         newScene->textureMgr = std::make_unique<TextureManager>();
         newScene->modelMgr = std::make_unique<ModelManager>();
         newScene->GameObjectMgr = std::make_unique<GameObjectManager>();
 
-        scenes.push_back(std::move(newScene));
+        scenes[sceneName] = std::move(newScene);
     };
+
+private:
+    std::string currentSceneName = "default";
 };

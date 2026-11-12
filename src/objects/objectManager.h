@@ -11,6 +11,7 @@
 #include "../assetManager/AssetManager.h"
 #include "../model/ModelAsset.h"
 #include "../base/descriptors.h"
+#include "../Scene/SceneLoader.h"
 
 using json = nlohmann::json;
 
@@ -64,7 +65,7 @@ public:
     std::string currentScene = "test5";
 	std::string scenePath = "scenes/test5.json";
 
-    void switchScene(std::string name); 
+    void switchScene(std::string sceneName); 
     void loadScene(std::string name);
     void createScene(std::string name);
 	void saveFullScene();
@@ -83,6 +84,7 @@ public:
 private:
     Device& device;
     AssetManager& assetManager;
+	SceneLoader sceneLoader{ device, assetManager, *this };
 
     std::vector<std::future<futureObject>> futureGameObjects;
     std::vector<std::future<std::vector<futureObject>>> futureGameObjectslist;
