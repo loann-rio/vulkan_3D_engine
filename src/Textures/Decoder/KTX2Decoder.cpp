@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <stdexcept>
+#include <cstring>
 
 struct CopyEntry { ktx_size_t offset; ktx_size_t size; uint32_t faceIndex; };
 

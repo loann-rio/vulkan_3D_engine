@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../base/perlinNoise.h"
+#include "../base/PerlinNoise.h"
 #include "../base/VoronoiNoise.h"
 #include "../base/Device.h"
 #include "../model/preBuild.h"
@@ -53,7 +53,7 @@ public:
 	}
 
 private:
-	const unsigned int seed = 7653456789;
+	const unsigned int seed = 76534567u;
 	float globalScale = 200.f;
 
 	Device& device;

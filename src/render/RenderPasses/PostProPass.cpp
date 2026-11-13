@@ -108,8 +108,8 @@ void PostProPass::createRenderSystems()
         .build();
 
     postProcessingRenderSystem = GlobalRenderSystemBuilder(device, assets)
-        .vertexShader("shaders\\fullscreen.vert.spv")
-        .fragmentShader("shaders\\PostProShader.frag.spv")
+        .vertexShader("shaders/fullscreen.vert.spv")
+        .fragmentShader("shaders/PostProShader.frag.spv")
         .renderPass(renderPass)
         .addSetLayout(globalSetLayout->getDescriptorSetLayout())
         .addSetLayout(colorSetLayout->getDescriptorSetLayout())

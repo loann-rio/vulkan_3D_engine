@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../base/perlinNoise.h"
+#include "../base/PerlinNoise.h"
 #include "../base/VoronoiNoise.h"
 
 #include "../model/preBuild.h"
@@ -27,7 +27,7 @@ private:
 	std::vector<std::vector<glm::vec2>> generateChunckHeight(float Xoffset, float Yoffset, uint16_t sizeX, uint16_t sizeY);
 	float weightedRegionValue(const std::vector<glm::vec2>& lookupVoronoi, float RegionVariables::* member);
 
-	const unsigned int seed = 7653456789u;
+	const unsigned int seed = 76534568u;
 	float globalScale = 20.f;
 	float biomeScale = 10;
 

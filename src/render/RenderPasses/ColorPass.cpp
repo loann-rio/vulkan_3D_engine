@@ -27,8 +27,8 @@ void ColorPass::createRenderSystems()
 
     
     gltfRenderSystem = GlobalRenderSystemBuilder(device, assets)
-        .fragmentShader("shaders\\simple_shader_gltf.frag.spv")
-        .vertexShader("shaders\\simple_shader_gltf.vert.spv")
+        .fragmentShader("shaders/simple_shader_gltf.frag.spv")
+        .vertexShader("shaders/simple_shader_gltf.vert.spv")
         .renderPass(renderPass)
         .addSetLayout(globalSetLayout->getDescriptorSetLayout())
         .addSetLayout(shadowSetLayout->getDescriptorSetLayout())
@@ -38,8 +38,8 @@ void ColorPass::createRenderSystems()
         .build<GltfVertexLayout>();
     
     objRenderSystem = GlobalRenderSystemBuilder(device, assets)
-        .fragmentShader("shaders\\simple_shader.frag.spv")
-        .vertexShader("shaders\\simple_shader.vert.spv")
+        .fragmentShader("shaders/simple_shader.frag.spv")
+        .vertexShader("shaders/simple_shader.vert.spv")
         .renderPass(renderPass)
         .addSetLayout(globalSetLayout->getDescriptorSetLayout())
         .addSetLayout(shadowSetLayout->getDescriptorSetLayout())
@@ -47,8 +47,8 @@ void ColorPass::createRenderSystems()
         .build<ObjVertexLayout>();
 
     skyboxRenderSystem = GlobalRenderSystemBuilder(device, assets)
-        .fragmentShader("shaders\\skybox.frag.spv")
-        .vertexShader("shaders\\skybox.vert.spv")
+        .fragmentShader("shaders/skybox.frag.spv")
+        .vertexShader("shaders/skybox.vert.spv")
         .renderPass(renderPass)
         .addSetLayout(globalSetLayout->getDescriptorSetLayout())
         .modelFilterType(ModelType::OBJ_MODEL)

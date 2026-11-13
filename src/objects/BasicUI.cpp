@@ -187,7 +187,7 @@ void BasicUI::objectSelectionWindow(std::vector<std::string> listObjectsName, Ob
 
     ImGui::SeparatorText("scene selection");
 
-    ImGui::Text(manager->currentScene.c_str());
+    ImGui::Text("%s", manager->currentScene.c_str());
 
     static char newScene[128] = "";
     ImGui::InputTextWithHint("##newScene", "new scene path", newScene, IM_ARRAYSIZE(newScene));
@@ -258,7 +258,7 @@ void BasicUI::createObjWindow(ObjectManager* manager)
         std::string filePath = openFileDialog("obj");
 
         if (!filePath.empty())
-            strcpy_s(path, filePath.c_str());
+            snprintf(path, sizeof(path), "%s", filePath.c_str());
     }
 
     ImGui::Text("texture path");
@@ -269,12 +269,12 @@ void BasicUI::createObjWindow(ObjectManager* manager)
         std::string filePath = openFileDialog("jpg,png,ktx,ktx2");
 
         if (!filePath.empty())
-            strcpy_s(pathTexture, filePath.c_str()); 
+            snprintf(pathTexture, sizeof(pathTexture), "%s", filePath.c_str()); 
     }
 
     if (ImGui::Button("create"))
     {
-        manager->loadObjectAsync(device, assets, path, pathTexture ? pathTexture : "textures\\whiteTexture.jpg", TransformComponent{}, name);
+        manager->loadObjectAsync(device, assets, path, pathTexture ? pathTexture : "textures/whiteTexture.jpg", TransformComponent{}, name);
         show_create_go_window = false; 
       
     }
@@ -304,7 +304,7 @@ void BasicUI::createGLTFWindow(ObjectManager* manager)
         std::string filePath = openFileDialog("gltf");
 
         if (!filePath.empty())
-            strcpy_s(path, filePath.c_str());
+            snprintf(path, sizeof(path), "%s", filePath.c_str());
     }
 
     if (ImGui::Button("create"))
@@ -335,7 +335,7 @@ void BasicUI::createSkyboxWindow(ObjectManager* manager)
         std::string filePath = openFileDialog("ktx, hdr");
 
         if (!filePath.empty())
-            strcpy_s(path, filePath.c_str());
+            snprintf(path, sizeof(path), "%s", filePath.c_str());
     }
     
     if (ImGui::Button("create"))

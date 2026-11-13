@@ -3,7 +3,7 @@
 #define TEXTOVERLAY_MAX_CHAR_COUNT 2048
 
 #include "../base/Pipeline.h"
-#include "../base/device.h"
+#include "../base/Device.h"
 #include "../base/Frame_info.h"
 #include "../base/descriptors.h"
 

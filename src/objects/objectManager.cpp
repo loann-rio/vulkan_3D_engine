@@ -1,4 +1,4 @@
-#include "ObjectManager.h"
+#include "objectManager.h"
 
 #include "../model/preBuild.h"
 
@@ -90,7 +90,7 @@ void ObjectManager::startLoadModel()
 
     {
         ModelBuilder builder(device, assetManager);
-        ModelManager::ModelID id = assetManager.models().create(builder.fromFile("assets\\model\\2.0\\DamagedHelmet\\glTF\\DamagedHelmet.gltf"));
+        ModelManager::ModelID id = assetManager.models().create(builder.fromFile("assets/model/2.0/DamagedHelmet/glTF/DamagedHelmet.gltf"));
 
         if (id)
         {
