@@ -8,6 +8,7 @@
 #include <mutex>
 #include <unordered_map>
 #include <vulkan/vulkan.h>
+#include <thread>
 
 // Im Gui
 #include "imgui_impl_vulkan.h"

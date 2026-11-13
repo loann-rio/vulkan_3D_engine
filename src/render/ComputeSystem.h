@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../base/device.h"
+#include "../base/Device.h"
 #include "../base/descriptors.h"
 #include "../assetManager/AssetManager.h"
 #include "../base/ComputePipeline.h"

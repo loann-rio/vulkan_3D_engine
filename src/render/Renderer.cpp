@@ -8,10 +8,10 @@
 #include "../model/ModelAsset.h"
 #include "../model/ModelBuilder.h"
 #include "../assetManager/ModelManager.h"
-#include "../base/device.h"
+#include "../base/Device.h"
 #include "GlobalRenderSystemBuilder.h"
 #include "../model/Vertex/ObjVertexData.h"
-#include "../model/Vertex/GlTFVertexData.h"
+#include "../model/Vertex/GltfVertexData.h"
 
 
 
@@ -514,8 +514,8 @@ void Renderer::createBuffers(ObjectManager& objectManager)
 		.build();
 
 	skyboxCreationRenderSystem = GlobalRenderSystemBuilder(device, assets)
-		.vertexShader("shaders\\fullscreen.vert.spv")
-		.fragmentShader("shaders\\equirectangular_to_cube.frag.spv")
+		.vertexShader("shaders/fullscreen.vert.spv")
+		.fragmentShader("shaders/equirectangular_to_cube.frag.spv")
 		.renderPass(skyboxSwapChain.getRenderPass())
 		.modelFilterType(ModelType::OBJ_MODEL)
 		.fullscreen()

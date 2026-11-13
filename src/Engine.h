@@ -1,10 +1,10 @@
 #pragma once
 
 #include "base/Window.h"
-#include "base/device.h"
+#include "base/Device.h"
 
 #include "render/Renderer.h"
-#include "objects/ObjectManager.h"
+#include "objects/objectManager.h"
 
 #include "assetManager/AssetManager.h"
 

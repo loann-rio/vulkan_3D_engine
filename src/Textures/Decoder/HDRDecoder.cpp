@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <stdexcept>
 #include <cctype>
+#include <cstring>
 
 /// <summary>
 /// check is the decoder can decode the given file

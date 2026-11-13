@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <stdexcept>
 #include <cctype>
+#include <cstring>
 #include <filesystem>
 
 
