@@ -207,143 +207,16 @@ void ObjectManager::createPrimitive(PrimitivesModelType type, int detail, Transf
 /// <param name="name"> new scene name </param>
 void ObjectManager::switchScene(std::string sceneName)
 {
-
 	if (assetManager.scenes.find(sceneName) == assetManager.scenes.end()) {
 		assetManager.createNewScene(sceneName);
 	}
 
 	assetManager.switchScene(sceneName);
-
-    // save current scene
-    //saveFullScene();
-    //
-	// mark all objects to be removed
-    //for (auto obj : assetManager.gameObject().getByType<GameObject>()) {
-    //    obj->toBeRemoved = true;
-	//}
-    //
-	// keep skybox
-    //assetManager.gameObject().findByName("cubemap")->toBeRemoved = false;
-    //
-	// keep main camera
-    //assetManager.gameObject().findByName("mainCamera")->toBeRemoved = false;
-    //
-	// clear all loaded async models
-    //futureGameObjects.clear();
-    //futureGameObjectslist.clear();
-    //
-    // load new scene
-    //currentScene = name;
-    //scenePath = "scenes/" + name + ".json";
-    //loadScene(name);
-
 }
 
 void ObjectManager::loadScene(std::string name)
 {
-
 	sceneLoader.load(name);
-	// test if file exists
-/*    scenePath = "scenes/" + name + ".json";
-
-	std::ifstream i(scenePath);
-    if (!i.good()) {
-        createScene(name);
-        i.open(scenePath);
-	}
-
-    i >> currentSceneJson;
-
-    for (auto& element : currentSceneJson["objects"].items()) {
-
-        std::string objName = element.key();
-        int objType = element.value()["type"];
-
-        TransformComponent transform{};
-        std::unique_ptr<GameObjectBehavior> behavior;
-
-        if (element.value().contains("transform")) {
-            auto t = element.value()["transform"];
-            transform.translation = glm::vec3{ t["translation"][0], t["translation"][1], t["translation"][2] };
-            transform.rotation = glm::vec3{ t["rotation"][0], t["rotation"][1], t["rotation"][2] };
-            transform.scale = glm::vec3{ t["scale"][0], t["scale"][1], t["scale"][2] };
-            transform.color = glm::vec4{ t["color"][0], t["color"][1], t["color"][2], t["color"][3] };
-        }
-
-        if (element.value().contains("behavior_type")) {
-            std::string classType = element.value()["behavior_type"];
-            behavior = GameObjectBehavior::createBehaviorFromType(classType, device);       
-        }
-
-        if (objType == static_cast<int>(GameObjectType::MODEL)) {
-
-			// two main types of model: primitives and loaded from file
-			// loaded from file: gltf/glb or obj + texture
-			// primitives: plane, cube, sphere, cylinder, cone
-			// default texture for obj is whiteTexture.jpg
-            
-            if (element.value().contains("modelPath")) 
-            {
-                std::string modelPath = element.value()["modelPath"];
-                std::cout << "load model " << modelPath << " with obj name: " << objName << "\n";
-
-                if (modelPath.find(".gltf") != std::string::npos || modelPath.find(".glb") != std::string::npos)
-                    loadObjectAsync(device, assetManager, modelPath, transform, objName);
-                else 
-                {
-                    std::string texturePath = element.value().contains("texturePath") ? element.value()["texturePath"] : "assets/textures/whiteTexture.jpg";
-                    loadObjectAsync(device, assetManager, modelPath, texturePath, transform, objName);
-                }
-            }
-            else if(element.value().contains("primitivesModelType"))
-            {
-                PrimitivesModelType primitiveType = static_cast<PrimitivesModelType>(element.value()["primitivesModelType"]);
-                std::string texturePath = element.value()["texturePath"];
-                int detail = element.value().value("detail", 10);
-                createPrimitive(primitiveType, detail, transform, objName, texturePath);
-            }
-        }
-
-        else if (objType == static_cast<int>(GameObjectType::CAMERA)) {
-            float fov         = element.value()["fov"];
-            float aspectRatio = element.value()["aspectRatio"];
-            float nearPlane   = element.value()["nearPlane"];
-            float farPlane    = element.value()["farPlane"];
-            
-            auto cameraObject = GameObjectFactory::createGameObject<GameObjectCamera>(device, assetManager, fov, aspectRatio, nearPlane, farPlane);
-            cameraObject->transform = transform;
-            cameraObject->setName(objName);
-            assetManager.gameObject().add(std::move(cameraObject));
-        }
-        else if (objType == static_cast<int>(GameObjectType::SPOT_LIGHT)) {
-            float fov = element.value()["fov"];
-            float aspectRatio = element.value()["aspectRatio"];
-            float nearPlane = element.value()["nearPlane"];
-            float farPlane = element.value()["farPlane"];
-            auto spotLight = GameObjectFactory::createGameObject<GameObjectSpotLight>(device, assetManager, fov, aspectRatio, nearPlane, farPlane);
-            spotLight->transform = transform;
-            spotLight->setName(objName);
-            assetManager.gameObject().add(std::move(spotLight));
-
-        }
-        else
-        {
-            auto gameObject = GameObjectFactory::createGameObject<GameObject>(device, assetManager);
-
-            if (behavior) gameObject->setAttachedClass(std::move(behavior));
-
-            gameObject->setName(objName); 
-            assetManager.gameObject().add(std::move(gameObject));
-        }
-    }
-
-	// ensure there is a main camera
-    if (assetManager.gameObject().findByName("mainCamera") == nullptr) {
-        auto cameraObject = GameObjectFactory::createGameObject<GameObjectCamera>(device, assetManager, glm::radians(50.f), 1.f, .1f, 100.f);
-        cameraObject->setName("mainCamera");
-        pushGameObject(std::move(cameraObject));
-	}*/
-
 }
 
 void ObjectManager::addObjectToScene(GameObject* gameObject)
