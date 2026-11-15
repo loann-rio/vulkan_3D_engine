@@ -162,6 +162,12 @@ uuid.lib;
 comdlg32.lib;ktx.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
+  <ItemDefinitionGroup>
+    <PostBuildEvent>
+      <Command>xcopy /y /d "$(ProjectDir)external\KTX\dll\ktx.dll" "$(OutDir)"</Command>
+      <Message>Copy ktx.dll to output directory</Message>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="external\basisu\transcoder\basisu_transcoder.cpp" />
     <ClCompile Include="external\basisu\zstd\zstd.c" />

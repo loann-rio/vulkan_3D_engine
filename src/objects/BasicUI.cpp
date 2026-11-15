@@ -178,6 +178,7 @@ void BasicUI::objectSelectionWindow(std::vector<std::string> listObjectsName, Ob
         break;
 	case 4: 
         createSkyboxWindow(manager);
+        break;
 	case 5:
 		createEmptyObjectWindow(manager);
         break;

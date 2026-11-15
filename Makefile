@@ -38,7 +38,8 @@ ifeq ($(OS),Windows_NT)
     LIBS      := -lvulkan-1 -lglfw3 -lktx -lole32 -luuid -lcomdlg32 -lgdi32 -lshell32
     MKDIR      = if not exist "$(subst /,\,$(1))" mkdir "$(subst /,\,$(1))"
     RMDIR      = if exist "$(subst /,\,$(1))" rmdir /s /q "$(subst /,\,$(1))"
-    COPY_DLLS  = copy /y external\KTX\dll\ktx.dll $(BUILD_DIR) >nul
+    DLLS      := $(BUILD_DIR)/ktx.dll
+    COPY       = copy /y "$(subst /,\,$(1))" "$(subst /,\,$(2))" >nul
     RUN        = $(subst /,\,$(BUILD_DIR)/$(TARGET))
 else
     GLSLC     := glslc
@@ -47,7 +48,7 @@ else
     LIBS      := $(shell pkg-config --libs glfw3 vulkan gtk+-3.0) -lktx -lpthread -ldl
     MKDIR      = mkdir -p $(1)
     RMDIR      = rm -rf $(1)
-    COPY_DLLS  =
+    DLLS      :=
     RUN        = ./$(BUILD_DIR)/$(TARGET)
 endif
 
@@ -59,11 +60,14 @@ SHADERS_SPV := $(SHADERS:=.spv)
 
 .PHONY: all shaders run clean
 
-all: $(BUILD_DIR)/$(TARGET) shaders
+all: $(BUILD_DIR)/$(TARGET) $(DLLS) shaders
 
 $(BUILD_DIR)/$(TARGET): $(OBJECTS)
 	$(CXX) $^ -o $@ $(LDFLAGS) $(LIBS)
-	$(COPY_DLLS)
+
+$(BUILD_DIR)/%.dll: external/KTX/dll/%.dll
+	@$(call MKDIR,$(@D))
+	$(call COPY,$<,$@)
 
 $(BUILD_DIR)/obj/%.cpp.o: %.cpp
 	@$(call MKDIR,$(@D))

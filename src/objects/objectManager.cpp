@@ -146,35 +146,6 @@ void ObjectManager::startLoadModel()
         }
     }
 
-        if (id)
-        {
-            createDescriptorSet(assetManager.models().get(id));
-
-            //auto behavior = GameObjectBehavior::createBehaviorFromType("PlayerBehavior", device);
-
-            auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
-            gameObject->setName("player");
-            //gameObject->setAttachedClass(std::move(behavior));
-            gameObject->setModelType(ModelType::GLTF_MODEL);
-            gameObject->setModel(id);
-            gameObject->transform.rotation = { 0.33f, 0.f, 3.141592f };
-            gameObject->transform.translation = { 0.33f, 2.6f, -4.2f };
-            gameObject->saveable = false;
-            gameObject->createPoseResources(*globalPool);
-
-            auto& obj = assetManager.gameObject().add(std::move(gameObject));
-
-            // player camera -> child of player
-
-            auto cameraObject = GameObjectFactory::createGameObject<GameObjectCamera>(device, assetManager, 0.5f, 1.f, 0.1f, 100.f);
-            cameraObject->setName("player camera");
-            cameraObject->transform.translation = { 1, -1, 1 };
-            cameraObject->saveable = false;
-            cameraObject->setParent(&obj);
-            assetManager.gameObject().add(std::move(cameraObject));
-        }
-    }
-
     /* {
         auto behavior = GameObjectBehavior::createBehaviorFromType("ChunkManager", device);
 		auto gameObject = GameObjectFactory::createGameObject<GameObject>(device);

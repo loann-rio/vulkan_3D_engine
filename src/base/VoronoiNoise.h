@@ -44,7 +44,7 @@ public:
 			}
 
 		for (glm::vec2& val : out)
-			val.x = std::max(0.d, std::min(1.d, 1 - sqrt(val.x)));
+			val.x = std::max(0.f, static_cast<float>(std::min(1.f, static_cast<float>(1 - sqrt(val.x)))));
 
 		return out;
 	}
