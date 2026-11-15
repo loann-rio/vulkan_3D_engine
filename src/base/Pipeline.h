@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 #include <vulkan/vulkan.h>
-#include "device.h"
+#include "Device.h"
 
 struct PipelineConfigInfo {
 	PipelineConfigInfo() = default;

@@ -2,7 +2,7 @@
 
 #include <random>
 #include <algorithm>
-#include "../base/perlinNoise.h"
+#include "../base/PerlinNoise.h"
 #include "../base/VoronoiNoise.h"
 
 #include "../Textures/TextureBuilder.h"

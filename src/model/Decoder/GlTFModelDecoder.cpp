@@ -17,7 +17,7 @@
 #include "../../external/tiny_gltf.h"
 
 #include "../Vertex/ObjVertexData.h"
-#include "../Vertex/GlTFVertexData.h"
+#include "../Vertex/GltfVertexData.h"
 #include <glm/gtc/type_ptr.hpp>
 
 namespace {

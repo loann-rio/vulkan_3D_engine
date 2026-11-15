@@ -4,6 +4,7 @@
 #include <ktxvulkan.h>
 
 #include <stdexcept>
+#include <cstring>
 #include <array>
 #include <algorithm>
 

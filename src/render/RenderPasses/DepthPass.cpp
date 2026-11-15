@@ -18,7 +18,7 @@ void DepthPass::createRenderSystems()
         .build();
 
     depthRenderSystemGltf = GlobalRenderSystemBuilder(device, assets)
-        .vertexShader("shaders\\shadowmapgltf.vert.spv")
+        .vertexShader("shaders/shadowmapgltf.vert.spv")
         .renderPass(renderPass)
         .addSetLayout(globalSetLayout->getDescriptorSetLayout())
         .addSetLayout(shadowSetLayout->getDescriptorSetLayout())
@@ -28,7 +28,7 @@ void DepthPass::createRenderSystems()
         .build<GltfVertexLayout>();
 
     depthRenderSystem = GlobalRenderSystemBuilder(device, assets)
-        .vertexShader("shaders\\shadowmap.vert.spv")
+        .vertexShader("shaders/shadowmap.vert.spv")
         .renderPass(renderPass)
         .addSetLayout(globalSetLayout->getDescriptorSetLayout())
         .addSetLayout(shadowSetLayout->getDescriptorSetLayout())
@@ -37,7 +37,7 @@ void DepthPass::createRenderSystems()
         .build<ObjVertexLayout>();
 
     depthTerrainRenderSystem = GlobalRenderSystemBuilder(device, assets)
-        .vertexShader("shaders\\shadowMapTerrain.vert.spv")
+        .vertexShader("shaders/shadowMapTerrain.vert.spv")
         .renderPass(renderPass)
         .addSetLayout(globalSetLayout->getDescriptorSetLayout())
         .addSetLayout(shadowSetLayout->getDescriptorSetLayout())

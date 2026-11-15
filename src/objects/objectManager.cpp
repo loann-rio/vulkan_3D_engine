@@ -1,4 +1,4 @@
-#include "ObjectManager.h"
+#include "objectManager.h"
 
 #include "../model/preBuild.h"
 #include "../model/ModelBuilder.h"
@@ -92,7 +92,7 @@ void ObjectManager::startLoadModel()
 
     {
         ModelBuilder builder(device, assetManager);
-        ModelManager::ModelID id = assetManager.models().create(builder.fromFile("assets\\model\\2.0\\DamagedHelmet\\glTF\\DamagedHelmet.gltf"));
+        ModelManager::ModelID id = assetManager.models().create(builder.fromFile("assets/model/2.0/DamagedHelmet/glTF/DamagedHelmet.gltf"));
 
         if (id)
         {
@@ -116,6 +116,35 @@ void ObjectManager::startLoadModel()
     {
         ModelBuilder builder(device, assetManager);
         ModelManager::ModelID id = assetManager.models().create(builder.fromFile("assets\\model\\people\\UAL1_Standard.glb"));
+
+        if (id)
+        {
+            createDescriptorSet(assetManager.models().get(id));
+
+            //auto behavior = GameObjectBehavior::createBehaviorFromType("PlayerBehavior", device);
+
+            auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
+            gameObject->setName("player");
+            //gameObject->setAttachedClass(std::move(behavior));
+            gameObject->setModelType(ModelType::GLTF_MODEL);
+            gameObject->setModel(id);
+            gameObject->transform.rotation = { 0.33f, 0.f, 3.141592f };
+            gameObject->transform.translation = { 0.33f, 2.6f, -4.2f };
+            gameObject->saveable = false;
+            gameObject->createPoseResources(*globalPool);
+
+            auto& obj = assetManager.gameObject().add(std::move(gameObject));
+
+            // player camera -> child of player
+
+            auto cameraObject = GameObjectFactory::createGameObject<GameObjectCamera>(device, assetManager, 0.5f, 1.f, 0.1f, 100.f);
+            cameraObject->setName("player camera");
+            cameraObject->transform.translation = { 1, -1, 1 };
+            cameraObject->saveable = false;
+            cameraObject->setParent(&obj);
+            assetManager.gameObject().add(std::move(cameraObject));
+        }
+    }
 
         if (id)
         {
@@ -171,6 +200,7 @@ void ObjectManager::createPrimitive(PrimitivesModelType type, int detail, Transf
 
     //pushGameObject(std::move(gameObject));
     assetManager.gameObject().add(std::move(gameObject));
+
 
 
     pushFuture(std::async(std::launch::async, [this, id, type, detail, filePathTexture]() {

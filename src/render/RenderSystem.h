@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../base/Pipeline.h"
-#include "../base/device.h"
+#include "../base/Device.h"
 #include "../base/Frame_info.h"
 #include "../base/descriptors.h"
 #include "../base/Buffer.h"

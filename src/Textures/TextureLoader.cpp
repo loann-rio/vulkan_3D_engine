@@ -24,7 +24,7 @@
 std::unique_ptr<TextureObject> TextureAssetLoader::load(Device& device, const std::filesystem::path& path, bool useMipmap) {
     
     if (path.empty()) {
-        throw std::exception("TextureAssetLoader : cannot load : empty texture path");
+        throw std::runtime_error("TextureAssetLoader : cannot load : empty texture path");
     }
     
     const std::string ext = imDecoder::getExtension(path.string());

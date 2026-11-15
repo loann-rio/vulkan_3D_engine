@@ -94,7 +94,7 @@ private:
 template<size_t W, size_t H, size_t D>
 inline TextureBuilder& TextureBuilder::fromArray(const TextureArray<W, H, D>& textureArray)
 {
-    source = SourceType::Array;
+    source = SourceType::FloatArray;
 
     arrayW = static_cast<uint32_t>(W);
     arrayH = static_cast<uint32_t>(H);

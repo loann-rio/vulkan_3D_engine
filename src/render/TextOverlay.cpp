@@ -80,8 +80,8 @@ void TextOverlay::createPipeline(VkRenderPass renderPass)
 
 	pipeline = std::make_unique<Pipeline>(
 		device,
-		"shaders\\text.vert.spv",
-		"shaders\\text.frag.spv",
+		"shaders/text.vert.spv",
+		"shaders/text.frag.spv",
 		pipelineConfig
 	);
 }

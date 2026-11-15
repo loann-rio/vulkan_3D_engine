@@ -1,17 +1,19 @@
 #include "ModelUploader.h"
 
-#include <exception>
 #include "../Textures/TextureBuilder.h"
+#include "../assetManager/AssetManager.h"
+#include "../base/Buffer.h"
+#include "../base/Device.h"
+
+#include "Decoder/IModelDecoder.h"
+#include "ModelAsset.h"
+#include "Vertex/IVertexData.h"
+	
+#include <exception>
 #include <cstdint>
 #include <memory>
 #include <utility>
 #include <vector>
-#include "../assetManager/AssetManager.h"
-#include "../base/Buffer.h"
-#include "../base/Device.h"
-#include "Decoder/IModelDecoder.h"
-#include "ModelAsset.h"
-#include "Vertex/IVertexData.h"
 #include <vulkan/vulkan_core.h>
 #include <algorithm>
 #include <cmath>
@@ -55,7 +57,7 @@ std::unique_ptr<Buffer> ModelUploader::createVertexBuffers(Device& device, IVert
 	uint32_t vertexCount = vertices->vertexCount();
 
 	if (vertexCount < 3) {
-		throw std::exception("model uploader : Vertex count must be at least 3");
+		throw std::runtime_error("model uploader : Vertex count must be at least 3");
 	}
 
 	VkDeviceSize bufferSize = vertices->layout().stride() * vertexCount;
@@ -90,7 +92,7 @@ std::unique_ptr<Buffer> ModelUploader::createIndexBuffers(Device& device, const 
 	uint32_t indexCount = static_cast<uint32_t>(indices.size());
 
 	if (indexCount < 0) {
-		throw std::exception("model uploader : index buffer cannot be empty");
+		throw std::runtime_error("model uploader : index buffer cannot be empty");
 	}
 
 	VkDeviceSize bufferSize = sizeof(indices[0]) * indexCount;
