@@ -26,6 +26,7 @@ struct futureObject {
     std::vector<ModelInstance> instances{};
     bool saveable = true;
     ModelManager::ModelID modelID;
+    std::string targetScene;
 }; 
 
 struct ComputeObject {
@@ -50,13 +51,13 @@ public:
 	
 	void startLoadModel(); 
 	void pushModel();
-    void pushGameObject(std::unique_ptr<GameObject> gameObject);
+    void pushGameObject(std::unique_ptr<GameObject> gameObject, const std::string& targetScene = "");
 
 	// create primitive object
 	void createPrimitive(PrimitivesModelType type, int detail, TransformComponent transform, const std::string& name = "", const std::string& filePathTexture = "");
 
-    void loadObjectAsync(Device& device, AssetManager& assets, const std::string& filePath, TransformComponent transform, const std::string& name = "");
-    void loadObjectAsync(Device& device, AssetManager& assets, const std::string& filePath, const std::string filePathTexture, TransformComponent transform, const std::string& name = "");
+    void loadObjectAsync(Device& device, AssetManager& assets, const std::string& filePath, TransformComponent transform, const std::string& name = "", const std::string& targetScene = "");
+    void loadObjectAsync(Device& device, AssetManager& assets, const std::string& filePath, const std::string filePathTexture, TransformComponent transform, const std::string& name = "", const std::string& targetScene = "");
 
     void pushFuture(std::future<std::vector<futureObject>> futures);
 

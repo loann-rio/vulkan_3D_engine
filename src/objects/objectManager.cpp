@@ -172,8 +172,6 @@ void ObjectManager::createPrimitive(PrimitivesModelType type, int detail, Transf
     //pushGameObject(std::move(gameObject));
     assetManager.gameObject().add(std::move(gameObject));
 
-
-
     pushFuture(std::async(std::launch::async, [this, id, type, detail, filePathTexture]() {
         ModelManager::ModelID modelID = 0;
 
@@ -208,9 +206,8 @@ void ObjectManager::createPrimitive(PrimitivesModelType type, int detail, Transf
 /// <param name="name"> new scene name </param>
 void ObjectManager::switchScene(std::string sceneName)
 {
-	if (assetManager.scenes.find(sceneName) == assetManager.scenes.end()) {
+	if (assetManager.scenes.find(sceneName) == assetManager.scenes.end())
 		assetManager.createNewScene(sceneName);
-	}
 
 	assetManager.switchScene(sceneName);
 }
@@ -325,43 +322,38 @@ void ObjectManager::pushModel()
     // load futures
     auto it = futureGameObjectslist.begin();
     while (it != futureGameObjectslist.end()) { // iter over futures
-        if (it->wait_for(std::chrono::seconds(0)) == std::future_status::ready) { // check if future is ready
-            
-            // iter over models in future
-            for (futureObject object : it->get()) { 
-                if (object.type != ModelType::UNDEFINED_MODEL) {
-
-                     // get gameobject
-                     auto* gameObject = dynamic_cast<GameObjectModel*>(assetManager.gameObject().find(object.id));
-
-                     if (!gameObject || !object.modelID) {
-                         continue;
-                     }
-
-                     if (object.instances.size() > 0) {
-                         gameObject->setMultipleInstances(object.instances);
-                     }
-                     
-                     createDescriptorSet(assetManager.models().get(object.modelID));
-                     gameObject->setModel(object.modelID);
-
-                     gameObject->setModelType(object.type);
-
-                     gameObject->createPoseResources(*globalPool);
-
-                     gameObject->show = true;
-                }
-            }
-
-            it = futureGameObjectslist.erase(it); // remove from futures
-        }
-        else {
+        if (it->wait_for(std::chrono::seconds(0)) != std::future_status::ready) { // check if future is ready
             ++it;
+            continue;
         }
+            
+        // iter over models in future
+        for (futureObject object : it->get()) { 
+            if (object.type == ModelType::UNDEFINED_MODEL) 
+                continue;
+
+            // get gameobject
+            auto* gameObject = dynamic_cast<GameObjectModel*>(assetManager.gameObject(object.targetScene).find(object.id));
+
+            if (!gameObject || !object.modelID)
+                continue;
+
+            if (object.instances.size() > 0)
+                gameObject->setMultipleInstances(object.instances);
+            
+            createDescriptorSet(assetManager.models(object.targetScene).get(object.modelID));
+
+            gameObject->setModel(object.modelID);
+            gameObject->setModelType(object.type);
+            gameObject->createPoseResources(*globalPool);
+            gameObject->show = true;
+        }
+
+        it = futureGameObjectslist.erase(it); // remove from futures
     }
 }
 
-void ObjectManager::pushGameObject(std::unique_ptr<GameObject> gameObject)
+void ObjectManager::pushGameObject(std::unique_ptr<GameObject> gameObject, const std::string& targetScene)
 {
     GameObject::id_t id = gameObject->getId();
     std::string name = gameObject->getName();
@@ -369,10 +361,10 @@ void ObjectManager::pushGameObject(std::unique_ptr<GameObject> gameObject)
 
     gameObject->setup();
 
-    assetManager.gameObject().add(std::move(gameObject));
+    assetManager.gameObject(targetScene).add(std::move(gameObject));
 }
 
-void ObjectManager::loadObjectAsync(Device& device, AssetManager& assets, const std::string& filePath, TransformComponent transform, const std::string& name)
+void ObjectManager::loadObjectAsync(Device& device, AssetManager& assets, const std::string& filePath, TransformComponent transform, const std::string& name, const std::string& targetScene)
 {
     auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
     gameObject->transform = transform; 
@@ -380,17 +372,17 @@ void ObjectManager::loadObjectAsync(Device& device, AssetManager& assets, const 
     gameObject->modelPath = filePath;
     GameObject::id_t id = gameObject->getId(); 
 
-    pushGameObject(std::move(gameObject));
+    pushGameObject(std::move(gameObject), targetScene);
 
-    pushFuture(std::async(std::launch::async, [filePath, &device, &assets, id]() {
+    pushFuture(std::async(std::launch::async, [filePath, &device, &assets, id, targetScene]() {
         ModelBuilder builder(device, assets);
         ModelManager::ModelID modelId = assets.models().create(builder.fromFile(filePath));
 
-        return std::vector<futureObject>{ futureObject{ modelId ? ModelType::GLTF_MODEL : ModelType::UNDEFINED_MODEL, id, { }, true, modelId }};
+        return std::vector<futureObject>{ futureObject{ modelId ? ModelType::GLTF_MODEL : ModelType::UNDEFINED_MODEL, id, { }, true, modelId, targetScene } };
         }));
 }
 
-void ObjectManager::loadObjectAsync(Device& device, AssetManager& assets, const std::string& filePath, const std::string filePathTexture, TransformComponent transform, const std::string& name)
+void ObjectManager::loadObjectAsync(Device& device, AssetManager& assets, const std::string& filePath, const std::string filePathTexture, TransformComponent transform, const std::string& name, const std::string& targetScene)
 {
     auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assets);
     gameObject->transform = transform;  
@@ -401,9 +393,9 @@ void ObjectManager::loadObjectAsync(Device& device, AssetManager& assets, const 
     
     GameObject::id_t id = gameObject->getId();
 
-    pushGameObject(std::move(gameObject)); 
+    pushGameObject(std::move(gameObject), targetScene); 
 
-    pushFuture( std::async(std::launch::async, [filePath, filePathTexture, &device, &assets, id]()
+    pushFuture( std::async(std::launch::async, [filePath, filePathTexture, &device, &assets, id, targetScene]()
         {
             TextureBuilder textureBuilder(device);
             auto texture = assets.textures().create(textureBuilder.fromFile(filePathTexture));
@@ -411,7 +403,7 @@ void ObjectManager::loadObjectAsync(Device& device, AssetManager& assets, const 
             ModelBuilder builder(device, assets);
             ModelManager::ModelID modelId = assets.models().create(builder.fromFile(filePath).withTexture(texture));
 
-            return std::vector<futureObject> {futureObject{ modelId ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id, {}, true, modelId }};
+            return std::vector<futureObject> {futureObject{ modelId ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id, {}, true, modelId, targetScene }};
         }) 
      );
 }
