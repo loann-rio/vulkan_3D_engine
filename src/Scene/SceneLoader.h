@@ -39,24 +39,28 @@ private:
     );
 
     void loadModel(
+        const std::string& targetScene,
         const std::string& name,
         const nlohmann::json& data,
         const TransformComponent& transform
     );
 
     void loadCamera(
+        const std::string& targetScene,
         const std::string& name,
         const nlohmann::json& data,
         const TransformComponent& transform
     );
 
     void loadSpotLight(
+        const std::string& targetScene,
         const std::string& name,
         const nlohmann::json& data,
         const TransformComponent& transform
     );
 
     void loadGenericObject(
+        const std::string& targetScene,
         const std::string& name,
         const nlohmann::json& data,
         const TransformComponent& transform

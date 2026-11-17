@@ -69,7 +69,7 @@ void BasicUI::drawUI(VkCommandBuffer commandBuffer, ObjectManager* manager, floa
     ImGui_ImplGlfw_NewFrame(); 
     ImGui::NewFrame();  
 
-    auto objects = assets.gameObject().getByType<GameObject>();
+    auto objects = assets.gameObject(selectedScene).getByType<GameObject>();
 
     std::vector<std::string> listObjectsName;
     for (GameObject* obj : objects) {
@@ -80,7 +80,7 @@ void BasicUI::drawUI(VkCommandBuffer commandBuffer, ObjectManager* manager, floa
 
     objectSelectionWindow(listObjectsName, manager, frameTime);
 
-    auto gameObject = assets.gameObject().findByName(selected_object);
+    auto gameObject = assets.gameObject(selectedScene).findByName(selected_object);
     if (gameObject != nullptr) {
         gameObjectWindow(gameObject, manager); 
     }
@@ -105,8 +105,8 @@ void BasicUI::gameObjectWindow(GameObject* gameObject, ObjectManager* manager)
     gameObject->debugUI();
 
     if (ImGui::Button("move to cam")) {
-		gameObject->transform.translation = assets.gameObject().findByName(manager->mainCamera)->transform.translation;
-		gameObject->transform.rotation = assets.gameObject().findByName(manager->mainCamera)->transform.rotation;
+		gameObject->transform.translation = assets.gameObject(selectedScene).findByName(manager->mainCamera)->transform.translation;
+		gameObject->transform.rotation = assets.gameObject(selectedScene).findByName(manager->mainCamera)->transform.rotation;
 	}
 
     if (ImGui::Button("remove object"))
@@ -392,14 +392,14 @@ void BasicUI::createCameraWindow(ObjectManager* manager, bool isSpotLight = fals
             spotLight->transform.color = color;
             spotLight->setName(name);
 
-            manager->pushGameObject(std::move(spotLight));
+            manager->pushGameObject(std::move(spotLight), selectedScene);
         }
         else {
             auto camera = GameObjectFactory::createGameObject<GameObjectCamera>(device, assets, fov, ar, .1f, 100.f);
 
             camera->setName(name);
 
-            manager->pushGameObject(std::move(camera));
+            manager->pushGameObject(std::move(camera), selectedScene);
         }
     }
 
@@ -433,7 +433,7 @@ void BasicUI::createEmptyObjectWindow(ObjectManager* manager)
         auto behavior = GameObjectBehavior::createBehaviorFromType(behaviorClass, device);
 		if (behavior) emptyObject->setAttachedClass(std::move(behavior));
 
-        manager->pushGameObject(std::move(emptyObject));
+        manager->pushGameObject(std::move(emptyObject), selectedScene);
         show_create_go_window = false;
     }
 

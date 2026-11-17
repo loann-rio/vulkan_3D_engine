@@ -54,7 +54,7 @@ public:
     void pushGameObject(std::unique_ptr<GameObject> gameObject, const std::string& targetScene = "");
 
 	// create primitive object
-	void createPrimitive(PrimitivesModelType type, int detail, TransformComponent transform, const std::string& name = "", const std::string& filePathTexture = "");
+	void createPrimitive(PrimitivesModelType type, int detail, TransformComponent transform, const std::string& name = "", const std::string& filePathTexture = "", const std::string& targetScene = "");
 
     void loadObjectAsync(Device& device, AssetManager& assets, const std::string& filePath, TransformComponent transform, const std::string& name = "", const std::string& targetScene = "");
     void loadObjectAsync(Device& device, AssetManager& assets, const std::string& filePath, const std::string filePathTexture, TransformComponent transform, const std::string& name = "", const std::string& targetScene = "");
@@ -78,7 +78,7 @@ public:
     std::string mainSkybox = "cubemap";
 
 
-    void createDescriptorSet(ModelAsset* model);
+    void createDescriptorSet(ModelAsset* model, const std::string& targetScene);
 
     std::vector<ComputeObject> computeList{};
     GameObjectModel* baseSkyBox = nullptr;

@@ -37,20 +37,20 @@ nlohmann::json SceneLoader::load(const std::string& sceneName)
         const TransformComponent transform = readTransform(data);
 
         if (type == static_cast<int>(GameObjectType::MODEL))
-            loadModel(objectName, data, transform);
+            loadModel(sceneName, objectName, data, transform);
 
         else if (type == static_cast<int>(GameObjectType::CAMERA))
-            loadCamera(objectName, data, transform);
+            loadCamera(sceneName, objectName, data, transform);
 
         else if (type == static_cast<int>(GameObjectType::SPOT_LIGHT))
-            loadSpotLight(objectName, data, transform);
+            loadSpotLight(sceneName, objectName, data, transform);
 
         else
-            loadGenericObject(objectName, data, transform);
+            loadGenericObject(sceneName, objectName, data, transform);
 
         if (data.contains("behavior_type"))
         {
-            GameObject* object = assetManager_.gameObject().findByName(objectName);
+            GameObject* object = assetManager_.gameObject(sceneName).findByName(objectName);
             auto behavior = GameObjectBehavior::createBehaviorFromType(data["behavior_type"].get<std::string>(), device_);
 
             if (object && behavior)
@@ -61,7 +61,7 @@ nlohmann::json SceneLoader::load(const std::string& sceneName)
         }
     }
 
-    if (assetManager_.gameObject().findByName("mainCamera") == nullptr)
+    if (assetManager_.gameObject(sceneName).findByName("mainCamera") == nullptr)
     {
         auto camera = GameObjectFactory::createGameObject<GameObjectCamera>(
             device_, 
@@ -73,7 +73,7 @@ nlohmann::json SceneLoader::load(const std::string& sceneName)
         );
 
         camera->setName("mainCamera");
-        objectManager_.pushGameObject(std::move(camera));
+        objectManager_.pushGameObject(std::move(camera), sceneName);
     }
 
     return scene;
@@ -125,7 +125,7 @@ TransformComponent SceneLoader::readTransform(const nlohmann::json& data)
     return transform;
 }
 
-void SceneLoader::loadModel(const std::string& name, const nlohmann::json& data, const TransformComponent& transform)
+void SceneLoader::loadModel(const std::string& targetScene, const std::string& name, const nlohmann::json& data, const TransformComponent& transform)
 {
     if (data.contains("modelPath"))
     {
@@ -133,11 +133,11 @@ void SceneLoader::loadModel(const std::string& name, const nlohmann::json& data,
         const bool isGltf = modelPath.find(".gltf") != std::string::npos || modelPath.find(".glb") != std::string::npos;
 
         if (isGltf)
-            objectManager_.loadObjectAsync(device_, assetManager_, modelPath, transform, name);
+            objectManager_.loadObjectAsync(device_, assetManager_, modelPath, transform, name, targetScene);
         else
         {
             const std::string texturePath = data.value("texturePath", std::string("assets/textures/whiteTexture.jpg"));
-            objectManager_.loadObjectAsync(device_, assetManager_, modelPath, texturePath, transform, name);
+            objectManager_.loadObjectAsync(device_, assetManager_, modelPath, texturePath, transform, name, targetScene);
         }
     }
 
@@ -147,12 +147,12 @@ void SceneLoader::loadModel(const std::string& name, const nlohmann::json& data,
         const int detail = data.value("detail", 10);
         const std::string texturePath = data.value("texturePath", std::string{});
 
-        objectManager_.createPrimitive(primitiveType, detail, transform, name, texturePath);
+        objectManager_.createPrimitive(primitiveType, detail, transform, name, texturePath, targetScene);
     }
 
 }
 
-void SceneLoader::loadCamera(const std::string& name, const nlohmann::json& data, const TransformComponent& transform)
+void SceneLoader::loadCamera(const std::string& targetScene, const std::string& name, const nlohmann::json& data, const TransformComponent& transform)
 {
     const float fov = data.value("fov", glm::radians(50.0f));
     const float aspectRatio = data.value("aspectRatio", 1.0f);
@@ -170,10 +170,10 @@ void SceneLoader::loadCamera(const std::string& name, const nlohmann::json& data
 
     camera->transform = transform;
     camera->setName(name);
-    objectManager_.pushGameObject(std::move(camera));
+    objectManager_.pushGameObject(std::move(camera), targetScene);
 }
 
-void SceneLoader::loadSpotLight(const std::string& name, const nlohmann::json& data, const TransformComponent& transform)
+void SceneLoader::loadSpotLight(const std::string& targetScene, const std::string& name, const nlohmann::json& data, const TransformComponent& transform)
 {
     const float fov = data.value("fov", 1.0f);
     const float aspectRatio = data.value("aspectRatio", 1.0f);
@@ -191,14 +191,14 @@ void SceneLoader::loadSpotLight(const std::string& name, const nlohmann::json& d
 
     light->transform = transform;
     light->setName(name);
-    objectManager_.pushGameObject(std::move(light));
+    objectManager_.pushGameObject(std::move(light), targetScene);
 }
 
-void SceneLoader::loadGenericObject(const std::string& name, const nlohmann::json& data, const TransformComponent& transform) 
+void SceneLoader::loadGenericObject(const std::string& targetScene, const std::string& name, const nlohmann::json& data, const TransformComponent& transform)
 {
     auto object = GameObjectFactory::createGameObject<GameObject>(device_, assetManager_);
     object->transform = transform;
     object->setName(name);
-    objectManager_.pushGameObject(std::move(object));
+    objectManager_.pushGameObject(std::move(object), targetScene);
 }
 

@@ -51,10 +51,13 @@ private:
 	AssetManager& assets;
 
 	std::string selected_object = "";
+	std::string selectedScene = "";
 
 	bool show_create_go_window = true; 
 	bool show_create_terrain_window = true;
 	int selected = -1;
+
+
 };
 
 #endif // ENABLE_IMGUI

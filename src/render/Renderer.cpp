@@ -230,7 +230,7 @@ void Renderer::generateSkybox(const std::string pathTexture, const std::string g
 			.withTexture(resultTexture)
 		);
 
-	objectManager.createDescriptorSet(assets.models().get(modelId));
+	objectManager.createDescriptorSet(assets.models().get(modelId), objectManager.currentScene);
 	gameObject->setModel(modelId);
 
 	objectManager.pushGameObject(std::move(gameObject));

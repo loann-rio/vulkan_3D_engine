@@ -8,26 +8,25 @@
 
 #include "../base/Swap_chain.h"
 
-#include <chrono>
-#include <fstream>
-#include <utility>
+
 #include "../model/ModelAsset.h"
 
-
+#include <chrono>
+#include <utility>
 void ObjectManager::startLoadModel()
 {
 
     if (true)
     {
         TextureBuilder textureBuilder(device);
-        auto texture = assetManager.textures().create(textureBuilder.fromFile("assets/skybox/cubemap_space.ktx").asCubemap());
+        auto texture = assetManager.textures(currentScene).create(textureBuilder.fromFile("assets/skybox/cubemap_space.ktx").asCubemap());
         
         ModelBuilder builder(device, assetManager);
-        ModelManager::ModelID modelId = assetManager.models().create(builder.fromFile("assets/model/cube.obj").withTexture(texture));
+        ModelManager::ModelID modelId = assetManager.models(currentScene).create(builder.fromFile("assets/model/cube.obj").withTexture(texture));
 
         if (modelId)
         {
-            createDescriptorSet(assetManager.models().get(modelId));
+            createDescriptorSet(assetManager.models().get(modelId), currentScene);
 
             auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
             gameObject->setName("cubemap");
@@ -36,7 +35,7 @@ void ObjectManager::startLoadModel()
             gameObject->setModel(modelId);
             gameObject->saveable = false;
             gameObject->show = false;
-            assetManager.gameObject().add(std::move(gameObject));
+            assetManager.gameObject(currentScene).add(std::move(gameObject));
         }
     }
 
@@ -53,18 +52,18 @@ void ObjectManager::startLoadModel()
             }
         }
 
-        auto texture = assetManager.textures().create(TextureBuilder(device).fromFile("assets/textures/whiteTexture.jpg"));
-        auto textureGrass = assetManager.textures().create(TextureBuilder(device).fromFile("assets/textures/GrassBillboard.png"));
+        auto texture = assetManager.textures(currentScene).create(TextureBuilder(device).fromFile("assets/textures/whiteTexture.jpg"));
+        auto textureGrass = assetManager.textures(currentScene).create(TextureBuilder(device).fromFile("assets/textures/GrassBillboard.png"));
 
-        ModelManager::ModelID grassLod1 = assetManager.models().create(ModelBuilder(device, assetManager).fromFile("assets/model/grassLOD/grassLod1.obj").withShadow(false).withTexture(texture));
-        ModelManager::ModelID grassLod2 = assetManager.models().create(ModelBuilder(device, assetManager).fromFile("assets/model/grassLOD/grassLod2.obj").withShadow(false).withTexture(texture));
-        ModelManager::ModelID grassLod3 = assetManager.models().create(ModelBuilder(device, assetManager).fromFile("assets/model/grassLOD/grassLod3.obj").withShadow(false).withTexture(texture));
-        ModelManager::ModelID grassLod4 = assetManager.models().create(ModelBuilder(device, assetManager).fromFile("assets/model/grassLOD/grassLod4.obj").withShadow(false).withTexture(textureGrass));
+        ModelManager::ModelID grassLod1 = assetManager.models(currentScene).create(ModelBuilder(device, assetManager).fromFile("assets/model/grassLOD/grassLod1.obj").withShadow(false).withTexture(texture));
+        ModelManager::ModelID grassLod2 = assetManager.models(currentScene).create(ModelBuilder(device, assetManager).fromFile("assets/model/grassLOD/grassLod2.obj").withShadow(false).withTexture(texture));
+        ModelManager::ModelID grassLod3 = assetManager.models(currentScene).create(ModelBuilder(device, assetManager).fromFile("assets/model/grassLOD/grassLod3.obj").withShadow(false).withTexture(texture));
+        ModelManager::ModelID grassLod4 = assetManager.models(currentScene).create(ModelBuilder(device, assetManager).fromFile("assets/model/grassLOD/grassLod4.obj").withShadow(false).withTexture(textureGrass));
 
-        createDescriptorSet(assetManager.models().get(grassLod1));
-        createDescriptorSet(assetManager.models().get(grassLod2));
-        createDescriptorSet(assetManager.models().get(grassLod3));
-        createDescriptorSet(assetManager.models().get(grassLod4));
+        createDescriptorSet(assetManager.models().get(grassLod1), currentScene);
+        createDescriptorSet(assetManager.models().get(grassLod2), currentScene);
+        createDescriptorSet(assetManager.models().get(grassLod3), currentScene);
+        createDescriptorSet(assetManager.models().get(grassLod4), currentScene);
 
 
         auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
@@ -75,7 +74,7 @@ void ObjectManager::startLoadModel()
         gameObject->setMultipleInstances(instances);
         gameObject->transform.translation = { 12.f, 0.f, 12.f };
 		gameObject->createInstanceComputeDescriptorSets(*globalPool);
-        assetManager.gameObject().add(std::move(gameObject));
+        assetManager.gameObject(currentScene).add(std::move(gameObject));
 
 
         ComputeObject computeGrass{
@@ -84,7 +83,7 @@ void ObjectManager::startLoadModel()
             1, 
             1,
             instances.size(),
-            dynamic_cast<GameObjectModel*>(assetManager.gameObject().findByName("grass"))
+            dynamic_cast<GameObjectModel*>(assetManager.gameObject(currentScene).findByName("grass"))
         };
 
         computeList.push_back(computeGrass);
@@ -92,11 +91,11 @@ void ObjectManager::startLoadModel()
 
     {
         ModelBuilder builder(device, assetManager);
-        ModelManager::ModelID id = assetManager.models().create(builder.fromFile("assets/model/2.0/DamagedHelmet/glTF/DamagedHelmet.gltf"));
+        ModelManager::ModelID id = assetManager.models(currentScene).create(builder.fromFile("assets/model/2.0/DamagedHelmet/glTF/DamagedHelmet.gltf"));
 
         if (id)
         {
-            createDescriptorSet(assetManager.models().get(id));
+            createDescriptorSet(assetManager.models().get(id), currentScene);
 
             auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
             gameObject->setName("testModelBuilder");
@@ -108,18 +107,18 @@ void ObjectManager::startLoadModel()
             gameObject->saveable = false;
             gameObject->createPoseResources(*globalPool);
 
-            assetManager.gameObject().add(std::move(gameObject));
+            assetManager.gameObject(currentScene).add(std::move(gameObject));
 
         }
     }
 
     {
         ModelBuilder builder(device, assetManager);
-        ModelManager::ModelID id = assetManager.models().create(builder.fromFile("assets\\model\\people\\UAL1_Standard.glb"));
+        ModelManager::ModelID id = assetManager.models(currentScene).create(builder.fromFile("assets\\model\\people\\UAL1_Standard.glb"));
 
         if (id)
         {
-            createDescriptorSet(assetManager.models().get(id));
+            createDescriptorSet(assetManager.models().get(id), currentScene);
 
             //auto behavior = GameObjectBehavior::createBehaviorFromType("PlayerBehavior", device);
 
@@ -133,7 +132,7 @@ void ObjectManager::startLoadModel()
             gameObject->saveable = false;
             gameObject->createPoseResources(*globalPool);
 
-            auto& obj = assetManager.gameObject().add(std::move(gameObject));
+            auto& obj = assetManager.gameObject(currentScene).add(std::move(gameObject));
 
             // player camera -> child of player
 
@@ -142,7 +141,7 @@ void ObjectManager::startLoadModel()
             cameraObject->transform.translation = { 1, -1, 1 };
             cameraObject->saveable = false;
             cameraObject->setParent(&obj);
-            assetManager.gameObject().add(std::move(cameraObject));
+            assetManager.gameObject(currentScene).add(std::move(cameraObject));
         }
     }
 
@@ -157,7 +156,7 @@ void ObjectManager::startLoadModel()
 
 }
 
-void ObjectManager::createPrimitive(PrimitivesModelType type, int detail, TransformComponent transform, const std::string& name, const std::string& filePathTexture)
+void ObjectManager::createPrimitive(PrimitivesModelType type, int detail, TransformComponent transform, const std::string& name, const std::string& filePathTexture, const std::string& targetScene)
 {
     auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
     gameObject->transform = transform; 
@@ -170,18 +169,26 @@ void ObjectManager::createPrimitive(PrimitivesModelType type, int detail, Transf
     GameObject::id_t id = gameObject->getId();
 
     //pushGameObject(std::move(gameObject));
-    assetManager.gameObject().add(std::move(gameObject));
-
-    pushFuture(std::async(std::launch::async, [this, id, type, detail, filePathTexture]() {
+    assetManager.gameObject(targetScene).add(std::move(gameObject));
+    pushFuture(std::async(std::launch::async, [this, id, type, detail, filePathTexture, targetScene]() mutable {
+        std::string scene = targetScene;
+        
         ModelManager::ModelID modelID = 0;
 
         switch (type) {
         case PrimitivesModelType::PLANE:
-            // white vertex color: the shader multiplies it with the texture
-            modelID = PrebuiltModel::createPlane(this->device, this->assetManager, detail, 1, { 1, 1, 1 }, filePathTexture.empty() ? "assets/textures/whiteTexture.jpg" : filePathTexture, 20);
+            modelID = PrebuiltModel::createPlane(
+                this->device,
+                this->assetManager,
+                scene,
+                detail,
+                1,
+                { 1, 1, 1 },
+                filePathTexture.empty() ? "assets/textures/whiteTexture.jpg" : filePathTexture,
+                20
+            );
             break;
         case PrimitivesModelType::CUBE:
-            //primitive = PrebuiltModel::createCube(this->device, this->assetManager);
             break;
         case PrimitivesModelType::SPHERE:
             break;
@@ -194,9 +201,17 @@ void ObjectManager::createPrimitive(PrimitivesModelType type, int detail, Transf
             break;
         }
 
-        return std::vector<futureObject>{ futureObject{ modelID ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id, {}, true, modelID } };
-        })
-     );
+        return std::vector<futureObject>{
+            futureObject{
+                modelID ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL,
+                id,
+                {},
+                true,
+                modelID,
+                targetScene
+            }
+        };
+     }));
 }
 
     /////// scene management ///////
@@ -341,7 +356,7 @@ void ObjectManager::pushModel()
             if (object.instances.size() > 0)
                 gameObject->setMultipleInstances(object.instances);
             
-            createDescriptorSet(assetManager.models(object.targetScene).get(object.modelID));
+            createDescriptorSet(assetManager.models(object.targetScene).get(object.modelID), currentScene);
 
             gameObject->setModel(object.modelID);
             gameObject->setModelType(object.type);
@@ -417,10 +432,12 @@ ObjectManager::ObjectManager(Device& device, AssetManager& assetManager) : devic
         .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Swap_chain::MAX_FRAMES_IN_FLIGHT * 640)
         .build();
 
+    assetManager.createNewScene(currentScene);
+    assetManager.switchScene(currentScene);
     loadScene(currentScene);
 };
 
-void ObjectManager::createDescriptorSet(ModelAsset* model)
+void ObjectManager::createDescriptorSet(ModelAsset* model, const std::string& targetScene)
 {
 
     for (auto& lod : model->lods) {
@@ -431,10 +448,10 @@ void ObjectManager::createDescriptorSet(ModelAsset* model)
                 .addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
                 .build();
 
-            VkDescriptorImageInfo firstInfo = assetManager.textures().get(lod.textures[0])->getImageInfo();
+            VkDescriptorImageInfo firstInfo = assetManager.textures(targetScene).get(lod.textures[0])->getImageInfo();
             std::vector<VkDescriptorImageInfo> texturesInfo(MAX_MODEL_TEXTURES, firstInfo);
             for (size_t i = 0; i < lod.textures.size(); i++)
-                texturesInfo[i] = assetManager.textures().get(lod.textures[i])->getImageInfo();
+                texturesInfo[i] = assetManager.textures(targetScene).get(lod.textures[i])->getImageInfo();
 
             VkDescriptorBufferInfo materialBufferInfo = lod.materialBuffer->descriptorInfo();
 
