@@ -1,19 +1,19 @@
 #pragma once
 
-#include "../base/Pipeline.h"
-#include "../base/Device.h"
-#include "../base/Frame_info.h"
-#include "../base/descriptors.h"
-#include "../base/Buffer.h"
+#include "base/Pipeline.h"
+#include "base/Device.h"
+#include "base/Frame_info.h"
+#include "base/descriptors.h"
+#include "base/Buffer.h"
 
-#include "../objects/GameObject.h"
+#include "objects/GameObject.h"
 
-#include "../render/Camera.h"
+#include "render/Camera.h"
 
-#include "../model/ModelAsset.h"
-#include "../model/Decoder/IModelDecoder.h"
+#include "model/ModelAsset.h"
+#include "model/Decoder/IModelDecoder.h"
 
-#include "../assetManager/AssetManager.h"
+#include "assetManager/AssetManager.h"
 
 #include <memory>
 #include <vector>

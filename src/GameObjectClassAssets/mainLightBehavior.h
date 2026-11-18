@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../objects/objectManager.h"
+#include "objects/objectManager.h"
 
 class mainLightBehavior : public GameObjectBehavior {
 	void setup(Device& device, AssetManager& assetManager, GameObject& object) override {}

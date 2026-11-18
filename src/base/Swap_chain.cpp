@@ -6,7 +6,7 @@
 #include <limits>
 #include <stdexcept>
 
-#include "../render/PassTarget.h"
+#include "render/PassTarget.h"
 
 #ifndef VK_SUBPASS_EXTERNAL
 #define VK_SUBPASS_EXTERNAL (~0U)

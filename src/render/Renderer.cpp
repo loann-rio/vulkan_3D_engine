@@ -5,12 +5,12 @@
 #include <memory>
 #include <vulkan/vulkan_core.h>
 
-#include "../model/Vertex/ObjVertexData.h"
-#include "../model/ModelAsset.h"
-#include "../model/ModelBuilder.h"
+#include "model/Vertex/ObjVertexData.h"
+#include "model/ModelAsset.h"
+#include "model/ModelBuilder.h"
 
-#include "../assetManager/ModelManager.h"
-#include "../base/Device.h"
+#include "assetManager/ModelManager.h"
+#include "base/Device.h"
 
 #include "GlobalRenderSystemBuilder.h"
 

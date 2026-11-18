@@ -12,12 +12,12 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 
-#include "../../assetManager/TextureManager.h"
+#include "assetManager/TextureManager.h"
 
 
-#include "../Vertex/IVertexData.h"
-#include "../Animation/Skeleton.h"
-#include "../BoundingBox.h"
+#include "model/Vertex/IVertexData.h"
+#include "model/Animation/Skeleton.h"
+#include "model/BoundingBox.h"
 
 namespace moDecoder {
 

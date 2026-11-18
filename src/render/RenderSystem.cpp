@@ -10,7 +10,7 @@
 #include <iostream>
 #include <cassert>
 
-#include "../base/Pipeline.h"
+#include "base/Pipeline.h"
 
 
 namespace {

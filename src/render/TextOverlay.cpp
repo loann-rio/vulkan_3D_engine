@@ -1,6 +1,6 @@
 #include "TextOverlay.h"
 
-#include "../Textures/TextureBuilder.h"
+#include "Textures/TextureBuilder.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE

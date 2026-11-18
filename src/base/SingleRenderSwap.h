@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Device.h"
-#include "../Textures/TextureObject.h"
-#include "../assetManager/AssetManager.h"
+#include "Textures/TextureObject.h"
+#include "assetManager/AssetManager.h"
 
 // vulkan headers
 #include <vulkan/vulkan.h>

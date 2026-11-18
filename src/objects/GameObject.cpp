@@ -3,8 +3,8 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <iostream>
 
-#include "../base/Swap_chain.h"
-#include "../assetManager/AssetManager.h"
+#include "base/Swap_chain.h"
+#include "assetManager/AssetManager.h"
 
 GameObject::id_t GameObjectFactory::nextId = 0;
 

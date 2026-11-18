@@ -1,7 +1,7 @@
 #include "SceneLoader.h"
-#include "../objects/objectManager.h"
+#include "objects/objectManager.h"
 
-#include "../../external/json.hpp"
+#include <json.hpp>
 #include <filesystem>
 #include <fstream>
 #include <stdexcept>

@@ -1,15 +1,15 @@
 #pragma once
 
-#include "../base/Window.h"
-#include "../base/Swap_chain.h"
-#include "../base/SingleRenderSwap.h"
-#include "../base/FrameRateCounter.h"
-#include "../base/Frame_info.h"
+#include "base/Window.h"
+#include "base/Swap_chain.h"
+#include "base/SingleRenderSwap.h"
+#include "base/FrameRateCounter.h"
+#include "base/Frame_info.h"
 
-#include "../assetManager/AssetManager.h"
+#include "assetManager/AssetManager.h"
 
-#include "../objects/objectManager.h"
-#include "../objects/BasicUI.h"
+#include "objects/objectManager.h"
+#include "objects/BasicUI.h"
 
 
 #include "RenderPasses/DepthPass.h"

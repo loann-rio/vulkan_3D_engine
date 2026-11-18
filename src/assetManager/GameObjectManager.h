@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "../objects/GameObject.h"
+#include "objects/GameObject.h"
 
 
 class GameObjectManager final

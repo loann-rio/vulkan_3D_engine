@@ -1,17 +1,17 @@
 #pragma once
 
-#include "../base/PerlinNoise.h"
-#include "../base/VoronoiNoise.h"
-#include "../base/Device.h"
-#include "../model/preBuild.h"
+#include "base/PerlinNoise.h"
+#include "base/VoronoiNoise.h"
+#include "base/Device.h"
+#include "model/preBuild.h"
 
-#include "../objects/objectManager.h"
+#include "objects/objectManager.h"
 
 #include <map>
 #include <unordered_set>
 #include <array>
-#include "../assetManager/ModelManager.h"
-#include "../assetManager/AssetManager.h"
+#include "assetManager/ModelManager.h"
+#include "assetManager/AssetManager.h"
 
 
 class TerrainGenerator : public GameObjectBehavior 

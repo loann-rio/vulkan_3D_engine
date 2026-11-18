@@ -1,7 +1,7 @@
 #pragma once
 
 #include "BaseRenderPass.h"
-#include "../RenderSystem.h"
+#include "render/RenderSystem.h"
 
 #include <vulkan/vulkan_core.h>
 #include <cstdint>

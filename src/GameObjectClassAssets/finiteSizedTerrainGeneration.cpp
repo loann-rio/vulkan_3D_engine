@@ -1,7 +1,7 @@
 #include "finiteSizedTerrainGeneration.h"
 
-#include "../Textures/TextureBuilder.h"
-#include "../Textures/TextureObject.h"
+#include "Textures/TextureBuilder.h"
+#include "Textures/TextureObject.h"
 
 // TO DO:
 // type of terrain generation

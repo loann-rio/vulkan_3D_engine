@@ -3,7 +3,7 @@
 #include "Decoder/IModelDecoder.h"
 #include "ModelAsset.h"
 
-#include "../assetManager/AssetManager.h"
+#include "assetManager/AssetManager.h"
 
 #include <memory>
 

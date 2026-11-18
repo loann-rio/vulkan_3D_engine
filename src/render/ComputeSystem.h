@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../base/Device.h"
-#include "../base/descriptors.h"
-#include "../assetManager/AssetManager.h"
-#include "../base/ComputePipeline.h"
+#include "base/Device.h"
+#include "base/descriptors.h"
+#include "assetManager/AssetManager.h"
+#include "base/ComputePipeline.h"
 
 #include <memory>
 #include <vector>

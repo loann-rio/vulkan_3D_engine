@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../render/Camera.h"
-#include "../objects/GameObject.h"
-#include "../objects/objectManager.h"
+#include "render/Camera.h"
+#include "objects/GameObject.h"
+#include "objects/objectManager.h"
 
 #include <vulkan/vulkan.h>
 

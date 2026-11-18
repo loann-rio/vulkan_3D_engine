@@ -1,9 +1,9 @@
 #include "ModelUploader.h"
 
-#include "../Textures/TextureBuilder.h"
-#include "../assetManager/AssetManager.h"
-#include "../base/Buffer.h"
-#include "../base/Device.h"
+#include "Textures/TextureBuilder.h"
+#include "assetManager/AssetManager.h"
+#include "base/Buffer.h"
+#include "base/Device.h"
 
 #include "Decoder/IModelDecoder.h"
 #include "ModelAsset.h"

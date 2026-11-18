@@ -1,7 +1,7 @@
 #include "FrameRenderer.h"
 
-#include "../base/Device.h"
-#include "../base/Swap_chain.h"
+#include "base/Device.h"
+#include "base/Swap_chain.h"
 
 #include <cassert>
 #include <stdexcept>

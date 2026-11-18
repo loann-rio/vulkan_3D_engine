@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../../base/Device.h"
-#include "../../assetManager/AssetManager.h"
-#include "../../base/Frame_info.h"
-#include "../ComputeSystem.h"
+#include "base/Device.h"
+#include "assetManager/AssetManager.h"
+#include "base/Frame_info.h"
+#include "render/ComputeSystem.h"
 
 #include <vector>
 

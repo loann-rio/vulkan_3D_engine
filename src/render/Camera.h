@@ -6,7 +6,7 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 
-#include "../model/BoundingBox.h"
+#include "model/BoundingBox.h"
 
 struct FrustumPlane {
 	glm::vec4 equation; // (a, b, c, d) where ax + by + cz + d = 0

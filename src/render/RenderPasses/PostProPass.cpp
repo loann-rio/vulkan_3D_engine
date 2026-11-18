@@ -1,7 +1,7 @@
 #include "PostProPass.h"
 
-#include "../GlobalRenderSystemBuilder.h"
-#include "../../model/Vertex/ObjVertexData.h"
+#include "render/GlobalRenderSystemBuilder.h"
+#include "model/Vertex/ObjVertexData.h"
 
 void PostProPass::recordPass(ObjectManager& objectManager, FrameInfo& frameInfo, VkCommandBuffer& commandBuffer)
 {

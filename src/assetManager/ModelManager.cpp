@@ -1,7 +1,7 @@
 #include "ModelManager.h"
 
-#include "../model/ModelAsset.h"
-#include "../model/ModelBuilder.h"
+#include "model/ModelAsset.h"
+#include "model/ModelBuilder.h"
 
 #include <mutex>
 #include <memory>

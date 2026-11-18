@@ -2,12 +2,12 @@
 
 #include <random>
 #include <algorithm>
-#include "../base/PerlinNoise.h"
-#include "../base/VoronoiNoise.h"
+#include "base/PerlinNoise.h"
+#include "base/VoronoiNoise.h"
 
-#include "../Textures/TextureBuilder.h"
-#include "../Textures/TextureObject.h"
-#include "../model/ModelBuilder.h"
+#include "Textures/TextureBuilder.h"
+#include "Textures/TextureObject.h"
+#include "model/ModelBuilder.h"
 #include "Vertex/ObjVertexData.h"
 
 /*std::shared_ptr<Model> PrebuiltModel::createFullScreenQuad(Device& device, AssetManager& assets)

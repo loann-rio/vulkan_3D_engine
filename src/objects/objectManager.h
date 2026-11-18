@@ -4,14 +4,14 @@
 #include <future>
 #include <typeindex>
 #include <cstdint>
-#include <../json.hpp>
+#include <json.hpp>
 
 #include "GameObject.h"
 
-#include "../assetManager/AssetManager.h"
-#include "../model/ModelAsset.h"
-#include "../base/descriptors.h"
-#include "../Scene/SceneLoader.h"
+#include "assetManager/AssetManager.h"
+#include "model/ModelAsset.h"
+#include "base/descriptors.h"
+#include "Scene/SceneLoader.h"
 
 using json = nlohmann::json;
 

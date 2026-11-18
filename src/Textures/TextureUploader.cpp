@@ -4,7 +4,7 @@
 
 #include "Decoder/ImageDecoder.h"
 
-#include "../base/Device.h"     
+#include "base/Device.h"     
 
 #include <stdexcept>
 #include <cmath>

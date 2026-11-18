@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../base/Device.h"
-#include "../assetManager/AssetManager.h"
+#include "base/Device.h"
+#include "assetManager/AssetManager.h"
 
 
 class PlayerBehavior : public GameObjectBehavior

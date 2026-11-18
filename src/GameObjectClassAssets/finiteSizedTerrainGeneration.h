@@ -1,11 +1,11 @@
 #pragma once
 
-#include "../base/PerlinNoise.h"
-#include "../base/VoronoiNoise.h"
+#include "base/PerlinNoise.h"
+#include "base/VoronoiNoise.h"
 
-#include "../model/preBuild.h"
+#include "model/preBuild.h"
 
-#include "../base/Device.h"
+#include "base/Device.h"
 
 
 class finiteSizedTerrainGeneration {

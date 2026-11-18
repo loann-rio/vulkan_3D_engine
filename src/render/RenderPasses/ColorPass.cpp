@@ -1,8 +1,8 @@
 #include "ColorPass.h"
 
-#include "../GlobalRenderSystemBuilder.h"
-#include "../../model/Vertex/ObjVertexData.h"
-#include "../../model/Vertex/GltfVertexData.h"
+#include "render/GlobalRenderSystemBuilder.h"
+#include "model/Vertex/ObjVertexData.h"
+#include "model/Vertex/GltfVertexData.h"
 //#include "DepthPass.h"
 
 void ColorPass::createRenderSystems()

@@ -2,17 +2,17 @@
 
 #define TEXTOVERLAY_MAX_CHAR_COUNT 2048
 
-#include "../base/Pipeline.h"
-#include "../base/Device.h"
-#include "../base/Frame_info.h"
-#include "../base/descriptors.h"
-#include "../base/Buffer.h"
-#include "../base/Swap_chain.h"
+#include "base/Pipeline.h"
+#include "base/Device.h"
+#include "base/Frame_info.h"
+#include "base/descriptors.h"
+#include "base/Buffer.h"
+#include "base/Swap_chain.h"
 
-#include "../assetManager/AssetManager.h"
-#include "../assetManager/TextureManager.h"
+#include "assetManager/AssetManager.h"
+#include "assetManager/TextureManager.h"
 
-#include "../../external/stb/consolas/stb_font_consolas_24_latin1.inl" 
+#include "stb/consolas/stb_font_consolas_24_latin1.inl" 
 
 #include <memory>
 #include <vector>

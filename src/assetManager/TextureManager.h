@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../Textures/TextureBuilder.h"
-#include "../Textures/TextureObject.h"
+#include "Textures/TextureBuilder.h"
+#include "Textures/TextureObject.h"
 
 #include <unordered_map>
 #include <mutex>

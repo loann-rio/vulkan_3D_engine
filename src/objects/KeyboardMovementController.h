@@ -1,7 +1,7 @@
 #pragma once
 
 #include "GameObject.h"
-#include "../base/Window.h"
+#include "base/Window.h"
 
 class KeyboardMovementController
 {

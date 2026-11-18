@@ -1,6 +1,6 @@
 #include "TextureBuilder.h"
 
-#include "../base/Device.h"
+#include "base/Device.h"
 #include "Decoder/ImageDecoder.h"
 
 #include "TextureLoader.h"

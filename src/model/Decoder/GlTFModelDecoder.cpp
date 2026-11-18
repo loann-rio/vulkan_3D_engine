@@ -14,10 +14,10 @@
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
 #define TINYGLTF_NO_STB_IMAGE_WRITE
-#include "../../external/tiny_gltf.h"
+#include "tiny_gltf.h"
 
-#include "../Vertex/ObjVertexData.h"
-#include "../Vertex/GltfVertexData.h"
+#include "model/Vertex/ObjVertexData.h"
+#include "model/Vertex/GltfVertexData.h"
 #include <glm/gtc/type_ptr.hpp>
 
 namespace {

@@ -7,7 +7,7 @@
 #include <vector>
 #include <array>
 
-#include "../assetManager/AssetManager.h"
+#include "assetManager/AssetManager.h"
 
 
 class PrebuiltModel {

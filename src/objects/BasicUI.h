@@ -1,13 +1,13 @@
 #pragma once
 
-#include "../base/Device.h"
+#include "base/Device.h"
 #include <string>
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan_core.h>
 
-#include "../objects/objectManager.h"
-#include "../objects/GameObject.h"
-#include "../base/Frame_info.h"
+#include "objects/objectManager.h"
+#include "objects/GameObject.h"
+#include "base/Frame_info.h"
 
 #define ENABLE_IMGUI
 
@@ -20,7 +20,7 @@
 
 #define _CRT_SECURE_NO_WARNINGS 
 #include <nfd.h>
-#include "../assetManager/AssetManager.h"
+#include "assetManager/AssetManager.h"
 #include <vector>
 
 class BasicUI

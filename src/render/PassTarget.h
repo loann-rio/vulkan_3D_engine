@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../base/Device.h"
-#include "../base/Swap_chain.h"
-#include "../assetManager/AssetManager.h"
+#include "base/Device.h"
+#include "base/Swap_chain.h"
+#include "assetManager/AssetManager.h"
 
 #include <vulkan/vulkan_core.h>
 #include <vector>

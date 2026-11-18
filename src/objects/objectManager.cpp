@@ -1,17 +1,17 @@
 #include "objectManager.h"
 
-#include "../model/preBuild.h"
-#include "../model/ModelBuilder.h"
+#include "model/preBuild.h"
+#include "model/ModelBuilder.h"
 
-#include "../Textures/TextureObject.h"
-#include "../Textures/TextureBuilder.h"
+#include "Textures/TextureObject.h"
+#include "Textures/TextureBuilder.h"
 
-#include "../base/Swap_chain.h"
+#include "base/Swap_chain.h"
 
 #include <chrono>
 #include <fstream>
 #include <utility>
-#include "../model/ModelAsset.h"
+#include "model/ModelAsset.h"
 
 
 void ObjectManager::startLoadModel()

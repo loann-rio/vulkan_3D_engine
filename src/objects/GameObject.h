@@ -1,11 +1,11 @@
 #pragma once
 
-#include "../base/Buffer.h"
-#include "../base/descriptors.h"
-#include "../base/Device.h"
-#include "../render/Camera.h"
-#include "../assetManager/ModelManager.h"
-#include "../model/Animation/Animation.h"
+#include "base/Buffer.h"
+#include "base/descriptors.h"
+#include "base/Device.h"
+#include "render/Camera.h"
+#include "assetManager/ModelManager.h"
+#include "model/Animation/Animation.h"
 
 #include <glm/detail/type_vec3.hpp>
 #include <glm/detail/type_vec4.hpp>

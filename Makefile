@@ -7,6 +7,7 @@ CXXFLAGS := -std=c++17 -O2 -MMD -MP
 CFLAGS   := -O2 -MMD -MP
 
 INCLUDES := -Isrc \
+            -Iexternal \
             -Iexternal/glm-1.0.0 \
             -Iexternal/imgui-master \
             -Iexternal/imgui-master/backends \

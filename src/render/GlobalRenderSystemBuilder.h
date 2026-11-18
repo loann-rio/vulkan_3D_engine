@@ -1,8 +1,8 @@
 #include "RenderSystem.h"
-#include "../base/Device.h"
-#include "../assetManager/AssetManager.h"
-#include "../assetManager/ModelManager.h"
-#include "../objects/GameObject.h"
+#include "base/Device.h"
+#include "assetManager/AssetManager.h"
+#include "assetManager/ModelManager.h"
+#include "objects/GameObject.h"
 #include <vulkan/vulkan_core.h>
 
 namespace {

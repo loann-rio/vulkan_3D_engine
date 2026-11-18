@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include "../../external/json.hpp"
+#include <json.hpp>
 
 #include <filesystem>
 #include <string>

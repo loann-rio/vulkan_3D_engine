@@ -2,8 +2,8 @@
 
 #include "finiteSizedTerrainGeneration.h"
 
-#include "../base/Device.h"
-#include "../objects/objectManager.h"
+#include "base/Device.h"
+#include "objects/objectManager.h"
 
 #include <unordered_set>
 #include <iostream>

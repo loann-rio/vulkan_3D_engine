@@ -5,7 +5,7 @@
 #include "KTX2Decoder.h"
 #include "KTXDecoder.h"
 
-#include "../../external/stb/stb_image.h"
+#include "stb/stb_image.h"
 
 #include <algorithm>
 #include <stdexcept>

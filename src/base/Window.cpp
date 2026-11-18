@@ -2,7 +2,7 @@
 
 #include <stdexcept>
 #include <fstream>
-#include <../json.hpp>
+#include <json.hpp>
 using json = nlohmann::json;
 
 Window::Window(int w, int h, std::string n) : width{w}, height{h}, windowName{n} {

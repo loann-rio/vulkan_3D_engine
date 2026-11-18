@@ -1,10 +1,10 @@
 #include "TerrainGenerator.h"
 
-#include "../Textures/TextureBuilder.h"
-#include "../Textures/TextureObject.h"
+#include "Textures/TextureBuilder.h"
+#include "Textures/TextureObject.h"
 
 #include <array>
-#include "../assetManager/ModelManager.h"
+#include "assetManager/ModelManager.h"
 
 void TerrainGenerator::loop(Device& device, AssetManager& assetManager, GameObject& object)
 {

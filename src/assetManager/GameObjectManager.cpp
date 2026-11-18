@@ -1,5 +1,5 @@
 #include "GameObjectManager.h"
-#include "../objects/GameObject.h"
+#include "objects/GameObject.h"
 
 #include <stdexcept>
 #include <string>

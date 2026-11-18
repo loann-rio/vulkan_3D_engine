@@ -2,7 +2,7 @@
 
 #include "Device.h"
 
-#include "../assetManager/AssetManager.h"
+#include "assetManager/AssetManager.h"
 
 // vulkan headers
 #include <vulkan/vulkan.h>

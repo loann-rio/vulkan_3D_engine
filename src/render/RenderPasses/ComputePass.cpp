@@ -1,5 +1,5 @@
 #include "ComputePass.h"
-#include "../../base/descriptors.h"
+#include "base/descriptors.h"
 #include <stdexcept>
 #include <iostream>
 #include <ctime>

@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <memory>
 
-#include "../model/ModelAsset.h"
+#include "model/ModelAsset.h"
 
 
 class ModelBuilder;
