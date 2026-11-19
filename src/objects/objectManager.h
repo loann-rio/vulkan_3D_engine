@@ -69,7 +69,6 @@ public:
     void requestSwitchScene(std::string newScene) { newSceneName = newScene; }
     void switchScene(std::string sceneName); 
     void loadScene(std::string name);
-    void createScene(std::string name);
 	void saveFullScene();
 
     DescriptorPool* getPool() const { return globalPool.get(); }
@@ -78,22 +77,21 @@ public:
     std::string mainCamera = "mainCamera"; 
     std::string mainSkybox = "cubemap";
 
-
     void createDescriptorSet(ModelAsset* model, const std::string& targetScene);
 
     std::vector<ComputeObject> computeList{};
     GameObjectModel* baseSkyBox = nullptr;
+
 private:
     std::string newSceneName = "";
 
     Device& device;
     AssetManager& assetManager;
+
 	SceneLoader sceneLoader{ device, assetManager, *this };
 
     std::vector<std::future<futureObject>> futureGameObjects;
     std::vector<std::future<std::vector<futureObject>>> futureGameObjectslist;
-
-    void addObjectToScene(GameObject* gameObject);
 
     std::unique_ptr<DescriptorPool> globalPool{};    
 };

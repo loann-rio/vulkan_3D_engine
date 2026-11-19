@@ -61,7 +61,7 @@ nlohmann::json SceneLoader::load(const std::string& sceneName)
         }
     }
 
-    if (assetManager_.gameObject(sceneName).findByName("mainCamera") == nullptr)
+    if (assetManager_.gameObject("fix_elements").findByName("mainCamera") == nullptr)
     {
         auto camera = GameObjectFactory::createGameObject<GameObjectCamera>(
             device_, 
@@ -73,7 +73,7 @@ nlohmann::json SceneLoader::load(const std::string& sceneName)
         );
 
         camera->setName("mainCamera");
-        objectManager_.pushGameObject(std::move(camera), sceneName);
+        objectManager_.pushGameObject(std::move(camera), "fix_elements");
     }
 
     return scene;

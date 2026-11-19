@@ -2,14 +2,14 @@
 
 #include "../model/preBuild.h"
 #include "../model/ModelBuilder.h"
+#include "../model/ModelAsset.h"
 
 #include "../Textures/TextureObject.h"
 #include "../Textures/TextureBuilder.h"
 
 #include "../base/Swap_chain.h"
 
-
-#include "../model/ModelAsset.h"
+#include "../Scene/SceneSaver.h"
 
 #include <chrono>
 #include <utility>
@@ -232,93 +232,9 @@ void ObjectManager::loadScene(std::string name)
 	sceneLoader.load(name);
 }
 
-void ObjectManager::addObjectToScene(GameObject* gameObject)
-{
-    
-/*    if (!currentSceneJson.contains("objects")) {
-        currentSceneJson["objects"] = json::object();
-    }
-
-    // serialize gameObject
-	json objJson;
-    objJson["type"] = static_cast<int>(gameObject->getType());
-
-    TransformComponent& t = gameObject->transform;
-    objJson["transform"]["translation"] = { t.translation.x, t.translation.y, t.translation.z          };
-    objJson["transform"]["rotation"]    = { t.rotation.x,    t.rotation.y,    t.rotation.z             };
-    objJson["transform"]["scale"]       = { t.scale.x,       t.scale.y,       t.scale.z                };
-    objJson["transform"]["color"]       = { t.color.r,       t.color.g,       t.color.b,    t.color.a  };
-
-    // type-specific params
-    if (objJson["type"] == GameObjectType::MODEL) {
-        auto* model = dynamic_cast<GameObjectModel*>(gameObject);
-		
-		objJson["modelType"] = static_cast<int>(model->getModelType());
-
-        if (!model->modelPath.empty()) {
-            objJson["modelPath"] = model->modelPath;
-        }
-
-        if (model->getModelType() == ModelType::OBJ_MODEL)
-        {
-            if (model->getPrimitivesModelType() != PrimitivesModelType::NONE) {
-                objJson["primitivesModelType"] = static_cast<int>(model->getPrimitivesModelType());
-                objJson["detail"] = model->primitiveLOD;
-			}
-
-            objJson["texturePath"] = model->texturePath;
-        }
-        
-    }
-    else if (objJson["type"] == GameObjectType::CAMERA) {
-        auto* cam = dynamic_cast<GameObjectCamera*>(gameObject);
-        objJson["fov"] = cam->getFov();
-        objJson["aspectRatio"] = cam->getAspectRatio();
-        objJson["nearPlane"] = cam->getNearClip();
-        objJson["farPlane"] = cam->getFarClip();
-    }
-    else if (objJson["type"] == GameObjectType::SPOT_LIGHT) {
-        auto* light = dynamic_cast<GameObjectSpotLight*>(gameObject);
-        objJson["fov"] = light->getFov();
-        objJson["aspectRatio"] = light->getAspectRatio();
-        objJson["nearPlane"] = light->getNearClip();
-        objJson["farPlane"] = light->getFarClip();
-    }
-
-    // save attached class
-    if (gameObject->hasAttachedClass) {
-
-		std::cout << "Saving attached class: " << gameObject->getAttachedClassType() << " for object " << gameObject->getName() << std::endl;
-        objJson["behavior_type"] = gameObject->getAttachedClassType();
-    }
-
-    currentSceneJson["objects"][gameObject->getName()] = objJson;*/
-
-}
-
-void ObjectManager::createScene(std::string name)
-{
-/*    json empty = json::parse(R"({})");
-
-	std::string path = "scenes/" + name + ".json";
-
-	// create json file with name
-    std::ofstream o(path);
-    o << empty << std::endl;*/
-}
-
 void ObjectManager::saveFullScene()
 {
-/*    currentSceneJson = json::parse(R"({})");
-    
-    for (auto obj : assetManager.gameObject().getByType<GameObject>()) {
-        if (obj->saveable)
-            addObjectToScene(obj);
-	}
-
-    // save back to file
-    std::ofstream o(scenePath);
-    o << currentSceneJson << std::endl;*/
+    SceneSaver::save(currentScene, assetManager.gameObject(currentScene));
 }
     
     /////// add objects ///////

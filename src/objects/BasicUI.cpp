@@ -186,7 +186,9 @@ void BasicUI::objectSelectionWindow(std::vector<std::string> listObjectsName, Ob
         show_create_go_window = false; 
     }
 
+    /////////////////////////////
     ////// scene selection //////
+    /////////////////////////////
 
     ImGui::SeparatorText("scene selection");
 
@@ -198,7 +200,13 @@ void BasicUI::objectSelectionWindow(std::vector<std::string> listObjectsName, Ob
     if (ImGui::Button("change scene"))
         manager->requestSwitchScene(std::string(newScene));
 
+    if (ImGui::Button("save scene"))
+        manager->saveFullScene();
+
+    //////////////////////////////
     ////// object selection //////
+    //////////////////////////////
+
     ImGui::SeparatorText("loaded game objects"); 
 
     static int item_current = 0;
@@ -258,7 +266,7 @@ void BasicUI::createObjWindow(ObjectManager* manager)
     ImGui::InputTextWithHint("##path", "enter model path", path, IM_ARRAYSIZE(path));
 
     if (ImGui::Button("model dialog")) {
-        std::string filePath = openFileDialog("obj");
+        std::string filePath = openFileDialog("obj", "assets/model");
 
         if (!filePath.empty())
             snprintf(path, sizeof(path), "%s", filePath.c_str());
@@ -269,7 +277,7 @@ void BasicUI::createObjWindow(ObjectManager* manager)
     ImGui::InputTextWithHint("##pathTexture", "enter texture path", pathTexture, IM_ARRAYSIZE(pathTexture)); 
 
     if (ImGui::Button("texture dialog")) {
-        std::string filePath = openFileDialog("jpg,png,ktx,ktx2");
+        std::string filePath = openFileDialog("jpg,png,ktx,ktx2", "assets/textures");
 
         if (!filePath.empty())
             snprintf(pathTexture, sizeof(pathTexture), "%s", filePath.c_str()); 
@@ -304,7 +312,7 @@ void BasicUI::createGLTFWindow(ObjectManager* manager)
     ImGui::InputTextWithHint("##path", "enter model path", path, IM_ARRAYSIZE(path));
 
     if (ImGui::Button("open dialog")) {
-        std::string filePath = openFileDialog("gltf,glb");
+        std::string filePath = openFileDialog("gltf,glb", "assets/model");
 
         if (!filePath.empty())
             snprintf(path, sizeof(path), "%s", filePath.c_str());
@@ -335,7 +343,7 @@ void BasicUI::createSkyboxWindow(ObjectManager* manager)
     ImGui::InputTextWithHint("##path", "enter texture path", path, IM_ARRAYSIZE(path));
 
     if (ImGui::Button("open dialog")) {
-        std::string filePath = openFileDialog("ktx, hdr");
+        std::string filePath = openFileDialog("ktx, hdr", "assets/skybox");
 
         if (!filePath.empty())
             snprintf(path, sizeof(path), "%s", filePath.c_str());
@@ -442,11 +450,11 @@ void BasicUI::createEmptyObjectWindow(ObjectManager* manager)
 	if (!show_create_go_window) selected = -1;
 }
 
-std::string BasicUI::openFileDialog(const char* filter)
+std::string BasicUI::openFileDialog(const char* filter, const char* defaultPath)
 {
     nfdchar_t* outPath = nullptr;
 
-    nfdresult_t result = NFD_OpenDialog(filter, nullptr, &outPath);
+    nfdresult_t result = NFD_OpenDialog(filter, defaultPath, &outPath);
     if (result == NFD_OKAY) {
         std::cout << "Selected file: " << outPath << "\n";
         return std::string{ outPath };

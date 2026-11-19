@@ -228,6 +228,9 @@
     <ClCompile Include="src\Scene\SceneLoader.cpp">
       <Filter>Scene</Filter>
     </ClCompile>
+    <ClCompile Include="src\Scene\SceneSaver.cpp">
+      <Filter>Scene</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tiny_gltf.h">
@@ -440,6 +443,9 @@
       <Filter>assetManager</Filter>
     </ClInclude>
     <ClInclude Include="src\Scene\SceneLoader.h">
+      <Filter>Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Scene\SceneSaver.h">
       <Filter>Scene</Filter>
     </ClInclude>
   </ItemGroup>

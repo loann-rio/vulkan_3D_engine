@@ -44,7 +44,7 @@ private:
 	void createCameraWindow(ObjectManager* manager, bool isSpotLight);
 	void createEmptyObjectWindow(ObjectManager* manager);
 
-	std::string openFileDialog(const char* filter);
+	std::string openFileDialog(const char* filter, const char* defaultPath = nullptr);
 
 	VkDescriptorPool imguiPool; 
 	Device& device;
