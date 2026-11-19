@@ -4,10 +4,10 @@
 #include "ModelManager.h"
 #include "TextureManager.h"
 #include "GameObjectManager.h"
-#include <vector>
 #include <memory>
 #include <stdexcept>
-#include <cstdint>
+#include <utility>
+#include <string>
 
 struct Scene {
     std::unique_ptr<ModelManager> modelMgr;
@@ -24,6 +24,7 @@ public:
     AssetManager() 
     {
         createNewScene("default");
+        createNewScene("fix_elements");
     };
 
     

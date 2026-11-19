@@ -127,19 +127,19 @@ uint64_t ModelBuilder::hash() const
     return h;
 }
 
-std::unique_ptr<ModelAsset> ModelBuilder::build()
+std::unique_ptr<ModelAsset> ModelBuilder::build(std::string& targetScene)
 {
     try {
         switch (source)
         {
             case ModelBuilder::SourceType::GlTF:
-                return buildGlTF();
+                return buildGlTF(targetScene);
 
             case ModelBuilder::SourceType::Obj:
-                return buildObj();
+                return buildObj(targetScene);
 
 			case ModelBuilder::SourceType::Decoded:
-				return buildDecodedModel();        
+				return buildDecodedModel(targetScene);        
 
             case ModelBuilder::SourceType::None:
             default:
@@ -154,7 +154,7 @@ std::unique_ptr<ModelAsset> ModelBuilder::build()
     }
 }
 
-std::unique_ptr<ModelAsset> ModelBuilder::buildObj()
+std::unique_ptr<ModelAsset> ModelBuilder::buildObj(std::string& targetScene)
 {
     if (modelPath.empty()) {
         throw std::runtime_error("path cannot be empty for obj");
@@ -177,7 +177,7 @@ std::unique_ptr<ModelAsset> ModelBuilder::buildObj()
         DecodedModel decodedModel = decoder.decode(modelFilePath);
 
 
-        ModelLOD model = ModelUploader::uploadDecodedModel(device, assets, decodedModel);
+        ModelLOD model = ModelUploader::uploadDecodedModel(device, assets, targetScene, decodedModel);
 
         if (i < textures.size())
         {
@@ -201,11 +201,11 @@ std::unique_ptr<ModelAsset> ModelBuilder::buildObj()
 
 }
 
-std::unique_ptr<ModelAsset> ModelBuilder::buildDecodedModel()
+std::unique_ptr<ModelAsset> ModelBuilder::buildDecodedModel(std::string& targetScene)
 {
     std::unique_ptr<ModelAsset> fullModel = std::make_unique<ModelAsset>();
 
-    ModelLOD model = ModelUploader::uploadDecodedModel(device, assets, decodedModel);
+    ModelLOD model = ModelUploader::uploadDecodedModel(device, assets, targetScene, decodedModel);
 
     if (textures.size())
     {
@@ -230,7 +230,7 @@ std::unique_ptr<ModelAsset> ModelBuilder::buildDecodedModel()
     return fullModel;
 }
 
-std::unique_ptr<ModelAsset> ModelBuilder::buildGlTF()
+std::unique_ptr<ModelAsset> ModelBuilder::buildGlTF(std::string& targetScene)
 {
 
     if (modelPath.empty()) {
@@ -253,7 +253,7 @@ std::unique_ptr<ModelAsset> ModelBuilder::buildGlTF()
 
         DecodedModel decodedModel = decoder.decode(modelFilePath);
 
-        ModelLOD model = ModelUploader::uploadDecodedModel(device, assets, decodedModel);
+        ModelLOD model = ModelUploader::uploadDecodedModel(device, assets, targetScene, decodedModel);
 
         // if there is more than one model, each with texture
         if (i < textures.size())

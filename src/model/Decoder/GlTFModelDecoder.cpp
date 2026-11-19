@@ -5,20 +5,20 @@
 #include <string>
 #include <algorithm>
 #include <filesystem>
-#include <fstream>
 #include <functional>
+#include <cassert>
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
 #define TINYGLTF_NO_STB_IMAGE_WRITE
 #include "../../external/tiny_gltf.h"
 
-#include "../Vertex/ObjVertexData.h"
 #include "../Vertex/GltfVertexData.h"
-#include <glm/gtc/type_ptr.hpp>
 
 namespace {
 

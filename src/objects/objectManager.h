@@ -50,7 +50,7 @@ public:
     ~ObjectManager() { saveFullScene(); globalPool = nullptr; }
 	
 	void startLoadModel(); 
-	void pushModel();
+	void updateObjectManager();
     void pushGameObject(std::unique_ptr<GameObject> gameObject, const std::string& targetScene = "");
 
 	// create primitive object
@@ -66,6 +66,7 @@ public:
     std::string currentScene = "test5";
 	std::string scenePath = "scenes/test5.json";
 
+    void requestSwitchScene(std::string newScene) { newSceneName = newScene; }
     void switchScene(std::string sceneName); 
     void loadScene(std::string name);
     void createScene(std::string name);
@@ -83,6 +84,8 @@ public:
     std::vector<ComputeObject> computeList{};
     GameObjectModel* baseSkyBox = nullptr;
 private:
+    std::string newSceneName = "";
+
     Device& device;
     AssetManager& assetManager;
 	SceneLoader sceneLoader{ device, assetManager, *this };

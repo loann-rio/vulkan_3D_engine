@@ -105,8 +105,8 @@ void BasicUI::gameObjectWindow(GameObject* gameObject, ObjectManager* manager)
     gameObject->debugUI();
 
     if (ImGui::Button("move to cam")) {
-		gameObject->transform.translation = assets.gameObject(selectedScene).findByName(manager->mainCamera)->transform.translation;
-		gameObject->transform.rotation = assets.gameObject(selectedScene).findByName(manager->mainCamera)->transform.rotation;
+		gameObject->transform.translation = assets.gameObject("fix_elements").findByName(manager->mainCamera)->transform.translation;
+		gameObject->transform.rotation = assets.gameObject("fix_elements").findByName(manager->mainCamera)->transform.rotation;
 	}
 
     if (ImGui::Button("remove object"))
@@ -196,7 +196,7 @@ void BasicUI::objectSelectionWindow(std::vector<std::string> listObjectsName, Ob
     ImGui::InputTextWithHint("##newScene", "new scene path", newScene, IM_ARRAYSIZE(newScene));
 
     if (ImGui::Button("change scene"))
-        manager->switchScene(std::string(newScene));
+        manager->requestSwitchScene(std::string(newScene));
 
     ////// object selection //////
     ImGui::SeparatorText("loaded game objects"); 
@@ -211,7 +211,7 @@ void BasicUI::objectSelectionWindow(std::vector<std::string> listObjectsName, Ob
     ImGui::ListBox("##go", &item_current, listObjectsNameCStr.data(), static_cast<int>(listObjectsNameCStr.size()));
 
 
-    selected_object = listObjectsName[item_current % listObjectsName.size()];
+    selected_object = listObjectsName.size() ? listObjectsName[item_current % listObjectsName.size()] : "";
 
     ImGui::End();
 }

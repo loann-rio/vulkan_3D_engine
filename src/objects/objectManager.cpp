@@ -19,10 +19,10 @@ void ObjectManager::startLoadModel()
     if (true)
     {
         TextureBuilder textureBuilder(device);
-        auto texture = assetManager.textures(currentScene).create(textureBuilder.fromFile("assets/skybox/cubemap_space.ktx").asCubemap());
+        auto texture = assetManager.textures().create(textureBuilder.fromFile("assets/skybox/cubemap_space.ktx").asCubemap());
         
         ModelBuilder builder(device, assetManager);
-        ModelManager::ModelID modelId = assetManager.models(currentScene).create(builder.fromFile("assets/model/cube.obj").withTexture(texture));
+        ModelManager::ModelID modelId = assetManager.models().create(builder.fromFile("assets/model/cube.obj").withTexture(texture));
 
         if (modelId)
         {
@@ -35,7 +35,7 @@ void ObjectManager::startLoadModel()
             gameObject->setModel(modelId);
             gameObject->saveable = false;
             gameObject->show = false;
-            assetManager.gameObject(currentScene).add(std::move(gameObject));
+            assetManager.gameObject().add(std::move(gameObject));
         }
     }
 
@@ -52,13 +52,13 @@ void ObjectManager::startLoadModel()
             }
         }
 
-        auto texture = assetManager.textures(currentScene).create(TextureBuilder(device).fromFile("assets/textures/whiteTexture.jpg"));
-        auto textureGrass = assetManager.textures(currentScene).create(TextureBuilder(device).fromFile("assets/textures/GrassBillboard.png"));
+        auto texture = assetManager.textures().create(TextureBuilder(device).fromFile("assets/textures/whiteTexture.jpg"));
+        auto textureGrass = assetManager.textures().create(TextureBuilder(device).fromFile("assets/textures/GrassBillboard.png"));
 
-        ModelManager::ModelID grassLod1 = assetManager.models(currentScene).create(ModelBuilder(device, assetManager).fromFile("assets/model/grassLOD/grassLod1.obj").withShadow(false).withTexture(texture));
-        ModelManager::ModelID grassLod2 = assetManager.models(currentScene).create(ModelBuilder(device, assetManager).fromFile("assets/model/grassLOD/grassLod2.obj").withShadow(false).withTexture(texture));
-        ModelManager::ModelID grassLod3 = assetManager.models(currentScene).create(ModelBuilder(device, assetManager).fromFile("assets/model/grassLOD/grassLod3.obj").withShadow(false).withTexture(texture));
-        ModelManager::ModelID grassLod4 = assetManager.models(currentScene).create(ModelBuilder(device, assetManager).fromFile("assets/model/grassLOD/grassLod4.obj").withShadow(false).withTexture(textureGrass));
+        ModelManager::ModelID grassLod1 = assetManager.models().create(ModelBuilder(device, assetManager).fromFile("assets/model/grassLOD/grassLod1.obj").withShadow(false).withTexture(texture));
+        ModelManager::ModelID grassLod2 = assetManager.models().create(ModelBuilder(device, assetManager).fromFile("assets/model/grassLOD/grassLod2.obj").withShadow(false).withTexture(texture));
+        ModelManager::ModelID grassLod3 = assetManager.models().create(ModelBuilder(device, assetManager).fromFile("assets/model/grassLOD/grassLod3.obj").withShadow(false).withTexture(texture));
+        ModelManager::ModelID grassLod4 = assetManager.models().create(ModelBuilder(device, assetManager).fromFile("assets/model/grassLOD/grassLod4.obj").withShadow(false).withTexture(textureGrass));
 
         createDescriptorSet(assetManager.models().get(grassLod1), currentScene);
         createDescriptorSet(assetManager.models().get(grassLod2), currentScene);
@@ -74,7 +74,7 @@ void ObjectManager::startLoadModel()
         gameObject->setMultipleInstances(instances);
         gameObject->transform.translation = { 12.f, 0.f, 12.f };
 		gameObject->createInstanceComputeDescriptorSets(*globalPool);
-        assetManager.gameObject(currentScene).add(std::move(gameObject));
+        assetManager.gameObject().add(std::move(gameObject));
 
 
         ComputeObject computeGrass{
@@ -83,7 +83,7 @@ void ObjectManager::startLoadModel()
             1, 
             1,
             instances.size(),
-            dynamic_cast<GameObjectModel*>(assetManager.gameObject(currentScene).findByName("grass"))
+            dynamic_cast<GameObjectModel*>(assetManager.gameObject().findByName("grass"))
         };
 
         computeList.push_back(computeGrass);
@@ -107,14 +107,14 @@ void ObjectManager::startLoadModel()
             gameObject->saveable = false;
             gameObject->createPoseResources(*globalPool);
 
-            assetManager.gameObject(currentScene).add(std::move(gameObject));
+            assetManager.gameObject().add(std::move(gameObject));
 
         }
     }
 
     {
         ModelBuilder builder(device, assetManager);
-        ModelManager::ModelID id = assetManager.models(currentScene).create(builder.fromFile("assets\\model\\people\\UAL1_Standard.glb"));
+        ModelManager::ModelID id = assetManager.models().create(builder.fromFile("assets\\model\\people\\UAL1_Standard.glb"));
 
         if (id)
         {
@@ -332,8 +332,9 @@ void ObjectManager::pushFuture(std::future<std::vector<futureObject>> futures)
 /// take the loaded model from the future and put it in a game object
 /// </summary>
 /// <param name="pool">global model pool</param>
-void ObjectManager::pushModel()
+void ObjectManager::updateObjectManager()
 {
+
     // load futures
     auto it = futureGameObjectslist.begin();
     while (it != futureGameObjectslist.end()) { // iter over futures
@@ -365,6 +366,13 @@ void ObjectManager::pushModel()
         }
 
         it = futureGameObjectslist.erase(it); // remove from futures
+    }
+
+    // switch scene if requested
+   
+    if (newSceneName.size()) {
+        switchScene(newSceneName);
+        newSceneName = "";
     }
 }
 

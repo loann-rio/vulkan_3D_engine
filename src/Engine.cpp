@@ -46,19 +46,12 @@ void Engine::run()
 		glfwPollEvents();
 
         // add loaded async model to gameObjectmap 
-        objectManager.pushModel();
+        objectManager.updateObjectManager();
 
         // calculate frame time
         auto newTime = std::chrono::high_resolution_clock::now();
         frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
         currentTime = newTime;
-        
-        //// move camera on event ////
-        {
-            if (!renderer.isUiSelected())
-                cameraController.moveInPlaneXZ(window.getGLFWwindow(), frameTime, assetManager.gameObject().findByName(objectManager.mainCamera));
-            dynamic_cast<GameObjectCamera*>(assetManager.gameObject().findByName(objectManager.mainCamera))->updateCameraView();
-        }
 
         /////// start frame ///////       
         int frameIndex = renderer.getFrameIndex();
@@ -69,16 +62,21 @@ void Engine::run()
         assetManager.gameObject().update(frameTime);        
 
         // update camera
+        auto camera = dynamic_cast<GameObjectCamera*>(assetManager.gameObject("fix_elements").findByName(objectManager.mainCamera));
+
         {
-            auto* camObj = dynamic_cast<GameObjectCamera*>(assetManager.gameObject().findByName(objectManager.mainCamera));
-            if (camObj->camera->aspectRatio != renderer.getAspectRatio()) {
+            if (!renderer.isUiSelected())
+                cameraController.moveInPlaneXZ(window.getGLFWwindow(), frameTime, camera);
+            camera->updateCameraView();
+
+            if (camera->camera->aspectRatio != renderer.getAspectRatio()) {
                 std::cout << "wrong aspect ratio \n";
-                camObj->camera->setPerspectiveProjection(renderer.getAspectRatio());
+                camera->camera->setPerspectiveProjection(renderer.getAspectRatio());
             }
 
-            ubo.projection = camObj->camera->getProjection();
-            ubo.view = camObj->camera->getView(); 
-            ubo.lightPos = glm::vec3(camObj->getTransformMat()[3]);
+            ubo.projection = camera->camera->getProjection();
+            ubo.view = camera->camera->getView();
+            ubo.lightPos = glm::vec3(camera->getTransformMat()[3]);
         }
 
         // update pointLight 
@@ -123,11 +121,11 @@ void Engine::run()
             0,
             frameTime,
             spotLightUbo.numLights,
-            assetManager.gameObject().findByName(objectManager.mainCamera)->transform.translation,
+            assetManager.gameObject("fix_elements").findByName(objectManager.mainCamera)->transform.translation,
             assetManager.gameObject().getByType<GameObjectModel>(),
             std::vector<ComputeObject*>{},
             frustrumPlanesList,
-            dynamic_cast<GameObjectCamera*>(assetManager.gameObject().findByName(objectManager.mainCamera))->getFrustumPlanes(),
+            camera->getFrustumPlanes(),
         };
 
         /////// render frame ///////

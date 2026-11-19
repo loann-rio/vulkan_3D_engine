@@ -170,7 +170,7 @@ void SceneLoader::loadCamera(const std::string& targetScene, const std::string& 
 
     camera->transform = transform;
     camera->setName(name);
-    objectManager_.pushGameObject(std::move(camera), targetScene);
+    objectManager_.pushGameObject(std::move(camera), "fix_elements");
 }
 
 void SceneLoader::loadSpotLight(const std::string& targetScene, const std::string& name, const nlohmann::json& data, const TransformComponent& transform)
