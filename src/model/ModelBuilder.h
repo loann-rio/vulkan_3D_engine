@@ -34,11 +34,11 @@ private:
     uint64_t hash() const;
 
     //// Build ////
-    std::unique_ptr<ModelAsset> build(std::string& targetScene);
+    std::unique_ptr<ModelAsset> build(const std::string& targetScene);
     
-    std::unique_ptr<ModelAsset> buildObj(std::string& targetScene);
-    std::unique_ptr<ModelAsset> buildGlTF(std::string& targetScene);
-    std::unique_ptr<ModelAsset> buildDecodedModel(std::string& targetScene);
+    std::unique_ptr<ModelAsset> buildObj(const std::string& targetScene);
+    std::unique_ptr<ModelAsset> buildGlTF(const std::string& targetScene);
+    std::unique_ptr<ModelAsset> buildDecodedModel(const std::string& targetScene);
 
     std::vector<std::string> modelPath{};
     std::vector<TextureManager::TextureID> textures{};

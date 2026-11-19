@@ -106,7 +106,7 @@ ModelManager::ModelID PrebuiltModel::createPlane(Device& device, AssetManager& a
     ModelBuilder builder(device, assets);
     builder.fromDecodedModel(buildPlaneModel(width, depth, widthDetail, depthDetail, color, UVfactor, "generated_plane"));
 
-    return assets.models(targetScene).create(builder);
+    return assets.models(targetScene).create(builder, targetScene);
 }
 
 /// <summary>
@@ -125,7 +125,7 @@ ModelManager::ModelID PrebuiltModel::createPlane(Device& device, AssetManager& a
     ModelBuilder builder(device, assets);
     builder.fromDecodedModel(buildPlaneModel(sizePlane, sizePlane, detail, detail, color, uvFactor, "generated_plane_detail")).withTexture(texture);
 
-    return assets.models(targetScene).create(builder);
+    return assets.models(targetScene).create(builder, targetScene);
 }
 /*
 

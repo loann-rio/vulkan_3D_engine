@@ -127,7 +127,7 @@ uint64_t ModelBuilder::hash() const
     return h;
 }
 
-std::unique_ptr<ModelAsset> ModelBuilder::build(std::string& targetScene)
+std::unique_ptr<ModelAsset> ModelBuilder::build(const std::string& targetScene)
 {
     try {
         switch (source)
@@ -154,7 +154,7 @@ std::unique_ptr<ModelAsset> ModelBuilder::build(std::string& targetScene)
     }
 }
 
-std::unique_ptr<ModelAsset> ModelBuilder::buildObj(std::string& targetScene)
+std::unique_ptr<ModelAsset> ModelBuilder::buildObj(const std::string& targetScene)
 {
     if (modelPath.empty()) {
         throw std::runtime_error("path cannot be empty for obj");
@@ -201,7 +201,7 @@ std::unique_ptr<ModelAsset> ModelBuilder::buildObj(std::string& targetScene)
 
 }
 
-std::unique_ptr<ModelAsset> ModelBuilder::buildDecodedModel(std::string& targetScene)
+std::unique_ptr<ModelAsset> ModelBuilder::buildDecodedModel(const std::string& targetScene)
 {
     std::unique_ptr<ModelAsset> fullModel = std::make_unique<ModelAsset>();
 
@@ -218,7 +218,7 @@ std::unique_ptr<ModelAsset> ModelBuilder::buildDecodedModel(std::string& targetS
     if (model.materials.empty()) {
         Material mat;   
         TextureBuilder builder(device);
-        mat.albedoTexture = assets.textures().create(builder.fromFile("assets/textures/whiteTexture.jpg"));
+        mat.albedoTexture = assets.textures(targetScene).create(builder.fromFile("assets/textures/whiteTexture.jpg"));
         model.materials.push_back(mat);
     }
 
@@ -230,7 +230,7 @@ std::unique_ptr<ModelAsset> ModelBuilder::buildDecodedModel(std::string& targetS
     return fullModel;
 }
 
-std::unique_ptr<ModelAsset> ModelBuilder::buildGlTF(std::string& targetScene)
+std::unique_ptr<ModelAsset> ModelBuilder::buildGlTF(const std::string& targetScene)
 {
 
     if (modelPath.empty()) {
@@ -266,7 +266,7 @@ std::unique_ptr<ModelAsset> ModelBuilder::buildGlTF(std::string& targetScene)
         if (model.materials.empty()) {
             Material mat;
             TextureBuilder builder(device);
-            mat.albedoTexture = assets.textures().create(builder.fromFile("assets/textures/whiteTexture.jpg"));
+            mat.albedoTexture = assets.textures(targetScene).create(builder.fromFile("assets/textures/whiteTexture.jpg"));
             model.materials.push_back(mat);
         }
 

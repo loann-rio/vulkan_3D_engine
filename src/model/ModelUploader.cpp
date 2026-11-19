@@ -23,7 +23,7 @@
 #include <glm/fwd.hpp>
 
 namespace {
-	TextureManager::TextureID createTexture(Device& device, AssetManager& assets, std::string& targetScene, const DecodedTexture& texture)
+	TextureManager::TextureID createTexture(Device& device, AssetManager& assets, const std::string& targetScene, const DecodedTexture& texture)
 	{
 		TextureBuilder builder(device);
 
@@ -37,7 +37,7 @@ namespace {
 	}
 }
 
-ModelLOD ModelUploader::uploadDecodedModel(Device& device, AssetManager& assets, std::string& targetScene, DecodedModel& obj)
+ModelLOD ModelUploader::uploadDecodedModel(Device& device, AssetManager& assets, const std::string& targetScene, DecodedModel& obj)
 {
 	std::unique_ptr<Buffer> vertexBuffer = createVertexBuffers(device, obj.vertices.get());
 	std::unique_ptr<Buffer> indexBuffer = createIndexBuffers(device, obj.indices);
@@ -203,7 +203,7 @@ void ModelUploader::uploadShaderMaterials(Device& device, ModelLOD& lod)
 	device.copyBuffer(stagingBuffer.getBuffer(), lod.materialBuffer->getBuffer(), bufferSize);
 }
 
-std::vector<Material> ModelUploader::uploadMaterialsTextures(Device& device, AssetManager& assets, std::string& targetScene, std::vector<DecodedMaterial> materials)
+std::vector<Material> ModelUploader::uploadMaterialsTextures(Device& device, AssetManager& assets, const std::string& targetScene, std::vector<DecodedMaterial> materials)
 {
 	std::vector<Material> outMaterials{};
 

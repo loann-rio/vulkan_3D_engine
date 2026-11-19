@@ -241,7 +241,8 @@ void Renderer::generateSkybox(const std::string pathTexture, const std::string g
 		.models()
 		.create(modelBuilder
 			.fromFile("assets/model/cube.obj")
-			.withTexture(resultTexture)
+			.withTexture(resultTexture),
+			objectManager.currentScene
 		);
 
 	objectManager.createDescriptorSet(assets.models().get(modelId), objectManager.currentScene);

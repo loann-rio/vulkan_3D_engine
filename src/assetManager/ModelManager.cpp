@@ -7,13 +7,14 @@
 #include <memory>
 #include <utility>
 #include <unordered_map>
+#include <string>
 
 ModelManager::ModelManager()
 {
     cache = std::unordered_map<size_t, CacheEntry>{};
 }
 
-ModelManager::ModelID ModelManager::create(ModelBuilder& builder)
+ModelManager::ModelID ModelManager::create(ModelBuilder& builder, const std::string& TargetScene)
 {
     // lock for thread safety
     std::lock_guard<std::mutex> lock(mutex);
@@ -27,7 +28,7 @@ ModelManager::ModelID ModelManager::create(ModelBuilder& builder)
         return key;
     }
 
-    std::unique_ptr<ModelAsset> model = builder.build();
+    std::unique_ptr<ModelAsset> model = builder.build(TargetScene);
 
     if (!model) {
         return 0; // failed to build model

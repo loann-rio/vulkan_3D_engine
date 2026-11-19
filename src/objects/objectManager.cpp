@@ -22,7 +22,7 @@ void ObjectManager::startLoadModel()
         auto texture = assetManager.textures().create(textureBuilder.fromFile("assets/skybox/cubemap_space.ktx").asCubemap());
         
         ModelBuilder builder(device, assetManager);
-        ModelManager::ModelID modelId = assetManager.models().create(builder.fromFile("assets/model/cube.obj").withTexture(texture));
+        ModelManager::ModelID modelId = assetManager.models().create(builder.fromFile("assets/model/cube.obj").withTexture(texture), currentScene);
 
         if (modelId)
         {
@@ -55,10 +55,10 @@ void ObjectManager::startLoadModel()
         auto texture = assetManager.textures().create(TextureBuilder(device).fromFile("assets/textures/whiteTexture.jpg"));
         auto textureGrass = assetManager.textures().create(TextureBuilder(device).fromFile("assets/textures/GrassBillboard.png"));
 
-        ModelManager::ModelID grassLod1 = assetManager.models().create(ModelBuilder(device, assetManager).fromFile("assets/model/grassLOD/grassLod1.obj").withShadow(false).withTexture(texture));
-        ModelManager::ModelID grassLod2 = assetManager.models().create(ModelBuilder(device, assetManager).fromFile("assets/model/grassLOD/grassLod2.obj").withShadow(false).withTexture(texture));
-        ModelManager::ModelID grassLod3 = assetManager.models().create(ModelBuilder(device, assetManager).fromFile("assets/model/grassLOD/grassLod3.obj").withShadow(false).withTexture(texture));
-        ModelManager::ModelID grassLod4 = assetManager.models().create(ModelBuilder(device, assetManager).fromFile("assets/model/grassLOD/grassLod4.obj").withShadow(false).withTexture(textureGrass));
+        ModelManager::ModelID grassLod1 = assetManager.models().create(ModelBuilder(device, assetManager).fromFile("assets/model/grassLOD/grassLod1.obj").withShadow(false).withTexture(texture), currentScene);
+        ModelManager::ModelID grassLod2 = assetManager.models().create(ModelBuilder(device, assetManager).fromFile("assets/model/grassLOD/grassLod2.obj").withShadow(false).withTexture(texture), currentScene);
+        ModelManager::ModelID grassLod3 = assetManager.models().create(ModelBuilder(device, assetManager).fromFile("assets/model/grassLOD/grassLod3.obj").withShadow(false).withTexture(texture), currentScene);
+        ModelManager::ModelID grassLod4 = assetManager.models().create(ModelBuilder(device, assetManager).fromFile("assets/model/grassLOD/grassLod4.obj").withShadow(false).withTexture(textureGrass), currentScene);
 
         createDescriptorSet(assetManager.models().get(grassLod1), currentScene);
         createDescriptorSet(assetManager.models().get(grassLod2), currentScene);
@@ -91,7 +91,7 @@ void ObjectManager::startLoadModel()
 
     {
         ModelBuilder builder(device, assetManager);
-        ModelManager::ModelID id = assetManager.models(currentScene).create(builder.fromFile("assets/model/2.0/DamagedHelmet/glTF/DamagedHelmet.gltf"));
+        ModelManager::ModelID id = assetManager.models(currentScene).create(builder.fromFile("assets/model/2.0/DamagedHelmet/glTF/DamagedHelmet.gltf"), currentScene);
 
         if (id)
         {
@@ -114,7 +114,7 @@ void ObjectManager::startLoadModel()
 
     {
         ModelBuilder builder(device, assetManager);
-        ModelManager::ModelID id = assetManager.models().create(builder.fromFile("assets\\model\\people\\UAL1_Standard.glb"));
+        ModelManager::ModelID id = assetManager.models().create(builder.fromFile("assets\\model\\people\\UAL1_Standard.glb"), currentScene);
 
         if (id)
         {
@@ -372,6 +372,7 @@ void ObjectManager::updateObjectManager()
    
     if (newSceneName.size()) {
         switchScene(newSceneName);
+        currentScene = newSceneName;
         newSceneName = "";
     }
 }
@@ -399,7 +400,7 @@ void ObjectManager::loadObjectAsync(Device& device, AssetManager& assets, const 
 
     pushFuture(std::async(std::launch::async, [filePath, &device, &assets, id, targetScene]() {
         ModelBuilder builder(device, assets);
-        ModelManager::ModelID modelId = assets.models().create(builder.fromFile(filePath));
+        ModelManager::ModelID modelId = assets.models().create(builder.fromFile(filePath), targetScene);
 
         return std::vector<futureObject>{ futureObject{ modelId ? ModelType::GLTF_MODEL : ModelType::UNDEFINED_MODEL, id, { }, true, modelId, targetScene } };
         }));
@@ -424,7 +425,7 @@ void ObjectManager::loadObjectAsync(Device& device, AssetManager& assets, const 
             auto texture = assets.textures().create(textureBuilder.fromFile(filePathTexture));
 
             ModelBuilder builder(device, assets);
-            ModelManager::ModelID modelId = assets.models().create(builder.fromFile(filePath).withTexture(texture));
+            ModelManager::ModelID modelId = assets.models().create(builder.fromFile(filePath).withTexture(texture), targetScene);
 
             return std::vector<futureObject> {futureObject{ modelId ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id, {}, true, modelId, targetScene }};
         }) 

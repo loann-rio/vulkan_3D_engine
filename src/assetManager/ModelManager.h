@@ -2,9 +2,10 @@
 
 #include <unordered_map>
 #include <mutex>
-#include <glm/fwd.hpp>
 #include <cstdint>
 #include <memory>
+#include <string>
+#include <glm/fwd.hpp>
 
 #include "../model/ModelAsset.h"
 
@@ -29,7 +30,7 @@ public:
 
     explicit ModelManager();
 
-    ModelID create(ModelBuilder& builder);
+    ModelID create(ModelBuilder& builder,const std::string& TargetScene);
     ModelAsset* get(const ModelID id) const;
 
     void remove(const ModelID id);
