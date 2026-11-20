@@ -189,7 +189,7 @@ std::unique_ptr<ModelAsset> ModelBuilder::buildObj(const std::string& targetScen
         if (model.materials.empty()) {
             Material mat;
             TextureBuilder builder(device);
-            mat.albedoTexture = assets.textures().create(builder.fromFile("assets/textures/whiteTexture.jpg"));
+            mat.albedoTexture = assets.textures(targetScene).create(builder.fromFile("assets/textures/whiteTexture.jpg"));
             model.materials.push_back(mat);
         }
 

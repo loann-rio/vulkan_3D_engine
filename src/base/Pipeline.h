@@ -60,7 +60,7 @@ private:
 
 	Device& device;
 	VkPipeline graphicsPipeline;
-	VkShaderModule vertShaderModule;
-	VkShaderModule fragShaderModule;
+	VkShaderModule vertShaderModule = VK_NULL_HANDLE;
+	VkShaderModule fragShaderModule = VK_NULL_HANDLE;
 };
 

@@ -192,16 +192,28 @@ void BasicUI::objectSelectionWindow(std::vector<std::string> listObjectsName, Ob
 
     ImGui::SeparatorText("scene selection");
 
+    // should:
+    // 1. list all scenes in the assets
+
     ImGui::Text("%s", manager->currentScene.c_str());
 
     static char newScene[128] = "";
     ImGui::InputTextWithHint("##newScene", "new scene path", newScene, IM_ARRAYSIZE(newScene));
 
-    if (ImGui::Button("change scene"))
+    if (ImGui::Button("switch scene"))
         manager->requestSwitchScene(std::string(newScene));
 
     if (ImGui::Button("save scene"))
-        manager->saveFullScene();
+        SceneSaver::save(newScene, assets.gameObject(currentScene));
+
+    if (ImGui::Button("load scene"))
+    {
+        if (assets.scenes.find(newScene) == assets.scenes.end())
+		{    
+            assets.createNewScene(newScene);
+            SceneLoader{ device, assets, *manager }.load(std::string(newScene));
+        }
+    }
 
     //////////////////////////////
     ////// object selection //////

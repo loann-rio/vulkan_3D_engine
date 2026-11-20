@@ -68,9 +68,6 @@ public:
 
     void requestSwitchScene(std::string newScene) { newSceneName = newScene; }
     void switchScene(std::string sceneName); 
-    void loadScene(std::string name);
-	void saveFullScene();
-
     DescriptorPool* getPool() const { return globalPool.get(); }
 
     // camera
@@ -87,8 +84,6 @@ private:
 
     Device& device;
     AssetManager& assetManager;
-
-	SceneLoader sceneLoader{ device, assetManager, *this };
 
     std::vector<std::future<futureObject>> futureGameObjects;
     std::vector<std::future<std::vector<futureObject>>> futureGameObjectslist;

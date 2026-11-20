@@ -4,6 +4,7 @@
 #include "../objects/GameObject.h"
 #include "../../external/json.hpp"
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <stdexcept>
@@ -47,10 +48,18 @@ namespace
             data["modelType"] = static_cast<int>(model->getModelType());
 
             if (!model->modelPath.empty())
-                data["modelPath"] = model->modelPath;
+            {
+                std::string modelPath = model->modelPath;
+                std::replace(modelPath.begin(), modelPath.end(), '\\', '/');
+                data["modelPath"] = modelPath;
+            }
 
             if (!model->texturePath.empty())
-                data["texturePath"] = model->texturePath;
+            {
+                std::string texturePath = model->texturePath;
+                std::replace(texturePath.begin(), texturePath.end(), '\\', '/');
+                data["texturePath"] = texturePath;
+            }
 
             if (model->getPrimitivesModelType() != PrimitivesModelType::NONE)
             {

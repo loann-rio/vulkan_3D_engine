@@ -1,9 +1,9 @@
 {
     "objects": {
         "cube": {
-            "modelPath": "C:\\Users\\riolo\\Desktop\\vulkan_3D_engine\\assets\\model\\cube.obj",
+            "modelPath": "assets/model/cube.obj",
             "modelType": 1,
-            "texturePath": "C:\\Users\\riolo\\Desktop\\vulkan_3D_engine\\assets\\textures\\GrassBillboard.png",
+            "texturePath": "assets/textures/GrassBillboard.png",
             "transform": {
                 "color": [
                     0.0,

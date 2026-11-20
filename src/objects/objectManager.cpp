@@ -114,7 +114,7 @@ void ObjectManager::startLoadModel()
 
     {
         ModelBuilder builder(device, assetManager);
-        ModelManager::ModelID id = assetManager.models().create(builder.fromFile("assets\\model\\people\\UAL1_Standard.glb"), currentScene);
+        ModelManager::ModelID id = assetManager.models().create(builder.fromFile("assets/model/people/UAL1_Standard.glb"), currentScene);
 
         if (id)
         {
@@ -227,15 +227,6 @@ void ObjectManager::switchScene(std::string sceneName)
 	assetManager.switchScene(sceneName);
 }
 
-void ObjectManager::loadScene(std::string name)
-{
-	sceneLoader.load(name);
-}
-
-void ObjectManager::saveFullScene()
-{
-    SceneSaver::save(currentScene, assetManager.gameObject(currentScene));
-}
     
     /////// add objects ///////
 
@@ -273,7 +264,7 @@ void ObjectManager::updateObjectManager()
             if (object.instances.size() > 0)
                 gameObject->setMultipleInstances(object.instances);
             
-            createDescriptorSet(assetManager.models(object.targetScene).get(object.modelID), currentScene);
+            createDescriptorSet(assetManager.models(object.targetScene).get(object.modelID), object.targetScene);
 
             gameObject->setModel(object.modelID);
             gameObject->setModelType(object.type);
@@ -316,7 +307,7 @@ void ObjectManager::loadObjectAsync(Device& device, AssetManager& assets, const 
 
     pushFuture(std::async(std::launch::async, [filePath, &device, &assets, id, targetScene]() {
         ModelBuilder builder(device, assets);
-        ModelManager::ModelID modelId = assets.models().create(builder.fromFile(filePath), targetScene);
+        ModelManager::ModelID modelId = assets.models(targetScene).create(builder.fromFile(filePath), targetScene);
 
         return std::vector<futureObject>{ futureObject{ modelId ? ModelType::GLTF_MODEL : ModelType::UNDEFINED_MODEL, id, { }, true, modelId, targetScene } };
         }));
@@ -338,10 +329,10 @@ void ObjectManager::loadObjectAsync(Device& device, AssetManager& assets, const 
     pushFuture( std::async(std::launch::async, [filePath, filePathTexture, &device, &assets, id, targetScene]()
         {
             TextureBuilder textureBuilder(device);
-            auto texture = assets.textures().create(textureBuilder.fromFile(filePathTexture));
+            auto texture = assets.textures(targetScene).create(textureBuilder.fromFile(filePathTexture));
 
             ModelBuilder builder(device, assets);
-            ModelManager::ModelID modelId = assets.models().create(builder.fromFile(filePath).withTexture(texture), targetScene);
+            ModelManager::ModelID modelId = assets.models(targetScene).create(builder.fromFile(filePath).withTexture(texture), targetScene);
 
             return std::vector<futureObject> {futureObject{ modelId ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id, {}, true, modelId, targetScene }};
         }) 
@@ -359,7 +350,7 @@ ObjectManager::ObjectManager(Device& device, AssetManager& assetManager) : devic
 
     assetManager.createNewScene(currentScene);
     assetManager.switchScene(currentScene);
-    loadScene(currentScene);
+    SceneLoader{ device, assetManager, *this }.load(currentScene);
 };
 
 void ObjectManager::createDescriptorSet(ModelAsset* model, const std::string& targetScene)
@@ -400,7 +391,7 @@ void ObjectManager::createDescriptorSet(ModelAsset* model, const std::string& ta
             material.descriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT * lod.materials.size());
             for (int i = 0; i < material.descriptorSet.size(); i++)
             {
-                auto imageInfo = assetManager.textures().get(material.albedoTexture)->getImageInfo();
+                auto imageInfo = assetManager.textures(targetScene).get(material.albedoTexture)->getImageInfo();
                 DescriptorWriter(*textureSetLayout, *globalPool)
                     .writeImage(0, &imageInfo)
                     .build(material.descriptorSet[i]);
