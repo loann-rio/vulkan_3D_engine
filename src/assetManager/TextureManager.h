@@ -25,7 +25,11 @@ public:
     void remove(const TextureID id);
     void removeAll();
 
+    void setCurrentTargetScene(const std::string& sceneName) { currentTargetScene = sceneName; }
+
 private:
     std::mutex mutex;
     std::unordered_map<size_t, CacheEntry> cache;
+
+    std::string currentTargetScene = "default";
 };

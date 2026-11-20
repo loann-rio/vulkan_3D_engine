@@ -53,7 +53,6 @@ public:
 	void updateObjectManager();
     void pushGameObject(std::unique_ptr<GameObject> gameObject, const std::string& targetScene = "");
 
-	// create primitive object
 	void createPrimitive(PrimitivesModelType type, int detail, TransformComponent transform, const std::string& name = "", const std::string& filePathTexture = "", const std::string& targetScene = "");
 
     void loadObjectAsync(Device& device, AssetManager& assets, const std::string& filePath, TransformComponent transform, const std::string& name = "", const std::string& targetScene = "");
@@ -61,23 +60,17 @@ public:
 
     void pushFuture(std::future<std::vector<futureObject>> futures);
 
-    // scene 
-	json currentSceneJson;
-    std::string currentScene = "test5";
-	std::string scenePath = "scenes/test5.json";
 
     void requestSwitchScene(std::string newScene) { newSceneName = newScene; }
-    void switchScene(std::string sceneName); 
     DescriptorPool* getPool() const { return globalPool.get(); }
 
-    // camera
     std::string mainCamera = "mainCamera"; 
     std::string mainSkybox = "cubemap";
+    std::string currentScene = "test5";
 
     void createDescriptorSet(ModelAsset* model, const std::string& targetScene);
 
     std::vector<ComputeObject> computeList{};
-    GameObjectModel* baseSkyBox = nullptr;
 
 private:
     std::string newSceneName = "";
@@ -85,7 +78,6 @@ private:
     Device& device;
     AssetManager& assetManager;
 
-    std::vector<std::future<futureObject>> futureGameObjects;
     std::vector<std::future<std::vector<futureObject>>> futureGameObjectslist;
 
     std::unique_ptr<DescriptorPool> globalPool{};    

@@ -30,13 +30,17 @@ public:
 
     explicit ModelManager();
 
-    ModelID create(ModelBuilder& builder,const std::string& TargetScene);
+    ModelID create(ModelBuilder& builder);
     ModelAsset* get(const ModelID id) const;
 
     void remove(const ModelID id);
     void removeAll();
 
+    void setCurrentTargetScene(const std::string& sceneName) { currentTargetScene = sceneName; }
+
 private:
     std::mutex mutex;
     std::unordered_map<size_t, CacheEntry> cache;
+
+    std::string currentTargetScene = "default";
 };

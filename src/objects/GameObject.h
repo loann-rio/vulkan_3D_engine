@@ -12,7 +12,6 @@
 #include <glm/fwd.hpp>
 
 #include <array>
-#include <cassert>
 #include <memory>
 #include <vector>
 #include <unordered_map>
@@ -35,7 +34,6 @@
 
 
 
-class ObjectManager;
 class GameObject;
 class GameObjectBehavior;
 class AssetManager;

@@ -14,7 +14,7 @@ ModelManager::ModelManager()
     cache = std::unordered_map<size_t, CacheEntry>{};
 }
 
-ModelManager::ModelID ModelManager::create(ModelBuilder& builder, const std::string& TargetScene)
+ModelManager::ModelID ModelManager::create(ModelBuilder& builder)
 {
     // lock for thread safety
     std::lock_guard<std::mutex> lock(mutex);
@@ -28,7 +28,7 @@ ModelManager::ModelID ModelManager::create(ModelBuilder& builder, const std::str
         return key;
     }
 
-    std::unique_ptr<ModelAsset> model = builder.build(TargetScene);
+    std::unique_ptr<ModelAsset> model = builder.build(currentTargetScene);
 
     if (!model) {
         return 0; // failed to build model

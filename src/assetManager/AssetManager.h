@@ -30,24 +30,30 @@ public:
     
     TextureManager& textures(std::string targetScene = "") { 
         if (targetScene == "") targetScene = currentSceneName;
-        return *scenes[targetScene]->textureMgr; 
+        TextureManager& textureMgr = *scenes[targetScene]->textureMgr;
+        textureMgr.setCurrentTargetScene(targetScene);
+        return textureMgr; 
     }
 
     ModelManager& models(std::string targetScene = "") { 
         if (targetScene == "") targetScene = currentSceneName;
-        return *scenes[targetScene]->modelMgr;
+        ModelManager& modelMgr = *scenes[targetScene]->modelMgr;
+        modelMgr.setCurrentTargetScene(targetScene);
+        return modelMgr;
     }
 
     GameObjectManager& gameObject(std::string targetScene = "") { 
         if (targetScene == "") targetScene = currentSceneName;
-        return *scenes[targetScene]->GameObjectMgr;
+        GameObjectManager& gameObjectMgr = *scenes[targetScene]->GameObjectMgr;
+        gameObjectMgr.setCurrentTargetScene(targetScene);
+        return gameObjectMgr;
     }
 
-    //void update();
     void switchScene(std::string newSceneName) {
-        if (scenes.find(newSceneName) == scenes.end())
-            throw std::runtime_error("could not switch to scene: target does not exist");
 
+        if (scenes.find(newSceneName) == scenes.end())
+		    createNewScene(newSceneName);
+        
         currentSceneName = newSceneName;
     }
 

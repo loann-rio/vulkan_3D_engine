@@ -30,6 +30,8 @@ public:
 
     void update(float deltaTime);
 
+    void setCurrentTargetScene(const std::string& sceneName) { currentTargetScene = sceneName; }
+
 private:
     void indexObject(GameObject& object);
     void unindexObject(GameObject& object);
@@ -37,6 +39,8 @@ private:
     std::unordered_map<ObjectId, std::unique_ptr<GameObject>> objects_;
     std::unordered_map<std::string, ObjectId> idsByName_;
     std::vector<ObjectId> object_to_be_removed_;
+
+    std::string currentTargetScene = "default";
 
 };
 
