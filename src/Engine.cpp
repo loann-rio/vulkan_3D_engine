@@ -25,7 +25,7 @@
 #include "render/RenderPasses/DepthPass.h"
 
 Engine::Engine() { 
-    objectManager.startLoadModel(); 
+    objectManager.loadHardcodedObjects(); 
     renderer.generateSkybox("assets/skybox/citrus_orchard_puresky_4k.hdr", "testSkybox", objectManager);
 }
 

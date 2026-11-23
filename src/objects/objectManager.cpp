@@ -12,7 +12,7 @@
 #include <chrono>
 #include <utility>
 
-void ObjectManager::startLoadModel()
+void ObjectManager::loadHardcodedObjects()
 {
 
     if (true)

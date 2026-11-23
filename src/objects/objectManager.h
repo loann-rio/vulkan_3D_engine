@@ -49,7 +49,7 @@ public:
 
     ~ObjectManager() { globalPool = nullptr; }
 	
-	void startLoadModel(); 
+	void loadHardcodedObjects(); 
 	void updateObjectManager();
     void pushGameObject(std::unique_ptr<GameObject> gameObject, const std::string& targetScene = "");
 
