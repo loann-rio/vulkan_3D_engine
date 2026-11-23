@@ -198,8 +198,8 @@ void RenderSystem::createPipeline(VkRenderPass renderPass, const std::string& ve
 	// enable depth bias if no frag shader (depth only)
 	if (fragFilepath.empty()) {
 		pipelineConfig.rasterizationInfo.depthBiasEnable = VK_TRUE;
-		pipelineConfig.rasterizationInfo.depthBiasConstantFactor = 0.0f;  /// depth offset
-		pipelineConfig.rasterizationInfo.depthBiasSlopeFactor = 1.5f;
+		pipelineConfig.rasterizationInfo.depthBiasConstantFactor = 1.25f;  /// depth offset
+		pipelineConfig.rasterizationInfo.depthBiasSlopeFactor = 1.75f;
 	}
 
 	if (isSkyBox) {

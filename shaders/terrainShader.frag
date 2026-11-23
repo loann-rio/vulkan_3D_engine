@@ -61,11 +61,16 @@ vec4 compute_shadow_factor(vec4 light_space_pos, uint indexSpotLight, vec3 surfa
 
 	if (((shadowUV.x * shadowUV.x) + (shadowUV.y * shadowUV.y)) > 1.0) return vec4(0.0);
 
-	float depth = shadowUV.z;
+	vec3 directionToLight = spotLightUbo.spotLight[indexSpotLight].position.xyz - fragPositionWorld;
+	//float attenuation = 1.0 / dot(directionToLight, directionToLight);
+	directionToLight = normalize(directionToLight);
+	float cosAngOfIncidence = max(dot(surfaceNormal, directionToLight), 0);
+
+	float depth = shadowUV.z - max(0.0005 * (1.0 - cosAngOfIncidence), 0.00005);
     shadowUV = shadowUV * 0.5 + 0.5;  // Convert to [0,1]
 
 	float shadow = 0.0;
-    float offset = 1.0 / 512.0;  // Shadow map resolution (adjust as needed)
+    float offset = 1.0 / 1024.0;  // Shadow map resolution (adjust as needed)
 
     // Sample a 3x3 grid of shadow values
     for (int x = -1; x <= 1; x++) {
@@ -75,11 +80,6 @@ vec4 compute_shadow_factor(vec4 light_space_pos, uint indexSpotLight, vec3 surfa
     }
     
 	if (shadow == 0) return vec4(0.0);
-
-	vec3 directionToLight = spotLightUbo.spotLight[indexSpotLight].position.xyz - fragPositionWorld;
-	//float attenuation = 1.0 / dot(directionToLight, directionToLight);
-	directionToLight = normalize(directionToLight);
-	float cosAngOfIncidence = max(dot(surfaceNormal, directionToLight), 0);
 
 	vec4 intencity = shadow * spotLightUbo.spotLight[indexSpotLight].color.w * vec4(spotLightUbo.spotLight[indexSpotLight].color.xyz, 0.0);// * attenuation;
 

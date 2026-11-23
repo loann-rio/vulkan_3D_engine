@@ -14,8 +14,6 @@
 #include <GLFW/glfw3.h>
 
 #include <glm/fwd.hpp>
-#include <glm/gtc/constants.inl>
-#include <glm/gtc/type_ptr.inl>
 
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
@@ -234,7 +232,7 @@ void BasicUI::objectSelectionWindow(std::vector<std::string> listObjectsName, Ob
         manager->requestSwitchScene(std::string(newScene));
 
     if (ImGui::Button("save scene"))
-        SceneSaver::save(newScene, assets.gameObject(manager->currentScene));
+        SceneSaver::save(newScene ? newScene : manager->currentScene.c_str(), assets.gameObject(manager->currentScene));
 
     if (ImGui::Button("load scene"))
     {

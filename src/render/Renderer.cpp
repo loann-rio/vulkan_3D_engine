@@ -570,21 +570,21 @@ void Renderer::recreateSwapChain(ObjectManager& objectManager)
 
 	if (depthFrameTarget) {
 		depthFrameTarget->resizeTargets(
-			extent, 
+			depthFrameTarget->getExtent(), 
 			DepthPass::MAX_DEPTH_RENDER_COUNT * Swap_chain::MAX_FRAMES_IN_FLIGHT, 
 			swapChain->getSwapChainImageFormat(), 
 			swapChain->getSwapChainDepthFormat()
 		);
 
 		colorFrameTarget->resizeTargets(
-			extent,
+			swapChain->getSwapChainExtent(),
 			Swap_chain::MAX_FRAMES_IN_FLIGHT,
 			swapChain->getSwapChainImageFormat(),
 			swapChain->getSwapChainDepthFormat()
 		);
 
 		postPFrameTarget->resizeTargets(
-			extent,
+			swapChain->getSwapChainExtent(),
 			swapChain->imageCount(),
 			swapChain->getSwapChainImageFormat(),
 			swapChain->getSwapChainDepthFormat()
