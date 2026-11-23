@@ -27,6 +27,10 @@ public:
         createNewScene("fix_elements");
     };
 
+    ~AssetManager(){
+        scenes.clear();
+    };
+
     
     TextureManager& textures(std::string targetScene = "") { 
         if (targetScene == "") targetScene = currentSceneName;
@@ -57,7 +61,6 @@ public:
         currentSceneName = newSceneName;
     }
 
-    std::unordered_map<std::string, std::unique_ptr<Scene>> scenes{};
     
     void createNewScene(std::string sceneName) {
         auto newScene = std::make_unique<Scene>();
@@ -71,4 +74,7 @@ public:
 
 private:
     std::string currentSceneName = "default";
+
+    std::unordered_map<std::string, std::unique_ptr<Scene>> scenes{};
+
 };

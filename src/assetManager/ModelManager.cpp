@@ -16,8 +16,7 @@ ModelManager::ModelManager()
 
 ModelManager::ModelID ModelManager::create(ModelBuilder& builder)
 {
-    // lock for thread safety
-    std::lock_guard<std::mutex> lock(mutex);
+    
 
     // time hashing process
     ModelManager::ModelID key = builder.hash();
@@ -33,7 +32,10 @@ ModelManager::ModelID ModelManager::create(ModelBuilder& builder)
     if (!model) {
         return 0; // failed to build model
     }
-
+    
+    // lock for thread safety
+    std::lock_guard<std::mutex> lock(mutex);
+    
     cache[key] = { std::move(model), 1 };
 
     return key;
