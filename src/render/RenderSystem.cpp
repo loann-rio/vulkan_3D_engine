@@ -9,8 +9,26 @@
 #include <array>
 #include <iostream>
 #include <cassert>
+#include <algorithm>
+#include <cstdint>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+#include <vulkan/vulkan_core.h>
 
 #include "../base/Pipeline.h"
+#include "../base/Buffer.h"
+#include "../base/descriptors.h"
+#include "../base/Device.h"
+#include "../base/Frame_info.h"
+#include "../assetManager/AssetManager.h"
+#include "../assetManager/ModelManager.h"
+#include "../model/Animation/Skeleton.h"
+#include "../model/Decoder/IModelDecoder.h"
+#include "../model/ModelAsset.h"
+#include "../objects/GameObject.h"
+#include "Camera.h"
 
 
 namespace {
@@ -180,7 +198,7 @@ void RenderSystem::createPipeline(VkRenderPass renderPass, const std::string& ve
 	// enable depth bias if no frag shader (depth only)
 	if (fragFilepath.empty()) {
 		pipelineConfig.rasterizationInfo.depthBiasEnable = VK_TRUE;
-		pipelineConfig.rasterizationInfo.depthBiasConstantFactor = 4.0f;
+		pipelineConfig.rasterizationInfo.depthBiasConstantFactor = 0.0f;  /// depth offset
 		pipelineConfig.rasterizationInfo.depthBiasSlopeFactor = 1.5f;
 	}
 
@@ -396,18 +414,18 @@ void RenderSystem::renderGameObjectsDepth(VkCommandBuffer& commandBuffer, FrameI
 
 	for (auto obj : frameInfo.listGameObjects)
 	{
-		if (!obj->show || obj->toBeRemoved)
-			continue;
-
-		if (obj->getModelType() != modelType || obj->getModelSubType() != modelSubType)
-			continue;
-
-		if (!obj->lodModelAssets.size())
+		if (!obj->show ||
+			obj->toBeRemoved ||
+			obj->getModelType() != modelType ||
+			obj->getModelSubType() != modelSubType ||
+			!obj->lodModelAssets.size())
 			continue;
 
 		auto modelAsset = assets.models().get(obj->lodModelAssets[0]);
 
-		if (obj->hasCpuCulling() && modelAsset->useAABB() && !Camera::isAABBinFrustrum(modelAsset->getAABB(obj->getTransformMat()), frameInfo.listFrustrumPlanes[lightIndex]))
+		if (obj->hasCpuCulling() &&
+			modelAsset->useAABB() &&
+			!Camera::isAABBinFrustrum(modelAsset->getAABB(obj->getTransformMat()), frameInfo.listFrustrumPlanes[lightIndex]))
 			continue;
 
 		bindModel(commandBuffer, modelAsset, *obj, frameInfo.frameIndex);
@@ -426,7 +444,7 @@ void RenderSystem::renderFullScreen(VkCommandBuffer& commandBuffer, std::vector<
 
 	bindGlobalSets(commandBuffer, globalDescriptorSets);
 
-	CubeMapPushConstantData push;
+	CubeMapPushConstantData push{};
 	push.view = view;
 	push.proj = proj;
 

@@ -3,6 +3,35 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <iostream>
 
+#include "../Scene/SceneSaver.h"
+#include <cstdio>
+#include <iterator>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include <GLFW/glfw3.h>
+
+#include <glm/fwd.hpp>
+#include <glm/gtc/constants.inl>
+#include <glm/gtc/type_ptr.inl>
+
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_vulkan.h>
+#include <imgui.h>
+
+#include <nfd.h>
+
+#include <vulkan/vulkan_core.h>
+
+#include "../assetManager/AssetManager.h"
+#include "../base/Device.h"
+#include "../base/Frame_info.h"
+#include "../Scene/SceneLoader.h"
+#include "GameObject.h"
+#include "objectManager.h"
+
 BasicUI::BasicUI(Device& device, AssetManager& assets, GLFWwindow* window, VkRenderPass renderPass) : device{ device }, assets{ assets }
 {
    // the size of the pool is very oversize, but it's copied from imgui demo itself.
@@ -105,8 +134,9 @@ void BasicUI::gameObjectWindow(GameObject* gameObject, ObjectManager* manager)
     gameObject->debugUI();
 
     if (ImGui::Button("move to cam")) {
-		gameObject->transform.translation = assets.gameObject("fix_elements").findByName(manager->mainCamera)->transform.translation;
-		gameObject->transform.rotation = assets.gameObject("fix_elements").findByName(manager->mainCamera)->transform.rotation;
+        auto cam = assets.gameObject().findByName(manager->mainCamera);
+		gameObject->transform.translation = cam->transform.translation;
+		gameObject->transform.rotation = cam->transform.rotation;
 	}
 
     if (ImGui::Button("remove object"))
@@ -204,7 +234,7 @@ void BasicUI::objectSelectionWindow(std::vector<std::string> listObjectsName, Ob
         manager->requestSwitchScene(std::string(newScene));
 
     if (ImGui::Button("save scene"))
-        SceneSaver::save(newScene, assets.gameObject(currentScene));
+        SceneSaver::save(newScene, assets.gameObject(manager->currentScene));
 
     if (ImGui::Button("load scene"))
     {

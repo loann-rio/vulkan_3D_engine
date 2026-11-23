@@ -18,6 +18,11 @@
 #include <memory>
 #include <iostream>
 #include <glm/fwd.hpp>
+#include "objects/GameObject.h"
+#include <vector>
+#include <GLFW/glfw3.h>
+#include "objects/objectManager.h"
+#include "render/RenderPasses/DepthPass.h"
 
 Engine::Engine() { 
     objectManager.startLoadModel(); 
@@ -53,16 +58,26 @@ void Engine::run()
         frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
         currentTime = newTime;
 
-        /////// start frame ///////       
         int frameIndex = renderer.getFrameIndex();
 
-        /////// update objects ///////
-
-        // loop on games objects
         assetManager.gameObject().update(frameTime);        
 
         // update camera
-        auto camera = dynamic_cast<GameObjectCamera*>(assetManager.gameObject("fix_elements").findByName(objectManager.mainCamera));
+        auto camera = dynamic_cast<GameObjectCamera*>(assetManager.gameObject().findByName(objectManager.mainCamera));
+
+        if (!camera) {
+            auto camera = GameObjectFactory::createGameObject<GameObjectCamera>(
+                device,
+                assetManager,
+                glm::radians(50.0f),
+                1.0f,
+                0.1f,
+                100.0f
+            );
+
+            camera->setName("mainCamera");
+            objectManager.pushGameObject(std::move(camera), objectManager.currentScene);   
+        }
 
         {
             if (!renderer.isUiSelected())
@@ -121,7 +136,7 @@ void Engine::run()
             0,
             frameTime,
             spotLightUbo.numLights,
-            assetManager.gameObject("fix_elements").findByName(objectManager.mainCamera)->transform.translation,
+            assetManager.gameObject().findByName(objectManager.mainCamera)->transform.translation,
             assetManager.gameObject().getByType<GameObjectModel>(),
             std::vector<ComputeObject*>{},
             frustrumPlanesList,

@@ -47,7 +47,7 @@ public:
 
     ObjectManager(Device& device, AssetManager& assetManager);
 
-    ~ObjectManager() { saveFullScene(); globalPool = nullptr; }
+    ~ObjectManager() { globalPool = nullptr; }
 	
 	void startLoadModel(); 
 	void updateObjectManager();

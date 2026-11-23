@@ -46,7 +46,9 @@ GameObject* GameObjectManager::find(ObjectId id) noexcept
 GameObject* GameObjectManager::findByName(const std::string& name) noexcept
 {
 	auto it = idsByName_.find(name);
-	return find((it != idsByName_.end()) ? it->second : 0);
+    if (it == idsByName_.end())
+        return nullptr;
+	return find(it->second);
 }
 
 bool GameObjectManager::remove(ObjectId id) noexcept

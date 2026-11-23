@@ -9,8 +9,6 @@
 
 #include "../base/Swap_chain.h"
 
-#include "../Scene/SceneSaver.h"
-
 #include <chrono>
 #include <utility>
 
