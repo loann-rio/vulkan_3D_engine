@@ -4,10 +4,10 @@
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
+#include <glm/detail/type_vec4.hpp>
+#include <glm/fwd.hpp>
 
 #include <stdexcept>
-#include <array>
 #include <cassert>
 
 

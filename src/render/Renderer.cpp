@@ -4,14 +4,29 @@
 #include <array>
 #include <memory>
 #include <vulkan/vulkan_core.h>
+#include <glm/glm.hpp>
+#include <utility>
 
-#include "../model/ModelAsset.h"
+#include "../Textures/TextureBuilder.h"
+#include "../Textures/TextureObject.h"
 #include "../model/ModelBuilder.h"
-#include "../assetManager/ModelManager.h"
-#include "../base/Device.h"
-#include "GlobalRenderSystemBuilder.h"
 #include "../model/Vertex/ObjVertexData.h"
-#include "../model/Vertex/GltfVertexData.h"
+#include "../assetManager/ModelManager.h"
+#include "../assetManager/TextureManager.h"
+#include "../base/Device.h"
+#include "../base/Buffer.h"
+#include "../base/Window.h"
+#include "../base/Swap_chain.h"
+#include "../assetManager/AssetManager.h"
+#include "../objects/objectManager.h"
+
+#include "RenderPasses/ColorPass.h"
+#include "RenderPasses/PostProPass.h"
+#include "RenderPasses/DepthPass.h"
+#include "RenderPasses/ComputePass.h"
+#include "PassTarget.h"
+#include "GlobalRenderSystemBuilder.h"
+
 
 
 
@@ -229,7 +244,7 @@ void Renderer::generateSkybox(const std::string pathTexture, const std::string g
 			.withTexture(resultTexture)
 		);
 
-	objectManager.createDescriptorSet(assets.models().get(modelId));
+	objectManager.createDescriptorSet(assets.models().get(modelId), objectManager.currentScene);
 	gameObject->setModel(modelId);
 
 	objectManager.pushGameObject(std::move(gameObject));
@@ -249,7 +264,8 @@ void Renderer::renderFrame(FrameInfo& frameInfo, ObjectManager& objectManager)
 		frameInfo.frameIndex = frameRenderer.getCurrentFrameIndex();
 		frameInfo.imageIndex = *frameRenderer.getCurrentImageIndex();
 
-		for (auto* obj : objectManager.getByType<GameObjectModel>())
+
+		for (auto* obj : assets.gameObject().getByType<GameObjectModel>())
 			obj->uploadPose(static_cast<uint16_t>(frameInfo.frameIndex));
 
 		updateModelPositionBuffer(frameInfo.listGameObjects, static_cast<uint16_t>(frameInfo.frameIndex));
@@ -554,21 +570,21 @@ void Renderer::recreateSwapChain(ObjectManager& objectManager)
 
 	if (depthFrameTarget) {
 		depthFrameTarget->resizeTargets(
-			extent, 
+			depthFrameTarget->getExtent(), 
 			DepthPass::MAX_DEPTH_RENDER_COUNT * Swap_chain::MAX_FRAMES_IN_FLIGHT, 
 			swapChain->getSwapChainImageFormat(), 
 			swapChain->getSwapChainDepthFormat()
 		);
 
 		colorFrameTarget->resizeTargets(
-			extent,
+			swapChain->getSwapChainExtent(),
 			Swap_chain::MAX_FRAMES_IN_FLIGHT,
 			swapChain->getSwapChainImageFormat(),
 			swapChain->getSwapChainDepthFormat()
 		);
 
 		postPFrameTarget->resizeTargets(
-			extent,
+			swapChain->getSwapChainExtent(),
 			swapChain->imageCount(),
 			swapChain->getSwapChainImageFormat(),
 			swapChain->getSwapChainDepthFormat()

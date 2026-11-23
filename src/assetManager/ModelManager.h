@@ -2,9 +2,10 @@
 
 #include <unordered_map>
 #include <mutex>
-#include <glm/fwd.hpp>
 #include <cstdint>
 #include <memory>
+#include <string>
+#include <glm/fwd.hpp>
 
 #include "../model/ModelAsset.h"
 
@@ -35,7 +36,11 @@ public:
     void remove(const ModelID id);
     void removeAll();
 
+    void setCurrentTargetScene(const std::string& sceneName) { currentTargetScene = sceneName; }
+
 private:
     std::mutex mutex;
     std::unordered_map<size_t, CacheEntry> cache;
+
+    std::string currentTargetScene = "default";
 };

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -162,6 +162,12 @@ uuid.lib;
 comdlg32.lib;ktx.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
+  <ItemDefinitionGroup>
+    <PostBuildEvent>
+      <Command>xcopy /y /d "$(ProjectDir)external\KTX\dll\ktx.dll" "$(OutDir)"</Command>
+      <Message>Copy ktx.dll to output directory</Message>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="external\basisu\transcoder\basisu_transcoder.cpp" />
     <ClCompile Include="external\basisu\zstd\zstd.c" />
@@ -175,6 +181,8 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClCompile Include="external\nativefiledialog-master\src\nfd_common.c" />
     <ClCompile Include="external\nativefiledialog-master\src\nfd_win.cpp" />
     <ClCompile Include="src\assetManager\ModelManager.cpp" />
+    <ClCompile Include="src\assetManager\GameObjectManager.cpp" />
+    <ClCompile Include="src\assetManager\SceneManager.cpp" />
     <ClCompile Include="src\assetManager\TextureManager.cpp" />
     <ClCompile Include="src\base\ComputePipeline.cpp" />
     <ClCompile Include="src\Engine.cpp" />
@@ -213,6 +221,8 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClCompile Include="src\render\RenderPasses\DepthPass.cpp" />
     <ClCompile Include="src\render\RenderPasses\PostProPass.cpp" />
     <ClCompile Include="src\render\TextOverlay.cpp" />
+    <ClCompile Include="src\Scene\SceneLoader.cpp" />
+    <ClCompile Include="src\Scene\SceneSaver.cpp" />
     <ClCompile Include="src\Textures\Decoder\HDRDecoder.cpp" />
     <ClCompile Include="src\Textures\Decoder\KTX2Decoder.cpp" />
     <ClCompile Include="src\Textures\Decoder\KTXDecoder.cpp" />
@@ -230,6 +240,8 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClInclude Include="external\stb_image_write.h" />
     <ClInclude Include="src\assetManager\AssetManager.h" />
     <ClInclude Include="src\assetManager\ModelManager.h" />
+    <ClInclude Include="src\assetManager\GameObjectManager.h" />
+    <ClInclude Include="src\assetManager\SceneManager.h" />
     <ClInclude Include="src\assetManager\TextureManager.h" />
     <ClInclude Include="src\base\ComputePipeline.h" />
     <ClInclude Include="src\Engine.h" />
@@ -282,6 +294,8 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClInclude Include="src\render\RenderPasses\DepthPass.h" />
     <ClInclude Include="src\render\RenderPasses\PostProPass.h" />
     <ClInclude Include="src\render\TextOverlay.h" />
+    <ClInclude Include="src\Scene\SceneLoader.h" />
+    <ClInclude Include="src\Scene\SceneSaver.h" />
     <ClInclude Include="src\Textures\Decoder\HDRDecoder.h" />
     <ClInclude Include="src\Textures\Decoder\ImageDecoder.h" />
     <ClInclude Include="src\Textures\Decoder\KTX2Decoder.h" />

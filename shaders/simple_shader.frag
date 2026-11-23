@@ -25,7 +25,6 @@ struct SpotLight {
 layout(set = 0, binding = 0) uniform GlobalUbo {
 	mat4 projection;
 	mat4 view;
-	mat4 invView;
 
 	vec4 ambientLightColor;
 	vec4 globalLightDir;
@@ -53,11 +52,16 @@ vec4 compute_shadow_factor(vec4 light_space_pos, uint indexSpotLight, vec3 surfa
 
 	if (((shadowUV.x * shadowUV.x) + (shadowUV.y * shadowUV.y)) > 1.0) return vec4(0.0);
 
-	float depth = shadowUV.z;
+	vec3 directionToLight = spotLightUbo.spotLight[indexSpotLight].position.xyz - fragPositionWorld;
+	//float attenuation = 1.0 / dot(directionToLight, directionToLight);
+	directionToLight = normalize(directionToLight);
+	float cosAngOfIncidence = max(dot(surfaceNormal, directionToLight), 0);
+
+	float depth = shadowUV.z - max(0.0005 * (1.0 - cosAngOfIncidence), 0.00005);
     shadowUV = shadowUV * 0.5 + 0.5;  // Convert to [0,1]
 
 	float shadow = 0.0;
-    float offset = 1.0 / 512.0;  // Shadow map resolution (adjust as needed)
+    float offset = 1.0 / 1024.0;  // Shadow map resolution (adjust as needed)
 
     // Sample a 3x3 grid of shadow values
     for (int x = -1; x <= 1; x++) {
@@ -68,11 +72,6 @@ vec4 compute_shadow_factor(vec4 light_space_pos, uint indexSpotLight, vec3 surfa
     
 	if (shadow == 0) return vec4(0.0);
 
-	vec3 directionToLight = spotLightUbo.spotLight[indexSpotLight].position.xyz - fragPositionWorld;
-	//float attenuation = 1.0 / dot(directionToLight, directionToLight);
-	directionToLight = normalize(directionToLight);
-	float cosAngOfIncidence = max(dot(surfaceNormal, directionToLight), 0);
-
 	vec4 intencity = shadow * spotLightUbo.spotLight[indexSpotLight].color.w * 2 * vec4(spotLightUbo.spotLight[indexSpotLight].color.xyz, 0.0);// * attenuation;
 
 	return cosAngOfIncidence * intencity / 9 ;
@@ -81,8 +80,7 @@ vec4 compute_shadow_factor(vec4 light_space_pos, uint indexSpotLight, vec3 surfa
 void main() {
 
 	vec3 surfaceNormal = normalize(fragNormalWorld);
-	vec3 cameraWorldPos = ubo.invView[3].xyz;
-	vec3 viewDirection = normalize(cameraWorldPos - fragPositionWorld);
+	vec3 viewDirection = normalize(ubo.camPos - fragPositionWorld);
 
 	vec3 diffuseLight = ubo.ambientLightColor.xyz * ubo.ambientLightColor.w;
 	vec3 specularLight = vec3(0.0);

@@ -3,15 +3,16 @@
 #include <vector>
 #include <future>
 #include <typeindex>
+#include <cstdint>
+#include <../json.hpp>
 
 #include "GameObject.h"
 
 #include "../assetManager/AssetManager.h"
-
 #include "../model/ModelAsset.h"
+#include "../base/descriptors.h"
+#include "../Scene/SceneLoader.h"
 
-#include <../json.hpp>
-#include "../assetManager/ModelManager.h"
 using json = nlohmann::json;
 
 class GameObject;
@@ -25,6 +26,7 @@ struct futureObject {
     std::vector<ModelInstance> instances{};
     bool saveable = true;
     ModelManager::ModelID modelID;
+    std::string targetScene;
 }; 
 
 struct ComputeObject {
@@ -45,95 +47,38 @@ public:
 
     ObjectManager(Device& device, AssetManager& assetManager);
 
-    ~ObjectManager() { saveFullScene(); globalPool = nullptr; }
+    ~ObjectManager() { globalPool = nullptr; }
 	
-	void startLoadModel(); 
-	void pushModel();
-    void pushGameObject(std::unique_ptr<GameObject> gameObject);
+	void loadHardcodedObjects(); 
+	void updateObjectManager();
+    void pushGameObject(std::unique_ptr<GameObject> gameObject, const std::string& targetScene = "");
 
-	// create primitive object
-	void createPrimitive(PrimitivesModelType type, int detail, TransformComponent transform, const std::string& name = "", const std::string& filePathTexture = "");
+	void createPrimitive(PrimitivesModelType type, int detail, TransformComponent transform, const std::string& name = "", const std::string& filePathTexture = "", const std::string& targetScene = "");
 
-    template <typename T>
-    std::vector<T*> getByType();
-
-    GameObject* get(const GameObject::id_t id);
-    GameObject* get(const std::string& name);
-
-    void removeGameObject(const GameObject::id_t id);
-    void removeGameObject(const std::string& name);
-    void removeGameObject(GameObject* gameObject);
-
-    std::shared_ptr<GameObject::Map> getGameObjects() const { return gameObjects; } 
-
-    void loadObjectAsync(Device& device, AssetManager& assets, const std::string& filePath, TransformComponent transform, const std::string& name = "");
-    void loadObjectAsync(Device& device, AssetManager& assets, const std::string& filePath, const std::string filePathTexture, TransformComponent transform, const std::string& name = "");
+    void loadObjectAsync(Device& device, AssetManager& assets, const std::string& filePath, TransformComponent transform, const std::string& name = "", const std::string& targetScene = "");
+    void loadObjectAsync(Device& device, AssetManager& assets, const std::string& filePath, const std::string filePathTexture, TransformComponent transform, const std::string& name = "", const std::string& targetScene = "");
 
     void pushFuture(std::future<std::vector<futureObject>> futures);
 
-    // scene 
-	json currentSceneJson;
-    std::string currentScene = "test5";
-	std::string scenePath = "scenes/test5.json";
 
-    void switchScene(std::string name); 
-    void loadScene(std::string name);
-    void createScene(std::string name);
-	void saveFullScene();
-
+    void requestSwitchScene(std::string newScene) { newSceneName = newScene; }
     DescriptorPool* getPool() const { return globalPool.get(); }
 
-    // camera
     std::string mainCamera = "mainCamera"; 
-
-    // main skybox
     std::string mainSkybox = "cubemap";
+    std::string currentScene = "test5";
 
-    AssetManager& assetManager;
-
-    void createDescriptorSet(ModelAsset* model);
-    void updateGameObject(float frameTime);
+    void createDescriptorSet(ModelAsset* model, const std::string& targetScene);
 
     std::vector<ComputeObject> computeList{};
-    GameObjectModel* baseSkyBox = nullptr;
+
 private:
+    std::string newSceneName = "";
+
     Device& device;
-    
+    AssetManager& assetManager;
 
-    std::vector<std::future<futureObject>> futureGameObjects;
     std::vector<std::future<std::vector<futureObject>>> futureGameObjectslist;
-
-	// main storage
-    std::shared_ptr<GameObject::Map> gameObjects{};
-    std::unordered_map<std::string, GameObject*> gameObjectsByName;
-    std::unordered_map<std::type_index, std::vector<GameObject*>> gameObjectsByType; 
-
-    void addObjectToScene(GameObject* gameObject);
 
     std::unique_ptr<DescriptorPool> globalPool{};    
 };
-
-
-
-
-/// <summary>
-/// Retrieves all managed objects of a specified type.
-/// </summary>
-/// <typeparam name="T">The type of objects to retrieve.</typeparam>
-/// <returns>A vector containing pointers to objects of type T managed by ObjectManager.</returns>
-template<typename T>
-inline std::vector<T*> ObjectManager::getByType()
-{
-    std::vector<T*> result; 
-    auto it = gameObjectsByType.find(typeid(T));  
-
-    if (it != gameObjectsByType.end()) { 
-        for (auto obj : it->second) { 
-            if (T* casted = dynamic_cast<T*>(obj)) { 
-                result.push_back(casted);
-            }
-        }
-    }
-    
-    return result;  
-}

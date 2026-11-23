@@ -1,25 +1,22 @@
 #pragma once
 
-#include "../base/Swap_chain.h"
+#include "../base/Buffer.h"
 #include "../base/descriptors.h"
 #include "../base/Device.h"
 #include "../render/Camera.h"
-#include "../assetManager/AssetManager.h"
+#include "../assetManager/ModelManager.h"
 #include "../model/Animation/Animation.h"
 
-#include "imgui.h"
-#include "backends/imgui_impl_glfw.h"
+#include <glm/detail/type_vec3.hpp>
+#include <glm/detail/type_vec4.hpp>
+#include <glm/fwd.hpp>
 
-#include "../model/ModelAsset.h"
-
-#include <glm/gtc/matrix_transform.hpp>
-
+#include <array>
 #include <memory>
-#include <iostream>
-#include <type_traits>
-#include <variant>
+#include <vector>
 #include <unordered_map>
 #include <functional>
+#include <vulkan/vulkan_core.h>
 
 #define REGISTER_BEHAVIOR(T)                                \
     std::string getClassName() const override { return #T; }\
@@ -37,10 +34,9 @@
 
 
 
-class ObjectManager;
 class GameObject;
 class GameObjectBehavior;
-
+class AssetManager;
 
 enum class ModelType {
 	UNDEFINED_MODEL = 0,
@@ -96,8 +92,8 @@ public:
 
 	virtual std::string getClassName() const = 0;
 
-	virtual void setup(Device& device, ObjectManager* objManager, GameObject* object) = 0;
-	virtual void loop(Device& device, ObjectManager* objManager, GameObject* object) = 0;
+	virtual void setup(Device& device, AssetManager& assetManager, GameObject& object) = 0;
+	virtual void loop(Device& device, AssetManager& assetManager, GameObject& object) = 0;
 
 	// Factory signature
 	using CreatorFn = std::function<std::unique_ptr<GameObjectBehavior>(Device&)>;
@@ -158,7 +154,6 @@ public:
 
 	// matrices
 	glm::mat4 getTransformMat();
-	glm::mat3 getNormalMat();
 
 	// attached behavior class 
 	bool hasAttachedClass = false; 
@@ -169,8 +164,8 @@ public:
 	}
 
 	void setAttachedClass(std::unique_ptr<GameObjectBehavior> attClass) { attachedClass = std::move(attClass); hasAttachedClass = true;} 
-	void setup(ObjectManager* objManager) { if (hasAttachedClass) attachedClass->setup(device, objManager, this); } 
-	void loop(ObjectManager* objManager) { if (hasAttachedClass) attachedClass->loop(device, objManager, this); }
+	void setup() { if (hasAttachedClass) attachedClass->setup(device, assets, *this); } 
+	void loop() { if (hasAttachedClass) attachedClass->loop(device, assets, *this); }
 	
 	// mark for removal
 	bool toBeRemoved = false;

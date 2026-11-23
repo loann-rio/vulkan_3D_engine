@@ -1,5 +1,34 @@
 #include "BasicUI.h"
+
 #include <glm/gtc/type_ptr.hpp>
+#include <iostream>
+
+#include "../Scene/SceneSaver.h"
+#include <cstdio>
+#include <iterator>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include <GLFW/glfw3.h>
+
+#include <glm/fwd.hpp>
+
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_vulkan.h>
+#include <imgui.h>
+
+#include <nfd.h>
+
+#include <vulkan/vulkan_core.h>
+
+#include "../assetManager/AssetManager.h"
+#include "../base/Device.h"
+#include "../base/Frame_info.h"
+#include "../Scene/SceneLoader.h"
+#include "GameObject.h"
+#include "objectManager.h"
 
 BasicUI::BasicUI(Device& device, AssetManager& assets, GLFWwindow* window, VkRenderPass renderPass) : device{ device }, assets{ assets }
 {
@@ -67,18 +96,18 @@ void BasicUI::drawUI(VkCommandBuffer commandBuffer, ObjectManager* manager, floa
     ImGui_ImplGlfw_NewFrame(); 
     ImGui::NewFrame();  
 
-    auto objects = manager->getGameObjects();
+    auto objects = assets.gameObject(selectedScene).getByType<GameObject>();
 
     std::vector<std::string> listObjectsName;
-    for (auto i = objects->begin(); i != objects->end(); i++) {
-        auto name = i->second->getName();
+    for (GameObject* obj : objects) {
+        auto name = obj->getName();
         if (name.size()) 
             listObjectsName.push_back(name);
     }   
 
     objectSelectionWindow(listObjectsName, manager, frameTime);
 
-    auto gameObject = manager->get(selected_object);
+    auto gameObject = assets.gameObject(selectedScene).findByName(selected_object);
     if (gameObject != nullptr) {
         gameObjectWindow(gameObject, manager); 
     }
@@ -103,8 +132,9 @@ void BasicUI::gameObjectWindow(GameObject* gameObject, ObjectManager* manager)
     gameObject->debugUI();
 
     if (ImGui::Button("move to cam")) {
-		gameObject->transform.translation = manager->get(manager->mainCamera)->transform.translation;
-		gameObject->transform.rotation = manager->get(manager->mainCamera)->transform.rotation;
+        auto cam = assets.gameObject().findByName(manager->mainCamera);
+		gameObject->transform.translation = cam->transform.translation;
+		gameObject->transform.rotation = cam->transform.rotation;
 	}
 
     if (ImGui::Button("remove object"))
@@ -176,6 +206,7 @@ void BasicUI::objectSelectionWindow(std::vector<std::string> listObjectsName, Ob
         break;
 	case 4: 
         createSkyboxWindow(manager);
+        break;
 	case 5:
 		createEmptyObjectWindow(manager);
         break;
@@ -183,19 +214,39 @@ void BasicUI::objectSelectionWindow(std::vector<std::string> listObjectsName, Ob
         show_create_go_window = false; 
     }
 
+    /////////////////////////////
     ////// scene selection //////
+    /////////////////////////////
 
     ImGui::SeparatorText("scene selection");
+
+    // should:
+    // 1. list all scenes in the assets
 
     ImGui::Text("%s", manager->currentScene.c_str());
 
     static char newScene[128] = "";
     ImGui::InputTextWithHint("##newScene", "new scene path", newScene, IM_ARRAYSIZE(newScene));
 
-    if (ImGui::Button("change scene"))
-        manager->switchScene(newScene);
+    if (ImGui::Button("switch scene"))
+        manager->requestSwitchScene(std::string(newScene));
 
+    if (ImGui::Button("save scene"))
+        SceneSaver::save(newScene ? newScene : manager->currentScene.c_str(), assets.gameObject(manager->currentScene));
+
+    if (ImGui::Button("load scene"))
+    {
+        if (assets.scenes.find(newScene) == assets.scenes.end())
+		{    
+            assets.createNewScene(newScene);
+            SceneLoader{ device, assets, *manager }.load(std::string(newScene));
+        }
+    }
+
+    //////////////////////////////
     ////// object selection //////
+    //////////////////////////////
+
     ImGui::SeparatorText("loaded game objects"); 
 
     static int item_current = 0;
@@ -208,7 +259,7 @@ void BasicUI::objectSelectionWindow(std::vector<std::string> listObjectsName, Ob
     ImGui::ListBox("##go", &item_current, listObjectsNameCStr.data(), static_cast<int>(listObjectsNameCStr.size()));
 
 
-    selected_object = listObjectsName[item_current % listObjectsName.size()];
+    selected_object = listObjectsName.size() ? listObjectsName[item_current % listObjectsName.size()] : "";
 
     ImGui::End();
 }
@@ -255,7 +306,7 @@ void BasicUI::createObjWindow(ObjectManager* manager)
     ImGui::InputTextWithHint("##path", "enter model path", path, IM_ARRAYSIZE(path));
 
     if (ImGui::Button("model dialog")) {
-        std::string filePath = openFileDialog("obj");
+        std::string filePath = openFileDialog("obj", "assets/model");
 
         if (!filePath.empty())
             snprintf(path, sizeof(path), "%s", filePath.c_str());
@@ -266,7 +317,7 @@ void BasicUI::createObjWindow(ObjectManager* manager)
     ImGui::InputTextWithHint("##pathTexture", "enter texture path", pathTexture, IM_ARRAYSIZE(pathTexture)); 
 
     if (ImGui::Button("texture dialog")) {
-        std::string filePath = openFileDialog("jpg,png,ktx,ktx2");
+        std::string filePath = openFileDialog("jpg,png,ktx,ktx2", "assets/textures");
 
         if (!filePath.empty())
             snprintf(pathTexture, sizeof(pathTexture), "%s", filePath.c_str()); 
@@ -301,7 +352,7 @@ void BasicUI::createGLTFWindow(ObjectManager* manager)
     ImGui::InputTextWithHint("##path", "enter model path", path, IM_ARRAYSIZE(path));
 
     if (ImGui::Button("open dialog")) {
-        std::string filePath = openFileDialog("gltf");
+        std::string filePath = openFileDialog("gltf,glb", "assets/model");
 
         if (!filePath.empty())
             snprintf(path, sizeof(path), "%s", filePath.c_str());
@@ -332,7 +383,7 @@ void BasicUI::createSkyboxWindow(ObjectManager* manager)
     ImGui::InputTextWithHint("##path", "enter texture path", path, IM_ARRAYSIZE(path));
 
     if (ImGui::Button("open dialog")) {
-        std::string filePath = openFileDialog("ktx, hdr");
+        std::string filePath = openFileDialog("ktx, hdr", "assets/skybox");
 
         if (!filePath.empty())
             snprintf(path, sizeof(path), "%s", filePath.c_str());
@@ -384,19 +435,19 @@ void BasicUI::createCameraWindow(ObjectManager* manager, bool isSpotLight = fals
 
         if (isSpotLight)
         {
-            auto spotLight = GameObjectFactory::createGameObject<GameObjectSpotLight>(device, manager->assetManager, fov, ar, .1f, 100.f);
+            auto spotLight = GameObjectFactory::createGameObject<GameObjectSpotLight>(device, assets, fov, ar, .1f, 100.f);
 
             spotLight->transform.color = color;
             spotLight->setName(name);
 
-            manager->pushGameObject(std::move(spotLight));
+            manager->pushGameObject(std::move(spotLight), selectedScene);
         }
         else {
-            auto camera = GameObjectFactory::createGameObject<GameObjectCamera>(device, manager->assetManager, fov, ar, .1f, 100.f);
+            auto camera = GameObjectFactory::createGameObject<GameObjectCamera>(device, assets, fov, ar, .1f, 100.f);
 
             camera->setName(name);
 
-            manager->pushGameObject(std::move(camera));
+            manager->pushGameObject(std::move(camera), selectedScene);
         }
     }
 
@@ -424,13 +475,13 @@ void BasicUI::createEmptyObjectWindow(ObjectManager* manager)
 	// create
     if (ImGui::Button("create"))
     {
-        auto emptyObject = GameObjectFactory::createGameObject<GameObject>(device, manager->assetManager);
+        auto emptyObject = GameObjectFactory::createGameObject<GameObject>(device, assets);
         emptyObject->setName(name);
 
         auto behavior = GameObjectBehavior::createBehaviorFromType(behaviorClass, device);
 		if (behavior) emptyObject->setAttachedClass(std::move(behavior));
 
-        manager->pushGameObject(std::move(emptyObject));
+        manager->pushGameObject(std::move(emptyObject), selectedScene);
         show_create_go_window = false;
     }
 
@@ -439,11 +490,11 @@ void BasicUI::createEmptyObjectWindow(ObjectManager* manager)
 	if (!show_create_go_window) selected = -1;
 }
 
-std::string BasicUI::openFileDialog(const char* filter)
+std::string BasicUI::openFileDialog(const char* filter, const char* defaultPath)
 {
     nfdchar_t* outPath = nullptr;
 
-    nfdresult_t result = NFD_OpenDialog(filter, nullptr, &outPath);
+    nfdresult_t result = NFD_OpenDialog(filter, defaultPath, &outPath);
     if (result == NFD_OKAY) {
         std::cout << "Selected file: " << outPath << "\n";
         return std::string{ outPath };

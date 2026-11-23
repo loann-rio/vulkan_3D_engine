@@ -101,12 +101,12 @@ namespace {
     }
 }
 
-ModelManager::ModelID PrebuiltModel::createPlane(Device& device, AssetManager& assets, float width, float depth, uint16_t widthDetail, uint16_t depthDetail, glm::vec3 color, float UVfactor)
+ModelManager::ModelID PrebuiltModel::createPlane(Device& device, AssetManager& assets, std::string& targetScene, float width, float depth, uint16_t widthDetail, uint16_t depthDetail, glm::vec3 color, float UVfactor)
 {
     ModelBuilder builder(device, assets);
     builder.fromDecodedModel(buildPlaneModel(width, depth, widthDetail, depthDetail, color, UVfactor, "generated_plane"));
 
-    return assets.models().create(builder);
+    return assets.models(targetScene).create(builder);
 }
 
 /// <summary>
@@ -117,15 +117,15 @@ ModelManager::ModelID PrebuiltModel::createPlane(Device& device, AssetManager& a
 /// <param name="sizePlane"> length of the plane in world units </param>
 /// <param name="color"> vertex color, multiplied with the texture </param>
 /// <returns> id of the model in the ModelManager </returns>
-ModelManager::ModelID PrebuiltModel::createPlane(Device& device, AssetManager& assets, const unsigned int detail, const float sizePlane, glm::vec3 color, const std::string texturePath, float uvFactor)
+ModelManager::ModelID PrebuiltModel::createPlane(Device& device, AssetManager& assets, std::string& targetScene, const unsigned int detail, const float sizePlane, glm::vec3 color, const std::string texturePath, float uvFactor)
 {
     TextureBuilder textBuilder(device);
-    auto texture = assets.textures().create(textBuilder.fromFile(texturePath));
+    auto texture = assets.textures(targetScene).create(textBuilder.fromFile(texturePath));
 
     ModelBuilder builder(device, assets);
     builder.fromDecodedModel(buildPlaneModel(sizePlane, sizePlane, detail, detail, color, uvFactor, "generated_plane_detail")).withTexture(texture);
 
-    return assets.models().create(builder);
+    return assets.models(targetScene).create(builder);
 }
 /*
 

@@ -6,7 +6,7 @@
 #include <array>
 #include "../assetManager/ModelManager.h"
 
-void TerrainGenerator::loop(Device& device, ObjectManager* objManager, GameObject* object)
+void TerrainGenerator::loop(Device& device, AssetManager& assetManager, GameObject& object)
 {
 	/*int posX = object->transform.translation.x / chunkWorldSide;
 	int posY = object->transform.translation.z / chunkWorldSide;

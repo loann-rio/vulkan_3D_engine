@@ -33,7 +33,6 @@ struct SpotLight {
 layout(set = 0, binding = 0) uniform GlobalUbo {
 	mat4 projection;
 	mat4 view;
-	mat4 invView;
 
 	vec4 ambientLightColor;
 	vec4 globalLightDir;
@@ -44,12 +43,6 @@ layout(set = 0, binding = 0) uniform GlobalUbo {
 
 	PointLight pointLight[10]; 
 } ubo;
-
-/*layout(push_constant) uniform Push {
-	mat4 modelMatrix;
-	mat4 normalMatrix;
-} push;*/
-
 
 struct ObjectData {
     mat4 model;

@@ -7,7 +7,28 @@
 
 #include <stdexcept>
 #include <array>
+#include <iostream>
 #include <cassert>
+#include <algorithm>
+#include <cstdint>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+#include <vulkan/vulkan_core.h>
+
+#include "../base/Pipeline.h"
+#include "../base/Buffer.h"
+#include "../base/descriptors.h"
+#include "../base/Device.h"
+#include "../base/Frame_info.h"
+#include "../assetManager/AssetManager.h"
+#include "../assetManager/ModelManager.h"
+#include "../model/Animation/Skeleton.h"
+#include "../model/Decoder/IModelDecoder.h"
+#include "../model/ModelAsset.h"
+#include "../objects/GameObject.h"
+#include "Camera.h"
 
 
 namespace {
@@ -177,8 +198,8 @@ void RenderSystem::createPipeline(VkRenderPass renderPass, const std::string& ve
 	// enable depth bias if no frag shader (depth only)
 	if (fragFilepath.empty()) {
 		pipelineConfig.rasterizationInfo.depthBiasEnable = VK_TRUE;
-		pipelineConfig.rasterizationInfo.depthBiasConstantFactor = 4.0f;
-		pipelineConfig.rasterizationInfo.depthBiasSlopeFactor = 1.5f;
+		pipelineConfig.rasterizationInfo.depthBiasConstantFactor = 1.25f;  /// depth offset
+		pipelineConfig.rasterizationInfo.depthBiasSlopeFactor = 1.75f;
 	}
 
 	if (isSkyBox) {
@@ -365,9 +386,8 @@ void RenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& 
 
 		auto modelAsset = assets.models().get(obj->lodModelAssets[0]);
 				
-		if (obj->hasCpuCulling() && modelAsset->useAABB() && !Camera::isAABBinFrustrum(modelAsset->getAABB(obj->getTransformMat()), frustrumPlanes)) {
+		if (obj->hasCpuCulling() && modelAsset->useAABB() && !Camera::isAABBinFrustrum(modelAsset->getAABB(obj->getTransformMat()), frustrumPlanes))
 			continue;
-		}
 
 		bindModel(commandBuffer, modelAsset, *obj, frameInfo.frameIndex);
 
@@ -394,24 +414,28 @@ void RenderSystem::renderGameObjectsDepth(VkCommandBuffer& commandBuffer, FrameI
 
 	for (auto obj : frameInfo.listGameObjects)
 	{
-		if (obj->show && !obj->toBeRemoved && obj->getModelType() == modelType && obj->getModelSubType() == modelSubType)
-			if (obj->lodModelAssets.size())
-			{
-				auto modelAsset = assets.models().get(obj->lodModelAssets[0]);
+		if (!obj->show ||
+			obj->toBeRemoved ||
+			obj->getModelType() != modelType ||
+			obj->getModelSubType() != modelSubType ||
+			!obj->lodModelAssets.size())
+			continue;
 
-				if (!modelAsset->hasShadow) continue;
-				//if (!Camera::isAABBinFrustrum(obj->getAABB().getAABB(obj->getTransformMat()), frameInfo.listFrustrumPlanes[lightIndex])) continue;
+		auto modelAsset = assets.models().get(obj->lodModelAssets[0]);
 
+		if (obj->hasCpuCulling() &&
+			modelAsset->useAABB() &&
+			!Camera::isAABBinFrustrum(modelAsset->getAABB(obj->getTransformMat()), frameInfo.listFrustrumPlanes[lightIndex]))
+			continue;
 
-				bindModel(commandBuffer, modelAsset, *obj, frameInfo.frameIndex);
+		bindModel(commandBuffer, modelAsset, *obj, frameInfo.frameIndex);
 
-				if (usePoseBuffer && !bindPose(commandBuffer, *obj, frameInfo.frameIndex)) continue;
+		if (usePoseBuffer && !bindPose(commandBuffer, *obj, frameInfo.frameIndex)) continue;
 
-				for (auto primitive : modelAsset->lods[0].primitives)
-				{
-					drawDepth(commandBuffer, modelAsset, primitive, obj->gpuObjectIndex, lightIndex, obj->getInstanceCount());
-				}
-			}
+		for (auto primitive : modelAsset->lods[0].primitives)
+		{
+			drawDepth(commandBuffer, modelAsset, primitive, obj->gpuObjectIndex, lightIndex, obj->getInstanceCount());
+		}
 	}
 }
 
@@ -420,7 +444,7 @@ void RenderSystem::renderFullScreen(VkCommandBuffer& commandBuffer, std::vector<
 
 	bindGlobalSets(commandBuffer, globalDescriptorSets);
 
-	CubeMapPushConstantData push;
+	CubeMapPushConstantData push{};
 	push.view = view;
 	push.proj = proj;
 

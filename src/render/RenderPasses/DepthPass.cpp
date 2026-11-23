@@ -1,9 +1,19 @@
 #include "DepthPass.h"
 
-#include "../../base/Device.h"
 #include "../GlobalRenderSystemBuilder.h"
 #include "../../model/Vertex/ObjVertexData.h"
 #include "../../model/Vertex/GltfVertexData.h"
+#include "../../base/descriptors.h"
+#include "../../base/Device.h"
+#include "../../base/Frame_info.h"
+#include "../../objects/GameObject.h"
+#include "../../objects/objectManager.h"
+
+#include <vulkan/vulkan_core.h>
+#include <array>
+#include <cstdint>
+#include <stdexcept>
+
 
 void DepthPass::createRenderSystems()
 {

@@ -1,7 +1,11 @@
 #include "GameObject.h"
-#include <glm/gtc/type_ptr.hpp>
 
- 
+#include <glm/gtc/type_ptr.hpp>
+#include <iostream>
+
+#include "../base/Swap_chain.h"
+#include "../assetManager/AssetManager.h"
+
 GameObject::id_t GameObjectFactory::nextId = 0;
 
 glm::mat4 TransformComponent::mat4() 
@@ -69,13 +73,6 @@ glm::mat4 GameObject::getTransformMat()
     if (parentObject != nullptr) 
         return parentObject->getTransformMat() * transform.mat4();
     return transform.mat4(); 
-}
-
-glm::mat3 GameObject::getNormalMat()
-{
-    if (parentObject != nullptr) 
-        return parentObject->getNormalMat() * transform.normalMatrix();
-    return transform.normalMatrix();
 }
 
 
@@ -241,7 +238,17 @@ void GameObjectCamera::debugUI()
     }
 }
 
-void GameObjectCamera::updateCameraView() { camera->setViewYXZ(transform.translation, transform.rotation); camera->updateFrustrumPlanes(); }
+void GameObjectCamera::updateCameraView() { 
+    glm::mat4 transformMat = getTransformMat();
+
+    glm::vec3 rot;
+    rot.x = atan2f(-transformMat[2][1], sqrtf(transformMat[2][0] * transformMat[2][0] + transformMat[2][2] * transformMat[2][2]));
+    rot.y = atan2f(transformMat[2][0], transformMat[2][2]);
+    rot.z = atan2f(transformMat[0][1], transformMat[1][1]);
+
+    camera->setViewYXZ(glm::vec3(transformMat[3]), rot);
+    camera->updateFrustrumPlanes(); 
+}
 
 SpotLight GameObjectSpotLight::getSpotLightInfo(bool _updateCameraView)
 {
@@ -269,8 +276,7 @@ void GameObjectModel::debugUI()
     ImGui::Text("animation:");
     ImGui::InputInt("index", &animationIndex);
 
-
-    if (ImGui::Button("start")) animator.play(static_cast<uint32_t>(std::max(0, animationIndex)), false);
+    if (ImGui::Button("start")) animator.play(static_cast<uint32_t>(std::max(0, animationIndex)), true);
     ImGui::SameLine();
     if (ImGui::Button("stop")) animator.stop();
 

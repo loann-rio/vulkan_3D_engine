@@ -1,7 +1,9 @@
 #pragma once
 
 #include "../base/Device.h"
-#include "../base/Window.h"
+#include <string>
+#include <GLFW/glfw3.h>
+#include <vulkan/vulkan_core.h>
 
 #include "../objects/objectManager.h"
 #include "../objects/GameObject.h"
@@ -18,6 +20,8 @@
 
 #define _CRT_SECURE_NO_WARNINGS 
 #include <nfd.h>
+#include "../assetManager/AssetManager.h"
+#include <vector>
 
 class BasicUI
 {
@@ -40,17 +44,20 @@ private:
 	void createCameraWindow(ObjectManager* manager, bool isSpotLight);
 	void createEmptyObjectWindow(ObjectManager* manager);
 
-	std::string openFileDialog(const char* filter);
+	std::string openFileDialog(const char* filter, const char* defaultPath = nullptr);
 
 	VkDescriptorPool imguiPool; 
 	Device& device;
 	AssetManager& assets;
 
 	std::string selected_object = "";
+	std::string selectedScene = "";
 
 	bool show_create_go_window = true; 
 	bool show_create_terrain_window = true;
 	int selected = -1;
+
+
 };
 
 #endif // ENABLE_IMGUI

@@ -6,17 +6,16 @@
 #include "../base/Device.h"
 #include "../base/Frame_info.h"
 #include "../base/descriptors.h"
+#include "../base/Buffer.h"
+#include "../base/Swap_chain.h"
 
-#include "../objects/GameObject.h"
-#include "../render/Camera.h"
-
-#include "../Textures/TextureObject.h"
+#include "../assetManager/AssetManager.h"
+#include "../assetManager/TextureManager.h"
 
 #include "../../external/stb/consolas/stb_font_consolas_24_latin1.inl" 
 
 #include <memory>
 #include <vector>
-
 
 class TextOverlay
 {

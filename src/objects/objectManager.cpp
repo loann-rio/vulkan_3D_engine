@@ -1,18 +1,18 @@
 #include "objectManager.h"
 
 #include "../model/preBuild.h"
+#include "../model/ModelBuilder.h"
+#include "../model/ModelAsset.h"
 
 #include "../Textures/TextureObject.h"
 #include "../Textures/TextureBuilder.h"
 
-#include "../model/ModelBuilder.h"
-
+#include "../base/Swap_chain.h"
 
 #include <chrono>
-#include <fstream>
+#include <utility>
 
-
-void ObjectManager::startLoadModel()
+void ObjectManager::loadHardcodedObjects()
 {
 
     if (true)
@@ -25,7 +25,7 @@ void ObjectManager::startLoadModel()
 
         if (modelId)
         {
-            createDescriptorSet(assetManager.models().get(modelId));
+            createDescriptorSet(assetManager.models().get(modelId), currentScene);
 
             auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
             gameObject->setName("cubemap");
@@ -34,8 +34,7 @@ void ObjectManager::startLoadModel()
             gameObject->setModel(modelId);
             gameObject->saveable = false;
             gameObject->show = false;
-            pushGameObject(std::move(gameObject));
-
+            assetManager.gameObject().add(std::move(gameObject));
         }
     }
 
@@ -60,10 +59,10 @@ void ObjectManager::startLoadModel()
         ModelManager::ModelID grassLod3 = assetManager.models().create(ModelBuilder(device, assetManager).fromFile("assets/model/grassLOD/grassLod3.obj").withShadow(false).withTexture(texture));
         ModelManager::ModelID grassLod4 = assetManager.models().create(ModelBuilder(device, assetManager).fromFile("assets/model/grassLOD/grassLod4.obj").withShadow(false).withTexture(textureGrass));
 
-        createDescriptorSet(assetManager.models().get(grassLod1));
-        createDescriptorSet(assetManager.models().get(grassLod2));
-        createDescriptorSet(assetManager.models().get(grassLod3));
-        createDescriptorSet(assetManager.models().get(grassLod4));
+        createDescriptorSet(assetManager.models().get(grassLod1), currentScene);
+        createDescriptorSet(assetManager.models().get(grassLod2), currentScene);
+        createDescriptorSet(assetManager.models().get(grassLod3), currentScene);
+        createDescriptorSet(assetManager.models().get(grassLod4), currentScene);
 
 
         auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
@@ -74,7 +73,8 @@ void ObjectManager::startLoadModel()
         gameObject->setMultipleInstances(instances);
         gameObject->transform.translation = { 12.f, 0.f, 12.f };
 		gameObject->createInstanceComputeDescriptorSets(*globalPool);
-        pushGameObject(std::move(gameObject));
+        assetManager.gameObject().add(std::move(gameObject));
+
 
         ComputeObject computeGrass{
             true,
@@ -82,7 +82,7 @@ void ObjectManager::startLoadModel()
             1, 
             1,
             instances.size(),
-            dynamic_cast<GameObjectModel*>(get("grass"))
+            dynamic_cast<GameObjectModel*>(assetManager.gameObject().findByName("grass"))
         };
 
         computeList.push_back(computeGrass);
@@ -90,15 +90,14 @@ void ObjectManager::startLoadModel()
 
     {
         ModelBuilder builder(device, assetManager);
-        ModelManager::ModelID id = assetManager.models().create(builder.fromFile("assets/model/2.0/DamagedHelmet/glTF/DamagedHelmet.gltf"));
+        ModelManager::ModelID id = assetManager.models(currentScene).create(builder.fromFile("assets/model/2.0/DamagedHelmet/glTF/DamagedHelmet.gltf"));
 
         if (id)
         {
-            createDescriptorSet(assetManager.models().get(id));
+            createDescriptorSet(assetManager.models().get(id), currentScene);
 
             auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
             gameObject->setName("testModelBuilder");
-            // Treat the decoded glTF model as an OBJ model so it can be rendered by the simple_shader pipeline
             gameObject->setModelType(ModelType::GLTF_MODEL);
             gameObject->setModel(id);
             gameObject->transform.rotation.x = 3.141592f;
@@ -106,10 +105,44 @@ void ObjectManager::startLoadModel()
             gameObject->transform.translation = { 0, 0.2f, 8 };
             gameObject->saveable = false;
             gameObject->createPoseResources(*globalPool);
-            pushGameObject(std::move(gameObject));
+
+            assetManager.gameObject().add(std::move(gameObject));
+
         }
     }
 
+    {
+        ModelBuilder builder(device, assetManager);
+        ModelManager::ModelID id = assetManager.models().create(builder.fromFile("assets/model/people/UAL1_Standard.glb"));
+
+        if (id)
+        {
+            createDescriptorSet(assetManager.models().get(id), currentScene);
+
+            //auto behavior = GameObjectBehavior::createBehaviorFromType("PlayerBehavior", device);
+
+            auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
+            gameObject->setName("player");
+            //gameObject->setAttachedClass(std::move(behavior));
+            gameObject->setModelType(ModelType::GLTF_MODEL);
+            gameObject->setModel(id);
+            gameObject->transform.rotation = { 0.33f, 0.f, 3.141592f };
+            gameObject->transform.translation = { 0.33f, 2.6f, -4.2f };
+            gameObject->saveable = false;
+            gameObject->createPoseResources(*globalPool);
+
+            auto& obj = assetManager.gameObject(currentScene).add(std::move(gameObject));
+
+            // player camera -> child of player
+
+            auto cameraObject = GameObjectFactory::createGameObject<GameObjectCamera>(device, assetManager, 0.5f, 1.f, 0.1f, 100.f);
+            cameraObject->setName("player camera");
+            cameraObject->transform.translation = { 1, -1, 1 };
+            cameraObject->saveable = false;
+            cameraObject->setParent(&obj);
+            assetManager.gameObject(currentScene).add(std::move(cameraObject));
+        }
+    }
 
     /* {
         auto behavior = GameObjectBehavior::createBehaviorFromType("ChunkManager", device);
@@ -122,7 +155,7 @@ void ObjectManager::startLoadModel()
 
 }
 
-void ObjectManager::createPrimitive(PrimitivesModelType type, int detail, TransformComponent transform, const std::string& name, const std::string& filePathTexture)
+void ObjectManager::createPrimitive(PrimitivesModelType type, int detail, TransformComponent transform, const std::string& name, const std::string& filePathTexture, const std::string& targetScene)
 {
     auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
     gameObject->transform = transform; 
@@ -134,18 +167,27 @@ void ObjectManager::createPrimitive(PrimitivesModelType type, int detail, Transf
 
     GameObject::id_t id = gameObject->getId();
 
-    pushGameObject(std::move(gameObject));
-
-    pushFuture(std::async(std::launch::async, [this, id, type, detail, filePathTexture]() {
+    //pushGameObject(std::move(gameObject));
+    assetManager.gameObject(targetScene).add(std::move(gameObject));
+    pushFuture(std::async(std::launch::async, [this, id, type, detail, filePathTexture, targetScene]() mutable {
+        std::string scene = targetScene;
+        
         ModelManager::ModelID modelID = 0;
 
         switch (type) {
         case PrimitivesModelType::PLANE:
-            // white vertex color: the shader multiplies it with the texture
-            modelID = PrebuiltModel::createPlane(this->device, this->assetManager, detail, 1, { 1, 1, 1 }, filePathTexture.empty() ? "assets/textures/whiteTexture.jpg" : filePathTexture, 20);
+            modelID = PrebuiltModel::createPlane(
+                this->device,
+                this->assetManager,
+                scene,
+                detail,
+                1,
+                { 1, 1, 1 },
+                filePathTexture.empty() ? "assets/textures/whiteTexture.jpg" : filePathTexture,
+                20
+            );
             break;
         case PrimitivesModelType::CUBE:
-            //primitive = PrebuiltModel::createCube(this->device, this->assetManager);
             break;
         case PrimitivesModelType::SPHERE:
             break;
@@ -158,260 +200,145 @@ void ObjectManager::createPrimitive(PrimitivesModelType type, int detail, Transf
             break;
         }
 
-        return std::vector<futureObject>{ futureObject{ modelID ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id, {}, true, modelID } };
-        })
+        return std::vector<futureObject>{
+            futureObject{
+                modelID ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL,
+                id,
+                {},
+                true,
+                modelID,
+                targetScene
+            }
+        };
+     }));
+}
+
+    /////// add objects ///////
+
+void ObjectManager::pushFuture(std::future<std::vector<futureObject>> futures)
+{
+    futureGameObjectslist.push_back(std::move(futures));
+}
+
+/// <summary>
+/// take the loaded model from the future and put it in a game object
+/// </summary>
+/// <param name="pool">global model pool</param>
+void ObjectManager::updateObjectManager()
+{
+
+    // load futures
+    auto it = futureGameObjectslist.begin();
+    while (it != futureGameObjectslist.end()) { // iter over futures
+        if (it->wait_for(std::chrono::seconds(0)) != std::future_status::ready) { // check if future is ready
+            ++it;
+            continue;
+        }
+            
+        // iter over models in future
+        for (futureObject object : it->get()) { 
+            if (object.type == ModelType::UNDEFINED_MODEL) 
+                continue;
+
+            // get gameobject
+            auto* gameObject = dynamic_cast<GameObjectModel*>(assetManager.gameObject(object.targetScene).find(object.id));
+
+            if (!gameObject || !object.modelID)
+                continue;
+
+            if (object.instances.size() > 0)
+                gameObject->setMultipleInstances(object.instances);
+            
+            createDescriptorSet(assetManager.models(object.targetScene).get(object.modelID), object.targetScene);
+
+            gameObject->setModel(object.modelID);
+            gameObject->setModelType(object.type);
+            gameObject->createPoseResources(*globalPool);
+            gameObject->show = true;
+        }
+
+        it = futureGameObjectslist.erase(it); // remove from futures
+    }
+
+    // switch scene if requested
+   
+    if (newSceneName.size()) {
+        assetManager.switchScene(newSceneName);
+        currentScene = newSceneName;
+        newSceneName = "";
+    }
+}
+
+void ObjectManager::pushGameObject(std::unique_ptr<GameObject> gameObject, const std::string& targetScene)
+{
+    GameObject::id_t id = gameObject->getId();
+    std::string name = gameObject->getName();
+    std::type_index type = typeid(*gameObject);
+
+    gameObject->setup();
+
+    assetManager.gameObject(targetScene).add(std::move(gameObject));
+}
+
+void ObjectManager::loadObjectAsync(Device& device, AssetManager& assets, const std::string& filePath, TransformComponent transform, const std::string& name, const std::string& targetScene)
+{
+    auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
+    gameObject->transform = transform; 
+    gameObject->setName(name.empty() ? filePath : name);
+    gameObject->modelPath = filePath;
+    GameObject::id_t id = gameObject->getId(); 
+
+    pushGameObject(std::move(gameObject), targetScene);
+
+    pushFuture(std::async(std::launch::async, [filePath, &device, &assets, id, targetScene]() {
+        ModelBuilder builder(device, assets);
+        ModelManager::ModelID modelId = assets.models(targetScene).create(builder.fromFile(filePath));
+
+        return std::vector<futureObject>{ futureObject{ modelId ? ModelType::GLTF_MODEL : ModelType::UNDEFINED_MODEL, id, { }, true, modelId, targetScene } };
+        }));
+}
+
+void ObjectManager::loadObjectAsync(Device& device, AssetManager& assets, const std::string& filePath, const std::string filePathTexture, TransformComponent transform, const std::string& name, const std::string& targetScene)
+{
+    auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assets);
+    gameObject->transform = transform;  
+    gameObject->setName(name.empty() ? filePath : name); 
+
+    gameObject->modelPath = filePath;
+    gameObject->texturePath = filePathTexture;
+    
+    GameObject::id_t id = gameObject->getId();
+
+    pushGameObject(std::move(gameObject), targetScene); 
+
+    pushFuture( std::async(std::launch::async, [filePath, filePathTexture, &device, &assets, id, targetScene]()
+        {
+            TextureBuilder textureBuilder(device);
+            auto texture = assets.textures(targetScene).create(textureBuilder.fromFile(filePathTexture));
+
+            ModelBuilder builder(device, assets);
+            ModelManager::ModelID modelId = assets.models(targetScene).create(builder.fromFile(filePath).withTexture(texture));
+
+            return std::vector<futureObject> {futureObject{ modelId ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id, {}, true, modelId, targetScene }};
+        }) 
      );
 }
 
-    /////// get and remove ///////
-
-GameObject* ObjectManager::get(const GameObject::id_t id)
+ObjectManager::ObjectManager(Device& device, AssetManager& assetManager) : device{ device }, assetManager{ assetManager }
 {
-    auto it = gameObjects->find(id);
-    return (it != gameObjects->end()) ? it->second.get() : nullptr;
-}
+    globalPool = DescriptorPool::Builder(device)
+        .setMaxSets(Swap_chain::MAX_FRAMES_IN_FLIGHT * 320)
+        .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Swap_chain::MAX_FRAMES_IN_FLIGHT * 640)
+        .addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, Swap_chain::MAX_FRAMES_IN_FLIGHT * 640)
+        .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Swap_chain::MAX_FRAMES_IN_FLIGHT * 640)
+        .build();
 
-GameObject* ObjectManager::get(const std::string& name)
-{
-    auto it = gameObjectsByName.find(name);
-    return (it != gameObjectsByName.end()) ? it->second : nullptr;
-}
+    assetManager.createNewScene(currentScene);
+    assetManager.switchScene(currentScene);
+    SceneLoader{ device, assetManager, *this }.load(currentScene);
+};
 
-void ObjectManager::removeGameObject(const GameObject::id_t id)
-{
-    auto it = gameObjects->find(id);
-    if (it == gameObjects->end()) {
-        return; // nothing to remove
-    }
-
-    GameObject* obj = it->second.get();
-
-    // Remove from name map
-    if (!obj->getName().empty()) {
-        gameObjectsByName.erase(obj->getName());
-    }
-
-    // Remove from type-indexed list
-    std::type_index type = typeid(*obj);
-    auto& vec = gameObjectsByType[type];
-    vec.erase(std::remove(vec.begin(), vec.end(), obj), vec.end());
-
-    // remove from main storage
-    gameObjects->erase(it);
-}
-
-void ObjectManager::removeGameObject(const std::string& name)
-{
-	removeGameObject(get(name)->getId());
-}
-
-void ObjectManager::removeGameObject(GameObject* gameObject)
-{
-	removeGameObject(gameObject->getId());
-}
-
-    /////// scene management ///////
-/// <summary>
-/// save current scene and load new one
-/// </summary>
-/// <param name="name"> new scene name </param>
-void ObjectManager::switchScene(std::string name)
-{
-    // save current scene
-    saveFullScene();
-
-	// mark all objects to be removed
-    for (auto obj = gameObjects->begin(); obj != gameObjects->end(); obj++) {
-        obj->second->toBeRemoved = true;
-	}
-
-	// keep skybox
-    get("cubemap")->toBeRemoved = false;
-
-	// keep main camera
-    get("mainCamera")->toBeRemoved = false;
-
-	// clear all loaded async models
-    futureGameObjects.clear();
-    futureGameObjectslist.clear();
-
-    // load new scene
-    currentScene = name;
-    scenePath = "scenes/" + name + ".json";
-    loadScene(name);
-
-}
-
-void ObjectManager::loadScene(std::string name)
-{
-	// test if file exists
-    scenePath = "scenes/" + name + ".json";
-
-	std::ifstream i(scenePath);
-    if (!i.good()) {
-        createScene(name);
-        i.open(scenePath);
-	}
-
-    i >> currentSceneJson;
-
-    for (auto& element : currentSceneJson["objects"].items()) {
-
-        std::string objName = element.key();
-        int objType = element.value()["type"];
-
-        TransformComponent transform{};
-        std::unique_ptr<GameObjectBehavior> behavior;
-
-        if (element.value().contains("transform")) {
-            auto t = element.value()["transform"];
-            transform.translation = glm::vec3{ t["translation"][0], t["translation"][1], t["translation"][2] };
-            transform.rotation = glm::vec3{ t["rotation"][0], t["rotation"][1], t["rotation"][2] };
-            transform.scale = glm::vec3{ t["scale"][0], t["scale"][1], t["scale"][2] };
-            transform.color = glm::vec4{ t["color"][0], t["color"][1], t["color"][2], t["color"][3] };
-        }
-
-        if (element.value().contains("behavior_type")) {
-            std::string classType = element.value()["behavior_type"];
-            behavior = GameObjectBehavior::createBehaviorFromType(classType, device);       
-        }
-
-        if (objType == static_cast<int>(GameObjectType::MODEL)) {
-
-			// two main types of model: primitives and loaded from file
-			// loaded from file: gltf/glb or obj + texture
-			// primitives: plane, cube, sphere, cylinder, cone
-			// default texture for obj is whiteTexture.jpg
-            
-            if (element.value().contains("modelPath")) 
-            {
-                std::string modelPath = element.value()["modelPath"];
-                std::cout << "load model " << modelPath << " with obj name: " << objName << "\n";
-
-                if (modelPath.find(".gltf") != std::string::npos || modelPath.find(".glb") != std::string::npos)
-                    loadObjectAsync(device, assetManager, modelPath, transform, objName);
-                else 
-                {
-                    std::string texturePath = element.value().contains("texturePath") ? element.value()["texturePath"] : "assets/textures/whiteTexture.jpg";
-                    loadObjectAsync(device, assetManager, modelPath, texturePath, transform, objName);
-                }
-            }
-            else if(element.value().contains("primitivesModelType"))
-            {
-                PrimitivesModelType primitiveType = static_cast<PrimitivesModelType>(element.value()["primitivesModelType"]);
-                std::string texturePath = element.value()["texturePath"];
-                int detail = element.value().value("detail", 10);
-                createPrimitive(primitiveType, detail, transform, objName, texturePath);
-            }
-        }
-
-        else if (objType == static_cast<int>(GameObjectType::CAMERA)) {
-            float fov         = element.value()["fov"];
-            float aspectRatio = element.value()["aspectRatio"];
-            float nearPlane   = element.value()["nearPlane"];
-            float farPlane    = element.value()["farPlane"];
-            
-            auto cameraObject = GameObjectFactory::createGameObject<GameObjectCamera>(device, assetManager, fov, aspectRatio, nearPlane, farPlane);
-            cameraObject->transform = transform;
-            cameraObject->setName(objName);
-            pushGameObject(std::move(cameraObject));
-        }
-        else if (objType == static_cast<int>(GameObjectType::SPOT_LIGHT)) {
-            float fov = element.value()["fov"];
-            float aspectRatio = element.value()["aspectRatio"];
-            float nearPlane = element.value()["nearPlane"];
-            float farPlane = element.value()["farPlane"];
-            auto spotLight = GameObjectFactory::createGameObject<GameObjectSpotLight>(device, assetManager, fov, aspectRatio, nearPlane, farPlane);
-            spotLight->transform = transform;
-            spotLight->setName(objName);
-            pushGameObject(std::move(spotLight));
-        }
-        else
-        {
-            auto gameObject = GameObjectFactory::createGameObject<GameObject>(device, assetManager);
-
-            if (behavior) gameObject->setAttachedClass(std::move(behavior));
-
-            gameObject->setName(objName); 
-            pushGameObject(std::move(gameObject));
-
-        }
-    }
-
-	// ensure there is a main camera
-    if (get("mainCamera") == nullptr) { 
-        auto cameraObject = GameObjectFactory::createGameObject<GameObjectCamera>(device, assetManager, glm::radians(50.f), 1.f, .1f, 100.f);
-        cameraObject->setName("mainCamera");
-        pushGameObject(std::move(cameraObject));
-	}
-
-}
-
-void ObjectManager::addObjectToScene(GameObject* gameObject)
-{
-    
-    if (!currentSceneJson.contains("objects")) {
-        currentSceneJson["objects"] = json::object();
-    }
-
-    // serialize gameObject
-	json objJson;
-    objJson["type"] = static_cast<int>(gameObject->getType());
-
-    TransformComponent& t = gameObject->transform;
-    objJson["transform"]["translation"] = { t.translation.x, t.translation.y, t.translation.z          };
-    objJson["transform"]["rotation"]    = { t.rotation.x,    t.rotation.y,    t.rotation.z             };
-    objJson["transform"]["scale"]       = { t.scale.x,       t.scale.y,       t.scale.z                };
-    objJson["transform"]["color"]       = { t.color.r,       t.color.g,       t.color.b,    t.color.a  };
-
-    // type-specific params
-    if (objJson["type"] == GameObjectType::MODEL) {
-        auto* model = dynamic_cast<GameObjectModel*>(gameObject);
-		
-		objJson["modelType"] = static_cast<int>(model->getModelType());
-
-        if (!model->modelPath.empty()) {
-            objJson["modelPath"] = model->modelPath;
-        }
-
-        if (model->getModelType() == ModelType::OBJ_MODEL)
-        {
-            if (model->getPrimitivesModelType() != PrimitivesModelType::NONE) {
-                objJson["primitivesModelType"] = static_cast<int>(model->getPrimitivesModelType());
-                objJson["detail"] = model->primitiveLOD;
-			}
-
-            objJson["texturePath"] = model->texturePath;
-        }
-        
-    }
-    else if (objJson["type"] == GameObjectType::CAMERA) {
-        auto* cam = dynamic_cast<GameObjectCamera*>(gameObject);
-        objJson["fov"] = cam->getFov();
-        objJson["aspectRatio"] = cam->getAspectRatio();
-        objJson["nearPlane"] = cam->getNearClip();
-        objJson["farPlane"] = cam->getFarClip();
-    }
-    else if (objJson["type"] == GameObjectType::SPOT_LIGHT) {
-        auto* light = dynamic_cast<GameObjectSpotLight*>(gameObject);
-        objJson["fov"] = light->getFov();
-        objJson["aspectRatio"] = light->getAspectRatio();
-        objJson["nearPlane"] = light->getNearClip();
-        objJson["farPlane"] = light->getFarClip();
-    }
-
-    // save attached class
-    if (gameObject->hasAttachedClass) {
-
-		std::cout << "Saving attached class: " << gameObject->getAttachedClassType() << " for object " << gameObject->getName() << std::endl;
-        objJson["behavior_type"] = gameObject->getAttachedClassType();
-    }
-
-    currentSceneJson["objects"][gameObject->getName()] = objJson;
-
-}
-
-void ObjectManager::createDescriptorSet(ModelAsset* model)
+void ObjectManager::createDescriptorSet(ModelAsset* model, const std::string& targetScene)
 {
 
     for (auto& lod : model->lods) {
@@ -422,10 +349,10 @@ void ObjectManager::createDescriptorSet(ModelAsset* model)
                 .addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
                 .build();
 
-            VkDescriptorImageInfo firstInfo = assetManager.textures().get(lod.textures[0])->getImageInfo();
+            VkDescriptorImageInfo firstInfo = assetManager.textures(targetScene).get(lod.textures[0])->getImageInfo();
             std::vector<VkDescriptorImageInfo> texturesInfo(MAX_MODEL_TEXTURES, firstInfo);
             for (size_t i = 0; i < lod.textures.size(); i++)
-                texturesInfo[i] = assetManager.textures().get(lod.textures[i])->getImageInfo();
+                texturesInfo[i] = assetManager.textures(targetScene).get(lod.textures[i])->getImageInfo();
 
             VkDescriptorBufferInfo materialBufferInfo = lod.materialBuffer->descriptorInfo();
 
@@ -449,201 +376,11 @@ void ObjectManager::createDescriptorSet(ModelAsset* model)
             material.descriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT * lod.materials.size());
             for (int i = 0; i < material.descriptorSet.size(); i++)
             {
-                auto imageInfo = assetManager.textures().get(material.albedoTexture)->getImageInfo();
+                auto imageInfo = assetManager.textures(targetScene).get(material.albedoTexture)->getImageInfo();
                 DescriptorWriter(*textureSetLayout, *globalPool)
                     .writeImage(0, &imageInfo)
                     .build(material.descriptorSet[i]);
             }
         }
-    }  
-}
-
-void ObjectManager::updateGameObject(float frameTime)
-{
-    std::vector<GameObject::id_t> toRemove;
-
-    for (auto& [id, obj] : *gameObjects) {
-        if (!obj->toBeRemoved) {
-            obj->loop(this);
-            continue;
-        }
-
-        // Handle removal
-        if (obj->getType() == GameObjectType::MODEL) {
-            auto* modelObj = dynamic_cast<GameObjectModel*>(obj.get());
-            if (modelObj->show) {
-                modelObj->show = false; // Hide first to avoid descriptor issues
-                continue;
-            }
-        }
-
-        // Either not a model, or already hidden — safe to remove
-        toRemove.push_back(id);
-    }
-
-    // Remove after iteration
-    for (auto id : toRemove) {
-        removeGameObject(id);
-    }
-
-    // update GLTF game objects
-    {
-        std::vector<GameObjectModel*> objects = getByType<GameObjectModel>();
-        for (auto obj : objects) {
-            obj->update(frameTime);
-        }
-    }
-
-}
-
-void ObjectManager::createScene(std::string name)
-{
-    json empty = json::parse(R"({})");
-
-	std::string path = "scenes/" + name + ".json";
-
-	// create json file with name
-    std::ofstream o(path);
-    o << empty << std::endl;
-}
-
-void ObjectManager::saveFullScene()
-{
-    currentSceneJson = json::parse(R"({})");
-    
-    for (auto& [id, obj] : *gameObjects) {
-        if (obj->saveable)
-            addObjectToScene(obj.get());
-	}
-
-    // save back to file
-    std::ofstream o(scenePath);
-    o << currentSceneJson << std::endl;
-}
-    
-    /////// add objects ///////
-
-void ObjectManager::pushFuture(std::future<std::vector<futureObject>> futures)
-{
-    futureGameObjectslist.push_back(std::move(futures));
-}
-
-/// <summary>
-/// take the loaded model from the future and put it in a game object
-/// </summary>
-/// <param name="pool">global model pool</param>
-void ObjectManager::pushModel()
-{
-    // load futures
-    auto it = futureGameObjectslist.begin();
-    while (it != futureGameObjectslist.end()) { // iter over futures
-        if (it->wait_for(std::chrono::seconds(0)) == std::future_status::ready) { // check if future is ready
-            
-            // iter over models in future
-            for (futureObject object : it->get()) { 
-                if (object.type != ModelType::UNDEFINED_MODEL) {
-
-                     // get gameobject
-                     auto* gameObject = dynamic_cast<GameObjectModel*>(get(object.id));
-
-                     if (!gameObject || !object.modelID) {
-                         continue;
-                     }
-
-                     if (object.instances.size() > 0) {
-                         gameObject->setMultipleInstances(object.instances);
-                     }
-                     
-                     createDescriptorSet(assetManager.models().get(object.modelID));
-                     gameObject->setModel(object.modelID);
-
-                     gameObject->setModelType(object.type);
-
-                     gameObject->createPoseResources(*globalPool);
-
-                     gameObject->show = true;
-                }
-            }
-
-            it = futureGameObjectslist.erase(it); // remove from futures
-        }
-        else {
-            ++it;
-        }
     }
 }
-
-void ObjectManager::pushGameObject(std::unique_ptr<GameObject> gameObject)
-{
-    GameObject::id_t id = gameObject->getId();
-    std::string name = gameObject->getName();
-    std::type_index type = typeid(*gameObject);
-    gameObject->setup(this);
-
-    gameObjects->emplace(id, std::move(gameObject));
-
-    // Store pointer in name map
-    if (!name.empty()) {
-        gameObjectsByName[name] = gameObjects->at(id).get();
-    }
-    // Store in type-indexed list
-    gameObjectsByType[type].push_back(gameObjects->at(id).get());
-}
-
-void ObjectManager::loadObjectAsync(Device& device, AssetManager& assets, const std::string& filePath, TransformComponent transform, const std::string& name)
-{
-    auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assetManager);
-    gameObject->transform = transform; 
-    gameObject->setName(name.empty() ? filePath : name);
-    gameObject->modelPath = filePath;
-    GameObject::id_t id = gameObject->getId(); 
-
-    pushGameObject(std::move(gameObject));
-
-    pushFuture(std::async(std::launch::async, [filePath, &device, &assets, id]() {
-        ModelBuilder builder(device, assets);
-        ModelManager::ModelID modelId = assets.models().create(builder.fromFile(filePath));
-
-        return std::vector<futureObject>{ futureObject{ modelId ? ModelType::GLTF_MODEL : ModelType::UNDEFINED_MODEL, id, { }, true, modelId }};
-        }));
-}
-
-void ObjectManager::loadObjectAsync(Device& device, AssetManager& assets, const std::string& filePath, const std::string filePathTexture, TransformComponent transform, const std::string& name)
-{
-    auto gameObject = GameObjectFactory::createGameObject<GameObjectModel>(device, assets);
-    gameObject->transform = transform;  
-    gameObject->setName(name.empty() ? filePath : name); 
-
-    gameObject->modelPath = filePath;
-    gameObject->texturePath = filePathTexture;
-    
-    GameObject::id_t id = gameObject->getId();
-
-    pushGameObject(std::move(gameObject)); 
-
-    pushFuture( std::async(std::launch::async, [filePath, filePathTexture, &device, &assets, id]()
-        {
-            TextureBuilder textureBuilder(device);
-            auto texture = assets.textures().create(textureBuilder.fromFile(filePathTexture));
-
-            ModelBuilder builder(device, assets);
-            ModelManager::ModelID modelId = assets.models().create(builder.fromFile(filePath).withTexture(texture));
-
-            return std::vector<futureObject> {futureObject{ modelId ? ModelType::OBJ_MODEL : ModelType::UNDEFINED_MODEL, id, {}, true, modelId }};
-        }) 
-     );
-}
-
-ObjectManager::ObjectManager(Device& device, AssetManager& assetManager) : device{ device }, assetManager{ assetManager }
-{
-    globalPool = DescriptorPool::Builder(device)
-        .setMaxSets(Swap_chain::MAX_FRAMES_IN_FLIGHT * 320)
-        .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Swap_chain::MAX_FRAMES_IN_FLIGHT * 640)
-        .addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, Swap_chain::MAX_FRAMES_IN_FLIGHT * 640)
-        .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Swap_chain::MAX_FRAMES_IN_FLIGHT * 640)
-        .build();
-
-    gameObjects = std::make_shared<GameObject::Map>();
-    loadScene(currentScene);
-};
-

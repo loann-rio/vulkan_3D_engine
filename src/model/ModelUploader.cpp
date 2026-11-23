@@ -2,6 +2,7 @@
 
 #include "../Textures/TextureBuilder.h"
 #include "../assetManager/AssetManager.h"
+#include "../assetManager/TextureManager.h"
 #include "../base/Buffer.h"
 #include "../base/Device.h"
 
@@ -9,7 +10,6 @@
 #include "ModelAsset.h"
 #include "Vertex/IVertexData.h"
 	
-#include <exception>
 #include <cstdint>
 #include <memory>
 #include <utility>
@@ -18,23 +18,26 @@
 #include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <string>
+#include <stdexcept>
+#include <glm/fwd.hpp>
 
 namespace {
-	TextureManager::TextureID createTexture(Device& device, AssetManager& assets, const DecodedTexture& texture)
+	TextureManager::TextureID createTexture(Device& device, AssetManager& assets, const std::string& targetScene, const DecodedTexture& texture)
 	{
 		TextureBuilder builder(device);
 
 		// embedded image, already decoded to RGBA8 by the decoder
 		if (!texture.pixels.empty()) {
 			uint32_t mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texture.width, texture.height)))) + 1;
-			return assets.textures().create(builder.fromCharBuffer(texture.pixels, texture.width, texture.height, 4, mipLevels));
+			return assets.textures(targetScene).create(builder.fromCharBuffer(texture.pixels, texture.width, texture.height, 4, mipLevels));
 		}
 
-		return assets.textures().create(builder.fromFile(texture.path));
+		return assets.textures(targetScene).create(builder.fromFile(texture.path));
 	}
 }
 
-ModelLOD ModelUploader::uploadDecodedModel(Device& device, AssetManager& assets, DecodedModel& obj)
+ModelLOD ModelUploader::uploadDecodedModel(Device& device, AssetManager& assets, const std::string& targetScene, DecodedModel& obj)
 {
 	std::unique_ptr<Buffer> vertexBuffer = createVertexBuffers(device, obj.vertices.get());
 	std::unique_ptr<Buffer> indexBuffer = createIndexBuffers(device, obj.indices);
@@ -47,7 +50,7 @@ ModelLOD ModelUploader::uploadDecodedModel(Device& device, AssetManager& assets,
 	asset.vertexStride = obj.vertices->stride();
 	asset.primitives = obj.primitives;
 	asset.aabb = obj.aabb;
-	asset.materials = uploadMaterialsTextures(device, assets, obj.materials);
+	asset.materials = uploadMaterialsTextures(device, assets, targetScene, obj.materials);
 
 	return asset;
 }
@@ -200,7 +203,7 @@ void ModelUploader::uploadShaderMaterials(Device& device, ModelLOD& lod)
 	device.copyBuffer(stagingBuffer.getBuffer(), lod.materialBuffer->getBuffer(), bufferSize);
 }
 
-std::vector<Material> ModelUploader::uploadMaterialsTextures(Device& device, AssetManager& assets, std::vector<DecodedMaterial> materials)
+std::vector<Material> ModelUploader::uploadMaterialsTextures(Device& device, AssetManager& assets, const std::string& targetScene, std::vector<DecodedMaterial> materials)
 {
 	std::vector<Material> outMaterials{};
 
@@ -208,21 +211,21 @@ std::vector<Material> ModelUploader::uploadMaterialsTextures(Device& device, Ass
 		Material targetMat;
 
 		if (!mat.albedoTexture.empty())
-			targetMat.albedoTexture = createTexture(device, assets, mat.albedoTexture);
+			targetMat.albedoTexture = createTexture(device, assets, targetScene, mat.albedoTexture);
 		else
-			targetMat.albedoTexture = createTexture(device, assets, DecodedTexture("assets/textures/whiteTexture.jpg"));
+			targetMat.albedoTexture = createTexture(device, assets, targetScene, DecodedTexture("assets/textures/whiteTexture.jpg"));
 
 		if (!mat.normalTexture.empty())
-			targetMat.normalTexture = createTexture(device, assets, mat.normalTexture);
+			targetMat.normalTexture = createTexture(device, assets, targetScene, mat.normalTexture);
 
 		if (!mat.metallicRoughnessTexture.empty())
-			targetMat.metallicRoughnessTexture = createTexture(device, assets, mat.metallicRoughnessTexture);
+			targetMat.metallicRoughnessTexture = createTexture(device, assets, targetScene, mat.metallicRoughnessTexture);
 
 		if (!mat.occlusionTexture.empty())
-			targetMat.occlusionTexture = createTexture(device, assets, mat.occlusionTexture);
+			targetMat.occlusionTexture = createTexture(device, assets, targetScene, mat.occlusionTexture);
 
 		if (!mat.emissiveTexture.empty())
-			targetMat.emissiveTexture = createTexture(device, assets, mat.emissiveTexture);
+			targetMat.emissiveTexture = createTexture(device, assets, targetScene, mat.emissiveTexture);
 
 		targetMat.metallic = mat.metallic;
 		targetMat.roughness = mat.roughness;

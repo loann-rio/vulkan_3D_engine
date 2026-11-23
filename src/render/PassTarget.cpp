@@ -1,5 +1,18 @@
 #include "PassTarget.h"
 
+#include <algorithm>
+#include <cassert>
+#include <cstdint>
+#include <stdexcept>
+#include <vector>
+#include <vulkan/vulkan_core.h>
+
+#include "../assetManager/AssetManager.h"
+#include "../assetManager/TextureManager.h"
+#include "../base/Device.h"
+#include "../base/Swap_chain.h"
+#include "../Textures/TextureBuilder.h"
+
 PassTarget::PassTarget(Device& device_, Swap_chain& swapchain_, AssetManager& assets_, VkExtent2D extent_, bool hasDepth, bool hasColor, uint16_t imageCount, bool isFinal) : device(device_), extent(extent_), assets(assets_), hasColor(hasColor), hasDepth(hasDepth) {
 
     if (hasColor)
@@ -42,10 +55,10 @@ void PassTarget::createLocalFramebuffers(VkRenderPass renderPass)
     {
         std::vector<VkImageView> attachments;
         if (color.size())
-            attachments.push_back(assets.textures().get(color[i])->view());
+            attachments.push_back(assets.textures("fix_elements").get(color[i])->view());
 
         if (depth.size())
-            attachments.push_back(assets.textures().get(depth[i])->view());
+            attachments.push_back(assets.textures("fix_elements").get(depth[i])->view());
 
         VkFramebufferCreateInfo framebufferInfo = {};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -82,14 +95,14 @@ void PassTarget::cleanupTargetTextures()
     // clean color textures
     for (auto texId : color) {
         if (texId != TextureManager::InvalidTextureID) {
-            assets.textures().remove(texId);
+            assets.textures("fix_elements").remove(texId);
         }
     }
 
     // clean depth textures
     for (auto texId : depth) {
         if (texId != TextureManager::InvalidTextureID) {
-            assets.textures().remove(texId);
+            assets.textures("fix_elements").remove(texId);
         }
     }
 }
@@ -151,7 +164,7 @@ void PassTarget::createColorTargetTexture(uint32_t imageCount, VkFormat format, 
 
         if (swapImage.size())
         {
-            color[i] = assets.textures().create(
+            color[i] = assets.textures("fix_elements").create(
                 builder.fromTextureInfo(
                     swapImage[i],
                     { extent.width, extent.height },
@@ -165,7 +178,7 @@ void PassTarget::createColorTargetTexture(uint32_t imageCount, VkFormat format, 
         }
         else
         {
-            color[i] = assets.textures().create(
+            color[i] = assets.textures("fix_elements").create(
                 builder.fromTextureInfo(
                     imageInfo, 
                     viewInfo, 
@@ -228,7 +241,7 @@ void PassTarget::createDepthTargetTexture(uint32_t imageCount, VkFormat format)
         samplerInfo.maxLod = 100.0f;
 
         TextureBuilder builder(device);
-        depth[i] = assets.textures().create(
+        depth[i] = assets.textures("fix_elements").create(
             builder.fromTextureInfo(
                 imageInfo, viewInfo,
                 samplerInfo, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
@@ -240,9 +253,9 @@ void PassTarget::createImageInfo()
 {
     colorImageInfo.resize(color.size());
     for (uint16_t i = 0; i < color.size(); i++)
-        colorImageInfo[i] = assets.textures().get(color[i])->getImageInfo();
+        colorImageInfo[i] = assets.textures("fix_elements").get(color[i])->getImageInfo();
 
     depthImageInfo.resize(depth.size());
     for (uint16_t i = 0; i < depth.size(); i++)
-        depthImageInfo[i] = assets.textures().get(depth[i])->getImageInfo();
+        depthImageInfo[i] = assets.textures("fix_elements").get(depth[i])->getImageInfo();
 }

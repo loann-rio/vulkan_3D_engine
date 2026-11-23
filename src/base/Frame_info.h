@@ -27,7 +27,6 @@ struct SpotLightUbo {
 struct GlobalUbo {
 	glm::mat4 projection{ 1.0f };
 	glm::mat4 view{ 1.0f };
-	glm::mat4 inverseView{ 1.f };
 	glm::vec4 ambientLightColor{ 1.f, 1.f,  1.f, .1f };
 	glm::vec4 globalLightDir{ 1.f, -3.f, 0.5f, 0.f };
 	glm::vec3 lightPos{ 0.f, 0.f, 0.f };

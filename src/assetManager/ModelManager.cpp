@@ -1,6 +1,13 @@
 #include "ModelManager.h"
 
+#include "../model/ModelAsset.h"
 #include "../model/ModelBuilder.h"
+
+#include <mutex>
+#include <memory>
+#include <utility>
+#include <unordered_map>
+#include <string>
 
 ModelManager::ModelManager()
 {
@@ -21,7 +28,7 @@ ModelManager::ModelID ModelManager::create(ModelBuilder& builder)
         return key;
     }
 
-    std::unique_ptr<ModelAsset> model = builder.build();
+    std::unique_ptr<ModelAsset> model = builder.build(currentTargetScene);
 
     if (!model) {
         return 0; // failed to build model

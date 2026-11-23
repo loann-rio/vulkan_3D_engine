@@ -14,12 +14,18 @@
 // std
 #include <array>
 #include <chrono>
-#include <string>
-#include <thread>
-
+#include <cstdint>
+#include <memory>
+#include <iostream>
+#include <glm/fwd.hpp>
+#include "objects/GameObject.h"
+#include <vector>
+#include <GLFW/glfw3.h>
+#include "objects/objectManager.h"
+#include "render/RenderPasses/DepthPass.h"
 
 Engine::Engine() { 
-    objectManager.startLoadModel(); 
+    objectManager.loadHardcodedObjects(); 
     renderer.generateSkybox("assets/skybox/citrus_orchard_puresky_4k.hdr", "testSkybox", objectManager);
 }
 
@@ -37,7 +43,7 @@ void Engine::run()
     auto currentTime = std::chrono::high_resolution_clock::now();
 	float frameTime = 0.1f;
 
-    auto* textureObject = dynamic_cast<GameObjectModel*>(objectManager.get("cubemap1"));
+    auto* textureObject = dynamic_cast<GameObjectModel*>(assetManager.gameObject().findByName("cubemap1"));
 
     device.waitQueueIdle(device.presentQueue());
 	while (!window.shouldClose())
@@ -45,45 +51,53 @@ void Engine::run()
 		glfwPollEvents();
 
         // add loaded async model to gameObjectmap 
-        objectManager.pushModel();
+        objectManager.updateObjectManager();
 
         // calculate frame time
         auto newTime = std::chrono::high_resolution_clock::now();
         frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
         currentTime = newTime;
-        
-        //// move camera on event ////
-        {
-            if (!renderer.isUiSelected())
-                cameraController.moveInPlaneXZ(window.getGLFWwindow(), frameTime, objectManager.get(objectManager.mainCamera));
-            dynamic_cast<GameObjectCamera*>(objectManager.get(objectManager.mainCamera))->updateCameraView();
-        }
 
-        /////// start frame ///////       
         int frameIndex = renderer.getFrameIndex();
 
-        /////// update objects ///////
-
-        // loop on games objects
-        objectManager.updateGameObject(frameTime);        
+        assetManager.gameObject().update(frameTime);        
 
         // update camera
+        auto camera = dynamic_cast<GameObjectCamera*>(assetManager.gameObject().findByName(objectManager.mainCamera));
+
+        if (!camera) {
+            auto camera = GameObjectFactory::createGameObject<GameObjectCamera>(
+                device,
+                assetManager,
+                glm::radians(50.0f),
+                1.0f,
+                0.1f,
+                100.0f
+            );
+
+            camera->setName("mainCamera");
+            objectManager.pushGameObject(std::move(camera), objectManager.currentScene);   
+        }
+
         {
-            auto* camObj = dynamic_cast<GameObjectCamera*>(objectManager.get(objectManager.mainCamera));
-            if (camObj->camera->aspectRatio != renderer.getAspectRatio()) {
+            if (!renderer.isUiSelected())
+                cameraController.moveInPlaneXZ(window.getGLFWwindow(), frameTime, camera);
+            camera->updateCameraView();
+
+            if (camera->camera->aspectRatio != renderer.getAspectRatio()) {
                 std::cout << "wrong aspect ratio \n";
-                camObj->camera->setPerspectiveProjection(renderer.getAspectRatio());
+                camera->camera->setPerspectiveProjection(renderer.getAspectRatio());
             }
 
-            ubo.projection = camObj->camera->getProjection();
-            ubo.view = camObj->camera->getView(); 
-            ubo.inverseView = camObj->camera->getInverseView();
-            ubo.lightPos = camObj->transform.translation; 
+            ubo.projection = camera->camera->getProjection();
+            ubo.view = camera->camera->getView();
+            ubo.lightPos = glm::vec3(camera->getTransformMat()[3]);
         }
 
         // update pointLight 
         {
-            std::vector<GameObjectPointLight*> pointLigths = objectManager.getByType<GameObjectPointLight>();
+            std::vector<GameObjectPointLight*> pointLigths = assetManager.gameObject().getByType<GameObjectPointLight>();
+
             uint16_t i = 0;
             for (auto lightObj : pointLigths) {
                 if (lightObj->transform.color.w)
@@ -102,7 +116,7 @@ void Engine::run()
         // update spotLight
         {
             uint16_t i = 0; 
-            std::vector<GameObjectSpotLight*> spotLigths = objectManager.getByType<GameObjectSpotLight>();
+            std::vector<GameObjectSpotLight*> spotLigths = assetManager.gameObject().getByType<GameObjectSpotLight>();
             for (auto lightObj : spotLigths) {
                 if (lightObj->transform.color.w != 0)
                     spotLightUbo.spotLight[i++] = lightObj->getSpotLightInfo(true);
@@ -122,11 +136,11 @@ void Engine::run()
             0,
             frameTime,
             spotLightUbo.numLights,
-            objectManager.get(objectManager.mainCamera)->transform.translation,
-            objectManager.getByType<GameObjectModel>(),
+            assetManager.gameObject().findByName(objectManager.mainCamera)->transform.translation,
+            assetManager.gameObject().getByType<GameObjectModel>(),
             std::vector<ComputeObject*>{},
             frustrumPlanesList,
-            dynamic_cast<GameObjectCamera*>(objectManager.get(objectManager.mainCamera))->getFrustumPlanes(),
+            camera->getFrustumPlanes(),
         };
 
         /////// render frame ///////
