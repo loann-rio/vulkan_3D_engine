@@ -2,16 +2,18 @@
 
 #include <vector>
 #include <future>
-#include <typeindex>
 #include <cstdint>
+#include <memory>
+#include <string>
 #include <../json.hpp>
 
 #include "GameObject.h"
 
+#include "../assetManager/ModelManager.h"
 #include "../assetManager/AssetManager.h"
 #include "../model/ModelAsset.h"
 #include "../base/descriptors.h"
-#include "../Scene/SceneLoader.h"
+#include "../base/Device.h"
 
 using json = nlohmann::json;
 

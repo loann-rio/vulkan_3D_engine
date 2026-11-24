@@ -236,7 +236,7 @@ void BasicUI::objectSelectionWindow(std::vector<std::string> listObjectsName, Ob
 
     if (ImGui::Button("load scene"))
     {
-        if (assets.scenes.find(newScene) == assets.scenes.end())
+        if (assets.hasScene(std::string(newScene)))
 		{    
             assets.createNewScene(newScene);
             SceneLoader{ device, assets, *manager }.load(std::string(newScene));

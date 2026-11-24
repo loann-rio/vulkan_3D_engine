@@ -35,12 +35,16 @@ ifeq ($(OS),Windows_NT)
     LDFLAGS   := -L"$(VULKAN_SDK)/Lib" \
                  -Lexternal/glfw-3.3.9.bin.WIN64/lib-mingw-w64 \
                  -Lexternal/KTX/lib
+    # link the GCC runtime statically so the exe runs outside an MSYS2 shell
+    LDFLAGS   += -static-libgcc -static-libstdc++
     LIBS      := -lvulkan-1 -lglfw3 -lktx -lole32 -luuid -lcomdlg32 -lgdi32 -lshell32
-    MKDIR      = if not exist "$(subst /,\,$(1))" mkdir "$(subst /,\,$(1))"
-    RMDIR      = if exist "$(subst /,\,$(1))" rmdir /s /q "$(subst /,\,$(1))"
+    LIBS      += -Wl,-Bstatic -lwinpthread -Wl,-Bdynamic
+    # recipes run through sh (MSYS2 / Git Bash), so use POSIX commands
+    MKDIR      = mkdir -p $(1)
+    RMDIR      = rm -rf $(1)
     DLLS      := $(BUILD_DIR)/ktx.dll
-    COPY       = copy /y "$(subst /,\,$(1))" "$(subst /,\,$(2))" >nul
-    RUN        = $(subst /,\,$(BUILD_DIR)/$(TARGET))
+    COPY       = cp -f $(1) $(2)
+    RUN        = ./$(BUILD_DIR)/$(TARGET)
 else
     GLSLC     := glslc
     SOURCES   += external/nativefiledialog-master/src/nfd_gtk.c

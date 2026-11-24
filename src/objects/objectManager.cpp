@@ -7,10 +7,28 @@
 #include "../Textures/TextureObject.h"
 #include "../Textures/TextureBuilder.h"
 
+#include "../assetManager/AssetManager.h"
+#include "../assetManager/ModelManager.h"
+
+#include "../base/descriptors.h"
+#include "../base/Device.h"
 #include "../base/Swap_chain.h"
+
+#include "../Scene/SceneLoader.h"
+
+#include "GameObject.h"
 
 #include <chrono>
 #include <utility>
+#include <typeindex>
+#include <cstdlib>
+#include <future>
+#include <iostream>
+#include <memory>
+#include <string>
+#include <vector>
+
+#include <vulkan/vulkan_core.h>
 
 void ObjectManager::loadHardcodedObjects()
 {
@@ -341,46 +359,45 @@ ObjectManager::ObjectManager(Device& device, AssetManager& assetManager) : devic
 void ObjectManager::createDescriptorSet(ModelAsset* model, const std::string& targetScene)
 {
 
-    for (auto& lod : model->lods) {
+    auto& mesh = model->mesh;
 
-        if (lod.materialBuffer) {
-            auto textureSetLayout = DescriptorSetLayout::Builder(device)
-                .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, MAX_MODEL_TEXTURES)
-                .addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
-                .build();
+    if (mesh.materialBuffer) {
+        auto textureSetLayout = DescriptorSetLayout::Builder(device)
+            .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, MAX_MODEL_TEXTURES)
+            .addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
+            .build();
 
-            VkDescriptorImageInfo firstInfo = assetManager.textures(targetScene).get(lod.textures[0])->getImageInfo();
-            std::vector<VkDescriptorImageInfo> texturesInfo(MAX_MODEL_TEXTURES, firstInfo);
-            for (size_t i = 0; i < lod.textures.size(); i++)
-                texturesInfo[i] = assetManager.textures(targetScene).get(lod.textures[i])->getImageInfo();
+        VkDescriptorImageInfo firstInfo = assetManager.textures(targetScene).get(mesh.textures[0])->getImageInfo();
+        std::vector<VkDescriptorImageInfo> texturesInfo(MAX_MODEL_TEXTURES, firstInfo);
+        for (size_t i = 0; i < mesh.textures.size(); i++)
+            texturesInfo[i] = assetManager.textures(targetScene).get(mesh.textures[i])->getImageInfo();
 
-            VkDescriptorBufferInfo materialBufferInfo = lod.materialBuffer->descriptorInfo();
+        VkDescriptorBufferInfo materialBufferInfo = mesh.materialBuffer->descriptorInfo();
 
-            lod.descriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
-            for (auto& set : lod.descriptorSet)
-            {
-                DescriptorWriter(*textureSetLayout, *globalPool)
-                    .writeImage(0, texturesInfo.data(), MAX_MODEL_TEXTURES)
-                    .writeBuffer(1, &materialBufferInfo)
-                    .build(set);
-            }
-            continue;
-        }
-
-        for (auto& material : lod.materials)
+        mesh.descriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT);
+        for (auto& set : mesh.descriptorSet)
         {
-            auto textureSetLayout = DescriptorSetLayout::Builder(device)
-                .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-                .build();
+            DescriptorWriter(*textureSetLayout, *globalPool)
+                .writeImage(0, texturesInfo.data(), MAX_MODEL_TEXTURES)
+                .writeBuffer(1, &materialBufferInfo)
+                .build(set);
+        }
+        return;
+    }
 
-            material.descriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT * lod.materials.size());
-            for (int i = 0; i < material.descriptorSet.size(); i++)
-            {
-                auto imageInfo = assetManager.textures(targetScene).get(material.albedoTexture)->getImageInfo();
-                DescriptorWriter(*textureSetLayout, *globalPool)
-                    .writeImage(0, &imageInfo)
-                    .build(material.descriptorSet[i]);
-            }
+    for (auto& material : mesh.materials)
+    {
+        auto textureSetLayout = DescriptorSetLayout::Builder(device)
+            .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+            .build();
+
+        material.descriptorSet.resize(Swap_chain::MAX_FRAMES_IN_FLIGHT * mesh.materials.size());
+        for (int i = 0; i < material.descriptorSet.size(); i++)
+        {
+            auto imageInfo = assetManager.textures(targetScene).get(material.albedoTexture)->getImageInfo();
+            DescriptorWriter(*textureSetLayout, *globalPool)
+                .writeImage(0, &imageInfo)
+                .build(material.descriptorSet[i]);
         }
     }
 }

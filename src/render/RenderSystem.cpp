@@ -244,7 +244,7 @@ void RenderSystem::bindGlobalSets(VkCommandBuffer& commandBuffer, std::vector<Vk
 void RenderSystem::bindModel(VkCommandBuffer& commandBuffer, ModelAsset* model, GameObjectModel& obj, uint16_t frameIndex)
 {
 
-	VkBuffer vertexBuffer = model->lods[0].vertexBuffer->getBuffer();
+	VkBuffer vertexBuffer = model->mesh.vertexBuffer->getBuffer();
 
 	if (hasInstanceBinding) {
 		Buffer* instanceBuffer = obj.getFrameInstancesBuffer(frameIndex);
@@ -259,7 +259,7 @@ void RenderSystem::bindModel(VkCommandBuffer& commandBuffer, ModelAsset* model, 
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer, &offset);
 	}
 
-	vkCmdBindIndexBuffer(commandBuffer, model->lods[0].indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
+	vkCmdBindIndexBuffer(commandBuffer, model->mesh.indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 }
 
 void RenderSystem::bindTextures(VkCommandBuffer& commandBuffer, ModelAsset* model, Primitive& primitive, uint16_t frameIndex) const
@@ -268,7 +268,7 @@ void RenderSystem::bindTextures(VkCommandBuffer& commandBuffer, ModelAsset* mode
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
 		pipelineLayout,
 		modelDescriptorSetIndex, 1,
-		&model->lods[0].materials[primitive.materialIndex].descriptorSet[frameIndex],
+		&model->mesh.materials[primitive.materialIndex].descriptorSet[frameIndex],
 		0,
 		nullptr);
 }
@@ -279,7 +279,7 @@ void RenderSystem::bindMaterialBuffer(VkCommandBuffer& commandBuffer, ModelAsset
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
 		pipelineLayout,
 		modelDescriptorSetIndex, 1,
-		&model->lods[0].descriptorSet[frameIndex],
+		&model->mesh.descriptorSet[frameIndex],
 		0,
 		nullptr);
 }
@@ -392,13 +392,13 @@ void RenderSystem::renderGameObjects(VkCommandBuffer& commandBuffer, FrameInfo& 
 		bindModel(commandBuffer, modelAsset, *obj, frameInfo.frameIndex);
 
 		if (useMaterialBuffer) {
-			if (modelAsset->lods[0].descriptorSet.empty()) continue;
+			if (modelAsset->mesh.descriptorSet.empty()) continue;
 			bindMaterialBuffer(commandBuffer, modelAsset, frameInfo.frameIndex);
 		}
 				
 		if (usePoseBuffer && !bindPose(commandBuffer, *obj, frameInfo.frameIndex)) continue;
 
-		for (auto primitive : modelAsset->lods[0].primitives)
+		for (auto primitive : modelAsset->mesh.primitives)
 		{
 			if (!useMaterialBuffer)
 				bindTextures(commandBuffer, modelAsset, primitive, frameInfo.frameIndex);
@@ -432,7 +432,7 @@ void RenderSystem::renderGameObjectsDepth(VkCommandBuffer& commandBuffer, FrameI
 
 		if (usePoseBuffer && !bindPose(commandBuffer, *obj, frameInfo.frameIndex)) continue;
 
-		for (auto primitive : modelAsset->lods[0].primitives)
+		for (auto primitive : modelAsset->mesh.primitives)
 		{
 			drawDepth(commandBuffer, modelAsset, primitive, obj->gpuObjectIndex, lightIndex, obj->getInstanceCount());
 		}

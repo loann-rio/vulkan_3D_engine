@@ -69,6 +69,19 @@ src/
 3. Open the project in Visual Studio and make.
 4. Run the executable. The engine will create a default scene if none exists.
 
+#### Building with make (Windows, MSYS2)
+
+1. Install [MSYS2](https://www.msys2.org/) (`winget install MSYS2.MSYS2`), then in an MSYS2 shell:
+   `pacman -S --needed mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-make`
+2. Copy `C:\msys64\ucrt64\bin\mingw32-make.exe` to `make.exe` in the same folder, and add `C:\msys64\ucrt64\bin` and `C:\msys64\usr\bin` (for `sh`) to your PATH.
+   Use this native make, not MSYS2's `make` package: that one loses environment variables when started from Git Bash.
+3. From any terminal (PowerShell, Git Bash, MSYS2 UCRT64), at the repo root:
+   - `make -j8`: builds `build/vulkan_engine.exe`, copies `ktx.dll` and compiles the shaders
+   - `make run`: builds and launches the engine (run it from the repo root so `assets/` and `shaders/` resolve)
+   - `make clean`: removes `build/`
+
+The Vulkan SDK must be installed with `VULKAN_SDK` set. On Linux, the same Makefile uses `pkg-config` for glfw3, vulkan and gtk+-3.0, and expects libktx to be installed.
+
 ### Running
 
 - The main window will open with a default camera and UI.

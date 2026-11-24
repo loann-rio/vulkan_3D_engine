@@ -219,9 +219,6 @@
     <ClCompile Include="src\model\Animation\Animation.cpp">
       <Filter>model\animation</Filter>
     </ClCompile>
-    <ClCompile Include="src\assetManager\SceneManager.cpp">
-      <Filter>assetManager</Filter>
-    </ClCompile>
     <ClCompile Include="src\assetManager\GameObjectManager.cpp">
       <Filter>assetManager</Filter>
     </ClCompile>
@@ -436,9 +433,6 @@
     <ClInclude Include="src\model\Animation\Animation.h">
       <Filter>model\animation</Filter>
     </ClInclude>
-    <ClInclude Include="src\assetManager\SceneManager.h">
-      <Filter>assetManager</Filter>
-    </ClInclude>
     <ClInclude Include="src\assetManager\GameObjectManager.h">
       <Filter>assetManager</Filter>
     </ClInclude>
@@ -447,6 +441,9 @@
     </ClInclude>
     <ClInclude Include="src\Scene\SceneSaver.h">
       <Filter>Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="src\assetManager\ThreadPool.h">
+      <Filter>assetManager</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -13,9 +13,9 @@ public:
 	ModelUploader() = default;
 	~ModelUploader() = default;
 
-	static ModelLOD uploadDecodedModel(Device& device, AssetManager& assets, const std::string& targetScene, DecodedModel& obj);
+	static Mesh uploadDecodedModel(Device& device, AssetManager& assets, const std::string& targetScene, DecodedModel& obj);
 
-	static void uploadShaderMaterials(Device& device, ModelLOD& lod);
+	static void uploadShaderMaterials(Device& device, Mesh& lod);
 
 private:
 	static std::unique_ptr<Buffer> createVertexBuffers(Device& device, IVertexData* vertices);

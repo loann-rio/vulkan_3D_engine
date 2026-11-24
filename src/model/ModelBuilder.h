@@ -3,8 +3,11 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <cstdint>
 
 #include "ModelAsset.h"
+#include "Decoder/IModelDecoder.h"
+#include "../assetManager/TextureManager.h"
 
 
 class Device;
@@ -36,12 +39,11 @@ private:
     //// Build ////
     std::unique_ptr<ModelAsset> build(const std::string& targetScene);
     
-    std::unique_ptr<ModelAsset> buildObj(const std::string& targetScene);
-    std::unique_ptr<ModelAsset> buildGlTF(const std::string& targetScene);
-    std::unique_ptr<ModelAsset> buildDecodedModel(const std::string& targetScene);
-
-    std::vector<std::string> modelPath{};
-    std::vector<TextureManager::TextureID> textures{};
+    DecodedModel buildObj() const;
+    DecodedModel buildGlTF() const;
+    
+    std::string modelPath = "";
+    TextureManager::TextureID texture = -1;
 
     Device& device;
     AssetManager& assets;

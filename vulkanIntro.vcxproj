@@ -182,7 +182,6 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClCompile Include="external\nativefiledialog-master\src\nfd_win.cpp" />
     <ClCompile Include="src\assetManager\ModelManager.cpp" />
     <ClCompile Include="src\assetManager\GameObjectManager.cpp" />
-    <ClCompile Include="src\assetManager\SceneManager.cpp" />
     <ClCompile Include="src\assetManager\TextureManager.cpp" />
     <ClCompile Include="src\base\ComputePipeline.cpp" />
     <ClCompile Include="src\Engine.cpp" />
@@ -241,8 +240,8 @@ comdlg32.lib;ktx.lib</AdditionalDependencies>
     <ClInclude Include="src\assetManager\AssetManager.h" />
     <ClInclude Include="src\assetManager\ModelManager.h" />
     <ClInclude Include="src\assetManager\GameObjectManager.h" />
-    <ClInclude Include="src\assetManager\SceneManager.h" />
     <ClInclude Include="src\assetManager\TextureManager.h" />
+    <ClInclude Include="src\assetManager\ThreadPool.h" />
     <ClInclude Include="src\base\ComputePipeline.h" />
     <ClInclude Include="src\Engine.h" />
     <ClInclude Include="src\base\Buffer.h" />

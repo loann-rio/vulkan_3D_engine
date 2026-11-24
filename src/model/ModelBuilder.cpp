@@ -4,10 +4,25 @@
 #include <stdexcept>
 #include <iostream>
 #include <random>
+#include <cctype>
+#include <cstdint>
+#include <exception>
+#include <memory>
+#include <string>
+#include <type_traits>
+#include <utility>
 
 #include "Decoder/ObjModelDecoder.h"
 #include "Decoder/GlTFModelDecoder.h"
+#include "Decoder/IModelDecoder.h"
+
 #include "ModelUploader.h"
+#include "ModelAsset.h"
+
+#include "../assetManager/AssetManager.h"
+#include "../assetManager/TextureManager.h"
+#include "../base/Device.h"
+#include "../Textures/TextureBuilder.h"
 
 namespace {
 
@@ -45,7 +60,7 @@ ModelBuilder& ModelBuilder::fromFile(const std::string& path)
         source = SourceType::GlTF;
     }
 
-    modelPath.push_back(path);
+    modelPath = path;
     return *this;
 }
 
@@ -59,7 +74,7 @@ ModelBuilder& ModelBuilder::fromObj(const std::string& path)
         throw std::runtime_error("not compatible type");
 
     source = SourceType::Obj;
-    modelPath.push_back(path);
+    modelPath = path;
     return *this;    
 }
 
@@ -73,7 +88,7 @@ ModelBuilder& ModelBuilder::fromGlTF(const std::string& path)
         throw std::runtime_error("not compatible type");
 
     source = SourceType::GlTF;
-    modelPath.push_back(path);
+    modelPath = path;
     return *this;
 }
 
@@ -87,9 +102,9 @@ ModelBuilder& ModelBuilder::fromDecodedModel(DecodedModel decodedModelParam)
     return *this;
 }
 
-ModelBuilder& ModelBuilder::withTexture(TextureManager::TextureID texture)
+ModelBuilder& ModelBuilder::withTexture(TextureManager::TextureID _texture)
 {
-    textures.push_back(texture);
+    texture = _texture;
     return *this;
 }
 
@@ -118,28 +133,29 @@ uint64_t ModelBuilder::hash() const
         return h;
     }
 
-    for (auto path: modelPath)
-        combine(h, strHash(path));
-
-    for (auto tex : textures)
-        combine(h, intHash(tex));
+    combine(h, strHash(modelPath));
+    combine(h, intHash(texture));
 
     return h;
 }
 
 std::unique_ptr<ModelAsset> ModelBuilder::build(const std::string& targetScene)
 {
+    std::unique_ptr<ModelAsset> fullModel = std::make_unique<ModelAsset>();
+
+    DecodedModel decodedModel;
+
     try {
         switch (source)
         {
             case ModelBuilder::SourceType::GlTF:
-                return buildGlTF(targetScene);
+                decodedModel = buildGlTF();
 
             case ModelBuilder::SourceType::Obj:
-                return buildObj(targetScene);
+                decodedModel =  buildObj();
 
 			case ModelBuilder::SourceType::Decoded:
-				return buildDecodedModel(targetScene);        
+                decodedModel = std::move(decodedModel);
 
             case ModelBuilder::SourceType::None:
             default:
@@ -152,135 +168,56 @@ std::unique_ptr<ModelAsset> ModelBuilder::build(const std::string& targetScene)
         std::cerr << std::string("ModelBuilder: build failed: ") + e.what() << "\n";
         return nullptr;
     }
-}
 
-std::unique_ptr<ModelAsset> ModelBuilder::buildObj(const std::string& targetScene)
-{
-    if (modelPath.empty()) {
-        throw std::runtime_error("path cannot be empty for obj");
-    }
+    Mesh model = ModelUploader::uploadDecodedModel(device, assets, targetScene, decodedModel);
 
-    std::unique_ptr<ModelAsset> fullModel = std::make_unique<ModelAsset>();
-
-    size_t i = 0;
-    for (auto modelFilePath : modelPath)
-    {
-        if (modelFilePath.empty()) {
-            throw std::runtime_error("path cannot be empty for obj");
-        }
-
-        ObjModelDecoder decoder;
-        if (!decoder.canDecode(modelFilePath)) {
-            throw std::runtime_error("obj not suported by decoder");
-        }
-
-        DecodedModel decodedModel = decoder.decode(modelFilePath);
-
-
-        ModelLOD model = ModelUploader::uploadDecodedModel(device, assets, targetScene, decodedModel);
-
-        if (i < textures.size())
-        {
-            Material mat;
-            mat.albedoTexture = textures[i++];
-            model.materials.push_back(mat);
-        }
-
-        if (model.materials.empty()) {
-            Material mat;
-            TextureBuilder builder(device);
-            mat.albedoTexture = assets.textures(targetScene).create(builder.fromFile("assets/textures/whiteTexture.jpg"));
-            model.materials.push_back(mat);
-        }
-
-        fullModel->lods.push_back(std::move(model));
-		fullModel->hasShadow = computeShadow;
-    }
-
-    return fullModel;
-
-}
-
-std::unique_ptr<ModelAsset> ModelBuilder::buildDecodedModel(const std::string& targetScene)
-{
-    std::unique_ptr<ModelAsset> fullModel = std::make_unique<ModelAsset>();
-
-    ModelLOD model = ModelUploader::uploadDecodedModel(device, assets, targetScene, decodedModel);
-
-    if (textures.size())
-    {
-        model.materials.clear();
+    if (texture != -1) {
         Material mat;
-        mat.albedoTexture = textures[0];
+        mat.albedoTexture = texture;
         model.materials.push_back(mat);
     }
 
     if (model.materials.empty()) {
-        Material mat;   
+        Material mat;
         TextureBuilder builder(device);
         mat.albedoTexture = assets.textures(targetScene).create(builder.fromFile("assets/textures/whiteTexture.jpg"));
         model.materials.push_back(mat);
     }
 
-    fullModel->lods.push_back(std::move(model));
+    ModelUploader::uploadShaderMaterials(device, model);
+
+    fullModel->mesh = std::move(model);
     fullModel->hasShadow = computeShadow;
-    fullModel->aabb = decodedModel.aabb;
     fullModel->skeleton = std::move(decodedModel.skeleton);
 
     return fullModel;
 }
 
-std::unique_ptr<ModelAsset> ModelBuilder::buildGlTF(const std::string& targetScene)
+DecodedModel ModelBuilder::buildObj() const
 {
-
-    if (modelPath.empty()) {
+    if (modelPath == "") {
         throw std::runtime_error("path cannot be empty for obj");
     }
 
-    std::unique_ptr<ModelAsset> fullModel = std::make_unique<ModelAsset>();
-
-    size_t i = 0;
-    for (auto modelFilePath : modelPath)
-    {
-        if (modelFilePath.empty()) {
-            throw std::runtime_error("path cannot be empty for obj");
-        }
-
-        GlTFModelDecoder decoder;
-        if (!decoder.canDecode(modelFilePath)) {
-            throw std::runtime_error("obj not suported by decoder");
-        }
-
-        DecodedModel decodedModel = decoder.decode(modelFilePath);
-
-        ModelLOD model = ModelUploader::uploadDecodedModel(device, assets, targetScene, decodedModel);
-
-        // if there is more than one model, each with texture
-        if (i < textures.size())
-        {
-            Material mat;
-            mat.albedoTexture = textures[i++];
-            model.materials.push_back(mat);
-        }
-
-        if (model.materials.empty()) {
-            Material mat;
-            TextureBuilder builder(device);
-            mat.albedoTexture = assets.textures(targetScene).create(builder.fromFile("assets/textures/whiteTexture.jpg"));
-            model.materials.push_back(mat);
-        }
-
-        ModelUploader::uploadShaderMaterials(device, model);
-
-        if (fullModel->lods.empty())
-            fullModel->skeleton = std::move(decodedModel.skeleton);
-
-        fullModel->lods.push_back(std::move(model));
+    ObjModelDecoder decoder;
+    if (!decoder.canDecode(modelPath)) {
+        throw std::runtime_error("obj not suported by decoder");
     }
 
-    return fullModel;
-
+    return decoder.decode(modelPath);
 }
 
+DecodedModel ModelBuilder::buildGlTF() const
+{
 
+    if (modelPath == "") {
+        throw std::runtime_error("path cannot be empty for obj");
+    }
 
+    GlTFModelDecoder decoder;
+    if (!decoder.canDecode(modelPath)) {
+        throw std::runtime_error("obj not suported by decoder");
+    }
+
+    return decoder.decode(modelPath);
+}

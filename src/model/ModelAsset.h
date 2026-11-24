@@ -3,10 +3,16 @@
 #include <cstdint>
 #include <vector>
 #include <memory>
+#include <glm/fwd.hpp>
+#include <vulkan/vulkan_core.h>
+
 
 #include "../base/Buffer.h"
+#include "../assetManager/TextureManager.h"
 
 #include "Decoder/IModelDecoder.h"
+#include "Animation/Skeleton.h"
+#include "BoundingBox.h"
 
 class ModelBuilder;
 
@@ -38,12 +44,12 @@ struct alignas(16) ShaderMaterialData {
 	float emissiveStrength = 1.f;
 };
 
-struct ModelLOD {
-	ModelLOD(const ModelLOD&) = delete;
-	ModelLOD& operator=(const ModelLOD&) = delete;
+struct Mesh {
+	Mesh(const Mesh&) = delete;
+	Mesh& operator=(const Mesh&) = delete;
 
-	ModelLOD(ModelLOD&&) noexcept = default;
-	ModelLOD& operator=(ModelLOD&&) noexcept = default;
+	Mesh(Mesh&&) noexcept = default;
+	Mesh& operator=(Mesh&&) noexcept = default;
 
 	BoundingBox aabb;
 
@@ -63,8 +69,6 @@ struct ModelLOD {
 	std::vector<TextureManager::TextureID> textures;
 	std::unique_ptr<Buffer> materialBuffer;
 	std::vector<VkDescriptorSet> descriptorSet;
-
-	float switchDistance = std::numeric_limits<float>::infinity();
 };
 
 class ModelAsset {
@@ -72,31 +76,17 @@ public:
 	ModelAsset() = default;
 	~ModelAsset() = default;
 
-	BoundingBox getAABB(glm::mat4 transform) { return lods[0].aabb.getAABB(transform); }
-	bool useAABB() { return aabb.valid; }
+	BoundingBox getAABB(glm::mat4 transform) { return mesh.aabb.getAABB(transform); }
+	bool useAABB() const { return mesh.aabb.valid; }
 
 	bool hasShadow = true;
 
-	// LODs
-	std::vector<ModelLOD> lods;
-
-	
-
+	Mesh mesh;
 	Skeleton skeleton;
+
 	bool isAnimated() const { return !skeleton.clips.empty(); }
 
-	size_t pickLODIndex(const glm::vec3& cameraPosition, const glm::vec3& worldPosition) const {
-		if (lods.empty()) return 0;
-		float d = glm::length(cameraPosition - worldPosition);
-		for (size_t i = 0; i < lods.size(); ++i) {
-			if (d < lods[i].switchDistance) return i;
-		}
-		return lods.size() - 1;
-	}
-
 private:
-	// Axis Aligned Bounding Box
-	BoundingBox aabb;
 
 	friend ModelBuilder;
 };

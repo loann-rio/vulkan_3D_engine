@@ -4,10 +4,11 @@
 #include "ModelManager.h"
 #include "TextureManager.h"
 #include "GameObjectManager.h"
+#include "ThreadPool.h"
 #include <memory>
-#include <stdexcept>
 #include <utility>
 #include <string>
+#include <unordered_map>
 
 struct Scene {
     std::unique_ptr<ModelManager> modelMgr;
@@ -30,6 +31,10 @@ public:
     ~AssetManager(){
         scenes.clear();
     };
+
+    ThreadPool& threads() {
+        return *threadPool;
+    }
 
     
     TextureManager& textures(std::string targetScene = "") { 
@@ -72,7 +77,13 @@ public:
         scenes[sceneName] = std::move(newScene);
     };
 
+    bool hasScene(std::string nameScene) {
+        return scenes.find(nameScene) == scenes.end();
+    }
+
 private:
+    std::unique_ptr<ThreadPool> threadPool = std::make_unique<ThreadPool>();
+
     std::string currentSceneName = "default";
 
     std::unordered_map<std::string, std::unique_ptr<Scene>> scenes{};

@@ -37,12 +37,12 @@ namespace {
 	}
 }
 
-ModelLOD ModelUploader::uploadDecodedModel(Device& device, AssetManager& assets, const std::string& targetScene, DecodedModel& obj)
+Mesh ModelUploader::uploadDecodedModel(Device& device, AssetManager& assets, const std::string& targetScene, DecodedModel& obj)
 {
 	std::unique_ptr<Buffer> vertexBuffer = createVertexBuffers(device, obj.vertices.get());
 	std::unique_ptr<Buffer> indexBuffer = createIndexBuffers(device, obj.indices);
 
-	ModelLOD asset{};
+	Mesh asset{};
 	asset.vertexBuffer = std::move(vertexBuffer);
 	asset.vertexCount = obj.vertices->vertexCount();
 	asset.indexBuffer = std::move(indexBuffer);
@@ -125,30 +125,32 @@ std::unique_ptr<Buffer> ModelUploader::createIndexBuffers(Device& device, const 
 	return std::move(indexBuffer);
 }
 
-void ModelUploader::uploadShaderMaterials(Device& device, ModelLOD& lod)
+void ModelUploader::uploadShaderMaterials(Device& device, Mesh& mesh)
 {
-	lod.textures.clear();
+	if (mesh.materials.size() == 0) return
+
+	mesh.textures.clear();
 
 	// returns the index of the texture in lod.textures, -1 if the material doesn't use it
-	auto textureIndex = [&lod](TextureManager::TextureID id) -> int {
+	auto textureIndex = [&mesh](TextureManager::TextureID id) -> int {
 		if (!id) return -1;
 
-		auto it = std::find(lod.textures.begin(), lod.textures.end(), id);
-		if (it != lod.textures.end()) return static_cast<int>(it - lod.textures.begin());
+		auto it = std::find(mesh.textures.begin(), mesh.textures.end(), id);
+		if (it != mesh.textures.end()) return static_cast<int>(it - mesh.textures.begin());
 
-		if (lod.textures.size() >= MAX_MODEL_TEXTURES) {
+		if (mesh.textures.size() >= MAX_MODEL_TEXTURES) {
 			std::cerr << "ModelUploader: more than " << MAX_MODEL_TEXTURES << " textures in model, texture ignored\n";
 			return -1;
 		}
 
-		lod.textures.push_back(id);
-		return static_cast<int>(lod.textures.size() - 1);
+		mesh.textures.push_back(id);
+		return static_cast<int>(mesh.textures.size() - 1);
 	};
 
 	std::vector<ShaderMaterialData> shaderMaterials{};
-	shaderMaterials.reserve(lod.materials.size());
+	shaderMaterials.reserve(mesh.materials.size());
 
-	for (const auto& material : lod.materials) {
+	for (const auto& material : mesh.materials) {
 		ShaderMaterialData data{};
 
 		data.baseColorFactor = material.baseColorFactor;
@@ -192,7 +194,7 @@ void ModelUploader::uploadShaderMaterials(Device& device, ModelLOD& lod)
 	stagingBuffer.map();
 	stagingBuffer.writeToBuffer((void*)shaderMaterials.data());
 
-	lod.materialBuffer = std::make_unique<Buffer>(
+	mesh.materialBuffer = std::make_unique<Buffer>(
 		device,
 		instanceSize,
 		instanceCount,
@@ -200,7 +202,7 @@ void ModelUploader::uploadShaderMaterials(Device& device, ModelLOD& lod)
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
 	);
 
-	device.copyBuffer(stagingBuffer.getBuffer(), lod.materialBuffer->getBuffer(), bufferSize);
+	device.copyBuffer(stagingBuffer.getBuffer(), mesh.materialBuffer->getBuffer(), bufferSize);
 }
 
 std::vector<Material> ModelUploader::uploadMaterialsTextures(Device& device, AssetManager& assets, const std::string& targetScene, std::vector<DecodedMaterial> materials)
