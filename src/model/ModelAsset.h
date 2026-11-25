@@ -45,6 +45,7 @@ struct alignas(16) ShaderMaterialData {
 };
 
 struct Mesh {
+	Mesh() = default;
 	Mesh(const Mesh&) = delete;
 	Mesh& operator=(const Mesh&) = delete;
 

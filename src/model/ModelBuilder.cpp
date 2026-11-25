@@ -141,31 +141,12 @@ uint64_t ModelBuilder::hash() const
 
 std::unique_ptr<ModelAsset> ModelBuilder::build(const std::string& targetScene)
 {
-    std::unique_ptr<DecodedModel> decodedModel = decodeModel();
-    decodedModel->texture = texture;
+    if (!decodeModel())
+        return nullptr;
     
-
-    Mesh model = ModelUploader::uploadDecodedModel(device, assets, targetScene, *decodedModel);
-
-    if (texture != -1) {
-        Material mat;
-        mat.albedoTexture = texture;
-        model.materials.push_back(mat);
-    }
-
-    if (model.materials.empty()) {
-        Material mat;
-        TextureBuilder builder(device);
-        mat.albedoTexture = assets.textures(targetScene).create(builder.fromFile("assets/textures/whiteTexture.jpg"));
-        model.materials.push_back(mat);
-    }
-
-    ModelUploader::uploadShaderMaterials(device, model);
-
     std::unique_ptr<ModelAsset> fullModel = std::make_unique<ModelAsset>();
-    fullModel->mesh = std::move(model);
-    fullModel->hasShadow = computeShadow;
-    fullModel->skeleton = std::move(decodedModel->skeleton);
+
+    uploadModel(fullModel.get(), targetScene);
 
     return fullModel;
 }
@@ -199,7 +180,7 @@ DecodedModel ModelBuilder::decodeGlTF()
     return decoder.decode(modelPath);
 }
 
-void ModelBuilder::decodeModel()
+bool ModelBuilder::decodeModel()
 {
     try {
         switch (source)
@@ -207,16 +188,15 @@ void ModelBuilder::decodeModel()
             case ModelBuilder::SourceType::GlTF:
                 decodedModel = std::move(decodeGlTF());
                 decodedModel.texture = texture;
-                break;
+                return true;
 
             case ModelBuilder::SourceType::Obj:
                 decodedModel = std::move(decodeObj());
                 decodedModel.texture = texture;
-
-                break;
+                return true;
 
 			case ModelBuilder::SourceType::Decoded:
-                break;
+                return true;
 
             case ModelBuilder::SourceType::None:
             default:
@@ -227,6 +207,30 @@ void ModelBuilder::decodeModel()
     catch (const std::exception& e)
     {
         std::cerr << std::string("ModelBuilder: build failed: ") + e.what() << "\n";
-        return;
+        return false;
     }
+}
+
+void ModelBuilder::uploadModel(ModelAsset* model, const std::string& targetScene)
+{
+
+    Mesh mesh = ModelUploader::uploadDecodedModel(device, assets, targetScene, decodedModel);
+
+    if (texture != -1) {
+        Material mat;
+        mat.albedoTexture = texture;
+        mesh.materials.push_back(mat);
+    }
+
+    if (mesh.materials.empty()) {
+        Material mat;
+        TextureBuilder builder(device);
+        mat.albedoTexture = assets.textures(targetScene).create(builder.fromFile("assets/textures/whiteTexture.jpg"));
+        mesh.materials.push_back(mat);
+    }
+
+    ModelUploader::uploadShaderMaterials(device, mesh);
+    model->mesh = std::move(mesh);
+    model->hasShadow = computeShadow;
+    model->skeleton = std::move(decodedModel.skeleton);
 }

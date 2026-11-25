@@ -42,8 +42,8 @@ private:
     DecodedModel decodeObj();
     DecodedModel decodeGlTF();
 
-    void decodeModel();
-    void uploadModel(std::unique_ptr<ModelAsset> model, const std::string& targetScene);
+    bool decodeModel();
+    void uploadModel(ModelAsset* model, const std::string& targetScene);
     
     std::string modelPath = "";
     TextureManager::TextureID texture = -1;
