@@ -39,8 +39,11 @@ private:
     //// Build ////
     std::unique_ptr<ModelAsset> build(const std::string& targetScene);
     
-    DecodedModel buildObj() const;
-    DecodedModel buildGlTF() const;
+    DecodedModel decodeObj();
+    DecodedModel decodeGlTF();
+
+    void decodeModel();
+    void uploadModel(std::unique_ptr<ModelAsset> model, const std::string& targetScene);
     
     std::string modelPath = "";
     TextureManager::TextureID texture = -1;

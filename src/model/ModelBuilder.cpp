@@ -141,35 +141,11 @@ uint64_t ModelBuilder::hash() const
 
 std::unique_ptr<ModelAsset> ModelBuilder::build(const std::string& targetScene)
 {
-    std::unique_ptr<ModelAsset> fullModel = std::make_unique<ModelAsset>();
+    std::unique_ptr<DecodedModel> decodedModel = decodeModel();
+    decodedModel->texture = texture;
+    
 
-    DecodedModel decodedModel;
-
-    try {
-        switch (source)
-        {
-            case ModelBuilder::SourceType::GlTF:
-                decodedModel = buildGlTF();
-
-            case ModelBuilder::SourceType::Obj:
-                decodedModel =  buildObj();
-
-			case ModelBuilder::SourceType::Decoded:
-                decodedModel = std::move(decodedModel);
-
-            case ModelBuilder::SourceType::None:
-            default:
-                throw std::runtime_error("no suported file provided");
-        }
-
-    }
-    catch (const std::exception& e)
-    {
-        std::cerr << std::string("ModelBuilder: build failed: ") + e.what() << "\n";
-        return nullptr;
-    }
-
-    Mesh model = ModelUploader::uploadDecodedModel(device, assets, targetScene, decodedModel);
+    Mesh model = ModelUploader::uploadDecodedModel(device, assets, targetScene, *decodedModel);
 
     if (texture != -1) {
         Material mat;
@@ -186,14 +162,15 @@ std::unique_ptr<ModelAsset> ModelBuilder::build(const std::string& targetScene)
 
     ModelUploader::uploadShaderMaterials(device, model);
 
+    std::unique_ptr<ModelAsset> fullModel = std::make_unique<ModelAsset>();
     fullModel->mesh = std::move(model);
     fullModel->hasShadow = computeShadow;
-    fullModel->skeleton = std::move(decodedModel.skeleton);
+    fullModel->skeleton = std::move(decodedModel->skeleton);
 
     return fullModel;
 }
 
-DecodedModel ModelBuilder::buildObj() const
+DecodedModel ModelBuilder::decodeObj()
 {
     if (modelPath == "") {
         throw std::runtime_error("path cannot be empty for obj");
@@ -207,7 +184,7 @@ DecodedModel ModelBuilder::buildObj() const
     return decoder.decode(modelPath);
 }
 
-DecodedModel ModelBuilder::buildGlTF() const
+DecodedModel ModelBuilder::decodeGlTF()
 {
 
     if (modelPath == "") {
@@ -220,4 +197,36 @@ DecodedModel ModelBuilder::buildGlTF() const
     }
 
     return decoder.decode(modelPath);
+}
+
+void ModelBuilder::decodeModel()
+{
+    try {
+        switch (source)
+        {
+            case ModelBuilder::SourceType::GlTF:
+                decodedModel = std::move(decodeGlTF());
+                decodedModel.texture = texture;
+                break;
+
+            case ModelBuilder::SourceType::Obj:
+                decodedModel = std::move(decodeObj());
+                decodedModel.texture = texture;
+
+                break;
+
+			case ModelBuilder::SourceType::Decoded:
+                break;
+
+            case ModelBuilder::SourceType::None:
+            default:
+                throw std::runtime_error("no suported file provided");
+        }
+
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << std::string("ModelBuilder: build failed: ") + e.what() << "\n";
+        return;
+    }
 }

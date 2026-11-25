@@ -87,6 +87,10 @@ struct DecodedModel {
     std::vector<uint32_t> indices;
     std::vector<Primitive> primitives;
     std::vector<DecodedMaterial> materials;
+    
+    std::vector<DecodedTexture> textures;
+    TextureManager::TextureID texture;
+
     BoundingBox aabb;
 
 	Skeleton skeleton;
